@@ -1,0 +1,12 @@
+./temp/*
+temp/
+*.pyc
+*.dcd
+*.png
+*.log
+#*
+*.pickle
+relaxedP3HT.xml
+*.DS_Store
+outputChains/*
+plotter/*.xml

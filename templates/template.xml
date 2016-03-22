@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<hoomd_xml version="1.4">
+<configuration dimensions="3" natoms="NATOMS" time_step="0">
+<box lx="LX" ly="LY" lz="LZ"/>
+<position num="NATOMS">
+</position>
+<image num="NATOMS">
+</image>
+<velocity num="NATOMS">
+</velocity>
+<mass num="NATOMS">
+</mass>
+<diameter num="NATOMS">
+</diameter>
+<type num="NATOMS">
+</type>
+<body num="NATOMS">
+</body>
+<bond num="NBONDS">
+</bond>
+<angle num="NANGLES">
+</angle>
+<dihedral num="NDIHEDRALS">
+</dihedral>
+<improper num="NIMPROPERS">
+</improper>
+<charge num="NATOMS">
+</charge>
+</configuration>
+</hoomd_xml>

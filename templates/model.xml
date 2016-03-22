@@ -1,0 +1,749 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<MD_model_xml version="0.1">
+<model name="3HTmid" note="New Model.">
+<type_map base="H" becomes="H1" neighbors="('C',)" ring="False" />
+<type_map base="C" becomes="C1" neighbors="('C', 'S')" ring="True" />
+<type_map base="S" becomes="S1" neighbors="('C1', 'C1')" ring="True" />
+<type_map base="C" becomes="C9" neighbors="('C', 'C1', 'H1')" ring="True" />
+<type_map base="C" becomes="C2" neighbors="('C', 'C1', 'C9')" ring="True" />
+<type_map base="C" becomes="C3" neighbors="('C', 'C2', 'H1', 'H1')" ring="False" />
+<type_map base="C" becomes="C4" neighbors="('C', 'C3', 'H1', 'H1')" ring="False" />
+<type_map base="C" becomes="C5" neighbors="('C', 'C4', 'H1', 'H1')" ring="False" />
+<type_map base="C" becomes="C6" neighbors="('C', 'C5', 'H1', 'H1')" ring="False" />
+<type_map base="C" becomes="C7" neighbors="('C', 'C6', 'H1', 'H1')" ring="False" />
+<type_map base="C" becomes="C8" neighbors="('C7', 'H1', 'H1', 'H1')" ring="False" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C1" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C9" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C2" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="S1" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C3" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C4" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C5" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C6" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C7" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C8" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="H1" />
+<bond k="30000.0" l="1.5" typeA="C7" typeB="C8" />
+<bond k="30000.0" l="1.5" typeA="C8" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C6" typeB="C7" />
+<bond k="30000.0" l="1.5" typeA="C7" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C5" typeB="C6" />
+<bond k="30000.0" l="1.5" typeA="C6" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C4" typeB="C5" />
+<bond k="30000.0" l="1.5" typeA="C5" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C3" typeB="C4" />
+<bond k="30000.0" l="1.5" typeA="C4" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C2" typeB="C3" />
+<bond k="30000.0" l="1.5" typeA="C3" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C2" typeB="C9" />
+<bond k="30000.0" l="1.5" typeA="C1" typeB="C2" />
+<bond k="30000.0" l="1.5" typeA="C1" typeB="C9" />
+<bond k="30000.0" l="1.5" typeA="C9" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C1" typeB="S1" />
+<angle k="380.0" theta="1.95" typeA="C1" typeB="C9" typeC="C2" />
+<angle k="380.0" theta="1.95" typeA="C1" typeB="C9" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C1" typeB="S1" typeC="C1" />
+<angle k="380.0" theta="1.95" typeA="C9" typeB="C1" typeC="S1" />
+<angle k="380.0" theta="1.95" typeA="C1" typeB="C2" typeC="C9" />
+<angle k="380.0" theta="1.95" typeA="C3" typeB="C2" typeC="C9" />
+<angle k="380.0" theta="1.95" typeA="C2" typeB="C9" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C2" typeB="C1" typeC="S1" />
+<angle k="380.0" theta="1.95" typeA="C2" typeB="C3" typeC="C4" />
+<angle k="380.0" theta="1.95" typeA="C2" typeB="C3" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C1" typeB="C2" typeC="C3" />
+<angle k="380.0" theta="1.95" typeA="C3" typeB="C4" typeC="C5" />
+<angle k="380.0" theta="1.95" typeA="C3" typeB="C4" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C4" typeB="C3" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C4" typeB="C5" typeC="C6" />
+<angle k="380.0" theta="1.95" typeA="C4" typeB="C5" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C5" typeB="C4" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C5" typeB="C6" typeC="C7" />
+<angle k="380.0" theta="1.95" typeA="C5" typeB="C6" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C6" typeB="C5" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C6" typeB="C7" typeC="C8" />
+<angle k="380.0" theta="1.95" typeA="C6" typeB="C7" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C7" typeB="C6" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C7" typeB="C8" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C8" typeB="C7" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C8" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C7" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C6" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C5" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C4" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C3" typeC="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="C2" typeC="C9" typeD="C1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="C9" typeC="C2" typeD="C3" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="S1" typeC="C1" typeD="C2" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="S1" typeC="C1" typeD="C9" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C9" typeB="C2" typeC="C1" typeD="S1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C4" typeB="C3" typeC="C2" typeD="C9" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C9" typeB="C2" typeC="C3" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C2" typeB="C9" typeC="C1" typeD="S1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C2" typeB="C3" typeC="C4" typeD="C5" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C2" typeB="C3" typeC="C4" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="C2" typeC="C9" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="C2" typeC="C3" typeD="C4" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="C2" typeC="C3" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C9" typeC="C1" typeD="S1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C3" typeB="C2" typeC="C1" typeD="S1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C3" typeB="C2" typeC="C9" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C3" typeB="C4" typeC="C5" typeD="C6" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C3" typeB="C4" typeC="C5" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C4" typeB="C5" typeC="C6" typeD="C7" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C4" typeB="C5" typeC="C6" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C5" typeB="C4" typeC="C3" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C5" typeB="C6" typeC="C7" typeD="C8" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C5" typeB="C6" typeC="C7" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C6" typeB="C5" typeC="C4" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C6" typeB="C7" typeC="C8" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C7" typeB="C6" typeC="C5" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C8" typeB="C7" typeC="C6" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C7" typeC="C8" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C6" typeC="C7" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C5" typeC="C6" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C4" typeC="C5" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C3" typeC="C4" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="C2" typeC="C9" typeD="C1" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="C9" typeC="C2" typeD="C3" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="S1" typeC="C1" typeD="C2" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="S1" typeC="C1" typeD="C9" />
+<improper k="10.0" theta="0.0" typeA="C9" typeB="C2" typeC="C1" typeD="S1" />
+<improper k="10.0" theta="0.0" typeA="C4" typeB="C3" typeC="C2" typeD="C9" />
+<improper k="10.0" theta="0.0" typeA="C9" typeB="C2" typeC="C3" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C2" typeB="C9" typeC="C1" typeD="S1" />
+<improper k="10.0" theta="0.0" typeA="C2" typeB="C3" typeC="C4" typeD="C5" />
+<improper k="10.0" theta="0.0" typeA="C2" typeB="C3" typeC="C4" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="C2" typeC="C9" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="C2" typeC="C3" typeD="C4" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="C2" typeC="C3" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C9" typeC="C1" typeD="S1" />
+<improper k="10.0" theta="0.0" typeA="C3" typeB="C2" typeC="C1" typeD="S1" />
+<improper k="10.0" theta="0.0" typeA="C3" typeB="C2" typeC="C9" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C3" typeB="C4" typeC="C5" typeD="C6" />
+<improper k="10.0" theta="0.0" typeA="C3" typeB="C4" typeC="C5" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C4" typeB="C5" typeC="C6" typeD="C7" />
+<improper k="10.0" theta="0.0" typeA="C4" typeB="C5" typeC="C6" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C5" typeB="C4" typeC="C3" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C5" typeB="C6" typeC="C7" typeD="C8" />
+<improper k="10.0" theta="0.0" typeA="C5" typeB="C6" typeC="C7" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C6" typeB="C5" typeC="C4" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C6" typeB="C7" typeC="C8" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C7" typeB="C6" typeC="C5" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C8" typeB="C7" typeC="C6" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C7" typeC="C8" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C6" typeC="C7" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C5" typeC="C6" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C4" typeC="C5" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C3" typeC="C4" typeD="H1" />
+</model>
+<model name="3HTend" note="New Model.">
+<type_map base="H" becomes="H1" neighbors="('C',)" ring="False" />
+<type_map base="C" becomes="C1" neighbors="('C', 'S')" ring="True" />
+<type_map base="S" becomes="S1" neighbors="('C', 'C1')" ring="True" />
+<type_map base="C" becomes="C10" neighbors="('C', 'H1', 'S1')" ring="True" />
+<type_map base="C" becomes="C9" neighbors="('C', 'C10', 'H1')" ring="True" />
+<type_map base="C" becomes="C2" neighbors="('C', 'C1', 'C9')" ring="True" />
+<type_map base="C" becomes="C3" neighbors="('C', 'C2', 'H1', 'H1')" ring="False" />
+<type_map base="C" becomes="C4" neighbors="('C', 'C3', 'H1', 'H1')" ring="False" />
+<type_map base="C" becomes="C5" neighbors="('C', 'C4', 'H1', 'H1')" ring="False" />
+<type_map base="C" becomes="C6" neighbors="('C', 'C5', 'H1', 'H1')" ring="False" />
+<type_map base="C" becomes="C7" neighbors="('C', 'C6', 'H1', 'H1')" ring="False" />
+<type_map base="C" becomes="C8" neighbors="('C7', 'H1', 'H1', 'H1')" ring="False" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C10" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C9" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C2" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C1" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="S1" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C3" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C4" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C5" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C6" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C7" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C8" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="H1" />
+<bond k="30000.0" l="1.5" typeA="C7" typeB="C8" />
+<bond k="30000.0" l="1.5" typeA="C8" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C6" typeB="C7" />
+<bond k="30000.0" l="1.5" typeA="C7" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C5" typeB="C6" />
+<bond k="30000.0" l="1.5" typeA="C6" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C4" typeB="C5" />
+<bond k="30000.0" l="1.5" typeA="C5" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C3" typeB="C4" />
+<bond k="30000.0" l="1.5" typeA="C4" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C2" typeB="C3" />
+<bond k="30000.0" l="1.5" typeA="C3" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C2" typeB="C9" />
+<bond k="30000.0" l="1.5" typeA="C1" typeB="C2" />
+<bond k="30000.0" l="1.5" typeA="C10" typeB="C9" />
+<bond k="30000.0" l="1.5" typeA="C9" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C10" typeB="S1" />
+<bond k="30000.0" l="1.5" typeA="C1" typeB="S1" />
+<bond k="30000.0" l="1.5" typeA="C10" typeB="H1" />
+<angle k="380.0" theta="1.95" typeA="C10" typeB="C9" typeC="C2" />
+<angle k="380.0" theta="1.95" typeA="C10" typeB="C9" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C1" typeB="S1" typeC="C10" />
+<angle k="380.0" theta="1.95" typeA="C9" typeB="C10" typeC="S1" />
+<angle k="380.0" theta="1.95" typeA="C9" typeB="C10" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C1" typeB="C2" typeC="C9" />
+<angle k="380.0" theta="1.95" typeA="C3" typeB="C2" typeC="C9" />
+<angle k="380.0" theta="1.95" typeA="C2" typeB="C9" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C2" typeB="C1" typeC="S1" />
+<angle k="380.0" theta="1.95" typeA="C2" typeB="C3" typeC="C4" />
+<angle k="380.0" theta="1.95" typeA="C2" typeB="C3" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C1" typeB="C2" typeC="C3" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C10" typeC="S1" />
+<angle k="380.0" theta="1.95" typeA="C3" typeB="C4" typeC="C5" />
+<angle k="380.0" theta="1.95" typeA="C3" typeB="C4" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C4" typeB="C3" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C4" typeB="C5" typeC="C6" />
+<angle k="380.0" theta="1.95" typeA="C4" typeB="C5" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C5" typeB="C4" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C5" typeB="C6" typeC="C7" />
+<angle k="380.0" theta="1.95" typeA="C5" typeB="C6" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C6" typeB="C5" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C6" typeB="C7" typeC="C8" />
+<angle k="380.0" theta="1.95" typeA="C6" typeB="C7" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C7" typeB="C6" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C7" typeB="C8" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C8" typeB="C7" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C8" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C7" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C6" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C5" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C4" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C3" typeC="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="C2" typeC="C9" typeD="C10" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C10" typeB="C9" typeC="C2" typeD="C3" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C10" typeB="S1" typeC="C1" typeD="C2" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="S1" typeC="C10" typeD="C9" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C9" typeB="C2" typeC="C1" typeD="S1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C4" typeB="C3" typeC="C2" typeD="C9" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C9" typeB="C2" typeC="C3" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C2" typeB="C9" typeC="C10" typeD="S1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C2" typeB="C9" typeC="C10" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C2" typeB="C3" typeC="C4" typeD="C5" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C2" typeB="C3" typeC="C4" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="C2" typeC="C9" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="C2" typeC="C3" typeD="C4" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="C2" typeC="C3" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="S1" typeC="C10" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C9" typeC="C10" typeD="S1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C3" typeB="C2" typeC="C1" typeD="S1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C3" typeB="C2" typeC="C9" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C3" typeB="C4" typeC="C5" typeD="C6" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C3" typeB="C4" typeC="C5" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C4" typeB="C5" typeC="C6" typeD="C7" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C4" typeB="C5" typeC="C6" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C5" typeB="C4" typeC="C3" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C5" typeB="C6" typeC="C7" typeD="C8" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C5" typeB="C6" typeC="C7" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C6" typeB="C5" typeC="C4" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C6" typeB="C7" typeC="C8" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C7" typeB="C6" typeC="C5" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C8" typeB="C7" typeC="C6" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C7" typeC="C8" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C6" typeC="C7" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C5" typeC="C6" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C4" typeC="C5" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C3" typeC="C4" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C10" typeC="C9" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="C2" typeC="C9" typeD="C10" />
+<improper k="10.0" theta="0.0" typeA="C10" typeB="C9" typeC="C2" typeD="C3" />
+<improper k="10.0" theta="0.0" typeA="C10" typeB="S1" typeC="C1" typeD="C2" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="S1" typeC="C10" typeD="C9" />
+<improper k="10.0" theta="0.0" typeA="C9" typeB="C2" typeC="C1" typeD="S1" />
+<improper k="10.0" theta="0.0" typeA="C4" typeB="C3" typeC="C2" typeD="C9" />
+<improper k="10.0" theta="0.0" typeA="C9" typeB="C2" typeC="C3" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C2" typeB="C9" typeC="C10" typeD="S1" />
+<improper k="10.0" theta="0.0" typeA="C2" typeB="C9" typeC="C10" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C2" typeB="C3" typeC="C4" typeD="C5" />
+<improper k="10.0" theta="0.0" typeA="C2" typeB="C3" typeC="C4" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="C2" typeC="C9" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="C2" typeC="C3" typeD="C4" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="C2" typeC="C3" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="S1" typeC="C10" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C9" typeC="C10" typeD="S1" />
+<improper k="10.0" theta="0.0" typeA="C3" typeB="C2" typeC="C1" typeD="S1" />
+<improper k="10.0" theta="0.0" typeA="C3" typeB="C2" typeC="C9" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C3" typeB="C4" typeC="C5" typeD="C6" />
+<improper k="10.0" theta="0.0" typeA="C3" typeB="C4" typeC="C5" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C4" typeB="C5" typeC="C6" typeD="C7" />
+<improper k="10.0" theta="0.0" typeA="C4" typeB="C5" typeC="C6" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C5" typeB="C4" typeC="C3" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C5" typeB="C6" typeC="C7" typeD="C8" />
+<improper k="10.0" theta="0.0" typeA="C5" typeB="C6" typeC="C7" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C6" typeB="C5" typeC="C4" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C6" typeB="C7" typeC="C8" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C7" typeB="C6" typeC="C5" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C8" typeB="C7" typeC="C6" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C7" typeC="C8" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C6" typeC="C7" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C5" typeC="C6" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C4" typeC="C5" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C3" typeC="C4" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C10" typeC="C9" typeD="H1" />
+</model>
+<model name="3HTstart" note="New Model.">
+<type_map base="H" becomes="H1" neighbors="('C',)" ring="False" />
+<type_map base="C" becomes="C10" neighbors="('C', 'S')" ring="True" />
+<type_map base="S" becomes="S1" neighbors="('C', 'C10')" ring="True" />
+<type_map base="C" becomes="C9" neighbors="('C', 'C10', 'H1')" ring="True" />
+<type_map base="C" becomes="C2" neighbors="('C', 'C', 'C9')" ring="True" />
+<type_map base="C" becomes="C1" neighbors="('C2', 'H1', 'S1')" ring="True" />
+<type_map base="C" becomes="C3" neighbors="('C', 'C2', 'H1', 'H1')" ring="False" />
+<type_map base="C" becomes="C4" neighbors="('C', 'C3', 'H1', 'H1')" ring="False" />
+<type_map base="C" becomes="C5" neighbors="('C', 'C4', 'H1', 'H1')" ring="False" />
+<type_map base="C" becomes="C6" neighbors="('C', 'C5', 'H1', 'H1')" ring="False" />
+<type_map base="C" becomes="C7" neighbors="('C', 'C6', 'H1', 'H1')" ring="False" />
+<type_map base="C" becomes="C8" neighbors="('C7', 'H1', 'H1', 'H1')" ring="False" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C10" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C9" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C2" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C1" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="S1" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C3" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C4" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C5" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C6" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C7" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="C8" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="0" mass="1.0" note="" type="H1" />
+<bond k="30000.0" l="1.5" typeA="C7" typeB="C8" />
+<bond k="30000.0" l="1.5" typeA="C8" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C6" typeB="C7" />
+<bond k="30000.0" l="1.5" typeA="C7" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C5" typeB="C6" />
+<bond k="30000.0" l="1.5" typeA="C6" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C4" typeB="C5" />
+<bond k="30000.0" l="1.5" typeA="C5" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C3" typeB="C4" />
+<bond k="30000.0" l="1.5" typeA="C4" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C2" typeB="C3" />
+<bond k="30000.0" l="1.5" typeA="C3" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C2" typeB="C9" />
+<bond k="30000.0" l="1.5" typeA="C1" typeB="C2" />
+<bond k="30000.0" l="1.5" typeA="C10" typeB="C9" />
+<bond k="30000.0" l="1.5" typeA="C9" typeB="H1" />
+<bond k="30000.0" l="1.5" typeA="C10" typeB="S1" />
+<bond k="30000.0" l="1.5" typeA="C1" typeB="S1" />
+<bond k="30000.0" l="1.5" typeA="C1" typeB="H1" />
+<angle k="380.0" theta="1.95" typeA="C10" typeB="C9" typeC="C2" />
+<angle k="380.0" theta="1.95" typeA="C10" typeB="C9" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C1" typeB="S1" typeC="C10" />
+<angle k="380.0" theta="1.95" typeA="C9" typeB="C10" typeC="S1" />
+<angle k="380.0" theta="1.95" typeA="C1" typeB="C2" typeC="C9" />
+<angle k="380.0" theta="1.95" typeA="C3" typeB="C2" typeC="C9" />
+<angle k="380.0" theta="1.95" typeA="C2" typeB="C9" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C2" typeB="C1" typeC="S1" />
+<angle k="380.0" theta="1.95" typeA="C2" typeB="C1" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C2" typeB="C3" typeC="C4" />
+<angle k="380.0" theta="1.95" typeA="C2" typeB="C3" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C1" typeB="C2" typeC="C3" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C1" typeC="S1" />
+<angle k="380.0" theta="1.95" typeA="C3" typeB="C4" typeC="C5" />
+<angle k="380.0" theta="1.95" typeA="C3" typeB="C4" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C4" typeB="C3" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C4" typeB="C5" typeC="C6" />
+<angle k="380.0" theta="1.95" typeA="C4" typeB="C5" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C5" typeB="C4" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C5" typeB="C6" typeC="C7" />
+<angle k="380.0" theta="1.95" typeA="C5" typeB="C6" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C6" typeB="C5" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C6" typeB="C7" typeC="C8" />
+<angle k="380.0" theta="1.95" typeA="C6" typeB="C7" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C7" typeB="C6" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C7" typeB="C8" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="C8" typeB="C7" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C8" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C7" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C6" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C5" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C4" typeC="H1" />
+<angle k="380.0" theta="1.95" typeA="H1" typeB="C3" typeC="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="C2" typeC="C9" typeD="C10" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C10" typeB="C9" typeC="C2" typeD="C3" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C10" typeB="S1" typeC="C1" typeD="C2" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C10" typeB="S1" typeC="C1" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="S1" typeC="C10" typeD="C9" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C9" typeB="C2" typeC="C1" typeD="S1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C9" typeB="C2" typeC="C1" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C4" typeB="C3" typeC="C2" typeD="C9" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C9" typeB="C2" typeC="C3" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C2" typeB="C9" typeC="C10" typeD="S1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C2" typeB="C3" typeC="C4" typeD="C5" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C2" typeB="C3" typeC="C4" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="C2" typeC="C9" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="C2" typeC="C3" typeD="C4" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C1" typeB="C2" typeC="C3" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C9" typeC="C10" typeD="S1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C3" typeB="C2" typeC="C1" typeD="S1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C3" typeB="C2" typeC="C9" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C3" typeB="C2" typeC="C1" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C3" typeB="C4" typeC="C5" typeD="C6" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C3" typeB="C4" typeC="C5" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C4" typeB="C5" typeC="C6" typeD="C7" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C4" typeB="C5" typeC="C6" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C5" typeB="C4" typeC="C3" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C5" typeB="C6" typeC="C7" typeD="C8" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C5" typeB="C6" typeC="C7" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C6" typeB="C5" typeC="C4" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C6" typeB="C7" typeC="C8" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C7" typeB="C6" typeC="C5" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="C8" typeB="C7" typeC="C6" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C7" typeC="C8" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C6" typeC="C7" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C5" typeC="C6" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C4" typeC="C5" typeD="H1" />
+<dihedral k1="0.0" k2="23.0" k3="0.0" k4="0.0" typeA="H1" typeB="C3" typeC="C4" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="C2" typeC="C9" typeD="C10" />
+<improper k="10.0" theta="0.0" typeA="C10" typeB="C9" typeC="C2" typeD="C3" />
+<improper k="10.0" theta="0.0" typeA="C10" typeB="S1" typeC="C1" typeD="C2" />
+<improper k="10.0" theta="0.0" typeA="C10" typeB="S1" typeC="C1" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="S1" typeC="C10" typeD="C9" />
+<improper k="10.0" theta="0.0" typeA="C9" typeB="C2" typeC="C1" typeD="S1" />
+<improper k="10.0" theta="0.0" typeA="C9" typeB="C2" typeC="C1" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C4" typeB="C3" typeC="C2" typeD="C9" />
+<improper k="10.0" theta="0.0" typeA="C9" typeB="C2" typeC="C3" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C2" typeB="C9" typeC="C10" typeD="S1" />
+<improper k="10.0" theta="0.0" typeA="C2" typeB="C3" typeC="C4" typeD="C5" />
+<improper k="10.0" theta="0.0" typeA="C2" typeB="C3" typeC="C4" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="C2" typeC="C9" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="C2" typeC="C3" typeD="C4" />
+<improper k="10.0" theta="0.0" typeA="C1" typeB="C2" typeC="C3" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C9" typeC="C10" typeD="S1" />
+<improper k="10.0" theta="0.0" typeA="C3" typeB="C2" typeC="C1" typeD="S1" />
+<improper k="10.0" theta="0.0" typeA="C3" typeB="C2" typeC="C9" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C3" typeB="C2" typeC="C1" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C3" typeB="C4" typeC="C5" typeD="C6" />
+<improper k="10.0" theta="0.0" typeA="C3" typeB="C4" typeC="C5" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C4" typeB="C5" typeC="C6" typeD="C7" />
+<improper k="10.0" theta="0.0" typeA="C4" typeB="C5" typeC="C6" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C5" typeB="C4" typeC="C3" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C5" typeB="C6" typeC="C7" typeD="C8" />
+<improper k="10.0" theta="0.0" typeA="C5" typeB="C6" typeC="C7" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C6" typeB="C5" typeC="C4" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C6" typeB="C7" typeC="C8" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C7" typeB="C6" typeC="C5" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="C8" typeB="C7" typeC="C6" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C7" typeC="C8" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C6" typeC="C7" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C5" typeC="C6" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C4" typeC="C5" typeD="H1" />
+<improper k="10.0" theta="0.0" typeA="H1" typeB="C3" typeC="C4" typeD="H1" />
+</model>
+<model name="normalized" note="initially empty model">
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="0.864788732394" epsilon="0.68" id="7" mass="0.5" note="" type="OS" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="0.915492957746" epsilon="0.68" id="12" mass="0.44" note="" type="NS" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="0.28" id="1" mass="0.375" note="" type="CB" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="0.28" id="2" mass="0.375" note="" type="CA" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="0.805633802817" epsilon="0.84" id="13" mass="0.5" note="" type="O" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="6" mass="1.0" note="" type="S" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="0.28" id="3" mass="0.375" note="" type="CS" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="0.704225352113" epsilon="0.12" id="10" mass="0.03" note="" type="HC" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="0.28" id="4" mass="0.375" note="" type="CP" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="0.681690140845" epsilon="0.12" id="5" mass="0.03" note="" type="HA" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="0.28" id="11" mass="0.375" note="" type="CW" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="0.28" id="9" mass="0.375" note="" type="C!" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="0.985915492958" epsilon="0.264" id="8" mass="0.375" note="" type="CT" />
+<bond k="27300.0" l="0.388732394366" typeA="CB" typeB="CP" />
+<bond k="19250.0" l="0.411267605634" typeA="C!" typeB="CS" />
+<bond k="23450.0" l="0.401126760563" typeA="CB" typeB="CS" />
+<bond k="27300.0" l="0.388732394366" typeA="CP" typeB="CS" />
+<bond k="22500.0" l="0.384225352113" typeA="CA" typeB="OS" />
+<bond k="18350.0" l="0.304225352113" typeA="CS" typeB="HA" />
+<bond k="12500.0" l="0.481690140845" typeA="C!" typeB="S" />
+<bond k="23450.0" l="0.401126760563" typeA="C!" typeB="CB" />
+<bond k="18350.0" l="0.304225352113" typeA="CP" typeB="HA" />
+<bond k="23450.0" l="0.401126760563" typeA="CB" typeB="CW" />
+<bond k="22500.0" l="0.384225352113" typeA="CW" typeB="O" />
+<bond k="19250.0" l="0.411267605634" typeA="C!" typeB="C!" />
+<bond k="26000.0" l="0.385915492958" typeA="CB" typeB="CB" />
+<bond k="12500.0" l="0.481690140845" typeA="CB" typeB="S" />
+<bond k="17000.0" l="0.307042253521" typeA="CT" typeB="HC" />
+<bond k="16000.0" l="0.397183098592" typeA="CT" typeB="OS" />
+<bond k="16850.0" l="0.415492957746" typeA="CT" typeB="NS" />
+<bond k="21350.0" l="0.389014084507" typeA="CW" typeB="NS" />
+<bond k="13400.0" l="0.430704225352" typeA="CT" typeB="CT" />
+<bond k="23450.0" l="0.395492957746" typeA="CA" typeB="CB" />
+<bond k="12500.0" l="0.481690140845" typeA="CP" typeB="S" />
+<angle k="140.274561755" theta="1.91113391667" typeA="HC" typeB="CT" typeC="OS" />
+<angle k="280.549123509" theta="1.96000309444" typeA="CB" typeB="CS" typeC="CP" />
+<angle k="280.549123509" theta="1.60919221111" typeA="CB" typeB="S" typeC="CP" />
+<angle k="140.274561755" theta="1.91113391667" typeA="HC" typeB="CT" typeC="NS" />
+<angle k="280.549123509" theta="1.93731383333" typeA="CB" typeB="CB" typeC="S" />
+<angle k="200.392231078" theta="1.91113391667" typeA="CT" typeB="CT" typeC="OS" />
+<angle k="280.549123509" theta="1.60919221111" typeA="C!" typeB="S" typeC="C!" />
+<angle k="280.549123509" theta="2.09439333333" typeA="CB" typeB="CA" typeC="OS" />
+<angle k="140.274561755" theta="2.14849849444" typeA="CA" typeB="CB" typeC="S" />
+<angle k="252.494211158" theta="2.09439333333" typeA="C!" typeB="C!" typeC="CS" />
+<angle k="132.258872512" theta="1.88146334444" typeA="HC" typeB="CT" typeC="HC" />
+<angle k="280.549123509" theta="1.93731383333" typeA="CS" typeB="CP" typeC="S" />
+<angle k="140.274561755" theta="2.23751021111" typeA="CB" typeB="CP" typeC="HA" />
+<angle k="252.494211158" theta="2.22878357222" typeA="C!" typeB="C!" typeC="CB" />
+<angle k="140.274561755" theta="2.14849849444" typeA="CA" typeB="CB" typeC="CS" />
+<angle k="280.549123509" theta="1.9163699" typeA="CW" typeB="NS" typeC="CW" />
+<angle k="280.549123509" theta="1.96000309444" typeA="C!" typeB="CS" typeC="CB" />
+<angle k="140.274561755" theta="2.14849849444" typeA="CB" typeB="CS" typeC="HA" />
+<angle k="280.549123509" theta="1.96000309444" typeA="CB" typeB="CB" typeC="CP" />
+<angle k="140.274561755" theta="2.23751021111" typeA="CS" typeB="CP" typeC="HA" />
+<angle k="280.549123509" theta="1.96000309444" typeA="C!" typeB="CB" typeC="CB" />
+<angle k="280.549123509" theta="2.16420644444" typeA="CT" typeB="NS" typeC="CW" />
+<angle k="280.549123509" theta="1.93731383333" typeA="CS" typeB="C!" typeC="S" />
+<angle k="233.657341437" theta="1.96698440556" typeA="CT" typeB="CT" typeC="CT" />
+<angle k="140.274561755" theta="2.14849849444" typeA="C!" typeB="CS" typeC="HA" />
+<angle k="280.549123509" theta="1.93731383333" typeA="CB" typeB="CB" typeC="CS" />
+<angle k="280.549123509" theta="2.18165972222" typeA="NS" typeB="CW" typeC="O" />
+<angle k="320.627569725" theta="1.94080448889" typeA="CT" typeB="CT" typeC="NS" />
+<angle k="280.549123509" theta="1.87273670556" typeA="CB" typeB="CB" typeC="CW" />
+<angle k="280.549123509" theta="1.93731383333" typeA="CB" typeB="CP" typeC="S" />
+<angle k="340.666792833" theta="2.35444717222" typeA="CP" typeB="CB" typeC="CW" />
+<angle k="340.666792833" theta="2.35444717222" typeA="C!" typeB="CB" typeC="CW" />
+<angle k="280.549123509" theta="1.87971801667" typeA="CB" typeB="CW" typeC="NS" />
+<angle k="150.294173309" theta="1.93207785" typeA="CT" typeB="CT" typeC="HC" />
+<angle k="140.274561755" theta="2.14849849444" typeA="CA" typeB="CB" typeC="CB" />
+<angle k="252.494211158" theta="2.09439333333" typeA="C!" typeB="C!" typeC="S" />
+<angle k="140.274561755" theta="2.14849849444" typeA="CP" typeB="CS" typeC="HA" />
+<angle k="280.549123509" theta="1.93731383333" typeA="CB" typeB="C!" typeC="S" />
+<angle k="280.549123509" theta="2.26892611111" typeA="CB" typeB="CW" typeC="O" />
+<angle k="280.549123509" theta="1.60919221111" typeA="C!" typeB="S" typeC="CB" />
+<angle k="300.588346617" theta="1.93731383333" typeA="CA" typeB="OS" typeC="CT" />
+<angle k="140.274561755" theta="2.09439333333" typeA="HA" typeB="CP" typeC="S" />
+<angle k="252.494211158" theta="2.09439333333" typeA="CB" typeB="CA" typeC="CB" />
+<angle k="280.549123509" theta="1.60919221111" typeA="C!" typeB="S" typeC="CP" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CS" typeC="CP" typeD="S" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="CB" typeB="S" typeC="CP" typeD="CS" />
+<dihedral k1="0.0" k2="6.4" k3="0.0" k4="0.0" typeA="CW" typeB="NS" typeC="CW" typeD="O" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="CB" typeB="S" typeC="C!" typeD="CS" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="C!" typeC="S" typeD="CB" />
+<dihedral k1="1.32" k2="-0.48" k3="1.32" k4="0.0" typeA="CA" typeB="OS" typeC="CT" typeD="CT" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="CP" typeD="HA" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CS" typeC="C!" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CA" typeC="CB" typeD="CS" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="CA" typeD="OS" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="S" typeD="CP" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="C!" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="C!" typeB="C!" typeC="CB" typeD="CW" />
+<dihedral k1="1.72" k2="-0.08" k3="0.28" k4="0.0" typeA="CT" typeB="CT" typeC="CT" typeD="CT" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="CS" typeD="CP" />
+<dihedral k1="0.0" k2="8.0" k3="0.0" k4="0.0" typeA="CB" typeB="CA" typeC="OS" typeD="CT" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CA" typeC="CB" typeD="CB" />
+<dihedral k1="0.0" k2="0.0" k3="0.4" k4="0.0" typeA="HC" typeB="CT" typeC="CT" typeD="HC" />
+<dihedral k1="0.0" k2="0.0" k3="0.0" k4="0.0" typeA="HC" typeB="CT" typeC="CT" typeD="NS" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="HA" typeB="CS" typeC="C!" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CA" typeB="CB" typeC="CB" typeD="S" />
+<dihedral k1="0.0" k2="2.68" k3="0.0" k4="0.0" typeA="S" typeB="C!" typeC="C!" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="CW" typeD="O" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="C!" typeB="CB" typeC="CW" typeD="O" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="S" typeC="CP" typeD="CB" />
+<dihedral k1="0.0" k2="6.4" k3="0.0" k4="0.0" typeA="CB" typeB="CW" typeC="NS" typeD="CT" />
+<dihedral k1="0.0" k2="6.4" k3="0.0" k4="0.0" typeA="CB" typeB="CW" typeC="NS" typeD="CW" />
+<dihedral k1="0.0" k2="2.68" k3="0.0" k4="0.0" typeA="CB" typeB="C!" typeC="C!" typeD="CS" />
+<dihedral k1="0.0" k2="21.52" k3="0.0" k4="0.0" typeA="HA" typeB="CS" typeC="CP" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CW" typeB="CB" typeC="CP" typeD="HA" />
+<dihedral k1="0.0" k2="2.68" k3="0.0" k4="0.0" typeA="CS" typeB="C!" typeC="C!" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="C!" typeB="CB" typeC="CW" typeD="NS" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CS" typeC="CP" typeD="HA" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="C!" typeB="CB" typeC="CB" typeD="C!" />
+<dihedral k1="2.28" k2="-0.68" k3="0.88" k4="0.0" typeA="CT" typeB="CT" typeC="CT" typeD="OS" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="CW" typeD="NS" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CW" typeB="CB" typeC="CP" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CA" typeB="CB" typeC="CS" typeD="HA" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="CB" typeB="C!" typeC="S" typeD="CP" />
+<dihedral k1="0.0" k2="7.24" k3="1.52" k4="0.0" typeA="CA" typeB="OS" typeC="CT" typeD="HC" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="C!" typeB="CB" typeC="CB" typeD="CW" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="C!" typeC="CS" typeD="CB" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="CB" typeB="S" typeC="CP" typeD="HA" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="HA" typeB="CP" typeC="CS" typeD="HA" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="CS" typeD="HA" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="CP" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="C!" typeB="C!" typeC="CB" typeD="CB" />
+<dihedral k1="0.0" k2="0.0" k3="0.4" k4="0.0" typeA="CT" typeB="CT" typeC="CT" typeD="HC" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CW" typeB="CB" typeC="C!" typeD="S" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="CS" typeC="CB" typeD="CB" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="C!" typeB="CB" typeC="CB" typeD="CP" />
+<dihedral k1="0.0" k2="6.4" k3="0.0" k4="0.0" typeA="CT" typeB="NS" typeC="CW" typeD="O" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="S" typeC="CP" typeD="HA" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="S" typeC="CB" typeD="CA" />
+<dihedral k1="0.0" k2="0.0" k3="0.0" k4="0.0" typeA="CW" typeB="NS" typeC="CT" typeD="HC" />
+<dihedral k1="0.0" k2="2.68" k3="0.0" k4="0.0" typeA="CB" typeB="C!" typeC="C!" typeD="S" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="C!" typeC="S" typeD="C!" />
+<dihedral k1="0.0" k2="0.0" k3="0.64" k4="0.0" typeA="HC" typeB="CT" typeC="CT" typeD="OS" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="S" typeC="CB" typeD="CB" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="CS" typeC="CB" typeD="CA" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="CA" typeB="CB" typeC="S" typeD="CP" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="OS" typeB="CA" typeC="CB" typeD="S" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="S" typeC="C!" typeD="CB" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CA" typeB="CB" typeC="CB" typeD="CS" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CS" typeB="CB" typeC="CA" typeD="OS" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CS" typeB="CB" typeC="CB" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CA" typeC="CB" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CP" typeB="CB" typeC="CW" typeD="O" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="C!" typeB="C!" typeC="CS" typeD="HA" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CP" typeB="CB" typeC="CW" typeD="NS" />
+<dihedral k1="0.0" k2="0.0" k3="0.0" k4="0.0" typeA="CT" typeB="CT" typeC="NS" typeD="CW" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CA" typeB="CB" typeC="CS" typeD="CP" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CP" typeB="CB" typeC="CB" typeD="CW" />
+<dihedral k1="3.64" k2="-0.32" k3="0.64" k4="0.0" typeA="CT" typeB="CT" typeC="CT" typeD="NS" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CW" typeB="CB" typeC="CB" typeD="CW" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CA" typeB="CB" typeC="CB" typeD="CA" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="C!" typeC="S" typeD="CP" />
+</model>
+<model name="ua_e" note="initially empty model">
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="0.864788732394" epsilon="0.84" id="7" mass="0.5" note="" type="OS" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="0.915492957746" epsilon="0.68" id="12" mass="0.44" note="" type="NS" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="0.32" id="1" mass="0.375" note="" type="CB" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="0.32" id="2" mass="0.375" note="" type="CA" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="0.805633802817" epsilon="0.84" id="13" mass="0.5" note="" type="O" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="1.0" id="6" mass="1.0" note="" type="S" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="0.32" id="3" mass="0.375" note="" type="CS" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="0.704225352113" epsilon="0.12" id="10" mass="0.03" note="" type="HC" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="0.32" id="4" mass="0.375" note="" type="CP" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="0.681690140845" epsilon="0.12" id="5" mass="0.03" note="" type="HA" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="0.32" id="11" mass="0.375" note="" type="CW" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="1.0" epsilon="0.32" id="9" mass="0.375" note="" type="C!" />
+<atom atomic_number="0" bond_type="?" charge="0.0" diameter="0.985915492958" epsilon="0.47" id="8" mass="0.375" note="" type="CT" />
+<bond k="27300.0" l="0.388732394366" typeA="CB" typeB="CP" />
+<bond k="19250.0" l="0.411267605634" typeA="C!" typeB="CS" />
+<bond k="23450.0" l="0.401126760563" typeA="CB" typeB="CS" />
+<bond k="27300.0" l="0.388732394366" typeA="CP" typeB="CS" />
+<bond k="22500.0" l="0.384225352113" typeA="CA" typeB="OS" />
+<bond k="18350.0" l="0.304225352113" typeA="CS" typeB="HA" />
+<bond k="12500.0" l="0.481690140845" typeA="C!" typeB="S" />
+<bond k="23450.0" l="0.401126760563" typeA="C!" typeB="CB" />
+<bond k="18350.0" l="0.304225352113" typeA="CP" typeB="HA" />
+<bond k="23450.0" l="0.401126760563" typeA="CB" typeB="CW" />
+<bond k="22500.0" l="0.384225352113" typeA="CW" typeB="O" />
+<bond k="19250.0" l="0.411267605634" typeA="C!" typeB="C!" />
+<bond k="26000.0" l="0.385915492958" typeA="CB" typeB="CB" />
+<bond k="12500.0" l="0.481690140845" typeA="CB" typeB="S" />
+<bond k="17000.0" l="0.307042253521" typeA="CT" typeB="HC" />
+<bond k="16000.0" l="0.397183098592" typeA="CT" typeB="OS" />
+<bond k="16850.0" l="0.415492957746" typeA="CT" typeB="NS" />
+<bond k="21350.0" l="0.389014084507" typeA="CW" typeB="NS" />
+<bond k="13400.0" l="0.430704225352" typeA="CT" typeB="CT" />
+<bond k="23450.0" l="0.395492957746" typeA="CA" typeB="CB" />
+<bond k="12500.0" l="0.481690140845" typeA="CP" typeB="S" />
+<angle k="140.274561755" theta="1.91113391667" typeA="HC" typeB="CT" typeC="OS" />
+<angle k="280.549123509" theta="1.96000309444" typeA="CB" typeB="CS" typeC="CP" />
+<angle k="280.549123509" theta="1.60919221111" typeA="CB" typeB="S" typeC="CP" />
+<angle k="140.274561755" theta="1.91113391667" typeA="HC" typeB="CT" typeC="NS" />
+<angle k="280.549123509" theta="1.93731383333" typeA="CB" typeB="CB" typeC="S" />
+<angle k="200.392231078" theta="1.91113391667" typeA="CT" typeB="CT" typeC="OS" />
+<angle k="280.549123509" theta="1.60919221111" typeA="C!" typeB="S" typeC="C!" />
+<angle k="280.549123509" theta="2.09439333333" typeA="CB" typeB="CA" typeC="OS" />
+<angle k="140.274561755" theta="2.14849849444" typeA="CA" typeB="CB" typeC="S" />
+<angle k="252.494211158" theta="2.09439333333" typeA="C!" typeB="C!" typeC="CS" />
+<angle k="132.258872512" theta="1.88146334444" typeA="HC" typeB="CT" typeC="HC" />
+<angle k="280.549123509" theta="1.93731383333" typeA="CS" typeB="CP" typeC="S" />
+<angle k="140.274561755" theta="2.23751021111" typeA="CB" typeB="CP" typeC="HA" />
+<angle k="252.494211158" theta="2.22878357222" typeA="C!" typeB="C!" typeC="CB" />
+<angle k="140.274561755" theta="2.14849849444" typeA="CA" typeB="CB" typeC="CS" />
+<angle k="280.549123509" theta="1.9163699" typeA="CW" typeB="NS" typeC="CW" />
+<angle k="280.549123509" theta="1.96000309444" typeA="C!" typeB="CS" typeC="CB" />
+<angle k="140.274561755" theta="2.14849849444" typeA="CB" typeB="CS" typeC="HA" />
+<angle k="280.549123509" theta="1.96000309444" typeA="CB" typeB="CB" typeC="CP" />
+<angle k="140.274561755" theta="2.23751021111" typeA="CS" typeB="CP" typeC="HA" />
+<angle k="280.549123509" theta="1.96000309444" typeA="C!" typeB="CB" typeC="CB" />
+<angle k="280.549123509" theta="2.16420644444" typeA="CT" typeB="NS" typeC="CW" />
+<angle k="280.549123509" theta="1.93731383333" typeA="CS" typeB="C!" typeC="S" />
+<angle k="233.657341437" theta="1.96698440556" typeA="CT" typeB="CT" typeC="CT" />
+<angle k="140.274561755" theta="2.14849849444" typeA="C!" typeB="CS" typeC="HA" />
+<angle k="280.549123509" theta="1.93731383333" typeA="CB" typeB="CB" typeC="CS" />
+<angle k="280.549123509" theta="2.18165972222" typeA="NS" typeB="CW" typeC="O" />
+<angle k="320.627569725" theta="1.94080448889" typeA="CT" typeB="CT" typeC="NS" />
+<angle k="280.549123509" theta="1.87273670556" typeA="CB" typeB="CB" typeC="CW" />
+<angle k="280.549123509" theta="1.93731383333" typeA="CB" typeB="CP" typeC="S" />
+<angle k="340.666792833" theta="2.35444717222" typeA="CP" typeB="CB" typeC="CW" />
+<angle k="340.666792833" theta="2.35444717222" typeA="C!" typeB="CB" typeC="CW" />
+<angle k="280.549123509" theta="1.87971801667" typeA="CB" typeB="CW" typeC="NS" />
+<angle k="150.294173309" theta="1.93207785" typeA="CT" typeB="CT" typeC="HC" />
+<angle k="140.274561755" theta="2.14849849444" typeA="CA" typeB="CB" typeC="CB" />
+<angle k="252.494211158" theta="2.09439333333" typeA="C!" typeB="C!" typeC="S" />
+<angle k="140.274561755" theta="2.14849849444" typeA="CP" typeB="CS" typeC="HA" />
+<angle k="280.549123509" theta="1.93731383333" typeA="CB" typeB="C!" typeC="S" />
+<angle k="280.549123509" theta="2.26892611111" typeA="CB" typeB="CW" typeC="O" />
+<angle k="280.549123509" theta="1.60919221111" typeA="C!" typeB="S" typeC="CB" />
+<angle k="300.588346617" theta="1.93731383333" typeA="CA" typeB="OS" typeC="CT" />
+<angle k="140.274561755" theta="2.09439333333" typeA="HA" typeB="CP" typeC="S" />
+<angle k="252.494211158" theta="2.09439333333" typeA="CB" typeB="CA" typeC="CB" />
+<angle k="280.549123509" theta="1.60919221111" typeA="C!" typeB="S" typeC="CP" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CS" typeC="CP" typeD="S" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="CB" typeB="S" typeC="CP" typeD="CS" />
+<dihedral k1="0.0" k2="6.4" k3="0.0" k4="0.0" typeA="CW" typeB="NS" typeC="CW" typeD="O" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="CB" typeB="S" typeC="C!" typeD="CS" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="C!" typeC="S" typeD="CB" />
+<dihedral k1="1.32" k2="-0.48" k3="1.32" k4="0.0" typeA="CA" typeB="OS" typeC="CT" typeD="CT" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="CP" typeD="HA" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CS" typeC="C!" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CA" typeC="CB" typeD="CS" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="CA" typeD="OS" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="S" typeD="CP" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="C!" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="C!" typeB="C!" typeC="CB" typeD="CW" />
+<dihedral k1="1.72" k2="-0.08" k3="0.28" k4="0.0" typeA="CT" typeB="CT" typeC="CT" typeD="CT" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="CS" typeD="CP" />
+<dihedral k1="0.0" k2="8.0" k3="0.0" k4="0.0" typeA="CB" typeB="CA" typeC="OS" typeD="CT" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CA" typeC="CB" typeD="CB" />
+<dihedral k1="0.0" k2="0.0" k3="0.4" k4="0.0" typeA="HC" typeB="CT" typeC="CT" typeD="HC" />
+<dihedral k1="0.0" k2="0.0" k3="0.0" k4="0.0" typeA="HC" typeB="CT" typeC="CT" typeD="NS" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="HA" typeB="CS" typeC="C!" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CA" typeB="CB" typeC="CB" typeD="S" />
+<dihedral k1="0.0" k2="2.68" k3="0.0" k4="0.0" typeA="S" typeB="C!" typeC="C!" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="CW" typeD="O" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="C!" typeB="CB" typeC="CW" typeD="O" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="S" typeC="CP" typeD="CB" />
+<dihedral k1="0.0" k2="6.4" k3="0.0" k4="0.0" typeA="CB" typeB="CW" typeC="NS" typeD="CT" />
+<dihedral k1="0.0" k2="6.4" k3="0.0" k4="0.0" typeA="CB" typeB="CW" typeC="NS" typeD="CW" />
+<dihedral k1="0.0" k2="2.68" k3="0.0" k4="0.0" typeA="CB" typeB="C!" typeC="C!" typeD="CS" />
+<dihedral k1="0.0" k2="21.52" k3="0.0" k4="0.0" typeA="HA" typeB="CS" typeC="CP" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CW" typeB="CB" typeC="CP" typeD="HA" />
+<dihedral k1="0.0" k2="2.68" k3="0.0" k4="0.0" typeA="CS" typeB="C!" typeC="C!" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="C!" typeB="CB" typeC="CW" typeD="NS" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CS" typeC="CP" typeD="HA" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="C!" typeB="CB" typeC="CB" typeD="C!" />
+<dihedral k1="2.28" k2="-0.68" k3="0.88" k4="0.0" typeA="CT" typeB="CT" typeC="CT" typeD="OS" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="CW" typeD="NS" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CW" typeB="CB" typeC="CP" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CA" typeB="CB" typeC="CS" typeD="HA" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="CB" typeB="C!" typeC="S" typeD="CP" />
+<dihedral k1="0.0" k2="7.24" k3="1.52" k4="0.0" typeA="CA" typeB="OS" typeC="CT" typeD="HC" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="C!" typeB="CB" typeC="CB" typeD="CW" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="C!" typeC="CS" typeD="CB" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="CB" typeB="S" typeC="CP" typeD="HA" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="HA" typeB="CP" typeC="CS" typeD="HA" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="CS" typeD="HA" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CB" typeC="CP" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="C!" typeB="C!" typeC="CB" typeD="CB" />
+<dihedral k1="0.0" k2="0.0" k3="0.4" k4="0.0" typeA="CT" typeB="CT" typeC="CT" typeD="HC" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CW" typeB="CB" typeC="C!" typeD="S" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="CS" typeC="CB" typeD="CB" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="C!" typeB="CB" typeC="CB" typeD="CP" />
+<dihedral k1="0.0" k2="6.4" k3="0.0" k4="0.0" typeA="CT" typeB="NS" typeC="CW" typeD="O" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="S" typeC="CP" typeD="HA" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="S" typeC="CB" typeD="CA" />
+<dihedral k1="0.0" k2="0.0" k3="0.0" k4="0.0" typeA="CW" typeB="NS" typeC="CT" typeD="HC" />
+<dihedral k1="0.0" k2="2.68" k3="0.0" k4="0.0" typeA="CB" typeB="C!" typeC="C!" typeD="S" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="C!" typeC="S" typeD="C!" />
+<dihedral k1="0.0" k2="0.0" k3="0.64" k4="0.0" typeA="HC" typeB="CT" typeC="CT" typeD="OS" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="S" typeC="CB" typeD="CB" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="CS" typeC="CB" typeD="CA" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="CA" typeB="CB" typeC="S" typeD="CP" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="OS" typeB="CA" typeC="CB" typeD="S" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="S" typeC="C!" typeD="CB" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CA" typeB="CB" typeC="CB" typeD="CS" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CS" typeB="CB" typeC="CA" typeD="OS" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CS" typeB="CB" typeC="CB" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CB" typeB="CA" typeC="CB" typeD="S" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CP" typeB="CB" typeC="CW" typeD="O" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="C!" typeB="C!" typeC="CS" typeD="HA" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CP" typeB="CB" typeC="CW" typeD="NS" />
+<dihedral k1="0.0" k2="0.0" k3="0.0" k4="0.0" typeA="CT" typeB="CT" typeC="NS" typeD="CW" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CA" typeB="CB" typeC="CS" typeD="CP" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CP" typeB="CB" typeC="CB" typeD="CW" />
+<dihedral k1="3.64" k2="-0.32" k3="0.64" k4="0.0" typeA="CT" typeB="CT" typeC="CT" typeD="NS" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CW" typeB="CB" typeC="CB" typeD="CW" />
+<dihedral k1="0.0" k2="7.24" k3="0.0" k4="0.0" typeA="CA" typeB="CB" typeC="CB" typeD="CA" />
+<dihedral k1="0.0" k2="9.68" k3="0.0" k4="0.0" typeA="C!" typeB="C!" typeC="S" typeD="CP" />
+</model>
+</MD_model_xml>
