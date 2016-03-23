@@ -74,20 +74,24 @@ if __name__ == '__main__':
     for moleculeNo, AAIDs in enumerate(moleculeAAIDs):
     # moleculeNo = 63
     # AAIDs = moleculeAAIDs[63]
-    # Now make the .xyz for Lan
+    # Now make the DFT input files
         moleculeDictionary = {'position':[], 'type':[]}
         molID = str(moleculeNo)
         while len(molID) < 3:
             molID = '0'+molID
-        xyzName = outputDir+'/molecules/mol'+molID+'.xyz'
+        poscarName = outputDir+'/molecules/mol'+molID+'.POSCAR'
         nAtoms = 0
         for AAID in AAIDs:
             moleculeDictionary['position'].append(AAMorphologyDict['unwrapped_position'][AAID])
             moleculeDictionary['type'].append(AAMorphologyDict['type'][AAID])
             nAtoms += 1
+        for key in ['lx', 'ly', 'lz']:
+            moleculeDictionary[key] = AAMorphologyDict[key]
         moleculeDictionary['natoms'] = nAtoms
+        
         moleculeDictionary = helperFunctions.addMasses(moleculeDictionary)
         moleculeCOM = helperFunctions.calcCOM(moleculeDictionary['position'], moleculeDictionary['mass'])
         moleculeDictionary = helperFunctions.centre(moleculeDictionary, moleculeCOM)
         moleculeDictionary = helperFunctions.scale(moleculeDictionary, inverseSScale)
-        helperFunctions.writeXYZFile(moleculeDictionary, xyzName)
+        moleculeDictionary = helperFunctions.alignMolecule(moleculeDictionary, [0,1,0]) # Align along y-axis
+        helperFunctions.writePOSCARFile(moleculeDictionary, poscarName)

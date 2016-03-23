@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 import os
-from cme_utils.manip import pbc
+#from cme_utils.manip import pbc
 
 def findMagnitude(vector):
     '''This function simply returns the magnitude of a given vector'''
@@ -88,7 +88,18 @@ def findIndex(string, character):
     if len(locations) == 0:
         return None
     return locations
-   
+
+
+def getRotationMatrix(vector1, vector2):
+    '''This function returns the rotation matrix around the origin that maps vector1 to vector 2'''
+    crossProduct = np.cross(vector1, vector2)
+    sinAngle = np.sqrt(((crossProduct[0]**2) + ((crossProduct[1])**2) + ((crossProduct[2])**2)))
+    cosAngle = np.dot(vector1, vector2)
+    skewMatrix = np.matrix([[0, -crossProduct[2], crossProduct[1]], [crossProduct[2], 0, -crossProduct[0]], [-crossProduct[1], crossProduct[0], 0]])
+    skewMatrixSquared = skewMatrix * skewMatrix
+    rotMatrix = np.matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]]) + skewMatrix + skewMatrixSquared*((1 - cosAngle)/(sinAngle**2))
+    return rotMatrix
+
 
 def parallelSort(list1, list2):
     '''This function sorts a pair of lists by the first list in ascending order (for example, atom mass and corresponding position can be input, sorted by ascending mass, and the two lists output, where the mass[atom_i] still corresponds to position[atom_i]'''
@@ -394,8 +405,13 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
 def writeMorphologyXML(inputDictionary, outputFile):
     # First, need to check the positions of the atoms to ensure that everything is correctly contained inside the box
     print "Checking wrapped positions before writing XML..."
-    # inputDictionary = checkWrappedPositions(inputDictionary)
-    inputDictionary['position'], inputDictionary['image'] = pbc.shift_pbc(inputDictionary['position'], [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']])
+    inputDictionary = checkWrappedPositions(inputDictionary)
+    # inputDictionary['position'], inputDictionary['image'] = pbc.shift_pbc(inputDictionary['position'], [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']])
+    # print inputDictionary['image'][:20]
+
+    # raw_input('HALT')
+
+    
     # Add Boiler Plate first
     linesToWrite = ['<?xml version="1.0" encoding="UTF-8"?>\n', '<hoomd_xml version="1.4">\n', '<configuration time_step="0" dimensions="3" natoms="'+str(inputDictionary['natoms'])+'" >\n', '<box lx="'+str(inputDictionary['lx'])+'" ly="'+str(inputDictionary['ly'])+'" lz="'+str(inputDictionary['lz'])+'" />\n']
     # Position
@@ -464,9 +480,55 @@ def writeMorphologyXML(inputDictionary, outputFile):
         xmlFile.writelines(linesToWrite)
 
 
+def writePOSCARFile(inputDict, outputFile):
+    '''This function takes an input dictionary and converts it to a POSCAR for use in DFT calculations'''
+    linesToWrite = []
+    typeList = []
+    freqList = []
+    previousType = None
+    numberOfTypes = 0
+    for atomID in range(len(inputDict['type'])):
+        atomType = inputDict['type'][atomID][0]
+        if atomType != previousType:
+            if previousType != None:
+                typeList.append(previousType)
+                freqList.append(numberOfTypes)
+            previousType = atomType
+            numberOfTypes = 1
+        else:
+            numberOfTypes += 1
+    # Line 1 = Atom Types
+    linesToWrite.append(' '.join(typeList)+'\n')
+    # Line 2 = Scale Factor
+    linesToWrite.append('1.000000000000\n')
+    # Lines 3-5 = Box Dimensions
+    boxDims = []
+    for key in ['lx', 'ly', 'lz']:
+        boxDims.append(inputDict[key])
+    boxDims = np.diag(np.array(boxDims))
+    for row in boxDims:
+        boxRow = ''
+        for element in row:
+            boxRow += "{:22.15f}".format(element)
+        linesToWrite.append(boxRow+'\n')
+    # Line 4 = Frequency of Types
+    linesToWrite.append(' '.join(map(str, freqList))+'\n')
+    # Line 5 = 'Cartesian'
+    linesToWrite.append('Cartesian\n')
+    # Lines 6+ = Positions
+    for position in inputDict['position']:
+        coordinates = ''
+        for axis in range(3):
+            coordinates += "{:22.15f}".format(position[axis])
+        linesToWrite.append(coordinates+'\n')
+    with open(outputFile, 'w+') as POSCARFile:
+        POSCARFile.writelines(linesToWrite)
+    print "POSCAR data written to", str(outputFile)+"."
 
+
+        
 def writeXYZFile(inputDict, outputFile):
-    '''This function takes an input XML file and converts it to an XYZ for use in DFT calculations'''
+    '''This function takes an input dictionary and converts it to an XYZ for use in DFT calculations'''
     # First line is atom numbers, second line is boiler plate
     rowsToWrite = [str(inputDict['natoms'])+'\n', 'XYZ file generated from XML using helperFunctions.XMLToXYZ\n']
     # Format of xyz is Type, X Pos, Y Pos, Z Pos
@@ -605,4 +667,22 @@ def checkWrappedPositions(inputDictionary):
     inputDictionary['position'] = list(atomPositions)
     inputDictionary['image'] = list(atomImages)
     # print np.sum(np.absolute(atomPositions-tp) > 0.)
+    return inputDictionary
+
+
+def alignMolecule(inputDictionary, vectorToAlignTo):
+    '''This function rotates a molecule such that the vector between the first and last sulfur atoms in the chain (assumed
+    to be the backbone vector) is mapped to vectorToAlignTo'''
+    sulfurAtomIDs = []
+    for atomIndex, atomType in enumerate(inputDictionary['type']):
+        if atomType[0] == 'S':
+            sulfurAtomIDs.append(atomIndex)
+    sulfurAtomIDs.sort()
+    chainOrientationVector = findAxis(inputDictionary['position'][sulfurAtomIDs[0]], inputDictionary['position'][sulfurAtomIDs[-1]])
+    vectorToAlignTo = np.array(vectorToAlignTo)
+    rotationMatrix = getRotationMatrix(chainOrientationVector, vectorToAlignTo)
+    for atomID, pos in enumerate(inputDictionary['position']):
+        positionArray = np.copy(pos)
+        rotatedPosition = np.transpose(rotationMatrix*np.transpose(np.matrix(positionArray)))
+        inputDictionary['position'][atomID] = [rotatedPosition[0,0], rotatedPosition[0,1], rotatedPosition[0,2]]
     return inputDictionary
