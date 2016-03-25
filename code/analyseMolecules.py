@@ -1,7 +1,10 @@
 import numpy as np
 import sys
 import helperFunctions
-import pylab as P
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import pickle
 import mpl_toolkits.mplot3d.axes3d as p3
 
 
@@ -75,11 +78,11 @@ def calculatePersistanceLength(molecule, molName, outputDir, moleculeBackbone, m
         distanceToPlot.append(np.average(binnedDistances[binID]))
         cosThetaToPlot.append(np.average(binnedCosThetas[binID]))
         ybars.append(np.std(binnedCosThetas[binID])/np.sqrt(len(binnedCosThetas[binID])))
-    P.figure()
-    P.plot(distanceToPlot, cosThetaToPlot, 'ro')
-    P.errorbar(distanceToPlot, cosThetaToPlot, yerr=ybars, linestyle='None')
-    P.savefig(outputDir+'/molecules/'+molName.replace('.POSCAR', '_PL.png'))
-    P.close()
+    plt.figure()
+    plt.plot(distanceToPlot, cosThetaToPlot, 'ro')
+    plt.errorbar(distanceToPlot, cosThetaToPlot, yerr=ybars, linestyle='None')
+    plt.savefig(outputDir+'/molecules/'+molName.replace('.POSCAR', '_PL.png'))
+    plt.close()
     return distanceToPlot, cosThetaToPlot
 
 
@@ -93,7 +96,7 @@ def plotMolecule3D(molecule, moleculeBackbone):
         for i in range(10):
             normals[-1].append(np.array(thioRing['COM']+(thioRing['normal']*i)))
     COMs = np.array(COMs)
-    fig = P.figure()
+    fig = plt.figure()
     ax = p3.Axes3D(fig)
     ax.scatter(allAtoms[:,0], allAtoms[:,1], allAtoms[:,2], s = 20, c = 'g')
     ax.scatter(COMs[:,0], COMs[:,1], COMs[:,2], s = 200, c = 'r')
@@ -103,40 +106,56 @@ def plotMolecule3D(molecule, moleculeBackbone):
     ax.set_xlim((-8,8))
     ax.set_ylim((-40,40))
     ax.set_zlim((-15,15))
-    P.show()
+    plt.show()
+
+
+def fixAngles(inputAngle):
+    if (inputAngle <= np.pi/2.):
+            pass
+    elif (inputAngle > np.pi/2.) and (inputAngle <= np.pi):
+        inputAngle = np.pi - inputAngle
+    elif (inputAngle > np.pi) and (inputAngle <= 3*np.pi/2.):
+        inputAngle = inputAngle - np.pi
+    elif (inputAngle > 3*np.pi/2.) and (inputAngle <= 2*np.pi):
+        inputAngle = 2*np.pi - inputAngle
+    else:
+        print inputAngle
+        raise SystemError('ANGLE CALCULATION FAIL')
+    return inputAngle
 
     
-def calculateTorsionalAngles(molecule, molName, outputDir, moleculeBackbone):
-    referenceAxis = moleculeBackbone[0]['normal']
-    torsions = []
-    for thioRing in moleculeBackbone[1:]:
-        normalAxis = thioRing['normal']
-        theta = np.arccos(np.dot(referenceAxis, normalAxis))
-        if (theta <= np.pi/2.):
-            pass
-        elif (theta > np.pi/2.) and (theta <= np.pi):
-            theta = np.pi - theta
-        elif (theta > np.pi) and (theta <= 3*np.pi/2.):
-            theta = theta-np.pi
-        elif (theta > 3*np.pi/2.) and (theta <= 2*np.pi):
-            theta = 2*np.pi - theta
-        else:
-            print referenceAxis, normalAxis, theta
-            raise SystemError('ANGLE CALCULATION FAIL')
-        torsions.append(theta)
-        referenceAxis = np.copy(normalAxis)
-    P.figure()
-    P.hist(torsions, 20, normed=1)
-    P.savefig(outputDir+'/molecules/'+molName.replace('.POSCAR', '_Tor.png'))
-    P.close()
-    return torsions
+def calculateChromophores(molecule, molName, outputDir, moleculeBackbone):
+    bendingAngleTolerance = np.pi/6. # The bending angle, beyond which the pi conjugation is said to be broken
+    torsionAngleTolerance = np.pi/6. # The torsional angle, beyond which, the pi conjugation is said to be broken
+    previousThioPlaneAxis = moleculeBackbone[0]['plane']
+    previousThioNormalAxis = moleculeBackbone[0]['normal']
+    bendingAngles = []
+    torsionAngles = []
+    chromophores = [[0]]
+    for thioNumberMinus1, thioRing in enumerate(moleculeBackbone[1:]):
+        thioNumber = thioNumberMinus1 + 1
+        currentThioPlaneAxis = thioRing['plane']
+        currentThioNormalAxis = thioRing['normal']
+        bendingAngle = fixAngles(np.arccos(np.dot(previousThioPlaneAxis, currentThioPlaneAxis)))
+        torsionAngle = fixAngles(np.arccos(np.dot(previousThioNormalAxis, currentThioNormalAxis)))
+        if (bendingAngle > bendingAngleTolerance) or (torsionAngle > torsionAngleTolerance):
+            # Conjugation is broken, so make a new segment
+            chromophores.append([])
+        chromophores[-1].append(thioNumber)
+        bendingAngles.append(bendingAngle)
+        torsionAngles.append(torsionAngle)
+        previousThioPlaneAxis = np.copy(currentThioPlaneAxis)
+        previousThioNormalAxis = np.copy(currentThioNormalAxis)
+    plotHist(bendingAngles, outputDir+'/molecules/'+molName.replace('.POSCAR', '_Bend.png'))
+    plotHist(torsionAngles, outputDir+'/molecules/'+molName.replace('.POSCAR', '_Tor.png'))
+    return bendingAngles, torsionAngles, chromophores
 
 
 def plotHist(data, outputFile, bins=20):
-    P.figure()
-    P.hist(data, bins, normed=1)
-    P.savefig(outputFile)
-    P.close()
+    plt.figure()
+    plt.hist(data, bins, normed=1)
+    plt.savefig(outputFile)
+    plt.close()
 
 
 if __name__ == "__main__":
@@ -149,6 +168,26 @@ if __name__ == "__main__":
         if morphologyName in allMorphologies:
             outputDir += '/'+morphologyName
             break
+    # for fileName in os.listdir(outputDir+'/morphology'):
+    #     if fileName == morphologyName+'.pickle':
+    #         pickleLoc = outputDir+'/morphology/'+fileName
+    #         pickleFound = True
+    # if pickleFound == False:
+    #     print "Pickle file not found. Please run morphCT.py again to create the required HOOMD inputs."
+    #     exit()
+    # print "Pickle found at", str(pickleLoc)+"."
+    # print "Loading data..."
+    # with open(pickleLoc, 'r') as pickleFile:
+    #     (AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize) = pickle.load(pickleFile)
+    # calculateBendingAngles(AAMorphologyDict)
+
+
+
+
+
+
+
+        
     poscarList = os.listdir(outputDir+'/molecules')
     moleculeList = []
     molNames = []
@@ -158,14 +197,17 @@ if __name__ == "__main__":
             moleculeDict = helperFunctions.addMasses(moleculeDict)
             moleculeList.append(moleculeDict)
             molNames.append(poscarFile)
-    endToEndDistances = []
-    morphologyTorsions = []
+    morphologyBackboneData = [] # Dictionaries of molecule data for each molecule in the system
     for molNo, molecule in enumerate(moleculeList):
         print "Examining molecule number", molNo, "of", str(len(moleculeList)-1)+"..."
         moleculeEnds, moleculeBackbone = getFunctionalGroups(molecule)
-        endToEndDistances.append(calculateEndToEndDistance(moleculeBackbone, moleculeEnds))
+        endToEndDistance = calculateEndToEndDistance(moleculeBackbone, moleculeEnds)
         distances, cosThetas = calculatePersistanceLength(molecule, molNames[molNo], outputDir, moleculeBackbone, moleculeEnds)
-        morphologyTorsions += calculateTorsionalAngles(molecule, molNames[molNo], outputDir, moleculeBackbone)
+        bendingAngles, torsionAngles, chromophores = calculateChromophores(molecule, molNames[molNo], outputDir, moleculeBackbone)
+        moleculeDictionary = {'ends': moleculeEnds, 'endToEndDistance': endToEndDistance, 'persistenceLength': [distances, cosThetas], 'bendingAngles': bendingAngles, 'torsionAngles': torsionAngles, 'chromophores': chromophores}
+        morphologyBackboneData.append(moleculeDictionary)
     print "Plotting morphology histograms..."
-    plotHist(endToEndDistances, outputDir+'/morphology/EndToEndDistribution.png')
-    plotHist(morphologyTorsions, outputDir+'/morphology/TorsionDistribution.png')
+    plotHist([molDict['endToEndDistance'] for molDict in morphologyBackboneData], outputDir+'/morphology/EndToEndDistances.png')
+    plotHist([molDict['bendingAngles'] for molDict in morphologyBackboneData], outputDir+'/morphology/BendingAngles.png')
+    plotHist([molDict['torsionAngles'] for molDict in morphologyBackboneData], outputDir+'/morphology/TorsionAngles.png')
+    print "Average chromophore length =", np.average([len(molDict['chromophores']) for molDict in morphologyBackboneData]) 
