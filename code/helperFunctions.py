@@ -1,6 +1,7 @@
 import numpy as np
 import copy
 import os
+import pickle
 #from cme_utils.manip import pbc
 
 def findMagnitude(vector):
@@ -523,7 +524,9 @@ def writePOSCARFile(inputDict, outputFile):
         linesToWrite.append(coordinates+'\n')
     with open(outputFile, 'w+') as POSCARFile:
         POSCARFile.writelines(linesToWrite)
-    print "POSCAR data written to", str(outputFile)+"."
+    with open(outputFile.replace('POSCAR', 'pickle'), 'w+') as bondPickle:
+        pickle.dump(inputDict['bond'], bondPickle)
+    print "POSCAR data written to", str(outputFile)+". Bond data written to", str(outputFile.replace('POSCAR', 'pickle'))+"."
 
 
         
@@ -686,3 +689,41 @@ def alignMolecule(inputDictionary, vectorToAlignTo):
         rotatedPosition = np.transpose(rotationMatrix*np.transpose(np.matrix(positionArray)))
         inputDictionary['position'][atomID] = [rotatedPosition[0,0], rotatedPosition[0,1], rotatedPosition[0,2]]
     return inputDictionary
+
+
+def cellSearchBonds(moleculeDict):
+    '''This function finds the bonds in the system based on the proximity of atoms to their neighbours'''
+    raise SystemError("THIS FUNCTION DOES NOT WORK AND IT'S NONE-TRIVIAL TO IMPLEMENT")
+    moleculeDict['neighbourCell'] = []
+    maximumBondLength = 1.6# Bond length in angstroems
+    atomIDs = np.arange(len(moleculeDict['position']))
+    for coordinates in moleculeDict['position']:
+        cellLocation = np.copy(coordinates)
+        moleculeDict['neighbourCell'].append(map(int, np.round(cellLocation/maximumBondLength)))
+        print coordinates, moleculeDict['neighbourCell'][-1]
+    neighbourCells = np.copy(moleculeDict['neighbourCell'])
+    
+    print calculateSeparation(moleculeDict['position'][0], moleculeDict['position'][1]), calculateSeparation(moleculeDict['position'][1], moleculeDict['position'][2])
+    parallelSort(neighbourCells, atomIDs)
+    for i in range(len(atomIDs)):
+        print atomIDs[i], neighbourCells[i]
+        
+
+def loadPoscar(inputFilePath):
+    '''This function loads a poscar file located at inputFilePath, and creates a dictionary of the atomic types and positions.
+    It also loads the pickle file containing the bond information and adds it to the dictionary.'''
+    moleculeDict = {'position':[], 'type':[]}
+    with open(inputFilePath, 'r') as poscarFile:
+        poscarData = poscarFile.readlines()
+    typeList = poscarData[0].split('\n')[0].split(' ')
+    freqList = map(int, poscarData[5].split('\n')[0].split(' '))
+    for i in range(len(typeList)):
+        moleculeDict['type'] += [typeList[i]]*freqList[i]
+    for atomCoords in poscarData[7:]:
+        moleculeDict['position'].append([])
+        for axis in atomCoords.split('\n')[0].split(' '):
+            if len(axis) > 0:
+                moleculeDict['position'][-1].append(float(axis))
+    with open(inputFilePath.replace('POSCAR', 'pickle'), 'r') as bondPickle:
+        moleculeDict['bond'] = pickle.load(bondPickle)
+    return moleculeDict

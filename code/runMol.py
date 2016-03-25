@@ -75,7 +75,11 @@ if __name__ == '__main__':
     # moleculeNo = 63
     # AAIDs = moleculeAAIDs[63]
     # Now make the DFT input files
-        moleculeDictionary = {'position':[], 'type':[]}
+        atomIDOffset = -np.min(AAIDs)
+        moleculeDictionary = {'position':[], 'type':[], 'bond':[]}
+        for bond in AAMorphologyDict['bond']:
+            if (bond[1] in AAIDs) or (bond[2] in AAIDs):
+                moleculeDictionary['bond'].append([bond[0], bond[1]+atomIDOffset, bond[2]+atomIDOffset])
         molID = str(moleculeNo)
         while len(molID) < 3:
             molID = '0'+molID
@@ -88,7 +92,6 @@ if __name__ == '__main__':
         for key in ['lx', 'ly', 'lz']:
             moleculeDictionary[key] = AAMorphologyDict[key]
         moleculeDictionary['natoms'] = nAtoms
-        
         moleculeDictionary = helperFunctions.addMasses(moleculeDictionary)
         moleculeCOM = helperFunctions.calcCOM(moleculeDictionary['position'], moleculeDictionary['mass'])
         moleculeDictionary = helperFunctions.centre(moleculeDictionary, moleculeCOM)
