@@ -8,9 +8,60 @@ import pickle
 import mpl_toolkits.mplot3d.axes3d as p3
 
 
-def getFunctionalGroups(molecule):
+def getFunctionalGroups(molecule, CGtoAAIDs, CGBonds):
+    monomerData = []
+    for thioID in sorted(CGtoAAIDs.keys()):
+        if CGtoAAIDs[thioID][0] == 'thio':
+            currentMonomer = [CGtoAAIDs[thioID][1]]
+            for bond in CGBonds:
+                if (bond[0] == 'bondB') and (bond[1] == thioID):
+                    alk1ID = bond[2]
+                    currentMonomer.append(CGtoAAIDs[alk1ID][1])
+                elif (bond[0] == 'bondB') and (bond[2] == thioID):
+                    alk1ID = bond[1]
+                    currentMonomer.append(CGtoAAIDs[alk1ID][1])
+            for bond in CGBonds:
+                if (bond[0] == 'bondC') and (bond[1] == alk1ID):
+                    alk2ID = bond[2]
+                    currentMonomer.append(CGtoAAIDs[alk2ID][1])
+                elif (bond[0] == 'bondC') and (bond[2] == alk1ID):
+                    alk2ID = bond[1]
+                    currentMonomer.append(CGtoAAIDs[alk2ID][1])
+            monomerData.append(currentMonomer)
+        else:
+            continue
+    moleculeEnds = []
+    for monomerNo, monomer in enumerate(monomerData):
+        if len(monomer[0]) == 7:
+            moleculeEnds.append(monomerNo)
+
+
+    print moleculeEnds
+    exit()
+
+
+
+
+    
     print "USE BONDS TO FIND FUNCTIONAL GROUPS"
     exit()
+    tempMolAtoms = []
+    bondDict = {}
+    for bond in molecule['bond']:
+        if bond[1] not in bondDict:
+            bondDict[bond[1]] = [bond[2]]
+        else:
+            bondDict[bond[1]].append(bond[2])
+        if bond[2] not in bondDict:
+            bondDict[bond[2]] = [bond[1]]
+        else:
+            bondDict[bond[2]].append(bond[1])
+    for atomID in range(len(molecule['type'])):
+        tempMolAtoms.append([atomID, molecule['type'][atomID], molecule['mass'][atomID], molecule['position'][atomID], sorted(bondDict[atomID])])
+    for atom in tempMolAtoms:
+        # Start with the first one
+        exit()
+    
     
     thioGroups = []
     moleculeEnds = []
@@ -201,19 +252,23 @@ if __name__ == "__main__":
         if morphologyName in allMorphologies:
             outputDir += '/'+morphologyName
             break
-    # for fileName in os.listdir(outputDir+'/morphology'):
-    #     if fileName == morphologyName+'.pickle':
-    #         pickleLoc = outputDir+'/morphology/'+fileName
-    #         pickleFound = True
-    # if pickleFound == False:
-    #     print "Pickle file not found. Please run morphCT.py again to create the required HOOMD inputs."
-    #     exit()
-    # print "Pickle found at", str(pickleLoc)+"."
-    # print "Loading data..."
-    # with open(pickleLoc, 'r') as pickleFile:
-    #     (AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize) = pickle.load(pickleFile)
-    # calculateBendingAngles(AAMorphologyDict)
-        
+    for fileName in os.listdir(outputDir+'/morphology'):
+        if fileName == morphologyName+'.pickle':
+            pickleLoc = outputDir+'/morphology/'+fileName
+            pickleFound = True
+    if pickleFound == False:
+        print "Pickle file not found. Please run morphCT.py again to create the required HOOMD inputs."
+        exit()
+    print "Pickle found at", str(pickleLoc)+"."
+    print "Loading data..."
+    with open(pickleLoc, 'r') as pickleFile:
+        (AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize) = pickle.load(pickleFile)
+
+    CGBonds = []
+    for CGBond in CGMoleculeDict['bond']:
+        if CGBond not in CGBonds:
+            CGBonds.append(CGBond)
+
     poscarList = os.listdir(outputDir+'/molecules')
     moleculeList = []
     molNames = []
@@ -226,7 +281,7 @@ if __name__ == "__main__":
     morphologyBackboneData = [] # Dictionaries of molecule data for each molecule in the system
     for molNo, molecule in enumerate(moleculeList):
         print "Examining molecule number", molNo, "of", str(len(moleculeList)-1)+"..."
-        moleculeEnds, moleculeBackbone = getFunctionalGroups(molecule)
+        moleculeEnds, moleculeBackbone = getFunctionalGroups(molecule, CGtoAAIDs[0], CGBonds)
         # plotMolecule3D(molecule, moleculeBackbone)
         # exit()
         endToEndDistance = calculateEndToEndDistance(moleculeBackbone, moleculeEnds)
