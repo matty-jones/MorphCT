@@ -722,15 +722,28 @@ def loadPoscar(inputFilePath):
     moleculeDict = {'position':[], 'type':[]}
     with open(inputFilePath, 'r') as poscarFile:
         poscarData = poscarFile.readlines()
-    typeList = poscarData[0].split('\n')[0].split(' ')
-    freqList = map(int, poscarData[5].split('\n')[0].split(' '))
+    simDims = []
+    for unitCellLine in poscarData[2:5]:
+        simDims.append([])
+        for coordinate in unitCellLine[:-1].split(' '):
+            if len(coordinate) > 0:
+                simDims[-1].append(float(coordinate))
+    moleculeDict['lx'] = simDims[0][0]
+    moleculeDict['ly'] = simDims[1][1]
+    moleculeDict['lz'] = simDims[2][2]
+    simBoxDims = ['lx', 'ly', 'lz']
+    typeList = poscarData[5].split('\n')[0].split(' ')
+    freqList = map(int, poscarData[6].split('\n')[0].split(' '))
     for i in range(len(typeList)):
         moleculeDict['type'] += [typeList[i]]*freqList[i]
-    for atomCoords in poscarData[7:]:
+    for atomCoords in poscarData[8:]:
         moleculeDict['position'].append([])
-        for axis in atomCoords.split('\n')[0].split(' '):
-            if len(axis) > 0:
-                moleculeDict['position'][-1].append(float(axis))
+        for coordinate in atomCoords.split('\n')[0].split(' '):
+            coordinatesToWrite = []
+            if len(coordinate) > 0:
+                coordinatesToWrite.append(float(coordinate))
+            for i in range(len(coordinatesToWrite)):
+                moleculeDict['position'][-1].append(coordinatesToWrite[i]-(moleculeDict[simBoxDims[i]]/2.0))
     with open(inputFilePath.replace('POSCAR', 'pickle'), 'r') as bondPickle:
         moleculeDict['bond'] = pickle.load(bondPickle)
     moleculeDict = addMasses(moleculeDict)

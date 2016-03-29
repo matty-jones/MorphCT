@@ -42,7 +42,7 @@ class hoomdRun:
         self.dtPhase2 = 1e-4
         self.dt = 1e-3
         self.maximumInitialRunLength = 1e6
-        self.mainRunLength = 5e4
+        self.mainRunLength = 1e5
         self.outputXML = self.saveDirectory+'relaxed_'+self.morphologyName+'.xml'
         self.outputDCD = self.saveDirectory+'relaxed_'+self.morphologyName+'.dcd'
         self.outputLOG = self.saveDirectory+'energies_'+self.morphologyName+'.log'

@@ -16,6 +16,7 @@ def getAAIDsByMolecule(CGtoAAIDs):
         moleculeAAIDs.append([])
         for dictionaryValue in CGtoAAIDs[moleculeID].values():
             moleculeAAIDs[-1] += dictionaryValue[1]
+        moleculeAAIDs[-1].sort()
     return moleculeAAIDs
 
 
@@ -76,9 +77,12 @@ if __name__ == '__main__':
     # AAIDs = moleculeAAIDs[63]
     # Now make the DFT input files
         atomIDOffset = -np.min(AAIDs)
+        minimumIndex = np.min(AAIDs)
+        maximumIndex = np.max(AAIDs)
         moleculeDictionary = {'position':[], 'type':[], 'bond':[]}
         for bond in AAMorphologyDict['bond']:
-            if (bond[1] in AAIDs) or (bond[2] in AAIDs):
+            # Can reduce the number of calculations by assuming that the fine-grainer always builds molecules sequentially so the atom IDs go from minimumIndex -> maximumIndex with no breaks
+            if ((bond[1] >= minimumIndex) and (bond[1] <= maximumIndex)) or ((bond[2] >= minimumIndex) and (bond[2] <= maximumIndex)):
                 moleculeDictionary['bond'].append([bond[0], bond[1]+atomIDOffset, bond[2]+atomIDOffset])
         molID = str(moleculeNo)
         while len(molID) < 3:

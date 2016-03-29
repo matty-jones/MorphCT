@@ -9,6 +9,9 @@ import mpl_toolkits.mplot3d.axes3d as p3
 
 
 def getFunctionalGroups(molecule):
+    print "USE BONDS TO FIND FUNCTIONAL GROUPS"
+    exit()
+    
     thioGroups = []
     moleculeEnds = []
     for index, atomType in enumerate(molecule['type']):
@@ -41,12 +44,9 @@ def getFunctionalGroups(molecule):
             thioGroups.append(thioGroup)
     hydrogensPerCarbon = {}
     bondTypes = []
-    print len(molecule['type'])
-    print molecule['bond'][-1]
-    for bond in molecule['bond']:
-        if 'H1' in bond[0]:
-            print "Bond =", bond, "Type =", molecule['type'][bond[1]], molecule['type'][bond[2]]
-    exit()
+
+    
+
     return moleculeEnds, thioGroups
 
 
