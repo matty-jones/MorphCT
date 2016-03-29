@@ -498,29 +498,36 @@ def writePOSCARFile(inputDict, outputFile):
             numberOfTypes = 1
         else:
             numberOfTypes += 1
-    # Line 1 = Atom Types
-    linesToWrite.append(' '.join(typeList)+'\n')
+    # Now have to add the final lot of atoms:
+    typeList.append(previousType)
+    freqList.append(numberOfTypes)
+    # Line 1 = CommentLine
+    slashLocs = findIndex(outputFile, '/')
+    linesToWrite.append(str(outputFile[slashLocs[-3]+1:slashLocs[-2]+1])+str(outputFile[slashLocs[-1]+1:]).replace('.POSCAR', '')+' VASP input file.\n')
     # Line 2 = Scale Factor
     linesToWrite.append('1.000000000000\n')
     # Lines 3-5 = Box Dimensions
     boxDims = []
     for key in ['lx', 'ly', 'lz']:
         boxDims.append(inputDict[key])
-    boxDims = np.diag(np.array(boxDims))
-    for row in boxDims:
+    boxDimsMatrix = np.diag(np.array(boxDims))
+    for row in boxDimsMatrix:
         boxRow = ''
         for element in row:
             boxRow += "{:22.15f}".format(element)
         linesToWrite.append(boxRow+'\n')
-    # Line 4 = Frequency of Types
+    # Line 6 = Atom Types
+    linesToWrite.append(' '.join(typeList)+'\n')
+    # Line 7 = Frequency of Types
     linesToWrite.append(' '.join(map(str, freqList))+'\n')
-    # Line 5 = 'Cartesian'
+    # Line 8 = 'Cartesian'
     linesToWrite.append('Cartesian\n')
-    # Lines 6+ = Positions
+    # Lines 9+ = Positions
+    # Positions are not set to be origin in the middle, origin is bottom left corner. As such, we need to add L/2 to each coordinate
     for position in inputDict['position']:
         coordinates = ''
         for axis in range(3):
-            coordinates += "{:22.15f}".format(position[axis])
+            coordinates += "{:22.15f}".format(position[axis]+(boxDims[axis]/2.))
         linesToWrite.append(coordinates+'\n')
     with open(outputFile, 'w+') as POSCARFile:
         POSCARFile.writelines(linesToWrite)
@@ -726,4 +733,5 @@ def loadPoscar(inputFilePath):
                 moleculeDict['position'][-1].append(float(axis))
     with open(inputFilePath.replace('POSCAR', 'pickle'), 'r') as bondPickle:
         moleculeDict['bond'] = pickle.load(bondPickle)
+    moleculeDict = addMasses(moleculeDict)
     return moleculeDict
