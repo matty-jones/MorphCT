@@ -227,51 +227,24 @@ class hoomdRun:
         self.a.set_coeff('C2-C1-C10',k=0.03332*eScale,t0=2.27137)
 
         self.d = dihedral.table(width=1000)
-        # d.dihedral_coeff.set('A-B-B-B:1',k=10,d=1,n=1) What does the :1 mean??
         # Ring Dihedrals
         self.d.dihedral_coeff.set('C10-C2-C9-C1',func=multiHarmonicTorsion, coeff=dict(V0=126.32*eScale,V1=-109.81*eScale,V2=-19.738*eScale,V3=-25.303*eScale,V4=28.53*eScale))
         self.d.dihedral_coeff.set('C10-S1-C1-C2',func=multiHarmonicTorsion, coeff=dict(V0=126.32*eScale,V1=-109.81*eScale,V2=-19.738*eScale,V3=-25.303*eScale,V4=28.53*eScale))
         self.d.dihedral_coeff.set('C1-S1-C10-C9',func=multiHarmonicTorsion, coeff=dict(V0=126.32*eScale,V1=-109.81*eScale,V2=-19.738*eScale,V3=-25.303*eScale,V4=28.53*eScale))
         #self.d.dihedral_coeff.set('C9-C2-C1-S1',func=multiHarmonicTorsion, coeff=dict(V0=126.32,V1=-109.81,V2=-19.738,V3=-25.303,V4=28.53)) # Guessed this one
         self.d.dihedral_coeff.set('C2-C9-C10-S1',func=multiHarmonicTorsion, coeff=dict(V0=126.32*eScale,V1=-109.81*eScale,V2=-19.738*eScale,V3=-25.303*eScale,V4=28.53*eScale))
-        # self.d.dihedral_coeff.set('C1-C2-C9-H1',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('H1-C9-C1-S1',k=10,d=1,n=1)
         # Alkyl Dihedrals
         self.d.dihedral_coeff.set('C10-C9-C2-C3',func=multiHarmonicTorsion, coeff=dict(V0=117.65*eScale,V1=238.26*eScale,V2=205.96*eScale,V3=112.81*eScale,V4=27.467*eScale))
         self.d.dihedral_coeff.set('C4-C3-C2-C9',func=multiHarmonicTorsion, coeff=dict(V0=0.3175*eScale,V1=1.127*eScale,V2=14.143*eScale,V3=-22.297*eScale,V4=6.7188*eScale))
         #self.d.dihedral_coeff.set('C9-C2-C3-H1',func=multiHarmonicTorsion, coeff=dict(V0=117.65,V1=238.26,V2=205.96,V3=112.81,V4=27.467)) # Guessed this one
         self.d.dihedral_coeff.set('C2-C3-C4-C5',func=multiHarmonicTorsion, coeff=dict(V0=2.4469*eScale,V1=-6.3946*eScale,V2=10.747*eScale,V3=30.695*eScale,V4=11.139*eScale))
-        # self.d.dihedral_coeff.set('C2-C3-C4-H1',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('C1-C2-C3-C4',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('C1-C2-C3-H1',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('C3-C2-C1-S1',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('C3-C2-C9-H1',k=10,d=1,n=1)
         self.d.dihedral_coeff.set('C3-C4-C5-C6',func=multiHarmonicTorsion, coeff=dict(V0=1.9475*eScale,V1=-3.7121*eScale,V2=1.388*eScale,V3=8.6305*eScale,V4=1.6008*eScale))
-        # self.d.dihedral_coeff.set('C3-C4-C5-H1',k=10,d=1,n=1)
         self.d.dihedral_coeff.set('C4-C5-C6-C7',func=multiHarmonicTorsion, coeff=dict(V0=1.8922*eScale,V1=-3.4904*eScale,V2=1.4665*eScale,V3=7.1418*eScale,V4=0.2859*eScale))
-        # self.d.dihedral_coeff.set('C4-C5-C6-H1',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('C5-C4-C3-H1',k=10,d=1,n=1)
         self.d.dihedral_coeff.set('C5-C6-C7-C8',func=multiHarmonicTorsion, coeff=dict(V0=1.9788*eScale,V1=-3.8476*eScale,V2=1.1614*eScale,V3=7.419*eScale,V4=0.4146*eScale))
-        # self.d.dihedral_coeff.set('C5-C6-C7-H1',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('C6-C5-C4-H1',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('C6-C7-C8-H1',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('C7-C6-C5-H1',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('C8-C7-C6-H1',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('H1-C7-C8-H1',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('H1-C6-C7-H1',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('H1-C5-C6-H1',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('H1-C4-C5-H1',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('H1-C3-C4-H1',k=10,d=1,n=1)
         # Inter-monomer Dihedrals
-        # self.d.dihedral_coeff.set('C1-C1-C9-H1',k=10,d=1,n=1)
         self.d.dihedral_coeff.set('C1-C10-C9-C2',func=multiHarmonicTorsion, coeff=dict(V0=75.595*eScale,V1=116.*eScale,V2=42.679*eScale,V3=-1.528*eScale,V4=-3.8137*eScale))
         self.d.dihedral_coeff.set('C1-C10-S1-C1',func=multiHarmonicTorsion, coeff=dict(V0=158.7*eScale,V1=418.34*eScale,V2=521.33*eScale,V3=376.73*eScale,V4=115.12*eScale)) # 3, 25, 29, 28
-        # self.d.dihedral_coeff.set('C1-C1-S1-C1',k=10,d=1,n=1) # 25, 3, 4, 0
-        # self.d.dihedral_coeff.set('C1-C1-C2-C9',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('C1-C1-C2-C3',k=10,d=1,n=1)
-        # self.d.dihedral_coeff.set('S1-C1-C1-C9',k=10,d=1,n=1)
         self.d.dihedral_coeff.set('S1-C1-C10-S1',func=multiHarmonicTorsion, coeff=dict(V0=2.9533*eScale,V1=0.1571*eScale,V2=-4.2326*eScale,V3=0.3979*eScale,V4=1.8855*eScale))
-        # self.d.dihedral_coeff.set('C2-C1-C1-C9',k=10,d=1,n=1)
         self.d.dihedral_coeff.set('C2-C1-C10-S1',func=multiHarmonicTorsion, coeff=dict(V0=2.9533*eScale,V1=-0.1571*eScale,V2=-4.2326*eScale,V3=-0.3979*eScale,V4=1.8855*eScale))
 
         
