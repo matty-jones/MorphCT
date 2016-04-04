@@ -244,6 +244,7 @@ if __name__ == "__main__":
             moleculeList.append(moleculeDict)
             molNames.append(poscarFile)
     morphologyBackboneData = [] # Dictionaries of molecule data for each molecule in the system
+    rollingAtomID = 0
     for molNo, molecule in enumerate(moleculeList):
         print "Examining molecule number", molNo, "of", str(len(moleculeList)-1)+"..."
         thioRings, alk1Groups, alk2Groups, moleculeEnds = getFunctionalGroups(molecule, CGtoAAIDs[0], CGBonds)
@@ -253,8 +254,15 @@ if __name__ == "__main__":
         endToEndDistance = helperFunctions.calculateSeparation(moleculeBackbone[moleculeEnds[0]]['COM'], moleculeBackbone[moleculeEnds[1]]['COM'])
         persistenceLength = calculatePersistenceLength(molecule, molNames[molNo], outputDir, moleculeBackbone, moleculeEnds)
         bendingAngles, torsionAngles, chromophores = calculateChromophores(molecule, molNames[molNo], outputDir, moleculeBackbone)
-        moleculeDictionary = {'ends': moleculeEnds, 'endToEndDistance': endToEndDistance, 'persistenceLength': persistenceLength, 'bendingAngles': bendingAngles, 'torsionAngles': torsionAngles, 'chromophores': chromophores}
+        morphologyChromophores = []
+        for chromophore in chromophores:
+            morphologyChromophores.append([])
+            for monomerID in chromophore:
+                morphologyChromophores[-1].append(map(int, list(np.array(thioRings[monomerID])+rollingAtomID)+list(np.array(alk1Groups[monomerID])+rollingAtomID)list(np.array(alk2Groups[monomerID])+rollingAtomID)))
+            morphologyChromophores.append(list(map(int, np.array(chromophore)+rollingAtomID)))
+        moleculeDictionary = {'ends': moleculeEnds, 'endToEndDistance': endToEndDistance, 'persistenceLength': persistenceLength, 'bendingAngles': bendingAngles, 'torsionAngles': torsionAngles, 'chromophores': chromophores, 'morphologyChromophores': morphologyChromophores}
         morphologyBackboneData.append(moleculeDictionary)
+        rollingAtomID += len(molecule['type'])
     print "Plotting morphology histograms..."
     endToEndDistance = []
     bendingAngles = []
@@ -279,3 +287,9 @@ if __name__ == "__main__":
     print "Average torsional angle in degrees =", np.average(torsionAngles)*180/np.pi
     print "Average persistence length in monomer units =", np.average(persistenceLengths)
     print "Average chromophore length in monomers =", np.average(segmentLengths), "\n"
+
+
+
+    # NOW, WRITE THE CHROMOPHORES OUT TO AN ORCA INPUT FILE OR SOMETHING IN ./outputFiles/<morphName>/chromophores/single.
+    # Also, get their COM posn so that we can split them into neighbouring pairs and store it in ../pairs
+    
