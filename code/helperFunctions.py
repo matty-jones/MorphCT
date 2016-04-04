@@ -51,6 +51,23 @@ def calculateSeparation(atom1, atom2):
     return np.sqrt(xdif**2 + ydif**2 + zdif**2)
 
 
+def linearInterpDescendingY(targetValue, xArray, yArray):
+    '''This function takes in two numpy arrays, and then linearly interpolates to find the value of X when Y is equal to targetValue. yArray must be a descending array (doesn't have to be monotonic, but the function will report the first point at which the curve is below targetValue so be careful of noise!). The function returns a value of None if the yArray never drops below the targetValue'''
+    xVal = None
+    for index, value in enumerate(yArray):
+        if value > targetValue:
+            continue
+        xLo = xArray[index-1]
+        xHi = xArray[index]
+        yHi = yArray[index-1]
+        yLo = yArray[index]
+        yDiff = yHi-yLo
+        xDiff = xHi-xLo
+        yDeltaFrac = (yHi-targetValue)/yDiff
+        xVal = xLo + yDeltaFrac*xDiff
+        break
+    return xVal
+    
 def calcCOM(listOfPositions, listOfMasses):
     '''This function calculates the centre of mass of a collection of sites/atoms (listOfPositions) with corresponding mass (listOfMasses)'''
     massWeightedX = 0.

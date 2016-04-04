@@ -6,6 +6,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pickle
 import mpl_toolkits.mplot3d.axes3d as p3
+import cme_utils
 
 
 def getFunctionalGroups(molecule, CGtoAAIDs, CGBonds):
@@ -34,115 +35,79 @@ def getFunctionalGroups(molecule, CGtoAAIDs, CGBonds):
     for monomerNo, monomer in enumerate(monomerData):
         if len(monomer[0]) == 7:
             moleculeEnds.append(monomerNo)
+    monomerData = np.array(monomerData)
+    thioRings = monomerData[:,0]
+    alk1Groups = monomerData[:,1]
+    alk2Groups = monomerData[:,2]
+    return thioRings, alk1Groups, alk2Groups, moleculeEnds
 
 
-    print moleculeEnds
-    exit()
-
-
-
-
-    
-    print "USE BONDS TO FIND FUNCTIONAL GROUPS"
-    exit()
-    tempMolAtoms = []
-    bondDict = {}
-    for bond in molecule['bond']:
-        if bond[1] not in bondDict:
-            bondDict[bond[1]] = [bond[2]]
-        else:
-            bondDict[bond[1]].append(bond[2])
-        if bond[2] not in bondDict:
-            bondDict[bond[2]] = [bond[1]]
-        else:
-            bondDict[bond[2]].append(bond[1])
-    for atomID in range(len(molecule['type'])):
-        tempMolAtoms.append([atomID, molecule['type'][atomID], molecule['mass'][atomID], molecule['position'][atomID], sorted(bondDict[atomID])])
-    for atom in tempMolAtoms:
-        # Start with the first one
-        exit()
-    
-    
+def obtainBackboneData(molecule, thioRings):
     thioGroups = []
     moleculeEnds = []
-    for index, atomType in enumerate(molecule['type']):
+    for thioRing in thioRings:
         thioGroup = {'index': [], 'type': [], 'mass': [], 'position': []}
         # To be of the form, [IDs], [Types], [Masses], [Positions]
-        if atomType == 'S':
-            # The S and the preceeding 4 atoms make up the thiophene ring,
-            # along with the following H (2 Hs if at the end of the molecule)
-            for atomID in range(index-4, index+2):
-                thioGroup['index'].append(atomID)
-                thioGroup['type'].append(molecule['type'][atomID])
-                thioGroup['mass'].append(molecule['mass'][atomID])
-                thioGroup['position'].append(molecule['position'][atomID])
-            if molecule['type'][index+2] == 'H':
-                thioGroup['index'].append(index+2)
-                thioGroup['type'].append(molecule['type'][index+2])
-                thioGroup['mass'].append(molecule['mass'][index+2])
-                thioGroup['position'].append(molecule['position'][index+2])
-                moleculeEnds.append(len(thioGroups))
-            thioCOM = helperFunctions.calcCOM(thioGroup['position'], thioGroup['mass'])
-            thioGroup['COM'] = thioCOM
-            # Plane of the thiophene ring is given by the vector between the
-            # C1 and C10 (atoms 0 and 3)
-            thioPlaneVector = helperFunctions.findAxis(molecule['position'][index-4], molecule['position'][index-1])
-            thioGroup['plane'] = thioPlaneVector
-            # Normal to plane of thiophene ring is given by the cross product
-            # between the C1-C10 vector and the C1-C2 vector
-            thioNormalVector = helperFunctions.normaliseVec(np.cross(thioPlaneVector, helperFunctions.findAxis(molecule['position'][index-4], molecule['position'][index-3])))
-            thioGroup['normal'] = thioNormalVector
-            thioGroups.append(thioGroup)
-    hydrogensPerCarbon = {}
-    bondTypes = []
-
-    
-
-    return moleculeEnds, thioGroups
+        # The S and the preceeding 4 atoms make up the thiophene ring,
+        # along with the following H (2 Hs if at the end of the molecule)
+        for atomID in thioRing:
+            thioGroup['index'].append(atomID)
+            thioGroup['type'].append(molecule['type'][atomID])
+            thioGroup['mass'].append(molecule['mass'][atomID])
+            thioGroup['position'].append(molecule['position'][atomID])
+        thioCOM = helperFunctions.calcCOM(thioGroup['position'], thioGroup['mass'])
+        thioGroup['COM'] = thioCOM
+        # Plane of the thiophene ring is given by the vector between the
+        # C1 and C10 (atoms 0 and 3 in the ring)
+        thioPlaneVector = helperFunctions.findAxis(molecule['position'][thioRing[0]], molecule['position'][thioRing[3]])
+        thioGroup['plane'] = thioPlaneVector
+        # Normal to plane of thiophene ring is given by the cross product
+        # between the C1-C10 vector and the C1-C2 vector
+        thioNormalVector = helperFunctions.normaliseVec(np.cross(thioPlaneVector, helperFunctions.findAxis(molecule['position'][thioRing[0]], molecule['position'][thioRing[1]])))
+        thioGroup['normal'] = thioNormalVector
+        thioGroups.append(thioGroup)
+    return thioGroups
 
 
-def calculateEndToEndDistance(moleculeBackbone, moleculeEnds):
-    moleculeEnds = []
-    for thioID, thioGroup in enumerate(moleculeBackbone):
-        if len(thioGroup['type']) == 7:
-            moleculeEnds.append(thioID)
-    endToEndDistance = helperFunctions.calculateSeparation(moleculeBackbone[moleculeEnds[0]]['COM'], moleculeBackbone[moleculeEnds[1]]['COM'])
-    return endToEndDistance
-
-
-def calculatePersistanceLength(molecule, molName, outputDir, moleculeBackbone, moleculeEnds):
+def calculatePersistenceLength(molecule, molName, outputDir, moleculeBackbone, moleculeEnds):
     distances = []
     cosThetas = []
-    for thioRing1 in moleculeBackbone:
-        for thioRing2 in moleculeBackbone:
-            separation = helperFunctions.calculateSeparation(thioRing1['COM'], thioRing2['COM'])
-            distances.append(separation)
+    for monomerID1, thioRing1 in enumerate(moleculeBackbone):
+        for monomerID2, thioRing2 in enumerate(moleculeBackbone):
+            #separation = helperFunctions.calculateSeparation(thioRing1['COM'], thioRing2['COM'])
+            # Separation in monomer units can be given by monomerID2 - monomerID1
+            distances.append(monomerID2 - monomerID1)
             cosThetas.append(np.dot(thioRing1['plane'], thioRing2['plane']))
-    distances, cosThetas = helperFunctions.parallelSort(distances, cosThetas)
-    startOfCurrentBin = 0
-    binWidth = 3.0
-    binnedDistances = [[]]
-    binnedCosThetas = [[]]
-    for i in range(len(distances)):
-        if distances[i] > startOfCurrentBin + binWidth:
-            binnedDistances.append([])
-            binnedCosThetas.append([])
-            startOfCurrentBin = distances[i]
-        binnedDistances[-1].append(distances[i])
-        binnedCosThetas[-1].append(cosThetas[i])
+    #distances, cosThetas = helperFunctions.parallelSort(distances, cosThetas)
+    cosThetaDictionary = {}
+    for index, monomerDistance in enumerate(distances):
+        if abs(monomerDistance) not in cosThetaDictionary:
+            cosThetaDictionary[abs(monomerDistance)] = []
+        cosThetaDictionary[abs(monomerDistance)].append(cosThetas[index])
+
+
     distanceToPlot = []
     cosThetaToPlot = []
     ybars = []
-    for binID in range(len(binnedDistances)):
-        distanceToPlot.append(np.average(binnedDistances[binID]))
-        cosThetaToPlot.append(np.average(binnedCosThetas[binID]))
-        ybars.append(np.std(binnedCosThetas[binID])/np.sqrt(len(binnedCosThetas[binID])))
+        
+    for monomerDistance in cosThetaDictionary:
+        distanceToPlot.append(monomerDistance)
+        cosThetaToPlot.append(np.average(cosThetaDictionary[monomerDistance]))
+        ybars.append(np.std(cosThetaDictionary[monomerDistance])/np.sqrt(len(cosThetaDictionary[monomerDistance])))
+    autoCorrelationArray = cme_utils.analyze.autocorr.autocorr1D(cosThetaToPlot)
+    persistenceLength = helperFunctions.linearInterpDescendingY(0, distanceToPlot, autoCorrelationArray)
+    if persistenceLength == None:
+        print "All lengths within this molecule are correlated. Setting persistence length to maximum ("+str(np.max(distanceToPlot[:len(autoCorrelationArray)]))+")..."
+        persistenceLength = np.max(distanceToPlot[:len(autoCorrelationArray)])
+    #else:
+        #print "Persistence Length for this molecule =", persistenceLength, "monomers."
     plt.figure()
     plt.plot(distanceToPlot, cosThetaToPlot, 'ro')
     plt.errorbar(distanceToPlot, cosThetaToPlot, yerr=ybars, linestyle='None')
+    plt.title("PL = "+str(persistenceLength))
     plt.savefig(outputDir+'/molecules/'+molName.replace('.POSCAR', '_PL.png'))
     plt.close()
-    return distanceToPlot, cosThetaToPlot
+    return persistenceLength
 
 
 def plotMolecule3D(molecule, moleculeBackbone):
@@ -210,11 +175,11 @@ def calculateChromophores(molecule, molName, outputDir, moleculeBackbone):
         torsionAngle = fixAngles(np.arccos(np.dot(previousThioNormalAxis, currentThioNormalAxis))) # Always flip one of the axes because we have 100% regioregular head-to-tail
         # Create a new segment if conjugation is broken
         if (torsionAngle > torsionAngleTolerance):
-            print "Torsion has broken conjugation between", thioNumber-1, "and", thioNumber, ":", torsionAngle*180/np.pi, ">", torsionAngleTolerance*180/np.pi
+            #print "Torsion has broken conjugation between", thioNumber-1, "and", thioNumber, ":", torsionAngle*180/np.pi, ">", torsionAngleTolerance*180/np.pi
             torsionOverThreshold += 1
             conjugationBroken = True
         if (bendingAngle > bendingAngleTolerance):
-            print "Bending has broken conjugation between", thioNumber-1, "and", thioNumber, ":", bendingAngle*180/np.pi, ">", bendingAngleTolerance*180/np.pi
+            #print "Bending has broken conjugation between", thioNumber-1, "and", thioNumber, ":", bendingAngle*180/np.pi, ">", bendingAngleTolerance*180/np.pi
             bendingOverThreshold += 1
             conjugationBroken = True
         if conjugationBroken == True:
@@ -225,8 +190,8 @@ def calculateChromophores(molecule, molName, outputDir, moleculeBackbone):
         torsionAngles.append(torsionAngle)
         previousThioPlaneAxis = np.copy(currentThioPlaneAxis)
         previousThioNormalAxis = np.copy(currentThioNormalAxis)
-    print "The torsional angle was over the threshold ("+str(torsionAngleTolerance)+")", torsionOverThreshold, "times."
-    print "The bending angle was over the threshold ("+str(bendingAngleTolerance)+")", bendingOverThreshold, "times."
+    #print "The torsional angle was over the threshold ("+str(torsionAngleTolerance)+")", torsionOverThreshold, "times."
+    #print "The bending angle was over the threshold ("+str(bendingAngleTolerance)+")", bendingOverThreshold, "times."
     #plotHist(bendingAngles, outputDir+'/molecules/'+molName.replace('.POSCAR', '_Bend.png'), angle=True)
     #plotHist(torsionAngles, outputDir+'/molecules/'+molName.replace('.POSCAR', '_Tor.png'), angle=True)
     return bendingAngles, torsionAngles, chromophores
@@ -281,27 +246,36 @@ if __name__ == "__main__":
     morphologyBackboneData = [] # Dictionaries of molecule data for each molecule in the system
     for molNo, molecule in enumerate(moleculeList):
         print "Examining molecule number", molNo, "of", str(len(moleculeList)-1)+"..."
-        moleculeEnds, moleculeBackbone = getFunctionalGroups(molecule, CGtoAAIDs[0], CGBonds)
+        thioRings, alk1Groups, alk2Groups, moleculeEnds = getFunctionalGroups(molecule, CGtoAAIDs[0], CGBonds)
+        moleculeBackbone = obtainBackboneData(molecule, thioRings)
         # plotMolecule3D(molecule, moleculeBackbone)
         # exit()
-        endToEndDistance = calculateEndToEndDistance(moleculeBackbone, moleculeEnds)
-        distances, cosThetas = calculatePersistanceLength(molecule, molNames[molNo], outputDir, moleculeBackbone, moleculeEnds)
+        endToEndDistance = helperFunctions.calculateSeparation(moleculeBackbone[moleculeEnds[0]]['COM'], moleculeBackbone[moleculeEnds[1]]['COM'])
+        persistenceLength = calculatePersistenceLength(molecule, molNames[molNo], outputDir, moleculeBackbone, moleculeEnds)
         bendingAngles, torsionAngles, chromophores = calculateChromophores(molecule, molNames[molNo], outputDir, moleculeBackbone)
-        moleculeDictionary = {'ends': moleculeEnds, 'endToEndDistance': endToEndDistance, 'persistenceLength': [distances, cosThetas], 'bendingAngles': bendingAngles, 'torsionAngles': torsionAngles, 'chromophores': chromophores}
+        moleculeDictionary = {'ends': moleculeEnds, 'endToEndDistance': endToEndDistance, 'persistenceLength': persistenceLength, 'bendingAngles': bendingAngles, 'torsionAngles': torsionAngles, 'chromophores': chromophores}
         morphologyBackboneData.append(moleculeDictionary)
     print "Plotting morphology histograms..."
     endToEndDistance = []
     bendingAngles = []
     torsionAngles = []
+    persistenceLengths = []
     for molDict in morphologyBackboneData:
         endToEndDistance.append(molDict['endToEndDistance'])
         bendingAngles += molDict['bendingAngles']
         torsionAngles += molDict['torsionAngles']
+        persistenceLengths.append(molDict['persistenceLength'])
     plotHist(endToEndDistance, outputDir+'/morphology/EndToEndDistances.png')
     plotHist(bendingAngles, outputDir+'/morphology/BendingAngles.png', angle=True)
     plotHist(torsionAngles, outputDir+'/morphology/TorsionAngles.png', angle=True)
+    plotHist(persistenceLengths, outputDir+'/morphology/PersistenceLengths.png', angle=False)
     segmentLengths = []
     for molDict in morphologyBackboneData:
         for segment in molDict['chromophores']:
             segmentLengths.append(len(segment))
-    print "Average chromophore length in monomers =", np.average(segmentLengths)
+    print "\n--== MORPHOLOGY STATISTICS ==--"
+    print "Average end-to-end distance in angstroms =", np.average(endToEndDistance)
+    print "Average bending angle in degrees =", np.average(bendingAngles)*180/np.pi
+    print "Average torsional angle in degrees =", np.average(torsionAngles)*180/np.pi
+    print "Average persistence length in monomer units =", np.average(persistenceLengths)
+    print "Average chromophore length in monomers =", np.average(segmentLengths), "\n"
