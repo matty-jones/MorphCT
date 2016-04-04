@@ -10,7 +10,6 @@ import helperFunctions
 import sys
 
 def multiHarmonicTorsion(theta, V0, V1, V2, V3, V4):
-    theta = np.deg2rad(theta)
     V = V0 + V1*np.cos(theta) + V2*((np.cos(theta))**2) + V3*((np.cos(theta))**3) + V4*((np.cos(theta))**4)
     F = V1*np.sin(theta) + 2*V2*np.cos(theta)*np.sin(theta) + 3*V3*((np.cos(theta))**2)*np.sin(theta) + 4*V4*((np.cos(theta))**3)*np.sin(theta)
     return (V, F)
@@ -188,43 +187,43 @@ class hoomdRun:
 
         self.a = angle.harmonic()
         # Ring Bond Angles [k] = kcal mol^{-1} rad^{-2} * epsilon, [t] = rad
-        self.a.set_coeff('C10-C9-C2',k=0.02411*eScale,t0=1.97784)
-        self.a.set_coeff('C10-C9-H1',k=0.02148*eScale,t0=2.14639)
-        self.a.set_coeff('C10-S1-C1',k=0.05261*eScale,t0=1.61921)
-        self.a.set_coeff('C9-C10-S1',k=0.05261*eScale,t0=1.92496)
-        self.a.set_coeff('C1-C2-C9',k=0.02411*eScale,t0=1.97784)
-        self.a.set_coeff('C2-C9-H1',k=0.02148*eScale,t0=2.15897)
-        self.a.set_coeff('C2-C1-S1',k=0.05261*eScale,t0=1.92496)
+        self.a.set_coeff('C10-C9-C2',k=129940*eScale,t0=1.97784)
+        self.a.set_coeff('C10-C9-H1',k=115762*eScale,t0=2.14639)
+        self.a.set_coeff('C10-S1-C1',k=283503*eScale,t0=1.61921)
+        self.a.set_coeff('C9-C10-S1',k=283503*eScale,t0=1.92496)
+        self.a.set_coeff('C1-C2-C9',k=129940*eScale,t0=1.97784)
+        self.a.set_coeff('C2-C9-H1',k=115762*eScale,t0=2.15897)
+        self.a.set_coeff('C2-C1-S1',k=283503*eScale,t0=1.92496)
         # Alkyl Bond Angles
-        self.a.set_coeff('C3-C2-C9',k=0.10147*eScale,t0=2.15335)
-        self.a.set_coeff('C2-C3-C4',k=0.07319*eScale,t0=2.01481)
-        self.a.set_coeff('C2-C3-H1',k=0.04511*eScale,t0=1.90571)
-        self.a.set_coeff('C1-C2-C3',k=0.10133*eScale,t0=2.17388)
-        self.a.set_coeff('C3-C4-C5',k=0.03555*eScale,t0=1.96699)
-        self.a.set_coeff('C3-C4-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C4-C3-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C4-C5-C6',k=0.03555*eScale,t0=1.96699)
-        self.a.set_coeff('C4-C5-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C5-C4-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C5-C6-C7',k=0.03555*eScale,t0=1.96699)
-        self.a.set_coeff('C5-C6-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C6-C5-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C6-C7-C8',k=0.03555*eScale,t0=1.96699)
-        self.a.set_coeff('C6-C7-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C7-C6-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C7-C8-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C8-C7-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('H1-C8-H1',k=0.02010*eScale,t0=1.88146)
-        self.a.set_coeff('H1-C7-H1',k=0.02010*eScale,t0=1.88146)
-        self.a.set_coeff('H1-C6-H1',k=0.02010*eScale,t0=1.88146)
-        self.a.set_coeff('H1-C5-H1',k=0.02010*eScale,t0=1.88146)
-        self.a.set_coeff('H1-C4-H1',k=0.02010*eScale,t0=1.88146)
-        self.a.set_coeff('H1-C3-H1',k=0.02010*eScale,t0=1.88146)
+        self.a.set_coeff('C3-C2-C9',k=546735*eScale,t0=2.15335)
+        self.a.set_coeff('C2-C3-C4',k=394396*eScale,t0=2.01481)
+        self.a.set_coeff('C2-C3-H1',k=243125*eScale,t0=1.90571)
+        self.a.set_coeff('C1-C2-C3',k=545996*eScale,t0=2.17388)
+        self.a.set_coeff('C3-C4-C5',k=191552*eScale,t0=1.96699)
+        self.a.set_coeff('C3-C4-H1',k=123105*eScale,t0=1.93208)
+        self.a.set_coeff('C4-C3-H1',k=123105*eScale,t0=1.93208)
+        self.a.set_coeff('C4-C5-C6',k=191552*eScale,t0=1.96699)
+        self.a.set_coeff('C4-C5-H1',k=123105*eScale,t0=1.93208)
+        self.a.set_coeff('C5-C4-H1',k=123105*eScale,t0=1.93208)
+        self.a.set_coeff('C5-C6-C7',k=191552*eScale,t0=1.96699)
+        self.a.set_coeff('C5-C6-H1',k=123105*eScale,t0=1.93208)
+        self.a.set_coeff('C6-C5-H1',k=123105*eScale,t0=1.93208)
+        self.a.set_coeff('C6-C7-C8',k=191552*eScale,t0=1.96699)
+        self.a.set_coeff('C6-C7-H1',k=123105*eScale,t0=1.93208)
+        self.a.set_coeff('C7-C6-H1',k=123105*eScale,t0=1.93208)
+        self.a.set_coeff('C7-C8-H1',k=123105*eScale,t0=1.93208)
+        self.a.set_coeff('C8-C7-H1',k=123105*eScale,t0=1.93208)
+        self.a.set_coeff('H1-C8-H1',k=108333*eScale,t0=1.88146)
+        self.a.set_coeff('H1-C7-H1',k=108333*eScale,t0=1.88146)
+        self.a.set_coeff('H1-C6-H1',k=108333*eScale,t0=1.88146)
+        self.a.set_coeff('H1-C5-H1',k=108333*eScale,t0=1.88146)
+        self.a.set_coeff('H1-C4-H1',k=108333*eScale,t0=1.88146)
+        self.a.set_coeff('H1-C3-H1',k=108333*eScale,t0=1.88146)
         # Inter-monomer Bond Angles
-        self.a.set_coeff('C1-C10-C9',k=0.03332*eScale,t0=2.27137)
-        self.a.set_coeff('C1-C10-S1',k=0.02543*eScale,t0=2.08687)
-        self.a.set_coeff('S1-C1-C10',k=0.02543*eScale,t0=2.08687)
-        self.a.set_coeff('C2-C1-C10',k=0.03332*eScale,t0=2.27137)
+        self.a.set_coeff('C1-C10-C9',k=179550*eScale,t0=2.27137)
+        self.a.set_coeff('C1-C10-S1',k=137024*eScale,t0=2.08687)
+        self.a.set_coeff('S1-C1-C10',k=137024*eScale,t0=2.08687)
+        self.a.set_coeff('C2-C1-C10',k=179550*eScale,t0=2.27137)
 
         self.d = dihedral.table(width=1000)
         # Ring Dihedrals
@@ -278,7 +277,7 @@ class hoomdRun:
             phase1DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase1'), period=10, overwrite=True)
             phase1Step = integrate.mode_standard(dt = self.dtPhase1)
             # phase1 = integrate.brownian(group=group.all(), seed=3, dscale=1e11, T=self.T)
-            phase1 = integrate.nve(group=group.all(), limit=0.001)
+            phase1 = integrate.nve(group=group.all(), limit=0.01)
             run(1000)
             phase1DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase1'), all=True)
             phase1.disable()
@@ -549,10 +548,10 @@ if __name__ == '__main__':
     print "Loading data..."
     with open(pickleLoc, 'r') as pickleFile:
         (AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize) = pickle.load(pickleFile)
-    # eScale = 1.
-    # sScale = 1.
-    eScale = 1./0.25
-    sScale = 1./3.55
+    eScale = 1.
+    sScale = 1.
+    #eScale = 1./0.25
+    #sScale = 1./3.55
     slashList = helperFunctions.findIndex(AAfileName, '/')
     adjustedInputFileName = AAfileName[:slashList[-1]+1]+'scaled_'+str(1/sScale)+'_'+AAfileName[slashList[-1]+1:]
 
