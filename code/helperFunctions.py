@@ -8,6 +8,7 @@ def findMagnitude(vector):
     '''This function simply returns the magnitude of a given vector'''
     return np.sqrt(vector[0]**2 + vector[1]**2 + vector[2]**2)
 
+
 def updateXMLBoxLength(adjustedInputFileName, boxSize):
     '''This function opens a hoomd xml and updates it to have a given simulation volume (boxSize)'''
     with open(adjustedInputFileName, 'r') as xmlFile:
@@ -29,8 +30,8 @@ def updateXMLBoxLength(adjustedInputFileName, boxSize):
             break
     with open(adjustedInputFileName, 'w+') as xmlFile:
         xmlFile.writelines(xmlData)
+
         
-            
 def findIndex(string, character):
     '''This function returns the locations of an inputted character in an inputted string'''
     index = 0
@@ -42,7 +43,8 @@ def findIndex(string, character):
     if len(locations) == 0:
         return None
     return locations
-   
+
+
 def calculateSeparation(atom1, atom2):
     '''This function calculates the distance between two input points (either as lists or np.arrays)'''
     xdif = atom1[0] - atom2[0]
@@ -67,7 +69,8 @@ def linearInterpDescendingY(targetValue, xArray, yArray):
         xVal = xLo + yDeltaFrac*xDiff
         break
     return xVal
-    
+
+
 def calcCOM(listOfPositions, listOfMasses):
     '''This function calculates the centre of mass of a collection of sites/atoms (listOfPositions) with corresponding mass (listOfMasses)'''
     massWeightedX = 0.
@@ -144,6 +147,7 @@ def rotationMatrix(vector1, vector2):
     rotMatrix = np.matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]]) + skewMatrix + skewMatrixSquared*((1 - cosAngle)/(sinAngle**2))
     return rotMatrix
 
+
 def addUnwrappedPositions(inputDictionary):
     '''This function takes a runHoomd.py input dictionary and updates the 'unwrapped_position' key based on the values of the 'position' and 'image' keys'''
     simulationDimensions = [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']]
@@ -215,6 +219,7 @@ def addDiameters(inputDictionary):
         elif 'S' in inputDictionary['type'][atomID]:
             inputDictionary['diameter'][atomID] = 0.88
     return inputDictionary
+
 
 def addTerminatingHydrogens(inputDictionary):
     '''This function takes a runHoomd.py input dictionary, determines the terminating monomers in the system, and creates new hydrogen atoms at a sensible position, bonded to the terminating carbon atoms of the chain'''
@@ -500,24 +505,36 @@ def writeMorphologyXML(inputDictionary, outputFile):
 
 def writePOSCARFile(inputDict, outputFile):
     '''This function takes an input dictionary and converts it to a POSCAR for use in DFT calculations'''
+    # This POSCAR is ordered as C, S, H for Izaak.
     linesToWrite = []
-    typeList = []
-    freqList = []
-    previousType = None
-    numberOfTypes = 0
+    atomsByType = [[],[],[]] # C, S, H
     for atomID in range(len(inputDict['type'])):
         atomType = inputDict['type'][atomID][0]
-        if atomType != previousType:
-            if previousType != None:
-                typeList.append(previousType)
-                freqList.append(numberOfTypes)
-            previousType = atomType
-            numberOfTypes = 1
-        else:
-            numberOfTypes += 1
-    # Now have to add the final lot of atoms:
-    typeList.append(previousType)
-    freqList.append(numberOfTypes)
+        if atomType == 'C':
+            atomsByType[0].append(atomID)
+        elif atomType == 'S':
+            atomsByType[1].append(atomID)
+        elif atomType == 'H':
+            atomsByType[2].append(atomID)
+    
+    # linesToWrite = []
+    # typeList = []
+    # freqList = []
+    # previousType = None
+    # numberOfTypes = 0
+    # for atomID in range(len(inputDict['type'])):
+    #     atomType = inputDict['type'][atomID][0]
+    #     if atomType != previousType:
+    #         if previousType != None:
+    #             typeList.append(previousType)
+    #             freqList.append(numberOfTypes)
+    #         previousType = atomType
+    #         numberOfTypes = 1
+    #     else:
+    #         numberOfTypes += 1
+    # # Now have to add the final lot of atoms:
+    # typeList.append(previousType)
+    # freqList.append(numberOfTypes)
     # Line 1 = CommentLine
     slashLocs = findIndex(outputFile, '/')
     linesToWrite.append(str(outputFile[slashLocs[-3]+1:slashLocs[-2]+1])+str(outputFile[slashLocs[-1]+1:]).replace('.POSCAR', '')+' VASP input file.\n')
@@ -534,24 +551,33 @@ def writePOSCARFile(inputDict, outputFile):
             boxRow += "{:22.15f}".format(element)
         linesToWrite.append(boxRow+'\n')
     # Line 6 = Atom Types
-    linesToWrite.append(' '.join(typeList)+'\n')
+    # linesToWrite.append(' '.join(typeList)+'\n')
+    linesToWrite.append('C S H \n')
     # Line 7 = Frequency of Types
-    linesToWrite.append(' '.join(map(str, freqList))+'\n')
+    # linesToWrite.append(' '.join(map(str, freqList))+'\n')
+    linesToWrite.append(str(len(atomsByType[0]))+' '+str(len(atomsByType[1]))+' '+str(len(atomsByType[2]))+'\n')
     # Line 8 = 'Cartesian'
     linesToWrite.append('Cartesian\n')
     # Lines 9+ = Positions
     # Positions are not set to be origin in the middle, origin is bottom left corner. As such, we need to add L/2 to each coordinate
-    for position in inputDict['position']:
+    writeOrder = []
+    for atomType in atomsByType:
+        writeOrder += atomType
+    # for position in inputDict['position']:
+    #     coordinates = ''
+    #     for axis in range(3):
+    #         coordinates += "{:22.15f}".format(position[axis]+(boxDims[axis]/2.))
+    #     linesToWrite.append(coordinates+'\n')
+    for atomID in writeOrder:
         coordinates = ''
         for axis in range(3):
-            coordinates += "{:22.15f}".format(position[axis]+(boxDims[axis]/2.))
+            coordinates += "{:22.15f}".format(inputDict['position'][atomID][axis]+(boxDims[axis]/2.))
         linesToWrite.append(coordinates+'\n')
     with open(outputFile, 'w+') as POSCARFile:
         POSCARFile.writelines(linesToWrite)
     with open(outputFile.replace('POSCAR', 'pickle'), 'w+') as bondPickle:
         pickle.dump(inputDict['bond'], bondPickle)
     print "POSCAR data written to", str(outputFile)+". Bond data written to", str(outputFile.replace('POSCAR', 'pickle'))+"."
-
 
         
 def writeXYZFile(inputDict, outputFile):
@@ -628,7 +654,13 @@ def incrementAtomIDs(inputDictionary, increment):
         dihedral[2] += increment
         dihedral[3] += increment
         dihedral[4] += increment
+    for improper in inputDictionary['improper']:
+        improper[1] += increment
+        improper[2] += increment
+        improper[3] += increment
+        improper[4] += increment
     return inputDictionary
+
 
 def scale(inputDictionary, scaleFactor):
     for ID, position in enumerate(inputDictionary['position']):
@@ -643,6 +675,7 @@ def scale(inputDictionary, scaleFactor):
 	ipos = np.array(inputDictionary['position'])
     return inputDictionary
 
+
 def centre(inputDictionary, centreOfMass):
     COM = np.array(centreOfMass)
     numberOfAtomsMoved = 0
@@ -653,6 +686,7 @@ def centre(inputDictionary, centreOfMass):
         # print "Distance Moved by atom", index, "=", distanceMoved0, distanceMoved
         numberOfAtomsMoved += 1
     return inputDictionary
+
 
 def checkWrappedPositions(inputDictionary):
     atomPositions = np.array(inputDictionary['position'])

@@ -23,7 +23,12 @@ def checkOutputDirectory(morphologyFile, outputDir, mode="<NO MODE>"):
     morphologyName = str(morphologyFile[:-4])
     outputDirContents = os.listdir(outputDir)
     if (morphologyName in outputDirContents):
-        morphologyDirContents = os.listdir(outputDir+'/'+morphologyName+'/morphology')
+        try:
+            morphologyDirContents = os.listdir(outputDir+'/'+morphologyName+'/morphology')
+        except OSError:
+            os.makedirs(outputDir+'/'+morphologyName+'/morphology')
+            os.makedirs(outputDir+'/'+morphologyName+'/molecules')
+            return True, True
         for fileName in morphologyDirContents:
             if '.pickle' in fileName:
                 overwriteFlag = str(raw_input("OVERWRITE CURRENT "+mode+" DATA FOR "+morphologyName+"? (Y or N, default N): "))
