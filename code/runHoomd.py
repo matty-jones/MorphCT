@@ -518,14 +518,12 @@ def checkSaveDirectory(morphologyName, saveDirectory):
                 continuePhase4 = True
                 continueFile = saveDirectory+fileName
     return [runPhase1, runPhase2, runPhase3, runPhase4, continuePhase4, continueFile]
-        
-#def execute(moleculeDir):
-if __name__ == '__main__':
-    morphologyFile = sys.argv[1]
+
+
+def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize):
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
     outputDir = './outputFiles'
     morphologyList = os.listdir(outputDir)
-    pickleFound = False
     scaleFound = False
     for allMorphologies in morphologyList:
         if morphologyName in allMorphologies:
@@ -539,16 +537,7 @@ if __name__ == '__main__':
     for fileName in fileList:
         if ('scaled' in fileName):
             scaleFound = True
-        if fileName == morphologyName+'.pickle':
-            pickleLoc = outputDir+'/morphology/'+fileName
-            pickleFound = True
-    if pickleFound == False:
-        print "Pickle file not found. Please run morphCT.py again to create the required HOOMD inputs."
-        exit()
-    print "Pickle found at", str(pickleLoc)+"."
-    print "Loading data..."
-    with open(pickleLoc, 'r') as pickleFile:
-        (AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize) = pickle.load(pickleFile)
+            break
     # eScale = 1.
     # sScale = 1.
     eScale = 1./0.25
@@ -565,34 +554,39 @@ if __name__ == '__main__':
             AAMorphologyDict = helperFunctions.scale(AAMorphologyDict, sScale)
         print "Writing scaled XML..."
         helperFunctions.writeMorphologyXML(AAMorphologyDict, adjustedInputFileName)
-
-    # # Rescale morphologies using modeler_hoomd
-    # buildingBlock = mh.builder.building_block(AAfileName, model_name = '3HTmid', model_file = os.getcwd()+'/templates/model.xml')
-    # print "Scaling morphology..."
-    # if (sScale != 1.):
-    #     buildingBlock.scale(sScale)
-    # print "Writing scaled XML..."
-    # buildingBlock.write(adjustedInputFileName)
-    # print "Updating simulation dimensions..."
-    # helperFunctions.updateXMLBoxLength(adjustedInputFileName, boxSize)
-
     relaxedXML = hoomdRun(adjustedInputFileName, CGMoleculeDict, CGtoAAIDs, eScale, sScale, continueData).optimiseStructure()
+    return morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize
+    
 
-    # raise SystemError('HALT')
-    # # Now make the .xyz for Lan
-    # # First rescale
-    # xyzName = relaxedXML[:-3]+'xyz'
 
-    # print "Run Complete."
 
-    # print "Rescaling morphology..."
-    # buildingBlock = mh.builder.building_block(relaxedXML, model_name = '3HT_mid', model_file = os.getcwd()+'/templates/model.xml')
-    # if (sScale != 1.):
-    #     buildingBlock.scale(1/sScale)
-    # print "Writing rescaled temporary XML..."
-    # buildingBlock.write(os.getcwd()+'/temporary_molecule.xml')
-    # print "Converting to .xyz for DFT..."
-    # helperFunctions.XMLToXYZ(os.getcwd()+'/temporary_molecule.xml', xyzName)
-    # print "Tidying up..."
-    # os.unlink(os.getcwd()+'/temporary_molecule.xml')
-    # init.reset()
+        
+#def execute(moleculeDir):
+if __name__ == '__main__':
+    morphologyFile = sys.argv[1]
+    morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
+    outputDir = './outputFiles'
+    morphologyList = os.listdir(outputDir)
+    pickleFound = False
+    for allMorphologies in morphologyList:
+        if morphologyName in allMorphologies:
+            outputDir += '/'+morphologyName
+            break
+    saveDir = outputDir+'/morphology'
+    fileList = os.listdir(saveDir)
+    continueData = checkSaveDirectory(morphologyName, saveDir)
+    if np.sum(continueData[:-2]) == 0:
+        exit()
+    for fileName in fileList:
+        if fileName == morphologyName+'.pickle':
+            pickleLoc = outputDir+'/morphology/'+fileName
+            pickleFound = True
+            break
+    if pickleFound == False:
+        print "Pickle file not found. Please run morphCT.py again to create the required HOOMD inputs."
+        exit()
+    print "Pickle found at", str(pickleLoc)+"."
+    print "Loading data..."
+    with open(pickleLoc, 'r') as pickleFile:
+        (AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize) = pickle.load(pickleFile)
+    execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize)

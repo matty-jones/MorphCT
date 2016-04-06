@@ -57,6 +57,7 @@ class morphology:
         with open(pickleFileName, 'w+') as pickleFile:
             pickle.dump(toPickle, pickleFile)
         print "Pickle file written to", pickleFileName
+        return AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDMaster, boxSize
             
         # exit()
         # ### Before we split into segments, let's fine grain the molecules (and write an xml so that we can see the output in VMD)

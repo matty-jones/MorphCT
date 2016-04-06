@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import helperFunctions
+import chromophores
 import matplotlib
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -163,7 +164,7 @@ def calculateChromophores(molecule, molName, outputDir, moleculeBackbone):
     previousThioNormalAxis = moleculeBackbone[0]['normal']
     bendingAngles = []
     torsionAngles = []
-    chromophores = [[0]]
+    chromophoreIDs = [[0]]
     conjugationBroken = False
     torsionOverThreshold = 0
     bendingOverThreshold = 0
@@ -183,9 +184,9 @@ def calculateChromophores(molecule, molName, outputDir, moleculeBackbone):
             bendingOverThreshold += 1
             conjugationBroken = True
         if conjugationBroken == True:
-            chromophores.append([])
+            chromophoreIDs.append([])
             conjugationBroken = False
-        chromophores[-1].append(thioNumber)
+        chromophoreIDs[-1].append(thioNumber)
         bendingAngles.append(bendingAngle)
         torsionAngles.append(torsionAngle)
         previousThioPlaneAxis = np.copy(currentThioPlaneAxis)
@@ -194,7 +195,7 @@ def calculateChromophores(molecule, molName, outputDir, moleculeBackbone):
     #print "The bending angle was over the threshold ("+str(bendingAngleTolerance)+")", bendingOverThreshold, "times."
     #plotHist(bendingAngles, outputDir+'/molecules/'+molName.replace('.POSCAR', '_Bend.png'), angle=True)
     #plotHist(torsionAngles, outputDir+'/molecules/'+molName.replace('.POSCAR', '_Tor.png'), angle=True)
-    return bendingAngles, torsionAngles, chromophores
+    return bendingAngles, torsionAngles, chromophoreIDs
 
 
 def plotHist(data, outputFile, bins=20, angle=False):
@@ -207,33 +208,20 @@ def plotHist(data, outputFile, bins=20, angle=False):
     plt.close()
 
 
-if __name__ == "__main__":
-    morphologyFile = sys.argv[1]
+
+
+def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize):
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
     outputDir = './outputFiles'
     morphologyList = os.listdir(outputDir)
-    pickleFound = False
     for allMorphologies in morphologyList:
         if morphologyName in allMorphologies:
             outputDir += '/'+morphologyName
             break
-    for fileName in os.listdir(outputDir+'/morphology'):
-        if fileName == morphologyName+'.pickle':
-            pickleLoc = outputDir+'/morphology/'+fileName
-            pickleFound = True
-    if pickleFound == False:
-        print "Pickle file not found. Please run morphCT.py again to create the required HOOMD inputs."
-        exit()
-    print "Pickle found at", str(pickleLoc)+"."
-    print "Loading data..."
-    with open(pickleLoc, 'r') as pickleFile:
-        (AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize) = pickle.load(pickleFile)
-
     CGBonds = []
     for CGBond in CGMoleculeDict['bond']:
         if CGBond not in CGBonds:
             CGBonds.append(CGBond)
-
     poscarList = os.listdir(outputDir+'/molecules')
     moleculeList = []
     molNames = []
@@ -246,23 +234,23 @@ if __name__ == "__main__":
     morphologyBackboneData = [] # Dictionaries of molecule data for each molecule in the system
     rollingAtomID = 0
     for molNo, molecule in enumerate(moleculeList):
-        print "Examining molecule number", molNo, "of", str(len(moleculeList)-1)+"..."
+        print "Examining molecule number", molNo, "of", str(len(moleculeList)-1)+"...\r",
         thioRings, alk1Groups, alk2Groups, moleculeEnds = getFunctionalGroups(molecule, CGtoAAIDs[0], CGBonds)
         moleculeBackbone = obtainBackboneData(molecule, thioRings)
         # plotMolecule3D(molecule, moleculeBackbone)
         # exit()
         endToEndDistance = helperFunctions.calculateSeparation(moleculeBackbone[moleculeEnds[0]]['COM'], moleculeBackbone[moleculeEnds[1]]['COM'])
         persistenceLength = calculatePersistenceLength(molecule, molNames[molNo], outputDir, moleculeBackbone, moleculeEnds)
-        bendingAngles, torsionAngles, chromophores = calculateChromophores(molecule, molNames[molNo], outputDir, moleculeBackbone)
+        bendingAngles, torsionAngles, chromophoreIDs = calculateChromophores(molecule, molNames[molNo], outputDir, moleculeBackbone)
         morphologyChromophores = []
-        for chromophore in chromophores:
+        for chromophore in chromophoreIDs:
             morphologyChromophores.append([])
             for monomerID in chromophore:
-                morphologyChromophores[-1].append(map(int, list(np.array(thioRings[monomerID])+rollingAtomID)+list(np.array(alk1Groups[monomerID])+rollingAtomID)list(np.array(alk2Groups[monomerID])+rollingAtomID)))
-            morphologyChromophores.append(list(map(int, np.array(chromophore)+rollingAtomID)))
-        moleculeDictionary = {'ends': moleculeEnds, 'endToEndDistance': endToEndDistance, 'persistenceLength': persistenceLength, 'bendingAngles': bendingAngles, 'torsionAngles': torsionAngles, 'chromophores': chromophores, 'morphologyChromophores': morphologyChromophores}
+                morphologyChromophores[-1] += list(np.array(thioRings[monomerID])+rollingAtomID)+list(np.array(alk1Groups[monomerID])+rollingAtomID)+list(np.array(alk2Groups[monomerID])+rollingAtomID)
+        moleculeDictionary = {'ends': moleculeEnds, 'endToEndDistance': endToEndDistance, 'persistenceLength': persistenceLength, 'bendingAngles': bendingAngles, 'torsionAngles': torsionAngles, 'chromophores': chromophoreIDs, 'morphologyChromophores': morphologyChromophores}
         morphologyBackboneData.append(moleculeDictionary)
         rollingAtomID += len(molecule['type'])
+    print "\n"
     print "Plotting morphology histograms..."
     endToEndDistance = []
     bendingAngles = []
@@ -288,8 +276,32 @@ if __name__ == "__main__":
     print "Average persistence length in monomer units =", np.average(persistenceLengths)
     print "Average chromophore length in monomers =", np.average(segmentLengths), "\n"
 
-
-
     # NOW, WRITE THE CHROMOPHORES OUT TO AN ORCA INPUT FILE OR SOMETHING IN ./outputFiles/<morphName>/chromophores/single.
+    chromophores.obtain(AAMorphologyDict, morphologyBackboneData, boxSize)
     # Also, get their COM posn so that we can split them into neighbouring pairs and store it in ../pairs
+    return AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize
     
+    
+
+if __name__ == "__main__":
+    morphologyFile = sys.argv[1]
+    morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
+    outputDir = './outputFiles'
+    morphologyList = os.listdir(outputDir)
+    for allMorphologies in morphologyList:
+        if morphologyName in allMorphologies:
+            outputDir += '/'+morphologyName
+            break
+    pickleFound = False
+    for fileName in os.listdir(outputDir+'/morphology'):
+        if fileName == morphologyName+'.pickle':
+            pickleLoc = outputDir+'/morphology/'+fileName
+            pickleFound = True
+    if pickleFound == False:
+        print "Pickle file not found. Please run morphCT.py again to create the required HOOMD inputs."
+        exit()
+    print "Pickle found at", str(pickleLoc)+"."
+    print "Loading data..."
+    with open(pickleLoc, 'r') as pickleFile:
+        (AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize) = pickle.load(pickleFile)
+    execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize)

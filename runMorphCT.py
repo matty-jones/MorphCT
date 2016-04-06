@@ -6,6 +6,9 @@ import subprocess
 sys.path.append(os.getcwd()+'/code')
 import fineGrainer
 import helperFunctions
+import runHoomd
+import runMol
+import analyseMolecules
 
 def getFilesList(direc):
     fileList = os.listdir(direc)
@@ -97,7 +100,7 @@ if __name__ == '__main__':
                         sigma = 3.
                 t0 = T.time()
                 print "Loading morphology from XML for FineGraining..."
-                fineGrainer.morphology(str(inputDir)+'/'+str(morphologyFiles[runThisFile]), sigma).analyseMorphology()
+                AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, boxSize = fineGrainer.morphology(str(inputDir)+'/'+str(morphologyFiles[runThisFile]), sigma).analyseMorphology()
                 t1 = T.time()
                 elapsedTime = float(t1) - float(t0)
                 if elapsedTime < 60:
@@ -118,22 +121,45 @@ if __name__ == '__main__':
 
             print "Running hoomd on morphology files..."
             if runMD == True:
-                if runOn == 'local':
-                    print 'hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode
-                     # subprocess.call('hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+'/'+moleculeName+' --mode='+mode)
-                    os.system('hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode)
-                elif runOn == 'kestrel':
+                if runOn == 'kestrel':
                     submissionScript = helperFunctions.createSlurmSubmissionScript(outputDir, morphologyFiles[runThisFile][:-4], mode)
-                    os.system('sbatch '+str(submissionScript))                
-            
-
+                    os.system('sbatch '+str(submissionScript))
+                else: # runOn == 'local'
+                    if 'AAMorphologyDict' in locals():
+                        # Fine Graining calcs have been done so we already have the required data. No need to read in the pickle again.
+                        morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize = runHoomd.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize) 
+                    else:
+                        # Fine Graining calcs have not just been run, so we need to call runHoomd.py directly to unpickle the data we need
+                        print 'hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode
+                         # subprocess.call('hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+'/'+moleculeName+' --mode='+mode)
+                        os.system('hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode)
+                        
             print "Sorting morphology into individual molecules and outputing .xyz for DFT..."
             runMol = True
             if runMol == True:
                 if runOn == 'local':
-                    print 'hoomd '+os.getcwd()+'/code/runMol.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode
-                    # subprocess.call('hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+'/'+moleculeName+' --mode='+mode)
-                    os.system('hoomd '+os.getcwd()+'/code/runMol.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode)
+                    if 'AAMorphologyDict' in locals():
+                        morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize = runMol.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize)
+                    else:
+                        print 'hoomd '+os.getcwd()+'/code/runMol.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode
+                        # subprocess.call('hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+'/'+moleculeName+' --mode='+mode)
+                        os.system('hoomd '+os.getcwd()+'/code/runMol.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode)
                 # elif runOn == 'kestrel':
                 #     submissionScript = helperFunctions.createSlurmSubmissionScript(outputDir, morphologyFiles[runThisFile][:-4], mode)
                 #     os.system('sbatch '+str(submissionScript))                
+
+
+            print "Analysing morphology to obtain chromophores..."
+            runAnalyse = True
+            if runAnalyse == True:
+                if runOn == 'local':
+                    if 'AAMorphologyDict' in locals():
+                        morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize = analyseMolecules.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize)
+                    else:
+                        print 'hoomd '+os.getcwd()+'/code/analyseMolecules.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode
+                        # subprocess.call('hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+'/'+moleculeName+' --mode='+mode)
+                        os.system('hoomd '+os.getcwd()+'/code/analyseMolecules.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode)
+                # elif runOn == 'kestrel':
+                #     submissionScript = helperFunctions.createSlurmSubmissionScript(outputDir, morphologyFiles[runThisFile][:-4], mode)
+                #     os.system('sbatch '+str(submissionScript))                
+                

@@ -29,36 +29,20 @@ def getsScale(outputDir, morphologyName):
     underscoreLocs = helperFunctions.findIndex(scaledXMLName, '_')
     inverseScaleFactor = scaledXMLName[underscoreLocs[-2]+1:underscoreLocs[-1]]
     return float(inverseScaleFactor)
-    
 
 
-if __name__ == '__main__':
-    morphologyFile = sys.argv[1]
+def execute(morphologyFile, AAfileName, inputCGMoleculeDict, inputAAMorphologyDict, CGtoAAIDs, boxSize):
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
     outputDir = './outputFiles'
     morphologyList = os.listdir(outputDir)
-    pickleFound = False
     for allMorphologies in morphologyList:
         if morphologyName in allMorphologies:
             outputDir += '/'+morphologyName
             break
+    fileList = os.listdir(outputDir+'/morphology')
     secondDirList = os.listdir(outputDir)
     if 'molecules' not in secondDirList:
         os.makedirs(outputDir+'/molecules')
-    fileList = os.listdir(outputDir+'/morphology')
-    for fileName in fileList:
-        if fileName == morphologyName+'.pickle':
-            pickleLoc = outputDir+'/morphology/'+fileName
-            pickleFound = True
-    if pickleFound == False:
-        print "Pickle file not found. Please run morphCT.py again to create the required HOOMD inputs."
-        exit()
-    print "Pickle found at", str(pickleLoc)+"."
-
-    print "Loading atom data..."
-    with open(pickleLoc, 'r') as pickleFile:
-        (AAfileName, inputCGMoleculeDict, inputAAMorphologyDict, CGtoAAIDs, boxSize) = pickle.load(pickleFile)
-
     # GET sSCALE FROM SOMEWHERE ELSE RATHER THAN HARDCODING IT IN HERE!
     inverseSScale = getsScale(outputDir, morphologyName)
     
@@ -102,3 +86,30 @@ if __name__ == '__main__':
         moleculeDictionary = helperFunctions.scale(moleculeDictionary, inverseSScale)
         moleculeDictionary = helperFunctions.alignMolecule(moleculeDictionary, [0,1,0]) # Align along y-axis
         helperFunctions.writePOSCARFile(moleculeDictionary, poscarName)
+    return morphologyFile, AAfileName, inputCGMoleculeDict, inputAAMorphologyDict, CGtoAAIDs, boxSize
+    
+
+
+if __name__ == '__main__':
+    morphologyFile = sys.argv[1]
+    morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
+    outputDir = './outputFiles'
+    morphologyList = os.listdir(outputDir)
+    for allMorphologies in morphologyList:
+        if morphologyName in allMorphologies:
+            outputDir += '/'+morphologyName
+            break
+    fileList = os.listdir(outputDir+'/morphology')
+    pickleFound = False
+    for fileName in fileList:
+        if fileName == morphologyName+'.pickle':
+            pickleLoc = outputDir+'/morphology/'+fileName
+            pickleFound = True
+    if pickleFound == False:
+        print "Pickle file not found. Please run morphCT.py again to create the required HOOMD inputs."
+        exit()
+    print "Pickle found at", str(pickleLoc)+"."
+    print "Loading atom data..."
+    with open(pickleLoc, 'r') as pickleFile:
+        (AAfileName, inputCGMoleculeDict, inputAAMorphologyDict, CGtoAAIDs, boxSize) = pickle.load(pickleFile)
+    execute(morphologyFile, AAfileName, inputCGMoleculeDict, inputAAMorphologyDict, CGtoAAIDs, boxSize)
