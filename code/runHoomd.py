@@ -582,10 +582,6 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
     return morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize
     
 
-
-
-        
-#def execute(moleculeDir):
 if __name__ == '__main__':
     morphologyFile = sys.argv[1]
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]

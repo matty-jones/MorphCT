@@ -786,7 +786,8 @@ def loadPoscar(inputFilePath):
     typeList = poscarData[5].split('\n')[0].split(' ')
     freqList = map(int, poscarData[6].split('\n')[0].split(' '))
     for i in range(len(typeList)):
-        moleculeDict['type'] += [typeList[i]]*freqList[i]
+        if len(typeList[i]) != 0: # Catch for the extra space I had to put in to make VMD behave properly
+            moleculeDict['type'] += [typeList[i]]*freqList[i]
     for atomCoords in poscarData[8:]:
         moleculeDict['position'].append([])
         for coordinate in atomCoords.split('\n')[0].split(' '):

@@ -41,8 +41,19 @@ def execute(morphologyFile, AAfileName, inputCGMoleculeDict, inputAAMorphologyDi
             break
     fileList = os.listdir(outputDir+'/morphology')
     secondDirList = os.listdir(outputDir)
+    moleculePOSCARS = []
     if 'molecules' not in secondDirList:
         os.makedirs(outputDir+'/molecules')
+    else:
+        moleculeFiles = os.listdir(outputDir+'/molecules')
+        for moleculeFile in moleculeFiles:
+            if ('.POSCAR' in moleculeFile) or ('.poscar' in moleculeFile):
+                moleculePOSCARS.append(moleculeFile)
+    moleculeAAIDs = getAAIDsByMolecule(CGtoAAIDs)
+    if len(moleculePOSCARS) != 0:
+        if len(moleculePOSCARS) == len(moleculeAAIDs):
+            print "All molecule files already treated. Please delete the .POSCAR files to run the set again."
+            return morphologyFile, AAfileName, inputCGMoleculeDict, inputAAMorphologyDict, CGtoAAIDs, boxSize
     # GET sSCALE FROM SOMEWHERE ELSE RATHER THAN HARDCODING IT IN HERE!
     inverseSScale = getsScale(outputDir, morphologyName)
     
@@ -53,8 +64,6 @@ def execute(morphologyFile, AAfileName, inputCGMoleculeDict, inputAAMorphologyDi
 
     # Unwrap positions
     AAMorphologyDict = helperFunctions.addUnwrappedPositions(AAMorphologyDict)
-
-    moleculeAAIDs = getAAIDsByMolecule(CGtoAAIDs)
 
     for moleculeNo, AAIDs in enumerate(moleculeAAIDs):
     # moleculeNo = 63

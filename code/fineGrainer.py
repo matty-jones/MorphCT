@@ -32,8 +32,9 @@ class morphology:
         # dictionary key is the CG site, the value is a list containing the CG type (e.g. 'thio') as the
         # first element and then another list of all the AAIDs corresponding to that CG site as the second
         # element.
+        print "Adding molecules to the system..."
         for moleculeNumber in range(len(moleculeIDs)):
-            print "Adding molecule number", moleculeNumber, "to the system..."
+            print "Adding molecule number", moleculeNumber, "\r",
             # print "Rolling AA Index =", rollingAAIndex
             CGMoleculeDict, AAMoleculeDict, CGtoAAIDs = atomistic(moleculeIDs[moleculeNumber], self.CGDictionary, morphologyName, rollingAAIndex).returnData()
             CGtoAAIDMaster.append(CGtoAAIDs)
@@ -48,6 +49,7 @@ class morphology:
                     else:
                         AAMorphologyDict[key] += AAMoleculeDict[key]
             rollingAAIndex += len(AAMoleculeDict['type'])
+        print "\n"
         print "Writing XML file..."
         AAFileName = './outputFiles/'+morphologyName+'/morphology/'+morphologyName+'.xml'
         writeXML(AAMorphologyDict, './templates/template.xml', AAFileName)

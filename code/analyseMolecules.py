@@ -6,8 +6,12 @@ import matplotlib
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pickle
-import mpl_toolkits.mplot3d.axes3d as p3
 import cme_utils
+try:
+    import mpl_toolkits.mplot3d.axes3d as p3
+except ImportError:
+    print "Could not import 3D plotting engine, calling the plotMolecule3D function will result in an error!"
+    pass
 
 
 def getFunctionalGroups(molecule, CGtoAAIDs, CGBonds):
@@ -206,9 +210,6 @@ def plotHist(data, outputFile, bins=20, angle=False):
     plt.hist(data, bins, normed=1)
     plt.savefig(outputFile)
     plt.close()
-
-
-
 
 def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize):
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
