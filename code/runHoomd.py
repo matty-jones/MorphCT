@@ -98,7 +98,7 @@ class hoomdRun:
         self.lj.pair_coeff.set('C1','C10',epsilon=0.070*eScale,sigma=3.550*sScale)
         self.lj.pair_coeff.set('C1','H1',epsilon=0.046*eScale,sigma=2.979*sScale)
         self.lj.pair_coeff.set('C1','S1',epsilon=0.132*eScale,sigma=3.550*sScale)
-        self.lj.pair_coeff.set('C2','C2',epsilon=0.250*eScale,sigma=3.550*sScale)
+        self.lj.pair_coeff.set('C2','C2',epsilon=0.070*eScale,sigma=3.550*sScale)
         self.lj.pair_coeff.set('C2','C3',epsilon=0.068*eScale,sigma=3.525*sScale)
         self.lj.pair_coeff.set('C2','C4',epsilon=0.068*eScale,sigma=3.525*sScale)
         self.lj.pair_coeff.set('C2','C5',epsilon=0.068*eScale,sigma=3.525*sScale)
@@ -155,8 +155,8 @@ class hoomdRun:
         self.lj.pair_coeff.set('C8','H1',epsilon=0.044*eScale,sigma=2.958*sScale)
         self.lj.pair_coeff.set('C8','S1',epsilon=0.128*eScale,sigma=3.525*sScale)
         self.lj.pair_coeff.set('C9','C9',epsilon=0.070*eScale,sigma=3.550*sScale)
-        self.lj.pair_coeff.set('C9','C10',epsilon=0.070*eScale,sigma=3.500*sScale)
-        self.lj.pair_coeff.set('C9','H1',epsilon=0.046*eScale,sigma=2.979*sScale)
+        self.lj.pair_coeff.set('C9','C10',epsilon=0.070*eScale,sigma=3.550*sScale)
+        self.lj.pair_coeff.set('C9','H1',epsilon=0.046*eScale,sigma=2.931*sScale)
         self.lj.pair_coeff.set('C9','S1',epsilon=0.132*eScale,sigma=3.550*sScale)
         self.lj.pair_coeff.set('C10','C10',epsilon=0.070*eScale,sigma=3.550*sScale)
         self.lj.pair_coeff.set('C10','H1',epsilon=0.046*eScale,sigma=2.979*sScale)
@@ -574,10 +574,10 @@ if __name__ == '__main__':
     print "Loading data..."
     with open(pickleLoc, 'r') as pickleFile:
         (AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize) = pickle.load(pickleFile)
-    eScale = 1.
-    sScale = 1.
-    #eScale = 1./0.25
-    #sScale = 1./3.55
+    # eScale = 1.
+    # sScale = 1.
+    eScale = 1./0.25
+    sScale = 1./3.55
     slashList = helperFunctions.findIndex(AAfileName, '/')
     adjustedInputFileName = AAfileName[:slashList[-1]+1]+'scaled_'+str(1/sScale)+'_'+AAfileName[slashList[-1]+1:]
 
