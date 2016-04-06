@@ -39,13 +39,13 @@ class hoomdRun:
         self.T = 1.0
         self.tau = 1.0
         self.dtPhase1 = 1e-5
-        self.dtPhase2 = 1e-4
-        self.dtPhase3 = 2e-4
-        self.dtPhase4 = 1e-3
+        self.dtPhase2 = 5e-5
+        self.dtPhase3 = 1e-4
+        self.dtPhase4 = 5e-4
         self.dtPhase5 = 1e-3
         self.phase1RunLength = 1000
-        self.phase2RunLength = 50000
-        self.phase3RunLength = 50000
+        self.phase2RunLength = 5000
+        self.phase3RunLength = 5000
         self.phase4RunLength = 1e6 # This is a maximum because sim is curtailed
         self.phase5RunLength = 5e4
         self.outputXML = self.saveDirectory+'relaxed_'+self.morphologyName+'.xml'
@@ -194,43 +194,43 @@ class hoomdRun:
 
         self.a = angle.harmonic()
         # Ring Bond Angles [k] = kcal mol^{-1} rad^{-2} * epsilon, [t] = rad
-        self.a.set_coeff('C10-C9-C2',k=129940*eScale,t0=1.97784)
-        self.a.set_coeff('C10-C9-H1',k=115762*eScale,t0=2.14639)
-        self.a.set_coeff('C10-S1-C1',k=283503*eScale,t0=1.61921)
-        self.a.set_coeff('C9-C10-S1',k=283503*eScale,t0=1.92496)
-        self.a.set_coeff('C1-C2-C9',k=129940*eScale,t0=1.97784)
-        self.a.set_coeff('C2-C9-H1',k=115762*eScale,t0=2.15897)
-        self.a.set_coeff('C2-C1-S1',k=283503*eScale,t0=1.92496)
+        self.a.set_coeff('C10-C9-C2',k=39.582*eScale,t0=1.97784)
+        self.a.set_coeff('C10-C9-H1',k=35.263*eScale,t0=2.14639)
+        self.a.set_coeff('C10-S1-C1',k=86.36*eScale,t0=1.61921)
+        self.a.set_coeff('C9-C10-S1',k=86.36*eScale,t0=1.92496)
+        self.a.set_coeff('C1-C2-C9',k=39.582*eScale,t0=1.97784)
+        self.a.set_coeff('C2-C9-H1',k=35.263*eScale,t0=2.15897)
+        self.a.set_coeff('C2-C1-S1',k=86.36*eScale,t0=1.92496)
         # Alkyl Bond Angles
-        self.a.set_coeff('C3-C2-C9',k=546735*eScale,t0=2.15335)
-        self.a.set_coeff('C2-C3-C4',k=394396*eScale,t0=2.01481)
-        self.a.set_coeff('C2-C3-H1',k=243125*eScale,t0=1.90571)
-        self.a.set_coeff('C1-C2-C3',k=545996*eScale,t0=2.17388)
-        self.a.set_coeff('C3-C4-C5',k=191552*eScale,t0=1.96699)
-        self.a.set_coeff('C3-C4-H1',k=123105*eScale,t0=1.93208)
-        self.a.set_coeff('C4-C3-H1',k=123105*eScale,t0=1.93208)
-        self.a.set_coeff('C4-C5-C6',k=191552*eScale,t0=1.96699)
-        self.a.set_coeff('C4-C5-H1',k=123105*eScale,t0=1.93208)
-        self.a.set_coeff('C5-C4-H1',k=123105*eScale,t0=1.93208)
-        self.a.set_coeff('C5-C6-C7',k=191552*eScale,t0=1.96699)
-        self.a.set_coeff('C5-C6-H1',k=123105*eScale,t0=1.93208)
-        self.a.set_coeff('C6-C5-H1',k=123105*eScale,t0=1.93208)
-        self.a.set_coeff('C6-C7-C8',k=191552*eScale,t0=1.96699)
-        self.a.set_coeff('C6-C7-H1',k=123105*eScale,t0=1.93208)
-        self.a.set_coeff('C7-C6-H1',k=123105*eScale,t0=1.93208)
-        self.a.set_coeff('C7-C8-H1',k=123105*eScale,t0=1.93208)
-        self.a.set_coeff('C8-C7-H1',k=123105*eScale,t0=1.93208)
-        self.a.set_coeff('H1-C8-H1',k=108333*eScale,t0=1.88146)
-        self.a.set_coeff('H1-C7-H1',k=108333*eScale,t0=1.88146)
-        self.a.set_coeff('H1-C6-H1',k=108333*eScale,t0=1.88146)
-        self.a.set_coeff('H1-C5-H1',k=108333*eScale,t0=1.88146)
-        self.a.set_coeff('H1-C4-H1',k=108333*eScale,t0=1.88146)
-        self.a.set_coeff('H1-C3-H1',k=108333*eScale,t0=1.88146)
+        self.a.set_coeff('C3-C2-C9',k=166.545*eScale,t0=2.15335)
+        self.a.set_coeff('C2-C3-C4',k=120.14*eScale,t0=2.01481)
+        self.a.set_coeff('C2-C3-H1',k=74.06*eScale,t0=1.90571)
+        self.a.set_coeff('C1-C2-C3',k=166.32*eScale,t0=2.17388)
+        self.a.set_coeff('C3-C4-C5',k=58.35*eScale,t0=1.96699)
+        self.a.set_coeff('C3-C4-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C4-C3-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C4-C5-C6',k=58.35*eScale,t0=1.96699)
+        self.a.set_coeff('C4-C5-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C5-C4-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C5-C6-C7',k=58.35*eScale,t0=1.96699)
+        self.a.set_coeff('C5-C6-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C6-C5-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C6-C7-C8',k=58.35*eScale,t0=1.96699)
+        self.a.set_coeff('C6-C7-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C7-C6-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C7-C8-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C8-C7-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('H1-C8-H1',k=33.0*eScale,t0=1.88146)
+        self.a.set_coeff('H1-C7-H1',k=33.0*eScale,t0=1.88146)
+        self.a.set_coeff('H1-C6-H1',k=33.0*eScale,t0=1.88146)
+        self.a.set_coeff('H1-C5-H1',k=33.0*eScale,t0=1.88146)
+        self.a.set_coeff('H1-C4-H1',k=33.0*eScale,t0=1.88146)
+        self.a.set_coeff('H1-C3-H1',k=33.0*eScale,t0=1.88146)
         # Inter-monomer Bond Angles
-        self.a.set_coeff('C1-C10-C9',k=179550*eScale,t0=2.27137)
-        self.a.set_coeff('C1-C10-S1',k=137024*eScale,t0=2.08687)
-        self.a.set_coeff('S1-C1-C10',k=137024*eScale,t0=2.08687)
-        self.a.set_coeff('C2-C1-C10',k=179550*eScale,t0=2.27137)
+        self.a.set_coeff('C1-C10-C9',k=54.694*eScale,t0=2.27137)
+        self.a.set_coeff('C1-C10-S1',k=41.74*eScale,t0=2.08687)
+        self.a.set_coeff('S1-C1-C10',k=41.74*eScale,t0=2.08687)
+        self.a.set_coeff('C2-C1-C10',k=54.694*eScale,t0=2.27137)
 
         self.d = dihedral.table(width=1000)
         # Ring Dihedrals
@@ -285,7 +285,7 @@ class hoomdRun:
             phase1DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase1'), period=10, overwrite=True)
             phase1Step = integrate.mode_standard(dt = self.dtPhase1)
             # phase1 = integrate.brownian(group=group.all(), seed=3, dscale=1e11, T=self.T)
-            phase1 = integrate.nve(group=group.all(), limit=0.01)
+            phase1 = integrate.nve(group=group.all(), limit=0.001)
             run(self.phase1RunLength)
             phase1DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase1'), all=True)
             phase1.disable()
@@ -362,7 +362,7 @@ class hoomdRun:
             if self.loadFromSnapshot == True:
                 print "Loading from snapshot..."
                 self.system.restore_snapshot(self.snapshotToLoad)
-            phase4DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase3'), all=True)
+            phase4DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase4'), all=True)
             phase4.disable()
             phase4DumpDCD.disable()
             checkKEs.disable()
@@ -396,9 +396,9 @@ class hoomdRun:
             # self.maxStandardDeviation = 0
             # self.consecutiveDumpPeriodsUnderTarget = 0
             # checkTotalEs = analyze.callback(callback = self.getEnergies, period=self.dumpPeriod)
-            resetXML = dump.xml(filename=self.outputXML.replace('relaxed_', 'temp_'), all=True, restart=True, period=self.mainRunLength/10)
+            resetXML = dump.xml(filename=self.outputXML.replace('relaxed_', 'temp_'), all=True, restart=True, period=self.phase5RunLength/10)
             try:
-                run_upto(self.phase5RunLength)
+                run(self.phase5RunLength)
             except ExitHoomd as exitMessage:
                 print exitMessage
             phase5DumpXML = dump.xml(filename=self.outputXML, all=True)
