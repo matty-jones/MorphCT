@@ -10,7 +10,6 @@ import helperFunctions
 import sys
 
 def multiHarmonicTorsion(theta, V0, V1, V2, V3, V4):
-    theta = np.deg2rad(theta)
     V = V0 + V1*np.cos(theta) + V2*((np.cos(theta))**2) + V3*((np.cos(theta))**3) + V4*((np.cos(theta))**4)
     F = V1*np.sin(theta) + 2*V2*np.cos(theta)*np.sin(theta) + 3*V3*((np.cos(theta))**2)*np.sin(theta) + 4*V4*((np.cos(theta))**3)*np.sin(theta)
     return (V, F)
@@ -39,10 +38,15 @@ class hoomdRun:
         self.T = 1.0
         self.tau = 1.0
         self.dtPhase1 = 1e-5
-        self.dtPhase2 = 1e-4
-        self.dt = 1e-3
-        self.maximumInitialRunLength = 1e6
-        self.mainRunLength = 1e5
+        self.dtPhase2 = 5e-5
+        self.dtPhase3 = 1e-4
+        self.dtPhase4 = 5e-4
+        self.dtPhase5 = 1e-3
+        self.phase1RunLength = 1000
+        self.phase2RunLength = 5000
+        self.phase3RunLength = 5000
+        self.phase4RunLength = 1e6 # This is a maximum because sim is curtailed
+        self.phase5RunLength = 5e4
         self.outputXML = self.saveDirectory+'relaxed_'+self.morphologyName+'.xml'
         self.outputDCD = self.saveDirectory+'relaxed_'+self.morphologyName+'.dcd'
         self.outputLOG = self.saveDirectory+'energies_'+self.morphologyName+'.log'
@@ -55,8 +59,9 @@ class hoomdRun:
         self.runPhase2 = continueData[1]
         self.runPhase3 = continueData[2]
         self.runPhase4 = continueData[3]
-        self.continuePhase4 = continueData[4]
-        self.continueFile = continueData[5]
+        self.runPhase5 = continueData[4]
+        self.continuePhase5 = continueData[5]
+        self.continueFile = continueData[6]
         
 
     def initialiseRun(self, inputFilename):
@@ -92,7 +97,7 @@ class hoomdRun:
         self.lj.pair_coeff.set('C1','C10',epsilon=0.070*eScale,sigma=3.550*sScale)
         self.lj.pair_coeff.set('C1','H1',epsilon=0.046*eScale,sigma=2.979*sScale)
         self.lj.pair_coeff.set('C1','S1',epsilon=0.132*eScale,sigma=3.550*sScale)
-        self.lj.pair_coeff.set('C2','C2',epsilon=0.250*eScale,sigma=3.550*sScale)
+        self.lj.pair_coeff.set('C2','C2',epsilon=0.070*eScale,sigma=3.550*sScale)
         self.lj.pair_coeff.set('C2','C3',epsilon=0.068*eScale,sigma=3.525*sScale)
         self.lj.pair_coeff.set('C2','C4',epsilon=0.068*eScale,sigma=3.525*sScale)
         self.lj.pair_coeff.set('C2','C5',epsilon=0.068*eScale,sigma=3.525*sScale)
@@ -149,8 +154,8 @@ class hoomdRun:
         self.lj.pair_coeff.set('C8','H1',epsilon=0.044*eScale,sigma=2.958*sScale)
         self.lj.pair_coeff.set('C8','S1',epsilon=0.128*eScale,sigma=3.525*sScale)
         self.lj.pair_coeff.set('C9','C9',epsilon=0.070*eScale,sigma=3.550*sScale)
-        self.lj.pair_coeff.set('C9','C10',epsilon=0.070*eScale,sigma=3.500*sScale)
-        self.lj.pair_coeff.set('C9','H1',epsilon=0.046*eScale,sigma=2.979*sScale)
+        self.lj.pair_coeff.set('C9','C10',epsilon=0.070*eScale,sigma=3.550*sScale)
+        self.lj.pair_coeff.set('C9','H1',epsilon=0.046*eScale,sigma=2.931*sScale)
         self.lj.pair_coeff.set('C9','S1',epsilon=0.132*eScale,sigma=3.550*sScale)
         self.lj.pair_coeff.set('C10','C10',epsilon=0.070*eScale,sigma=3.550*sScale)
         self.lj.pair_coeff.set('C10','H1',epsilon=0.046*eScale,sigma=2.979*sScale)
@@ -188,43 +193,43 @@ class hoomdRun:
 
         self.a = angle.harmonic()
         # Ring Bond Angles [k] = kcal mol^{-1} rad^{-2} * epsilon, [t] = rad
-        self.a.set_coeff('C10-C9-C2',k=0.02411*eScale,t0=1.97784)
-        self.a.set_coeff('C10-C9-H1',k=0.02148*eScale,t0=2.14639)
-        self.a.set_coeff('C10-S1-C1',k=0.05261*eScale,t0=1.61921)
-        self.a.set_coeff('C9-C10-S1',k=0.05261*eScale,t0=1.92496)
-        self.a.set_coeff('C1-C2-C9',k=0.02411*eScale,t0=1.97784)
-        self.a.set_coeff('C2-C9-H1',k=0.02148*eScale,t0=2.15897)
-        self.a.set_coeff('C2-C1-S1',k=0.05261*eScale,t0=1.92496)
+        self.a.set_coeff('C10-C9-C2',k=39.582*eScale,t0=1.97784)
+        self.a.set_coeff('C10-C9-H1',k=35.263*eScale,t0=2.14639)
+        self.a.set_coeff('C10-S1-C1',k=86.36*eScale,t0=1.61921)
+        self.a.set_coeff('C9-C10-S1',k=86.36*eScale,t0=1.92496)
+        self.a.set_coeff('C1-C2-C9',k=39.582*eScale,t0=1.97784)
+        self.a.set_coeff('C2-C9-H1',k=35.263*eScale,t0=2.15897)
+        self.a.set_coeff('C2-C1-S1',k=86.36*eScale,t0=1.92496)
         # Alkyl Bond Angles
-        self.a.set_coeff('C3-C2-C9',k=0.10147*eScale,t0=2.15335)
-        self.a.set_coeff('C2-C3-C4',k=0.07319*eScale,t0=2.01481)
-        self.a.set_coeff('C2-C3-H1',k=0.04511*eScale,t0=1.90571)
-        self.a.set_coeff('C1-C2-C3',k=0.10133*eScale,t0=2.17388)
-        self.a.set_coeff('C3-C4-C5',k=0.03555*eScale,t0=1.96699)
-        self.a.set_coeff('C3-C4-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C4-C3-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C4-C5-C6',k=0.03555*eScale,t0=1.96699)
-        self.a.set_coeff('C4-C5-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C5-C4-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C5-C6-C7',k=0.03555*eScale,t0=1.96699)
-        self.a.set_coeff('C5-C6-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C6-C5-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C6-C7-C8',k=0.03555*eScale,t0=1.96699)
-        self.a.set_coeff('C6-C7-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C7-C6-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C7-C8-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('C8-C7-H1',k=0.02285*eScale,t0=1.93208)
-        self.a.set_coeff('H1-C8-H1',k=0.02010*eScale,t0=1.88146)
-        self.a.set_coeff('H1-C7-H1',k=0.02010*eScale,t0=1.88146)
-        self.a.set_coeff('H1-C6-H1',k=0.02010*eScale,t0=1.88146)
-        self.a.set_coeff('H1-C5-H1',k=0.02010*eScale,t0=1.88146)
-        self.a.set_coeff('H1-C4-H1',k=0.02010*eScale,t0=1.88146)
-        self.a.set_coeff('H1-C3-H1',k=0.02010*eScale,t0=1.88146)
+        self.a.set_coeff('C3-C2-C9',k=166.545*eScale,t0=2.15335)
+        self.a.set_coeff('C2-C3-C4',k=120.14*eScale,t0=2.01481)
+        self.a.set_coeff('C2-C3-H1',k=74.06*eScale,t0=1.90571)
+        self.a.set_coeff('C1-C2-C3',k=166.32*eScale,t0=2.17388)
+        self.a.set_coeff('C3-C4-C5',k=58.35*eScale,t0=1.96699)
+        self.a.set_coeff('C3-C4-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C4-C3-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C4-C5-C6',k=58.35*eScale,t0=1.96699)
+        self.a.set_coeff('C4-C5-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C5-C4-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C5-C6-C7',k=58.35*eScale,t0=1.96699)
+        self.a.set_coeff('C5-C6-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C6-C5-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C6-C7-C8',k=58.35*eScale,t0=1.96699)
+        self.a.set_coeff('C6-C7-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C7-C6-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C7-C8-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('C8-C7-H1',k=37.5*eScale,t0=1.93208)
+        self.a.set_coeff('H1-C8-H1',k=33.0*eScale,t0=1.88146)
+        self.a.set_coeff('H1-C7-H1',k=33.0*eScale,t0=1.88146)
+        self.a.set_coeff('H1-C6-H1',k=33.0*eScale,t0=1.88146)
+        self.a.set_coeff('H1-C5-H1',k=33.0*eScale,t0=1.88146)
+        self.a.set_coeff('H1-C4-H1',k=33.0*eScale,t0=1.88146)
+        self.a.set_coeff('H1-C3-H1',k=33.0*eScale,t0=1.88146)
         # Inter-monomer Bond Angles
-        self.a.set_coeff('C1-C10-C9',k=0.03332*eScale,t0=2.27137)
-        self.a.set_coeff('C1-C10-S1',k=0.02543*eScale,t0=2.08687)
-        self.a.set_coeff('S1-C1-C10',k=0.02543*eScale,t0=2.08687)
-        self.a.set_coeff('C2-C1-C10',k=0.03332*eScale,t0=2.27137)
+        self.a.set_coeff('C1-C10-C9',k=54.694*eScale,t0=2.27137)
+        self.a.set_coeff('C1-C10-S1',k=41.74*eScale,t0=2.08687)
+        self.a.set_coeff('S1-C1-C10',k=41.74*eScale,t0=2.08687)
+        self.a.set_coeff('C2-C1-C10',k=54.694*eScale,t0=2.27137)
 
         self.d = dihedral.table(width=1000)
         # Ring Dihedrals
@@ -247,6 +252,8 @@ class hoomdRun:
         self.d.dihedral_coeff.set('S1-C1-C10-S1',func=multiHarmonicTorsion, coeff=dict(V0=2.9533*eScale,V1=0.1571*eScale,V2=-4.2326*eScale,V3=0.3979*eScale,V4=1.8855*eScale))
         self.d.dihedral_coeff.set('C2-C1-C10-S1',func=multiHarmonicTorsion, coeff=dict(V0=2.9533*eScale,V1=-0.1571*eScale,V2=-4.2326*eScale,V3=-0.3979*eScale,V4=1.8855*eScale))
 
+        # Placeholder for impropers if we use them later
+        self.i = None
         
     def optimiseStructure(self):
         thioAtoms = []
@@ -271,7 +278,6 @@ class hoomdRun:
                 elif self.CG2AAIDs[moleculeNo][CGAtomID][0] == 'alk2':
                     alk2Atoms.append(self.CG2AAIDs[moleculeNo][CGAtomID][1:])
                     self.alk2GroupIDs += self.CG2AAIDs[moleculeNo][CGAtomID][1]
-        print os.listdir(self.saveDirectory)
         # Build the groups:
         if self.runPhase1 == True:
             self.initialiseRun(self.fileName)
@@ -279,39 +285,54 @@ class hoomdRun:
             phase1Step = integrate.mode_standard(dt = self.dtPhase1)
             # phase1 = integrate.brownian(group=group.all(), seed=3, dscale=1e11, T=self.T)
             phase1 = integrate.nve(group=group.all(), limit=0.001)
-            run(1000)
+            run(self.phase1RunLength)
             phase1DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase1'), all=True)
             phase1.disable()
             phase1DumpDCD.disable()
-            del self.system, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.lj, self.b, self.a, self.d, phase1DumpDCD, phase1Step, phase1, phase1DumpXML
+            del self.system, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.lj, self.b, self.a, self.d, self.i, phase1DumpDCD, phase1Step, phase1, phase1DumpXML
             init.reset()
         else:
             print "Phase 1 already completed for this morphology...skipping"
 
             
-        print os.listdir(self.saveDirectory)
         if self.runPhase2 == True:
             self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'))
-            phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=10, overwrite=True)
+            phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=100, overwrite=True)
             phase2Step = integrate.mode_standard(dt = self.dtPhase2)
             phase2 = integrate.nvt(group=group.all(), T=self.T, tau=self.tau)
-            run(2000)
+            run(self.phase2RunLength)
             phase2DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase2'), all=True)
             phase2.disable()
             phase2DumpDCD.disable()
-            del self.system, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.lj, self.b, self.a, self.d, phase2DumpDCD, phase2Step, phase2, phase2DumpXML
+            del self.system, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.lj, self.b, self.a, self.d, self.i, phase2DumpDCD, phase2Step, phase2, phase2DumpXML
             init.reset()
         else:
             print "Phase 2 already completed for this morphology...skipping"
         # initDump.disable()
         # debugDump = dump.dcd(filename=self.outputDCD, period=1, overwrite=False)
 
-        print dir()
         if self.runPhase3 == True:
             self.initialiseRun(self.outputXML.replace('relaxed', 'phase2'))
-            phase3DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase3'), period=self.dumpPeriod, overwrite=True)
-            phase3Step = integrate.mode_standard(dt=self.dt)
+            phase3DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase3'), period=100, overwrite=True)
+            phase3Step = integrate.mode_standard(dt = self.dtPhase3)
             phase3 = integrate.nvt(group=group.all(), T=self.T, tau=self.tau)
+            run(self.phase3RunLength)
+            phase3DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase3'), all=True)
+            phase3.disable()
+            phase3DumpDCD.disable()
+            del self.system, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.lj, self.b, self.a, self.d, self.i, phase3DumpDCD, phase3Step, phase3, phase3DumpXML
+            init.reset()
+        else:
+            print "Phase 3 already completed for this morphology...skipping"
+        # initDump.disable()
+        # debugDump = dump.dcd(filename=self.outputDCD, period=1, overwrite=False)
+
+
+        if self.runPhase4 == True:
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase3'))
+            phase4DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase4'), period=self.dumpPeriod, overwrite=True)
+            phase4Step = integrate.mode_standard(dt=self.dtPhase4)
+            phase4 = integrate.nvt(group=group.all(), T=self.T, tau=self.tau)
             # timesteps = 6
             # currentTimestep = 1
             # while True:
@@ -333,40 +354,40 @@ class hoomdRun:
             # Modeler_hoomd wipes out the velocity data, and so we start with 0 kinetic energy. Skip this step (firstKEValue == True). Then, take the snapshot with the lowest KE.
             checkKEs = analyze.callback(callback = self.checkKE, period=self.dumpPeriod)
             try:
-                run_upto(self.maximumInitialRunLength)
+                run_upto(self.phase4RunLength)
                 #run(self.maximumInitialRunLength)
             except ExitHoomd as exitMessage:
                 print exitMessage
             if self.loadFromSnapshot == True:
                 print "Loading from snapshot..."
                 self.system.restore_snapshot(self.snapshotToLoad)
-            phase3DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase3'), all=True)
-            phase3.disable()
-            phase3DumpDCD.disable()
+            phase4DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase4'), all=True)
+            phase4.disable()
+            phase4DumpDCD.disable()
             checkKEs.disable()
-            del self.system, self.snapshotToLoad, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.lj, self.b, self.a, self.d, phase3DumpDCD, phase3Step, phase3, phase3DumpXML, checkKEs, self.initialKineticEnergies, self.initialPotentialEnergies, self.loadFromSnapshot, exitMessage
+            del self.system, self.snapshotToLoad, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.lj, self.b, self.a, self.d, self.i, phase4DumpDCD, phase4Step, phase4, phase4DumpXML, checkKEs, self.initialKineticEnergies, self.initialPotentialEnergies, self.loadFromSnapshot, exitMessage
             # print dir()
             # print dir(self)
             init.reset()
         else:
-            print "Phase 3 already completed for this morphology. Skipping..."
+            print "Phase 4 already completed for this morphology. Skipping..."
 
             
         ##### TESTING: FOR NOW JUST RUN THIS FOR AS LONG AS POSSIBLE TO SEE HOW THE ENERGY EVOLVES
         # return self.outputXML
         print os.listdir(self.saveDirectory)
-        if (self.runPhase4 == True) or (self.continuePhase4 == True):
+        if (self.runPhase5 == True) or (self.continuePhase5 == True):
             # Then lock the sidechains in place and run the thiophenes for longer to make sure they equilibrate properly
-            if self.continuePhase4 == False:
-                self.initialiseRun(self.outputXML.replace('relaxed', 'phase3'))
+            if self.continuePhase5 == False:
+                self.initialiseRun(self.outputXML.replace('relaxed', 'phase4'))
             else:
                 self.initialiseRun(self.continueFile)
                 # underscoreList = helperFunctions.findIndex(self.continueFile, '_')
                 # timestepsCompleted = int(self.continueFile[underscoreList[0]+1:underscoreList[1]])
                 # self.mainRunLength -= timestepsCompleted
-            phase4DumpDCD = dump.dcd(filename=self.outputDCD, period=self.mainTrajDumpPeriod, overwrite=True)
-            phase4Step = integrate.mode_standard(dt=self.dt)
-            phase4 = integrate.nvt(group=self.thioGroup, T=self.T, tau=self.tau)
+            phase5DumpDCD = dump.dcd(filename=self.outputDCD, period=self.mainTrajDumpPeriod, overwrite=True)
+            phase5Step = integrate.mode_standard(dt=self.dtPhase5)
+            phase5 = integrate.nvt(group=self.thioGroup, T=self.T, tau=self.tau)
             # self.mainPotentialEnergies = []
             # self.mainKineticEnergies = []
             # self.mainTotalEnergies = []
@@ -374,16 +395,16 @@ class hoomdRun:
             # self.maxStandardDeviation = 0
             # self.consecutiveDumpPeriodsUnderTarget = 0
             # checkTotalEs = analyze.callback(callback = self.getEnergies, period=self.dumpPeriod)
-            resetXML = dump.xml(filename=self.outputXML.replace('relaxed_', 'temp_'), all=True, restart=True, period=self.mainRunLength/10)
+            resetXML = dump.xml(filename=self.outputXML.replace('relaxed_', 'temp_'), all=True, restart=True, period=self.phase5RunLength/10)
             try:
-                run_upto(self.mainRunLength)
+                run(self.phase5RunLength)
             except ExitHoomd as exitMessage:
                 print exitMessage
-            phase4DumpXML = dump.xml(filename=self.outputXML, all=True)
-            phase4.disable()
-            phase4DumpDCD.disable()
+            phase5DumpXML = dump.xml(filename=self.outputXML, all=True)
+            phase5.disable()
+            phase5DumpDCD.disable()
             # checkTotalEs.disable()
-            del self.system, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.lj, self.b, self.a, self.d, phase4DumpDCD, phase4Step, phase4, phase4DumpXML
+            del self.system, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.lj, self.b, self.a, self.d, self.i, phase5DumpDCD, phase5Step, phase5, phase5DumpXML
             init.reset()
             # Run is complete so delete any temporary files
             saveFiles = os.listdir(self.saveDirectory)
@@ -393,7 +414,7 @@ class hoomdRun:
                     os.unlink(self.saveDirectory+'/'+fileName)
             # Plot PE
         else:
-            print "Phase 4 already completed for this morphology. Skipping..."
+            print "Phase 5 already completed for this morphology. Skipping..."
         return self.outputXML
 
     
@@ -500,7 +521,8 @@ def checkSaveDirectory(morphologyName, saveDirectory):
     runPhase2 = True
     runPhase3 = True
     runPhase4 = True
-    continuePhase4 = False
+    runPhase5 = True
+    continuePhase5 = False
     continueFile = None
     for fileName in saveDirectoryFiles:
         if morphologyName in fileName:
@@ -513,11 +535,13 @@ def checkSaveDirectory(morphologyName, saveDirectory):
                 runPhase2 = False
             elif ('phase3' in fileName) and ('xml' in fileName):
                 runPhase3 = False
-            elif ('temp' in fileName) and ('xml' in fileName):
+            elif ('phase4' in fileName) and ('xml' in fileName):
                 runPhase4 = False
-                continuePhase4 = True
+            elif ('temp' in fileName) and ('xml' in fileName):
+                runPhase5 = False
+                continuePhase5 = True
                 continueFile = saveDirectory+fileName
-    return [runPhase1, runPhase2, runPhase3, runPhase4, continuePhase4, continueFile]
+    return [runPhase1, runPhase2, runPhase3, runPhase4, runPhase5, continuePhase5, continueFile]
 
 
 def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize):
