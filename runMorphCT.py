@@ -95,7 +95,6 @@ if __name__ == '__main__':
         if exitFlag == 0:
             print "Checking for previous calculations of", str(morphologyFiles[runThisFile])+"..."
             runFG, runMD = checkOutputDirectory(morphologyFiles[runThisFile], outputDir, mode='MORPHOLOGY')
-            runFG = True
             if runFG == True:
                 # Work out if this is a Jankowski/Marsh morphology by determining the number of hyphens in the filename
                 hyphenLocs = helperFunctions.findIndex(morphologyFiles[runThisFile], '-')
@@ -123,7 +122,6 @@ if __name__ == '__main__':
                 print "----------====================----------"
                 print "FineGraining calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
                 print "----------====================----------"
-
 
             print "Running hoomd on morphology files..."
             if runMD == True:

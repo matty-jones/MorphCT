@@ -31,20 +31,13 @@ def getFunctionalGroups(molecule, CGtoAAIDs, CGBonds):
                     break
             for bond in CGBonds:
                 if (bond[0] == 'bondC') and (bond[1] == alk1ID):
-                    print bond
-                    raw_input('PAUSE...')
                     alk2ID = bond[2]
                     currentMonomer.append(CGtoAAIDs[alk2ID][1])
                     break
                 elif (bond[0] == 'bondC') and (bond[2] == alk1ID):
-                    print bond
-                    raw_input('PAUSE...')
                     alk2ID = bond[1]
                     currentMonomer.append(CGtoAAIDs[alk2ID][1])
                     break
-            print thioID, alk1ID, alk2ID
-            print currentMonomer
-            exit()
             monomerData.append(currentMonomer)
         else:
             continue
@@ -231,8 +224,6 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
         if morphologyName in allMorphologies:
             outputDir += '/'+morphologyName
             break
-    print CGMoleculeDict['bond']
-    exit()
     CGBonds = []
     for CGBond in CGMoleculeDict['bond']:
         if CGBond not in CGBonds:
@@ -259,11 +250,6 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
     for molNo, molecule in enumerate(moleculeList):
         print "Examining molecule number", molNo, "of", str(len(moleculeList)-1)+"...\r",
         thioRings, alk1Groups, alk2Groups, moleculeEnds = getFunctionalGroups(molecule, CGtoAAIDs[0], CGBonds)
-        print "\n"
-        print thioRings[0]
-        print alk1Groups[0]
-        print alk2Groups[0]
-        exit()
         moleculeBackbone = obtainBackboneData(molecule, thioRings)
         # plotMolecule3D(molecule, moleculeBackbone)
         # exit()

@@ -17,11 +17,6 @@ class obtain:
         self.simDims = [[-boxSize[0]/2.0, boxSize[0]/2.0], [-boxSize[1]/2.0, boxSize[1]/2.0], [-boxSize[2]/2.0, boxSize[2]/2.0]]
         self.maximumHoppingDistance = 10.0
         self.getChromoPosns()
-        print "CHROMO 0000"
-        print self.chromophores[0]
-        print "CHROMO 0001"
-        print self.chromophores[1]
-        exit()
         self.updateNeighbourList()
         chromophorePairs = self.obtainHoppingPairs()
         helperFunctions.checkORCAFileStructure(outputDir)

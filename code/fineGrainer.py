@@ -37,8 +37,6 @@ class morphology:
             print "Adding molecule number", moleculeNumber, "\r",
             # print "Rolling AA Index =", rollingAAIndex
             CGMoleculeDict, AAMoleculeDict, CGtoAAIDs = atomistic(moleculeIDs[moleculeNumber], self.CGDictionary, morphologyName, rollingAAIndex).returnData()
-            print CGMoleculeDict['bond']
-            exit()
             CGtoAAIDMaster.append(CGtoAAIDs)
             for key in CGMoleculeDict.keys():
                 if key not in ['lx', 'ly', 'lz']:
@@ -337,17 +335,10 @@ class atomistic:
 
     
     def getCGMonomerDict(self):
-        CGMonomerDictionary = {'position':[], 'image':[], 'velocity':[], 'mass':[], 'diameter':[], 'type':[], 'body':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[], 'charge':[], 'lx':0, 'ly':0, 'lz':0, 'atomID':[]}
+        CGMonomerDictionary = {'position':[], 'image':[], 'velocity':[], 'mass':[], 'diameter':[], 'type':[], 'body':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[], 'charge':[], 'lx':0, 'ly':0, 'lz':0}
         # First, do just the positions and find the newAtomIDs for each CG site
-        newAtomIDs = {}
-        rollingAtomNumber = 0
-        print "THIS IS MONOMER 0"
-        print self.atomIDs
-        exit()
         for atomID in self.atomIDs:
             CGMonomerDictionary['position'].append(self.CGDictionary['position'][atomID])
-            newAtomIDs[atomID] = rollingAtomNumber
-            rollingAtomNumber += 1
         # Now sort out the other one-per-atom properties
         for key in ['image', 'velocity', 'mass', 'diameter', 'type', 'body', 'charge']:
             if len(self.CGDictionary[key]) != 0:
@@ -357,12 +348,8 @@ class atomistic:
         for key in ['bond', 'angle', 'dihedral', 'improper']:
             for element in self.CGDictionary[key]:
                 for atomID in self.atomIDs:
-                    if atomID in element:
-                        newElement = copy.deepcopy(element)
-                        # Leave the name, but iterate over the rest of the element updating the atom IDs
-                        for i in range(1,len(newElement)):
-                            newElement[i] = newAtomIDs[newElement[i]]
-                        CGMonomerDictionary[key].append(newElement)
+                    if (atomID in element) and (element not in CGMonomerDictionary[key]):
+                        CGMonomerDictionary[key].append(element)
         # Now update the box parameters
         for key in ['lx', 'ly', 'lz']:
             CGMonomerDictionary[key] = self.CGDictionary[key]
@@ -383,7 +370,7 @@ class atomistic:
         noAtomsInMolecule = 0
         # Normalisation no longer needed, but need to keep track of the atom ID numbers globally - runFineGrainer sees individual monomers, atomistic sees molecules and the XML needs to contain the entire morphology.
         # If this isn't the first molecule in the morphology, we need to offset the CG indices in the atomIDLookupTable, because runhoomd treats each molecule as isolated
-        CGIDOffset = bondedCGSites[0][0]
+        #CGIDOffset = bondedCGSites[0][0]
         for monomer in bondedCGSites:
             thisMonomerDictionary = copy.deepcopy(self.AATemplateDictionary)
             for key in ['lx', 'ly', 'lz']:
@@ -405,9 +392,9 @@ class atomistic:
             thioAlk1Axis = helperFunctions.findAxis(thioPosn, alk1Posn)
             alk1Alk2Axis = helperFunctions.findAxis(alk1Posn, alk2Posn)
             thisMonomerDictionary = self.rotateFunctionalGroups(thisMonomerDictionary, thioAlk1Axis, alk1Alk2Axis, thioAACOM, alk1AACOM, alk2AACOM, thioAAIDs, alk1AAIDs, alk2AAIDs)
-            atomIDLookupTable[thioID-CGIDOffset] = ['thio', [x + noAtomsInMolecule + self.noAtomsInMorphology for x in thioAAIDs]]
-            atomIDLookupTable[alk1ID-CGIDOffset] = ['alk1', [x + noAtomsInMolecule + self.noAtomsInMorphology for x in alk1AAIDs]]
-            atomIDLookupTable[alk2ID-CGIDOffset] = ['alk2', [x + noAtomsInMolecule + self.noAtomsInMorphology for x in alk2AAIDs]]
+            atomIDLookupTable[thioID] = ['thio', [x + noAtomsInMolecule + self.noAtomsInMorphology for x in thioAAIDs]]
+            atomIDLookupTable[alk1ID] = ['alk1', [x + noAtomsInMolecule + self.noAtomsInMorphology for x in alk1AAIDs]]
+            atomIDLookupTable[alk2ID] = ['alk2', [x + noAtomsInMolecule + self.noAtomsInMorphology for x in alk2AAIDs]]
             for thioAAID in thioAAIDs:
                 thisMonomerDictionary['unwrapped_position'][thioAAID] = list(np.array(thisMonomerDictionary['unwrapped_position'][thioAAID])+thioTranslation)
                 thisMonomerDictionary['velocity'][thioAAID] = self.CGDictionary['velocity'][thioID]
@@ -473,8 +460,8 @@ class atomistic:
             AADictionary[key] = thisMonomerDictionary[key]
         AADictionary, terminatingHydrogenIDs = helperFunctions.addTerminatingHydrogens(AADictionary)
         # Update the atomID CG LookupTable with the terminating Hydrogens
-        atomIDLookupTable[moleculeEnds[0]-CGIDOffset][1].append(terminatingHydrogenIDs[0] + self.noAtomsInMorphology)
-        atomIDLookupTable[moleculeEnds[1]-CGIDOffset][1].append(terminatingHydrogenIDs[1] + self.noAtomsInMorphology)
+        atomIDLookupTable[moleculeEnds[0]][1].append(terminatingHydrogenIDs[0] + self.noAtomsInMorphology)
+        atomIDLookupTable[moleculeEnds[1]][1].append(terminatingHydrogenIDs[1] + self.noAtomsInMorphology)
         # Now the molecule is done, we need to add on the correct identifying numbers for all the bonds, angles and dihedrals
         # (just as we did between monomers) for the other molecules in the system, so that they all connect to the right atoms
         AADictionary = helperFunctions.incrementAtomIDs(AADictionary, self.noAtomsInMorphology)
