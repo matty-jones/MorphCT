@@ -95,6 +95,7 @@ if __name__ == '__main__':
         if exitFlag == 0:
             print "Checking for previous calculations of", str(morphologyFiles[runThisFile])+"..."
             runFG, runMD = checkOutputDirectory(morphologyFiles[runThisFile], outputDir, mode='MORPHOLOGY')
+            runFG = True
             if runFG == True:
                 # Work out if this is a Jankowski/Marsh morphology by determining the number of hyphens in the filename
                 hyphenLocs = helperFunctions.findIndex(morphologyFiles[runThisFile], '-')
@@ -105,7 +106,7 @@ if __name__ == '__main__':
                         sigma = 3.
                 t0 = T.time()
                 print "Loading morphology from XML for FineGraining..."
-                AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, boxSize = fineGrainer.morphology(str(inputDir)+'/'+str(morphologyFiles[runThisFile]), sigma).analyseMorphology()
+                AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = fineGrainer.morphology(str(inputDir)+'/'+str(morphologyFiles[runThisFile]), sigma).analyseMorphology()
                 t1 = T.time()
                 elapsedTime = float(t1) - float(t0)
                 if elapsedTime < 60:
@@ -132,7 +133,7 @@ if __name__ == '__main__':
                 else: # runOn == 'local'
                     if 'AAMorphologyDict' in locals():
                         # Fine Graining calcs have been done so we already have the required data. No need to read in the pickle again.
-                        morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, boxSize = runHoomd.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, boxSize) 
+                        morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = runHoomd.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize) 
                     else:
                         # Fine Graining calcs have not just been run, so we need to call runHoomd.py directly to unpickle the data we need
                         print 'hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode
@@ -144,7 +145,7 @@ if __name__ == '__main__':
             if runMol == True:
                 if runOn == 'local':
                     if 'AAMorphologyDict' in locals():
-                        morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, boxSize = extractMol.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, boxSize)
+                        morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = extractMol.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize)
                     else:
                         print 'hoomd '+os.getcwd()+'/code/extractMol.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode
                         # subprocess.call('hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+'/'+moleculeName+' --mode='+mode)
@@ -159,7 +160,7 @@ if __name__ == '__main__':
             if runAnalyse == True:
                 if runOn == 'local':
                     if 'AAMorphologyDict' in locals():
-                        morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, boxSize = analyseMolecules.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, boxSize)
+                        morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = analyseMolecules.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize)
                     else:
                         print 'hoomd '+os.getcwd()+'/code/analyseMolecules.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode
                         # subprocess.call('hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+'/'+moleculeName+' --mode='+mode)

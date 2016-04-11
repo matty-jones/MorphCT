@@ -37,6 +37,8 @@ class morphology:
             print "Adding molecule number", moleculeNumber, "\r",
             # print "Rolling AA Index =", rollingAAIndex
             CGMoleculeDict, AAMoleculeDict, CGtoAAIDs = atomistic(moleculeIDs[moleculeNumber], self.CGDictionary, morphologyName, rollingAAIndex).returnData()
+            print CGMoleculeDict['bond']
+            exit()
             CGtoAAIDMaster.append(CGtoAAIDs)
             for key in CGMoleculeDict.keys():
                 if key not in ['lx', 'ly', 'lz']:
@@ -53,13 +55,13 @@ class morphology:
         print "Writing XML file..."
         AAFileName = './outputFiles/'+morphologyName+'/morphology/'+morphologyName+'.xml'
         writeXML(AAMorphologyDict, './templates/template.xml', AAFileName)
-        toPickle = (AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDMaster, boxSize)
+        toPickle = (AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDMaster, [], boxSize)
         print "Writing pickle file..."
         pickleFileName = './outputFiles/'+morphologyName+'/morphology/'+morphologyName+'.pickle'
         with open(pickleFileName, 'w+') as pickleFile:
             pickle.dump(toPickle, pickleFile)
         print "Pickle file written to", pickleFileName
-        return AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDMaster, boxSize
+        return AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDMaster, [], boxSize
             
         # exit()
         # ### Before we split into segments, let's fine grain the molecules (and write an xml so that we can see the output in VMD)
@@ -335,10 +337,13 @@ class atomistic:
 
     
     def getCGMonomerDict(self):
-        CGMonomerDictionary = {'position':[], 'image':[], 'velocity':[], 'mass':[], 'diameter':[], 'type':[], 'body':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[], 'charge':[], 'lx':0, 'ly':0, 'lz':0}
+        CGMonomerDictionary = {'position':[], 'image':[], 'velocity':[], 'mass':[], 'diameter':[], 'type':[], 'body':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[], 'charge':[], 'lx':0, 'ly':0, 'lz':0, 'atomID':[]}
         # First, do just the positions and find the newAtomIDs for each CG site
         newAtomIDs = {}
         rollingAtomNumber = 0
+        print "THIS IS MONOMER 0"
+        print self.atomIDs
+        exit()
         for atomID in self.atomIDs:
             CGMonomerDictionary['position'].append(self.CGDictionary['position'][atomID])
             newAtomIDs[atomID] = rollingAtomNumber

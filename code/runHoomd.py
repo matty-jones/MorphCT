@@ -544,7 +544,7 @@ def checkSaveDirectory(morphologyName, saveDirectory):
     return [runPhase1, runPhase2, runPhase3, runPhase4, runPhase5, continuePhase5, continueFile]
 
 
-def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize):
+def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize):
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
     outputDir = './outputFiles'
     morphologyList = os.listdir(outputDir)
@@ -579,7 +579,7 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
         print "Writing scaled XML..."
         helperFunctions.writeMorphologyXML(AAMorphologyDict, adjustedInputFileName)
     relaxedXML = hoomdRun(adjustedInputFileName, CGMoleculeDict, CGtoAAIDs, eScale, sScale, continueData).optimiseStructure()
-    return morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize
+    return morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize
     
 
 if __name__ == '__main__':
@@ -608,5 +608,5 @@ if __name__ == '__main__':
     print "Pickle found at", str(pickleLoc)+"."
     print "Loading data..."
     with open(pickleLoc, 'r') as pickleFile:
-        (AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize) = pickle.load(pickleFile)
-    execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize)
+        (AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize) = pickle.load(pickleFile)
+    execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize)

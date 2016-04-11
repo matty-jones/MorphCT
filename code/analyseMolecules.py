@@ -1,5 +1,6 @@
 import numpy as np
 import sys
+import os
 import helperFunctions
 import chromophores
 import matplotlib
@@ -23,16 +24,27 @@ def getFunctionalGroups(molecule, CGtoAAIDs, CGBonds):
                 if (bond[0] == 'bondB') and (bond[1] == thioID):
                     alk1ID = bond[2]
                     currentMonomer.append(CGtoAAIDs[alk1ID][1])
+                    break
                 elif (bond[0] == 'bondB') and (bond[2] == thioID):
                     alk1ID = bond[1]
                     currentMonomer.append(CGtoAAIDs[alk1ID][1])
+                    break
             for bond in CGBonds:
                 if (bond[0] == 'bondC') and (bond[1] == alk1ID):
+                    print bond
+                    raw_input('PAUSE...')
                     alk2ID = bond[2]
                     currentMonomer.append(CGtoAAIDs[alk2ID][1])
+                    break
                 elif (bond[0] == 'bondC') and (bond[2] == alk1ID):
+                    print bond
+                    raw_input('PAUSE...')
                     alk2ID = bond[1]
                     currentMonomer.append(CGtoAAIDs[alk2ID][1])
+                    break
+            print thioID, alk1ID, alk2ID
+            print currentMonomer
+            exit()
             monomerData.append(currentMonomer)
         else:
             continue
@@ -211,7 +223,7 @@ def plotHist(data, outputFile, bins=20, angle=False):
     plt.savefig(outputFile)
     plt.close()
 
-def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize):
+def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize):
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
     outputDir = './outputFiles'
     morphologyList = os.listdir(outputDir)
@@ -219,6 +231,8 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
         if morphologyName in allMorphologies:
             outputDir += '/'+morphologyName
             break
+    print CGMoleculeDict['bond']
+    exit()
     CGBonds = []
     for CGBond in CGMoleculeDict['bond']:
         if CGBond not in CGBonds:
@@ -226,6 +240,14 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
     poscarList = os.listdir(outputDir+'/molecules')
     moleculeList = []
     molNames = []
+    # for molID, molAAIDs in enumerate(moleculeAAIDs):
+    #     moleculeDict = helperFunctions.loadDict(AAMorphologyDict, molAAIDs)
+    #     moleculeList.append(moleculeDict)
+    #     molName = str(molID)
+    #     while len(molName) < 4:
+    #         molName = '0'+molName
+    #     molNames.append('mol'+molName+'.POSCAR')
+    # # IGNORE: CANNOT DO THIS, LOADING FROM POSCAR SCREWS UP POSITIONING
     for poscarFile in poscarList:
         if '.POSCAR' in poscarFile:
             moleculeDict = helperFunctions.loadPoscar(outputDir+'/molecules/'+poscarFile)
@@ -237,6 +259,11 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
     for molNo, molecule in enumerate(moleculeList):
         print "Examining molecule number", molNo, "of", str(len(moleculeList)-1)+"...\r",
         thioRings, alk1Groups, alk2Groups, moleculeEnds = getFunctionalGroups(molecule, CGtoAAIDs[0], CGBonds)
+        print "\n"
+        print thioRings[0]
+        print alk1Groups[0]
+        print alk2Groups[0]
+        exit()
         moleculeBackbone = obtainBackboneData(molecule, thioRings)
         # plotMolecule3D(molecule, moleculeBackbone)
         # exit()
@@ -278,9 +305,9 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
     print "Average chromophore length in monomers =", np.average(segmentLengths), "\n"
 
     # NOW, WRITE THE CHROMOPHORES OUT TO AN ORCA INPUT FILE OR SOMETHING IN ./outputFiles/<morphName>/chromophores/single.
-    chromophores.obtain(AAMorphologyDict, morphologyBackboneData, boxSize)
+    chromophores.obtain(AAMorphologyDict, morphologyBackboneData, boxSize, outputDir, moleculeAAIDs)
     # Also, get their COM posn so that we can split them into neighbouring pairs and store it in ../pairs
-    return AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize
+    return AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize
     
     
 
@@ -304,5 +331,5 @@ if __name__ == "__main__":
     print "Pickle found at", str(pickleLoc)+"."
     print "Loading data..."
     with open(pickleLoc, 'r') as pickleFile:
-        (AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize) = pickle.load(pickleFile)
-    execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, boxSize)
+        (AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize) = pickle.load(pickleFile)
+    execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize)

@@ -31,7 +31,7 @@ def getsScale(outputDir, morphologyName):
     return float(inverseScaleFactor)
 
 
-def execute(morphologyFile, AAfileName, inputCGMoleculeDict, inputAAMorphologyDict, CGtoAAIDs, boxSize):
+def execute(morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize):
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
     outputDir = './outputFiles'
     morphologyList = os.listdir(outputDir)
@@ -53,7 +53,7 @@ def execute(morphologyFile, AAfileName, inputCGMoleculeDict, inputAAMorphologyDi
     if len(moleculePOSCARS) != 0:
         if len(moleculePOSCARS) == len(moleculeAAIDs):
             print "All molecule files already treated. Please delete the .POSCAR files to run the set again."
-            return morphologyFile, AAfileName, inputCGMoleculeDict, inputAAMorphologyDict, CGtoAAIDs, boxSize
+            return morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphologyDict, CGtoAAIDs, boxSize
     # GET sSCALE FROM SOMEWHERE ELSE RATHER THAN HARDCODING IT IN HERE!
     inverseSScale = getsScale(outputDir, morphologyName)
     
@@ -95,7 +95,13 @@ def execute(morphologyFile, AAfileName, inputCGMoleculeDict, inputAAMorphologyDi
         moleculeDictionary = helperFunctions.scale(moleculeDictionary, inverseSScale)
         moleculeDictionary = helperFunctions.alignMolecule(moleculeDictionary, [0,1,0]) # Align along y-axis
         helperFunctions.writePOSCARFile(moleculeDictionary, poscarName)
-    return morphologyFile, AAfileName, inputCGMoleculeDict, inputAAMorphologyDict, CGtoAAIDs, boxSize
+        # Now need to write the pickle again now that we have calculated moleculeAAIDs
+        # pickleFileName = './outputFiles/'+morphologyName+'/morphology/'+morphologyName+'.pickle'
+        # print "Updating pickle file..."
+        # with open(pickleFileName, 'w+') as pickleFile:
+        #     pickle.dump((AAfileName, inputCGMorphologyDict, inputAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize), pickleFile)
+        # print "Pickle file written to", pickleFileName
+    return morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize
     
 
 
@@ -120,5 +126,5 @@ if __name__ == '__main__':
     print "Pickle found at", str(pickleLoc)+"."
     print "Loading atom data..."
     with open(pickleLoc, 'r') as pickleFile:
-        (AAfileName, inputCGMoleculeDict, inputAAMorphologyDict, CGtoAAIDs, boxSize) = pickle.load(pickleFile)
-    execute(morphologyFile, AAfileName, inputCGMoleculeDict, inputAAMorphologyDict, CGtoAAIDs, boxSize)
+        (AAfileName, inputCGMorphologyDict, inputAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize) = pickle.load(pickleFile)
+    execute(morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize)

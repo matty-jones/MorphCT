@@ -800,3 +800,55 @@ def loadPoscar(inputFilePath):
         moleculeDict['bond'] = pickle.load(bondPickle)
     moleculeDict = addMasses(moleculeDict)
     return moleculeDict
+
+
+def checkORCAFileStructure(outputDir):
+    '''This function checks that the correct directories are in place for the ORCA transfer-integral calculation'''
+    morphologyDirList = os.listdir(outputDir)
+    if 'chromophores' not in morphologyDirList:
+        os.makedirs(outputDir+'/chromophores')
+    else:
+        chromophoresDirList = os.listdir(outputDir+'/chromophores')
+        if 'inputORCA' not in chromophoresDirList:
+            os.makedirs(outputDir+'/chromophores/inputORCA')
+
+
+def writeORCAInp(inputDictList, outputDir):
+    '''This function loads the ORCA input template and creates the segment pair ORCA inputs for this morphology, for running later'''
+    chromophore1 = inputDictList[0]
+    chromophore2 = inputDictList[1]
+    print "\n"
+    print chromophore1
+    print "\n"
+    print chromophore2
+    print "\n"
+    # First check that the file doesn't already exist
+    chromo1Name = str(chromophore1['realChromoID'])
+    while len(chromo1Name) < 4:
+        chromo1Name = '0'+chromo1Name
+    chromo2Name = str(chromophore2['realChromoID'])
+    while len(chromo2Name) < 4:
+        chromo2Name = '0'+chromo2Name
+    ORCAFileName = 'chromo'+chromo1Name+'_chromo'+chromo2Name+'.inp'
+    # Check by opening the file - saves time on regenerating the os.listdirs list for many thousands of files
+    try:
+        with open(outputDir+'/chromophores/inputORCA/'+ORCAFileName, 'r') as testFile:
+            fileExists = True
+    except IOError:
+        fileExists = False
+    if fileExists == True:
+        print "File", ORCAFileName, "already exists, skipping..."
+    else:
+        with open(os.getcwd()+'/templates/template.inp', 'r') as templateFile:
+            inpFileLines = templateFile.readlines()
+        linesToWrite = []
+        for atomID, atomCoords in enumerate(chromophore1['position']):
+            thisAtomData = ' '+chromophore1['type'][atomID][0]+' '+' '.join(map(str, atomCoords))+'\n'
+            linesToWrite.append(thisAtomData)
+        for atomID, atomCoords in enumerate(chromophore2['position']):
+            thisAtomData = ' '+chromophore2['type'][atomID][0]+' '+' '.join(map(str, atomCoords))+'\n'
+            linesToWrite.append(thisAtomData)
+        inpFileLines[-1:-1] = linesToWrite
+        with open(outputDir+'/chromophores/inputORCA/'+ORCAFileName, 'w+') as ORCAInputFile:
+            ORCAInputFile.writelines(inpFileLines)
+        print "ORCA input file written to", outputDir+'/chromophores/inputORCA'+ORCAFileName
