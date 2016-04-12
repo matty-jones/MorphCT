@@ -121,6 +121,10 @@ def calculatePersistenceLength(molecule, molName, outputDir, moleculeBackbone, m
 
 
 def plotMolecule3D(molecule, moleculeBackbone):
+    allThioAtoms = []
+    for thioRing in moleculeBackbone:
+        allThioAtoms += list(np.array(thioRing['position']))
+    allThioAtoms = np.array(allThioAtoms)
     allAtoms = np.array(molecule['position'])
     COMs = []
     normals = []
@@ -135,7 +139,7 @@ def plotMolecule3D(molecule, moleculeBackbone):
     COMs = np.array(COMs)
     fig = plt.figure()
     ax = p3.Axes3D(fig)
-    #ax.scatter(allAtoms[:,0], allAtoms[:,1], allAtoms[:,2], s = 20, c = 'g')
+    ax.scatter(allThioAtoms[:,0], allThioAtoms[:,1], allThioAtoms[:,2], s = 20, c = 'k')
     ax.scatter(COMs[:,0], COMs[:,1], COMs[:,2], s = 50, c = 'r')
     for thioRing in normals:
         for coords in thioRing:
@@ -167,13 +171,15 @@ def fixAngles(inputAngle):
 
     
 def calculateChromophores(molecule, molName, outputDir, moleculeBackbone):
-    bendingAngleTolerance = np.pi/3. # The bending angle, beyond which the pi conjugation is said to be broken
-    torsionAngleTolerance = 2*np.pi/5. # The torsional angle, beyond which, the pi conjugation is said to be broken
+    bendingAngleTolerance = np.pi*(1/3.)
+    # The bending angle, beyond which the pi conjugation is said to be broken
+    torsionAngleTolerance = np.pi*(3/8.) # The torsional angle, beyond which, the pi conjugation is said to be broken
     previousThioPlaneAxis = moleculeBackbone[0]['plane']
     previousThioNormalAxis = moleculeBackbone[0]['normal']
     bendingAngles = []
     torsionAngles = []
     chromophoreIDs = [[0]]
+    thioCOMs = [[moleculeBackbone[0]['COM']]]
     conjugationBroken = False
     torsionOverThreshold = 0
     bendingOverThreshold = 0
@@ -194,17 +200,20 @@ def calculateChromophores(molecule, molName, outputDir, moleculeBackbone):
             conjugationBroken = True
         if conjugationBroken == True:
             chromophoreIDs.append([])
+            thioCOMs.append([])
             conjugationBroken = False
         chromophoreIDs[-1].append(thioNumber)
+        thioCOMs[-1].append(thioRing['COM'])
         bendingAngles.append(bendingAngle)
         torsionAngles.append(torsionAngle)
         previousThioPlaneAxis = np.copy(currentThioPlaneAxis)
         previousThioNormalAxis = np.copy(currentThioNormalAxis)
-    #print "The torsional angle was over the threshold ("+str(torsionAngleTolerance)+")", torsionOverThreshold, "times."
-    #print "The bending angle was over the threshold ("+str(bendingAngleTolerance)+")", bendingOverThreshold, "times."
+    # print "\nMolecule", molName
+    # print "The torsional angle was over the threshold ("+str(torsionAngleTolerance)+")", torsionOverThreshold, "times."
+    # print "The bending angle was over the threshold ("+str(bendingAngleTolerance)+")", bendingOverThreshold, "times."
     #plotHist(bendingAngles, outputDir+'/molecules/'+molName.replace('.POSCAR', '_Bend.png'), angle=True)
     #plotHist(torsionAngles, outputDir+'/molecules/'+molName.replace('.POSCAR', '_Tor.png'), angle=True)
-    return bendingAngles, torsionAngles, chromophoreIDs
+    return bendingAngles, torsionAngles, chromophoreIDs, thioCOMs
 
 
 def plotHist(data, outputFile, bins=20, angle=False):
@@ -216,7 +225,7 @@ def plotHist(data, outputFile, bins=20, angle=False):
     plt.savefig(outputFile)
     plt.close()
 
-def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize):
+def execute(morphologyFile, AAfileName, CGMoleculeDict, UnrelaxedAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize):
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
     outputDir = './outputFiles'
     morphologyList = os.listdir(outputDir)
@@ -228,9 +237,23 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
     for CGBond in CGMoleculeDict['bond']:
         if CGBond not in CGBonds:
             CGBonds.append(CGBond)
-    poscarList = os.listdir(outputDir+'/molecules')
-    moleculeList = []
-    molNames = []
+
+    
+    # The current AAMorphologyDict has been read in from the Pickle File which means it's pre-phase 1.
+    # Need to update it to the latest by reading in the relaxed XML
+    slashList = helperFunctions.findIndex(AAfileName, '/')
+    inputFileName = AAfileName[:slashList[-1]+1]+'relaxed_'+AAfileName[slashList[-1]+1:]
+    print "Loading relaxed morphology data..."
+    AAMorphologyDict = helperFunctions.loadMorphologyXML(inputFileName)
+    AAMorphologyDict = helperFunctions.addUnwrappedPositions(AAMorphologyDict)
+    # Work only on the unwrapped positions
+    AAMorphologyDict['position'] = AAMorphologyDict['unwrapped_position']
+    inverseSScale = helperFunctions.getsScale(outputDir, morphologyName)
+    # Scale up the morphology (needs to be in Angstroems for ORCA so do it now)
+    AAMorphologyDict = helperFunctions.scale(AAMorphologyDict, inverseSScale)
+
+
+    
     # for molID, molAAIDs in enumerate(moleculeAAIDs):
     #     moleculeDict = helperFunctions.loadDict(AAMorphologyDict, molAAIDs)
     #     moleculeList.append(moleculeDict)
@@ -239,31 +262,48 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
     #         molName = '0'+molName
     #     molNames.append('mol'+molName+'.POSCAR')
     # # IGNORE: CANNOT DO THIS, LOADING FROM POSCAR SCREWS UP POSITIONING
-    for poscarFile in poscarList:
-        if '.POSCAR' in poscarFile:
-            moleculeDict = helperFunctions.loadPoscar(outputDir+'/molecules/'+poscarFile)
-            moleculeDict = helperFunctions.addMasses(moleculeDict)
-            moleculeList.append(moleculeDict)
-            molNames.append(poscarFile)
+    # for poscarFile in poscarList:
+    #     if '.POSCAR' in poscarFile:
+    #         moleculeDict = helperFunctions.loadPoscar(outputDir+'/molecules/'+poscarFile)
+    #         moleculeDict = helperFunctions.addMasses(moleculeDict)
+    #         moleculeList.append(moleculeDict)
+    #         molNames.append(poscarFile)
+
+    moleculeAAIDs = helperFunctions.getAAIDsByMolecule(CGtoAAIDs)
+    moleculeList = []
+    molNames = []
+    print "Obtaining molecule dictionaries..."
+    for molNo, molecule in enumerate(moleculeAAIDs):
+        print "Loading molecule", molNo, "of", str(len(moleculeAAIDs))+"...\r",
+        molName = str(molNo)
+        while len(molName) < 3:
+            molName = '0'+molName
+        molNames.append('mol'+molName+'.POSCAR')
+        moleculeDict = helperFunctions.loadDict(AAMorphologyDict, molecule, outputDir+'/molecules/mol'+molName+'.pickle')
+        moleculeList.append(moleculeDict)
+    print "\n"
+    
     morphologyBackboneData = [] # Dictionaries of molecule data for each molecule in the system
     rollingAtomID = 0
     for molNo, molecule in enumerate(moleculeList):
+        # if molNo != 69:
+        #     continue
         print "Examining molecule number", molNo, "of", str(len(moleculeList)-1)+"...\r",
         thioRings, alk1Groups, alk2Groups, moleculeEnds = getFunctionalGroups(molecule, CGtoAAIDs[0], CGBonds)
         moleculeBackbone = obtainBackboneData(molecule, thioRings)
-        # plotMolecule3D(molecule, moleculeBackbone)
-        # exit()
         endToEndDistance = helperFunctions.calculateSeparation(moleculeBackbone[moleculeEnds[0]]['COM'], moleculeBackbone[moleculeEnds[1]]['COM'])
         persistenceLength = calculatePersistenceLength(molecule, molNames[molNo], outputDir, moleculeBackbone, moleculeEnds)
-        bendingAngles, torsionAngles, chromophoreIDs = calculateChromophores(molecule, molNames[molNo], outputDir, moleculeBackbone)
+        bendingAngles, torsionAngles, chromophoreIDs, thiopheneCOMs = calculateChromophores(molecule, molNames[molNo], outputDir, moleculeBackbone)
         morphologyChromophores = []
+        thioCOMs = []
         for chromophore in chromophoreIDs:
             morphologyChromophores.append([])
             for monomerID in chromophore:
                 morphologyChromophores[-1] += list(np.array(thioRings[monomerID])+rollingAtomID)+list(np.array(alk1Groups[monomerID])+rollingAtomID)+list(np.array(alk2Groups[monomerID])+rollingAtomID)
-        moleculeDictionary = {'ends': moleculeEnds, 'endToEndDistance': endToEndDistance, 'persistenceLength': persistenceLength, 'bendingAngles': bendingAngles, 'torsionAngles': torsionAngles, 'chromophores': chromophoreIDs, 'morphologyChromophores': morphologyChromophores}
+        moleculeDictionary = {'ends': moleculeEnds, 'endToEndDistance': endToEndDistance, 'persistenceLength': persistenceLength, 'bendingAngles': bendingAngles, 'torsionAngles': torsionAngles, 'chromophores': chromophoreIDs, 'morphologyChromophores': morphologyChromophores, 'thioCOMs': thiopheneCOMs}
         morphologyBackboneData.append(moleculeDictionary)
         rollingAtomID += len(molecule['type'])
+        # plotMolecule3D(molecule, moleculeBackbone)
     print "\n"
     print "Plotting morphology histograms..."
     endToEndDistance = []
@@ -284,7 +324,7 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
         for segment in molDict['chromophores']:
             segmentLengths.append(len(segment))
     print "\n--== MORPHOLOGY STATISTICS ==--"
-    print "Average end-to-end distance in angstroms =", np.average(endToEndDistance)
+    print "Average end-to-end distance in angstroms (this has been scaled correctly) =", np.average(endToEndDistance)
     print "Average bending angle in degrees =", np.average(bendingAngles)*180/np.pi
     print "Average torsional angle in degrees =", np.average(torsionAngles)*180/np.pi
     print "Average persistence length in monomer units =", np.average(persistenceLengths)
@@ -293,7 +333,7 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
     # NOW, WRITE THE CHROMOPHORES OUT TO AN ORCA INPUT FILE OR SOMETHING IN ./outputFiles/<morphName>/chromophores/single.
     chromophores.obtain(AAMorphologyDict, morphologyBackboneData, boxSize, outputDir, moleculeAAIDs)
     # Also, get their COM posn so that we can split them into neighbouring pairs and store it in ../pairs
-    return AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize
+    return AAfileName, CGMoleculeDict, UnrelaxedAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize
     
     
 

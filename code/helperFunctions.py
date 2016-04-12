@@ -767,6 +767,49 @@ def cellSearchBonds(moleculeDict):
         print atomIDs[i], neighbourCells[i]
         
 
+def getAAIDsByMolecule(CGtoAAIDs):
+    '''This function extracts the molecule AAIDs given a dictionary CGtoAAIDs which describes the mapping of all atom particles to each CG site'''
+    moleculeAAIDs = []
+    for moleculeID, CGtoAAIDDict in enumerate(CGtoAAIDs):
+        moleculeAAIDs.append([])
+        for dictionaryValue in CGtoAAIDs[moleculeID].values():
+            moleculeAAIDs[-1] += dictionaryValue[1]
+        moleculeAAIDs[-1].sort()
+    return moleculeAAIDs
+
+
+def getsScale(outputDir, morphologyName):
+    morphologyFiles = os.listdir(outputDir+'/morphology')
+    for fileName in morphologyFiles:
+        if 'scaled' in fileName:
+            scaledXMLName = fileName
+            break
+    underscoreLocs = findIndex(scaledXMLName, '_')
+    inverseScaleFactor = scaledXMLName[underscoreLocs[-2]+1:underscoreLocs[-1]]
+    return float(inverseScaleFactor)
+
+
+def loadDict(masterDict, moleculeIDs, bondPickleName):
+    '''This function generates a molecule dictionary by picking the relevant data from a masterDict using a list of atomIDs given by moleculeIDs'''
+    moleculeDict = {'position':[], 'type':[], 'diameter':[], 'image':[], 'charge':[], 'mass':[], 'velocity':[]}
+    # First get atom-specific properties
+    for atomID in moleculeIDs:
+        for key in moleculeDict.keys():
+            moleculeDict[key].append(masterDict[key][atomID])
+    # Then add in the simulation properties
+    for key in ['lx', 'ly', 'lz', 'xy', 'xz', 'yz', 'dimensions']:
+        moleculeDict[key] = masterDict[key]
+    # Then load the relevant bonds
+    with open(bondPickleName, 'r') as bondPickle:
+        moleculeDict['bond'] = pickle.load(bondPickle)
+    # Now need to unwrap the coordinates
+    # moleculeDict = addUnwrappedPositions(moleculeDict)
+    # # Set the unwrapped coordinates to the default 'position' (saves time on rewriting some analyseMolecules functions and shouldn't affect anything)
+    # moleculeDict['position'] = moleculeDict['unwrapped_position']
+    moleculeCOM = calcCOM(moleculeDict['position'], moleculeDict['mass'])
+    return moleculeDict
+    
+        
 def loadPoscar(inputFilePath):
     '''This function loads a poscar file located at inputFilePath, and creates a dictionary of the atomic types and positions.
     It also loads the pickle file containing the bond information and adds it to the dictionary.'''
@@ -806,10 +849,14 @@ def checkORCAFileStructure(outputDir):
     '''This function checks that the correct directories are in place for the ORCA transfer-integral calculation'''
     morphologyDirList = os.listdir(outputDir)
     if 'chromophores' not in morphologyDirList:
+        print "Making /chromophores directory..."
         os.makedirs(outputDir+'/chromophores')
+        print "Making /inputORCA directory..."
+        os.makedirs(outputDir+'/chromophores/inputORCA')
     else:
         chromophoresDirList = os.listdir(outputDir+'/chromophores')
         if 'inputORCA' not in chromophoresDirList:
+            print "Making /inputORCA directory..."
             os.makedirs(outputDir+'/chromophores/inputORCA')
 
 
@@ -817,11 +864,6 @@ def writeORCAInp(inputDictList, outputDir):
     '''This function loads the ORCA input template and creates the segment pair ORCA inputs for this morphology, for running later'''
     chromophore1 = inputDictList[0]
     chromophore2 = inputDictList[1]
-    print "\n"
-    print chromophore1
-    print "\n"
-    print chromophore2
-    print "\n"
     # First check that the file doesn't already exist
     chromo1Name = str(chromophore1['realChromoID'])
     while len(chromo1Name) < 4:
@@ -851,4 +893,4 @@ def writeORCAInp(inputDictList, outputDir):
         inpFileLines[-1:-1] = linesToWrite
         with open(outputDir+'/chromophores/inputORCA/'+ORCAFileName, 'w+') as ORCAInputFile:
             ORCAInputFile.writelines(inpFileLines)
-        print "ORCA input file written to", outputDir+'/chromophores/inputORCA'+ORCAFileName
+        print "ORCA input file written to", outputDir+'/chromophores/inputORCA/'+ORCAFileName

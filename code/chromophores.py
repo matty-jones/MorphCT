@@ -1,6 +1,8 @@
 import numpy as np
 import helperFunctions
 import copy
+import matplotlib.pyplot as plt
+import time as T
 try:
     import mpl_toolkits.mplot3d.axes3d as p3
 except ImportError:
@@ -15,11 +17,13 @@ class obtain:
         self.moleculeProperties = moleculeProperties
         self.boxSize = boxSize
         self.simDims = [[-boxSize[0]/2.0, boxSize[0]/2.0], [-boxSize[1]/2.0, boxSize[1]/2.0], [-boxSize[2]/2.0, boxSize[2]/2.0]]
-        self.maximumHoppingDistance = 10.0
+        self.maximumHoppingDistance = 10.0 # REMEMBER, this is in angstroems not distance units
         self.getChromoPosns()
         self.updateNeighbourList()
         chromophorePairs = self.obtainHoppingPairs()
         helperFunctions.checkORCAFileStructure(outputDir)
+        print "Centre the dimer pairs by their COM before writing the ORCA file"
+        exit()
         for chromophorePair in chromophorePairs:
             helperFunctions.writeORCAInp(chromophorePair, outputDir)
             exit()
@@ -31,14 +35,16 @@ class obtain:
         self.numberOfPeriodicChromophores = 0
         for molNo, molecule in enumerate(self.moleculeProperties):
             for chromoNo, chromophore in enumerate(molecule['morphologyChromophores']):
+                # print "Molecule =", molNo, "ChromophoreNumber in mol =", chromoID, "Actual Chromo Number =", globalChromoNo
                 globalChromoNo += 1
-                chromoDict = {'molID': molNo, 'chromoID': globalChromoNo, 'periodic': False, 'realChromoID': globalChromoNo, 'position': [], 'image': 0, 'type': [], 'mass': [], 'COMPosn': 0, 'neighbours': [], 'atomID':[]}
+                chromoDict = {'molID': molNo, 'chromoID': globalChromoNo, 'periodic': False, 'realChromoID': globalChromoNo, 'position': [], 'image': [0, 0, 0], 'type': [], 'mass': [], 'COMPosn': 0, 'thioCOMs': [], 'neighbours': [], 'atomID':[]}
                 for atomID in chromophore:
                     chromoDict['atomID'].append(atomID)
                     chromoDict['position'].append(self.morphologyData['position'][atomID])
                     chromoDict['type'].append(self.morphologyData['type'][atomID])
                     chromoDict['mass'].append(self.morphologyData['mass'][atomID])
                 chromoDict['COMPosn'] = helperFunctions.calcCOM(chromoDict['position'], chromoDict['mass'])
+                chromoDict['thioCOMs'] = molecule['thioCOMs'][chromoNo]
                 self.chromophores[globalChromoNo] = chromoDict
                 # Add in a periodic segment if the COM position is within self.maximumHoppingDistance of a boundary
                 periodLims = [[self.simDims[0][0]-self.maximumHoppingDistance, self.simDims[0][1]+self.maximumHoppingDistance], [self.simDims[1][0]-self.maximumHoppingDistance, self.simDims[1][1]+self.maximumHoppingDistance], [self.simDims[2][0]-self.maximumHoppingDistance, self.simDims[2][1]+self.maximumHoppingDistance]]
@@ -63,26 +69,43 @@ class obtain:
                                 periodicChromoDict['COMPosn'] = np.array([periodicCOMX, periodicCOMY, periodicCOMZ])
                                 for atomID, position in enumerate(periodicChromoDict['position']):
                                     periodicChromoDict['position'][atomID] = [position[0] + (ximage*self.boxSize[0]), position[1] + (yimage*self.boxSize[1]), position[2] + (zimage*self.boxSize[2])]
+                                for thioID, position in enumerate(periodicChromoDict['thioCOMs']):
+                                    periodicChromoDict['thioCOMs'][thioID] = [position[0] + (ximage*self.boxSize[0]), position[1] + (yimage*self.boxSize[1]), position[2] + (zimage*self.boxSize[2])]
                                 self.chromophores[globalChromoNo] = periodicChromoDict
 
 
     def updateNeighbourList(self):
         # Mike's clustering experimentation might help a lot with this, so for now I'm going to just O(N^{2}) brute force it.
-        print "Determining neighbours..."
+        # This now checks the centres of mass of each thiophene group with each other thiophene group to see if any are within
+        # self.maximumHoppingDistance of each other.
+        print "Determining neighbours for", len(self.chromophores), "chromophores..."
+        t0 = T.time()
         for chromophore1ID in self.chromophores:
             for chromophore2ID in self.chromophores:
                 if chromophore1ID == chromophore2ID:
                     continue
-                if helperFunctions.calculateSeparation(self.chromophores[chromophore1ID]['COMPosn'], self.chromophores[chromophore2ID]['COMPosn']) <= self.maximumHoppingDistance:
-                    if self.chromophores[chromophore1ID]['chromoID'] not in self.chromophores[chromophore2ID]['neighbours']:
-                        self.chromophores[chromophore2ID]['neighbours'].append(self.chromophores[chromophore1ID]['chromoID'])
-                    if self.chromophores[chromophore2ID]['chromoID'] not in self.chromophores[chromophore1ID]['neighbours']:
-                        self.chromophores[chromophore1ID]['neighbours'].append(self.chromophores[chromophore2ID]['chromoID'])
+                neighbourAdded = False
+                for thio1 in self.chromophores[chromophore1ID]['thioCOMs']:
+                    if neighbourAdded == True:
+                        break
+                    for thio2 in self.chromophores[chromophore2ID]['thioCOMs']:
+                        if neighbourAdded == True:
+                            break
+                        if helperFunctions.calculateSeparation(thio1, thio2) <= self.maximumHoppingDistance:
+                            if self.chromophores[chromophore1ID]['chromoID'] not in self.chromophores[chromophore2ID]['neighbours']:
+                                self.chromophores[chromophore2ID]['neighbours'].append(self.chromophores[chromophore1ID]['chromoID'])
+                            if self.chromophores[chromophore2ID]['chromoID'] not in self.chromophores[chromophore1ID]['neighbours']:
+                                self.chromophores[chromophore1ID]['neighbours'].append(self.chromophores[chromophore2ID]['chromoID'])
+                            neighbourAdded = True
+        t1 = T.time()
+        print "Neighbour calculations took %.2f seconds." % (t1-t0)
 
 
     def obtainHoppingPairs(self):
         chromophorePairs = []
         chromophorePairIDs = []
+        print "Obtaining hopping pairs based on neighbouring chromophores..."
+        t0 = T.time()
         for chromoID in self.chromophores:
             for neighbour in self.chromophores[chromoID]['neighbours']:
                 if self.chromophores[neighbour]['realChromoID'] == self.chromophores[chromoID]['realChromoID']:
@@ -97,9 +120,11 @@ class obtain:
                 else:
                     if [neighbour, chromoID] not in chromophorePairIDs:
                         chromophorePairIDs.append([neighbour, chromoID])
-        print "There are", len(chromophorePairIDs), "pairs of chromophores"
         for chromophorePair in chromophorePairIDs:
             chromophorePairs.append([self.chromophores[chromophorePair[0]], self.chromophores[chromophorePair[1]]])
+        t1 = T.time()
+        print "Pairing treatment took %.2f seconds." % (t1-t0)
+        print "There are", len(chromophorePairIDs), "pairs of chromophores"
         return chromophorePairs
 
 
@@ -108,76 +133,18 @@ class obtain:
 
 
 
-def plotMolecule3D(molecule, moleculeBackbone):
-    allAtoms = np.array(molecule['position'])
-    COMs = []
-    normals = []
-    planes = []
-    for thioRing in moleculeBackbone:
-        normals.append([])
-        planes.append([])
-        COMs.append(np.array(thioRing['COM']))
-        for i in range(10):
-            normals[-1].append(np.array(thioRing['COM']+(np.array(thioRing['normal'])*i/5.)))
-            planes[-1].append(np.array(thioRing['COM']+(np.array(thioRing['plane'])*i/5.)))
-    COMs = np.array(COMs)
+def plotMolecule3D(chromophores, simDims):
+    chromoLocs = []
+    for chromophore in chromophores.values():
+        chromoLocs.append(chromophore['COMPosn'])
+    chromoLocs = np.array(chromoLocs)
     fig = plt.figure()
     ax = p3.Axes3D(fig)
     #ax.scatter(allAtoms[:,0], allAtoms[:,1], allAtoms[:,2], s = 20, c = 'g')
-    ax.scatter(COMs[:,0], COMs[:,1], COMs[:,2], s = 50, c = 'r')
-    for thioRing in normals:
-        for coords in thioRing:
-            ax.scatter(coords[0], coords[1], coords[2], s = 20, c = 'b')
-    for thioPlane in planes:
-        for coords in thioPlane:
-            ax.scatter(coords[0], coords[1], coords[2], s = 20, c = 'g')
+    ax.scatter(chromoLocs[:,0], chromoLocs[:,1], chromoLocs[:,2], s = 50, c = 'r')
     #ax.set_xlim((-8,8))
-    ax.set_xlim((-40,40))
-    ax.set_ylim((-40,40))
+    ax.set_xlim((simDims[0][0], simDims[0][1]))
+    ax.set_ylim((simDims[1][0], simDims[1][1]))
     #ax.set_zlim((-15,15))
-    ax.set_zlim((-40,40))
+    ax.set_zlim((simDims[2][0], simDims[2][1]))
     plt.show()
-
-
-
-
-
-
-    
-
-def generateORCAInput(self):
-    # CreateName (rounded to .1 Ang)
-    self.createName()
-    # Check that file with the right name doesn't already exist
-    #       If it does, pass.
-    #       Otherwise make the ORCA inputFile
-    exists = self.makeDirs()
-    if exists == True:
-        print "File", self.fullPath, "already exists, skipping...\n"
-        return
-    atomsToWrite = self.getAtomsToWrite()
-    self.writeInpFile(atomsToWrite)
-    # RUN ORCA
-    # Analyse ORCA outputs to create a structure (dictionary?) that takes two segment numbers and returns the transferIntegral        
-
-
-
-def writeInpFile(self, atomsToWrite):
-    templateFile = open('./templates/template.inp', 'r')
-    templateLines = templateFile.readlines()
-    templateFile.close()
-    linesToWrite = []
-    for lineNo in range(len(templateLines)):
-        if templateLines[lineNo] == '*':
-            for atom in atomsToWrite:
-                lineToWrite = ' '
-                lineToWrite += str(atom[0])+' '
-                lineToWrite += str(atom[1])+' '
-                lineToWrite += str(atom[2])+' '
-                lineToWrite += str(atom[3])+'\n'
-                linesToWrite.append(lineToWrite)
-        linesToWrite.append(templateLines[lineNo])
-    orcaInputFile = open(self.fullPath, 'w+')
-    orcaInputFile.writelines(linesToWrite)
-    orcaInputFile.close()
-    print "Orca Input file written to", self.fullPath, "\n"

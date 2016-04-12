@@ -10,27 +10,6 @@ import helperFunctions
 import sys
             
 
-def getAAIDsByMolecule(CGtoAAIDs):
-    moleculeAAIDs = []
-    for moleculeID, CGtoAAIDDict in enumerate(CGtoAAIDs):
-        moleculeAAIDs.append([])
-        for dictionaryValue in CGtoAAIDs[moleculeID].values():
-            moleculeAAIDs[-1] += dictionaryValue[1]
-        moleculeAAIDs[-1].sort()
-    return moleculeAAIDs
-
-
-def getsScale(outputDir, morphologyName):
-    morphologyFiles = os.listdir(outputDir+'/morphology')
-    for fileName in morphologyFiles:
-        if 'scaled' in fileName:
-            scaledXMLName = fileName
-            break
-    underscoreLocs = helperFunctions.findIndex(scaledXMLName, '_')
-    inverseScaleFactor = scaledXMLName[underscoreLocs[-2]+1:underscoreLocs[-1]]
-    return float(inverseScaleFactor)
-
-
 def execute(morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize):
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
     outputDir = './outputFiles'
@@ -49,13 +28,13 @@ def execute(morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphology
         for moleculeFile in moleculeFiles:
             if ('.POSCAR' in moleculeFile) or ('.poscar' in moleculeFile):
                 moleculePOSCARS.append(moleculeFile)
-    moleculeAAIDs = getAAIDsByMolecule(CGtoAAIDs)
+    moleculeAAIDs = helperFunctions.getAAIDsByMolecule(CGtoAAIDs)
     if len(moleculePOSCARS) != 0:
         if len(moleculePOSCARS) == len(moleculeAAIDs):
             print "All molecule files already treated. Please delete the .POSCAR files to run the set again."
             return morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphologyDict, CGtoAAIDs, boxSize
     # GET sSCALE FROM SOMEWHERE ELSE RATHER THAN HARDCODING IT IN HERE!
-    inverseSScale = getsScale(outputDir, morphologyName)
+    inverseSScale = helperFunctions.getsScale(outputDir, morphologyName)
     
     slashList = helperFunctions.findIndex(AAfileName, '/')
     inputFileName = AAfileName[:slashList[-1]+1]+'relaxed_'+AAfileName[slashList[-1]+1:]
@@ -95,7 +74,7 @@ def execute(morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphology
         moleculeDictionary = helperFunctions.scale(moleculeDictionary, inverseSScale)
         moleculeDictionary = helperFunctions.alignMolecule(moleculeDictionary, [0,1,0]) # Align along y-axis
         helperFunctions.writePOSCARFile(moleculeDictionary, poscarName)
-        # Now need to write the pickle again now that we have calculated moleculeAAIDs
+        # #Now need to write the pickle again now that we have calculated moleculeAAIDs
         # pickleFileName = './outputFiles/'+morphologyName+'/morphology/'+morphologyName+'.pickle'
         # print "Updating pickle file..."
         # with open(pickleFileName, 'w+') as pickleFile:
