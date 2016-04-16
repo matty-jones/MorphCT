@@ -125,6 +125,7 @@ if __name__ == '__main__':
 
             print "Running hoomd on morphology files..."
             if runMD == True:
+                t2 = T.time()
                 if runOn == 'kestrel':
                     submissionScript = helperFunctions.createSlurmSubmissionScript(outputDir, morphologyFiles[runThisFile][:-4], mode)
                     os.system('sbatch '+str(submissionScript))
@@ -134,36 +135,90 @@ if __name__ == '__main__':
                         morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = runHoomd.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize) 
                     else:
                         # Fine Graining calcs have not just been run, so we need to call runHoomd.py directly to unpickle the data we need
-                        print 'hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode
+                        #print 'hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode
                          # subprocess.call('hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+'/'+moleculeName+' --mode='+mode)
-                        os.system('hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode)
-                        
+                        #os.system('hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode)
+                        morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = runHoomd.loadPickle(outputDir+'/'+morphologyFiles[runThisFile][:-4])
+                t3 = T.time()
+                elapsedTime = float(t3) - float(t2)
+                if elapsedTime < 60:
+                    timeunits = 'seconds.'
+                elif elapsedTime < 3600:
+                    elapsedTime /= 60.0
+                    timeunits = 'minutes.'
+                elif elapsedTime < 86400:
+                    elapsedTime /= 3600.0
+                    timeunits = 'hours.'
+                else:
+                    elapsedTime /= 86400.0
+                    timeunits = 'days.'
+                print "----------====================----------"
+                print "RunHoomd calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
+                print "----------====================----------"
+
             print "Sorting morphology into individual molecules and outputing .xyz for DFT..."
             runMol = True
             if runMol == True:
+                t4 = T.time()
                 if runOn == 'local':
                     if 'AAMorphologyDict' in locals():
                         morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = extractMol.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize)
                     else:
-                        print 'hoomd '+os.getcwd()+'/code/extractMol.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode
+                        #print 'hoomd '+os.getcwd()+'/code/extractMol.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode
                         # subprocess.call('hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+'/'+moleculeName+' --mode='+mode)
-                        os.system('hoomd '+os.getcwd()+'/code/extractMol.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode)
+                        #os.system('hoomd '+os.getcwd()+'/code/extractMol.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode)
                 # elif runOn == 'kestrel':
                 #     submissionScript = helperFunctions.createSlurmSubmissionScript(outputDir, morphologyFiles[runThisFile][:-4], mode)
-                #     os.system('sbatch '+str(submissionScript))                
+                #     os.system('sbatch '+str(submissionScript))
+                        morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = extractMol.loadPickle(outputDir+'/'+morphologyFiles[runThisFile][:-4])
+                t5 = T.time()
+                elapsedTime = float(t5) - float(t4)
+                if elapsedTime < 60:
+                    timeunits = 'seconds.'
+                elif elapsedTime < 3600:
+                    elapsedTime /= 60.0
+                    timeunits = 'minutes.'
+                elif elapsedTime < 86400:
+                    elapsedTime /= 3600.0
+                    timeunits = 'hours.'
+                else:
+                    elapsedTime /= 86400.0
+                    timeunits = 'days.'
+                print "----------====================----------"
+                print "ExtractMol calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
+                print "----------====================----------"
 
 
             print "Analysing morphology to obtain chromophores..."
+       
             runAnalyse = True
             if runAnalyse == True:
+                t6 = T.time()
                 if runOn == 'local':
                     if 'AAMorphologyDict' in locals():
                         morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = analyseMolecules.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize)
                     else:
-                        print 'hoomd '+os.getcwd()+'/code/analyseMolecules.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode
+                        #print 'hoomd '+os.getcwd()+'/code/analyseMolecules.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode
                         # subprocess.call('hoomd '+os.getcwd()+'/code/runHoomd.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+'/'+moleculeName+' --mode='+mode)
-                        os.system('hoomd '+os.getcwd()+'/code/analyseMolecules.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode)
+                        #os.system('hoomd '+os.getcwd()+'/code/analyseMolecules.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4]+' --mode='+mode)
                 # elif runOn == 'kestrel':
                 #     submissionScript = helperFunctions.createSlurmSubmissionScript(outputDir, morphologyFiles[runThisFile][:-4], mode)
-                #     os.system('sbatch '+str(submissionScript))                
-                
+                #     os.system('sbatch '+str(submissionScript))
+                        morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = analyseMolecules.loadPickle(outputDir+'/'+morphologyFiles[runThisFile][:-4])
+                t7 = T.time()
+                elapsedTime = float(t7) - float(t6)
+                if elapsedTime < 60:
+                    timeunits = 'seconds.'
+                elif elapsedTime < 3600:
+                    elapsedTime /= 60.0
+                    timeunits = 'minutes.'
+                elif elapsedTime < 86400:
+                    elapsedTime /= 3600.0
+                    timeunits = 'hours.'
+                else:
+                    elapsedTime /= 86400.0
+                    timeunits = 'days.'
+                print "----------====================----------"
+                print "AnalyseMolecules calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
+                print "----------====================----------"
+

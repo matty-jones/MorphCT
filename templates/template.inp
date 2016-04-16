@@ -5,7 +5,7 @@
 ! NormalPrint
 %output
 print [P_Basis]2
-print[P_MOs]1
+print [P_MOs]1
 end
 * xyz 0   1
 *

@@ -2,6 +2,7 @@ import numpy as np
 import copy
 import os
 import pickle
+import multiprocessing as mp
 #from cme_utils.manip import pbc
 
 def findMagnitude(vector):
@@ -791,7 +792,7 @@ def getsScale(outputDir, morphologyName):
 
 def loadDict(masterDict, moleculeIDs, bondPickleName):
     '''This function generates a molecule dictionary by picking the relevant data from a masterDict using a list of atomIDs given by moleculeIDs'''
-    moleculeDict = {'position':[], 'type':[], 'diameter':[], 'image':[], 'charge':[], 'mass':[], 'velocity':[]}
+    moleculeDict = {'position':[], 'unwrapped_position':[], 'type':[], 'diameter':[], 'image':[], 'charge':[], 'mass':[], 'velocity':[]}
     # First get atom-specific properties
     for atomID in moleculeIDs:
         for key in moleculeDict.keys():
@@ -853,11 +854,16 @@ def checkORCAFileStructure(outputDir):
         os.makedirs(outputDir+'/chromophores')
         print "Making /inputORCA directory..."
         os.makedirs(outputDir+'/chromophores/inputORCA')
+        print "Making /outputORCA directory..."
+        os.makedirs(outputDir+'/chromophores/outputORCA')
     else:
         chromophoresDirList = os.listdir(outputDir+'/chromophores')
         if 'inputORCA' not in chromophoresDirList:
             print "Making /inputORCA directory..."
             os.makedirs(outputDir+'/chromophores/inputORCA')
+        if 'outputORCA' not in chromophoresDirList:
+            print "Making /outputORCA directory..."
+            os.makedirs(outputDir+'/chromophores/outputORCA')
 
 
 def writeORCAInp(inputDictList, outputDir):
@@ -878,19 +884,45 @@ def writeORCAInp(inputDictList, outputDir):
             fileExists = True
     except IOError:
         fileExists = False
+    inputFileName = outputDir+'/chromophores/inputORCA/'+ORCAFileName
     if fileExists == True:
+        print "\n"
         print "File", ORCAFileName, "already exists, skipping..."
-    else:
-        with open(os.getcwd()+'/templates/template.inp', 'r') as templateFile:
-            inpFileLines = templateFile.readlines()
-        linesToWrite = []
-        for atomID, atomCoords in enumerate(chromophore1['position']):
-            thisAtomData = ' '+chromophore1['type'][atomID][0]+' '+' '.join(map(str, atomCoords))+'\n'
-            linesToWrite.append(thisAtomData)
-        for atomID, atomCoords in enumerate(chromophore2['position']):
-            thisAtomData = ' '+chromophore2['type'][atomID][0]+' '+' '.join(map(str, atomCoords))+'\n'
-            linesToWrite.append(thisAtomData)
-        inpFileLines[-1:-1] = linesToWrite
-        with open(outputDir+'/chromophores/inputORCA/'+ORCAFileName, 'w+') as ORCAInputFile:
-            ORCAInputFile.writelines(inpFileLines)
-        print "ORCA input file written to", outputDir+'/chromophores/inputORCA/'+ORCAFileName
+        #return
+        print "Creating file anyway to check that they are the same"
+        inputFileName = inputFileName.replace('.inp', '_2.inp')
+    # Centre the dimer pair at the origin
+    COM = calcCOM(chromophore1['position']+chromophore2['position'], chromophore1['mass']+chromophore2['mass'])
+    chromophore1 = centre(chromophore1, COM)
+    chromophore2 = centre(chromophore2, COM)
+    # Now write the file
+    with open(os.getcwd()+'/templates/template.inp', 'r') as templateFile:
+        inpFileLines = templateFile.readlines()
+    linesToWrite = []
+    for atomID, atomCoords in enumerate(chromophore1['position']):
+        thisAtomData = ' '+chromophore1['type'][atomID][0]+' '+' '.join(map(str, atomCoords))+'\n'
+        linesToWrite.append(thisAtomData)
+    for atomID, atomCoords in enumerate(chromophore2['position']):
+        thisAtomData = ' '+chromophore2['type'][atomID][0]+' '+' '.join(map(str, atomCoords))+'\n'
+        linesToWrite.append(thisAtomData)
+    inpFileLines[-1:-1] = linesToWrite
+    with open(inputFileName, 'w+') as ORCAInputFile:
+        ORCAInputFile.writelines(inpFileLines)
+    print "ORCA input file written to", inputFileName, "\r",
+    if fileExists == True:
+        raw_input("Hit return to continue...")
+
+def getORCAJobs(inputDir):
+    ORCAFileList = os.listdir(inputDir)
+    ORCAFilesToRun = []
+    for fileName in ORCAFileList:
+        if '.inp' in fileName:
+            ORCAFilesToRun.append(inputDir+'/'+fileName)
+    ORCAFilesToRun.sort()
+    try:
+        procIDs = os.environ.get('SLURM_GTIDS').split(',')
+    except AttributeError:
+        # Was not loaded using SLURM, so use all physical processors
+        procIDs = list(np.arange(mp.cpu_count()))
+    jobsList = [ORCAFilesToRun[i:i+(len(ORCAFilesToRun)/len(procIDs))] for i in xrange(0, len(ORCAFilesToRun), int(np.ceil(len(ORCAFilesToRun)/float(len(procIDs)))))]
+    return procIDs, jobsList

@@ -32,7 +32,7 @@ def execute(morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphology
     if len(moleculePOSCARS) != 0:
         if len(moleculePOSCARS) == len(moleculeAAIDs):
             print "All molecule files already treated. Please delete the .POSCAR files to run the set again."
-            return morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphologyDict, CGtoAAIDs, boxSize
+            return morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize
     # GET sSCALE FROM SOMEWHERE ELSE RATHER THAN HARDCODING IT IN HERE!
     inverseSScale = helperFunctions.getsScale(outputDir, morphologyName)
     
@@ -83,9 +83,7 @@ def execute(morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphology
     return morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize
     
 
-
-if __name__ == '__main__':
-    morphologyFile = sys.argv[1]
+def loadPickle(morphologyFile):
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
     outputDir = './outputFiles'
     morphologyList = os.listdir(outputDir)
@@ -106,4 +104,5 @@ if __name__ == '__main__':
     print "Loading atom data..."
     with open(pickleLoc, 'r') as pickleFile:
         (AAfileName, inputCGMorphologyDict, inputAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize) = pickle.load(pickleFile)
-    execute(morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize)
+    morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = execute(morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize)
+    return morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize

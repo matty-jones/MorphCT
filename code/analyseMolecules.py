@@ -56,7 +56,7 @@ def obtainBackboneData(molecule, thioRings):
     thioGroups = []
     moleculeEnds = []
     for thioRing in thioRings:
-        thioGroup = {'index': [], 'type': [], 'mass': [], 'position': []}
+        thioGroup = {'index': [], 'type': [], 'mass': [], 'position': [], 'unwrapped_position': []}
         # To be of the form, [IDs], [Types], [Masses], [Positions]
         # The S and the preceeding 4 atoms make up the thiophene ring,
         # along with the following H (2 Hs if at the end of the molecule)
@@ -64,16 +64,17 @@ def obtainBackboneData(molecule, thioRings):
             thioGroup['index'].append(atomID)
             thioGroup['type'].append(molecule['type'][atomID])
             thioGroup['mass'].append(molecule['mass'][atomID])
+            thioGroup['unwrapped_position'].append(molecule['unwrapped_position'][atomID])
             thioGroup['position'].append(molecule['position'][atomID])
-        thioCOM = helperFunctions.calcCOM(thioGroup['position'], thioGroup['mass'])
-        thioGroup['COM'] = thioCOM
+        thioGroup['COM'] = helperFunctions.calcCOM(thioGroup['position'], thioGroup['mass'])
+        thioGroup['unwrapped_COM'] = helperFunctions.calcCOM(thioGroup['unwrapped_position'], thioGroup['mass'])
         # Plane of the thiophene ring is given by the vector between the
         # C1 and C10 (atoms 0 and 3 in the ring)
-        thioPlaneVector = helperFunctions.findAxis(molecule['position'][thioRing[0]], molecule['position'][thioRing[3]])
+        thioPlaneVector = helperFunctions.findAxis(molecule['unwrapped_position'][thioRing[0]], molecule['unwrapped_position'][thioRing[3]])
         thioGroup['plane'] = thioPlaneVector
         # Normal to plane of thiophene ring is given by the cross product
         # between the C1-C10 vector and the C1-C2 vector
-        thioNormalVector = helperFunctions.normaliseVec(np.cross(thioPlaneVector, helperFunctions.findAxis(molecule['position'][thioRing[0]], molecule['position'][thioRing[1]])))
+        thioNormalVector = helperFunctions.normaliseVec(np.cross(thioPlaneVector, helperFunctions.findAxis(molecule['unwrapped_position'][thioRing[0]], molecule['unwrapped_position'][thioRing[1]])))
         thioGroup['normal'] = thioNormalVector
         thioGroups.append(thioGroup)
     return thioGroups
@@ -125,7 +126,7 @@ def plotMolecule3D(molecule, moleculeBackbone):
     for thioRing in moleculeBackbone:
         allThioAtoms += list(np.array(thioRing['position']))
     allThioAtoms = np.array(allThioAtoms)
-    allAtoms = np.array(molecule['position'])
+    allAtoms = np.array(molecule['unwrapped_position'])
     COMs = []
     normals = []
     planes = []
@@ -180,6 +181,7 @@ def calculateChromophores(molecule, molName, outputDir, moleculeBackbone):
     torsionAngles = []
     chromophoreIDs = [[0]]
     thioCOMs = [[moleculeBackbone[0]['COM']]]
+    unwrappedThioCOMs = [[moleculeBackbone[0]['unwrapped_COM']]]
     conjugationBroken = False
     torsionOverThreshold = 0
     bendingOverThreshold = 0
@@ -201,9 +203,11 @@ def calculateChromophores(molecule, molName, outputDir, moleculeBackbone):
         if conjugationBroken == True:
             chromophoreIDs.append([])
             thioCOMs.append([])
+            unwrappedThioCOMs.append([])
             conjugationBroken = False
         chromophoreIDs[-1].append(thioNumber)
         thioCOMs[-1].append(thioRing['COM'])
+        unwrappedThioCOMs[-1].append(thioRing['unwrapped_COM'])
         bendingAngles.append(bendingAngle)
         torsionAngles.append(torsionAngle)
         previousThioPlaneAxis = np.copy(currentThioPlaneAxis)
@@ -213,7 +217,7 @@ def calculateChromophores(molecule, molName, outputDir, moleculeBackbone):
     # print "The bending angle was over the threshold ("+str(bendingAngleTolerance)+")", bendingOverThreshold, "times."
     #plotHist(bendingAngles, outputDir+'/molecules/'+molName.replace('.POSCAR', '_Bend.png'), angle=True)
     #plotHist(torsionAngles, outputDir+'/molecules/'+molName.replace('.POSCAR', '_Tor.png'), angle=True)
-    return bendingAngles, torsionAngles, chromophoreIDs, thioCOMs
+    return bendingAngles, torsionAngles, chromophoreIDs, thioCOMs, unwrappedThioCOMs
 
 
 def plotHist(data, outputFile, bins=20, angle=False):
@@ -245,13 +249,13 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, UnrelaxedAAMorphologyDic
     inputFileName = AAfileName[:slashList[-1]+1]+'relaxed_'+AAfileName[slashList[-1]+1:]
     print "Loading relaxed morphology data..."
     AAMorphologyDict = helperFunctions.loadMorphologyXML(inputFileName)
-    AAMorphologyDict = helperFunctions.addUnwrappedPositions(AAMorphologyDict)
-    # Work only on the unwrapped positions
-    AAMorphologyDict['position'] = AAMorphologyDict['unwrapped_position']
     inverseSScale = helperFunctions.getsScale(outputDir, morphologyName)
     # Scale up the morphology (needs to be in Angstroems for ORCA so do it now)
     AAMorphologyDict = helperFunctions.scale(AAMorphologyDict, inverseSScale)
-
+    AAMorphologyDict = helperFunctions.addUnwrappedPositions(AAMorphologyDict)
+    ## Work only on the unwrapped positions
+    #AAMorphologyDict['position'] = AAMorphologyDict['unwrapped_position']
+    
 
     
     # for molID, molAAIDs in enumerate(moleculeAAIDs):
@@ -274,7 +278,7 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, UnrelaxedAAMorphologyDic
     molNames = []
     print "Obtaining molecule dictionaries..."
     for molNo, molecule in enumerate(moleculeAAIDs):
-        print "Loading molecule", molNo, "of", str(len(moleculeAAIDs))+"...\r",
+        print "Loading molecule", molNo+1, "of", str(len(moleculeAAIDs))+"...\r",
         molName = str(molNo)
         while len(molName) < 3:
             molName = '0'+molName
@@ -288,19 +292,19 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, UnrelaxedAAMorphologyDic
     for molNo, molecule in enumerate(moleculeList):
         # if molNo != 69:
         #     continue
-        print "Examining molecule number", molNo, "of", str(len(moleculeList)-1)+"...\r",
+        print "Examining molecule number", molNo+1, "of", str(len(moleculeList))+"...\r",
         thioRings, alk1Groups, alk2Groups, moleculeEnds = getFunctionalGroups(molecule, CGtoAAIDs[0], CGBonds)
         moleculeBackbone = obtainBackboneData(molecule, thioRings)
         endToEndDistance = helperFunctions.calculateSeparation(moleculeBackbone[moleculeEnds[0]]['COM'], moleculeBackbone[moleculeEnds[1]]['COM'])
         persistenceLength = calculatePersistenceLength(molecule, molNames[molNo], outputDir, moleculeBackbone, moleculeEnds)
-        bendingAngles, torsionAngles, chromophoreIDs, thiopheneCOMs = calculateChromophores(molecule, molNames[molNo], outputDir, moleculeBackbone)
+        bendingAngles, torsionAngles, chromophoreIDs, thiopheneCOMs, unwrappedThiopheneCOMs = calculateChromophores(molecule, molNames[molNo], outputDir, moleculeBackbone)
         morphologyChromophores = []
         thioCOMs = []
         for chromophore in chromophoreIDs:
             morphologyChromophores.append([])
             for monomerID in chromophore:
                 morphologyChromophores[-1] += list(np.array(thioRings[monomerID])+rollingAtomID)+list(np.array(alk1Groups[monomerID])+rollingAtomID)+list(np.array(alk2Groups[monomerID])+rollingAtomID)
-        moleculeDictionary = {'ends': moleculeEnds, 'endToEndDistance': endToEndDistance, 'persistenceLength': persistenceLength, 'bendingAngles': bendingAngles, 'torsionAngles': torsionAngles, 'chromophores': chromophoreIDs, 'morphologyChromophores': morphologyChromophores, 'thioCOMs': thiopheneCOMs}
+        moleculeDictionary = {'ends': moleculeEnds, 'endToEndDistance': endToEndDistance, 'persistenceLength': persistenceLength, 'bendingAngles': bendingAngles, 'torsionAngles': torsionAngles, 'chromophores': chromophoreIDs, 'morphologyChromophores': morphologyChromophores, 'thioCOMs': thiopheneCOMs, 'unwrappedThioCOMs': unwrappedThiopheneCOMs}
         morphologyBackboneData.append(moleculeDictionary)
         rollingAtomID += len(molecule['type'])
         # plotMolecule3D(molecule, moleculeBackbone)
@@ -333,12 +337,10 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, UnrelaxedAAMorphologyDic
     # NOW, WRITE THE CHROMOPHORES OUT TO AN ORCA INPUT FILE OR SOMETHING IN ./outputFiles/<morphName>/chromophores/single.
     chromophores.obtain(AAMorphologyDict, morphologyBackboneData, boxSize, outputDir, moleculeAAIDs)
     # Also, get their COM posn so that we can split them into neighbouring pairs and store it in ../pairs
-    return AAfileName, CGMoleculeDict, UnrelaxedAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize
+    return morphologyFile, AAfileName, CGMoleculeDict, UnrelaxedAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize
     
     
-
-if __name__ == "__main__":
-    morphologyFile = sys.argv[1]
+def loadPickle(morphologyFile):
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
     outputDir = './outputFiles'
     morphologyList = os.listdir(outputDir)
@@ -358,4 +360,10 @@ if __name__ == "__main__":
     print "Loading data..."
     with open(pickleLoc, 'r') as pickleFile:
         (AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize) = pickle.load(pickleFile)
-    execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize)
+    morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize)
+    return morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize
+
+
+if __name__ == '__main__':
+    morphologyFile = sys.argv[1]
+    loadPickle(morphologyFile)

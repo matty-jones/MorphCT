@@ -582,8 +582,7 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
     return morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize
     
 
-if __name__ == '__main__':
-    morphologyFile = sys.argv[1]
+def loadPickle(morphologyFile):
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
     outputDir = './outputFiles'
     morphologyList = os.listdir(outputDir)
@@ -594,9 +593,6 @@ if __name__ == '__main__':
             break
     saveDir = outputDir+'/morphology'
     fileList = os.listdir(saveDir)
-    continueData = checkSaveDirectory(morphologyName, saveDir)
-    if np.sum(continueData[:-2]) == 0:
-        exit()
     for fileName in fileList:
         if fileName == morphologyName+'.pickle':
             pickleLoc = outputDir+'/morphology/'+fileName
@@ -609,4 +605,7 @@ if __name__ == '__main__':
     print "Loading data..."
     with open(pickleLoc, 'r') as pickleFile:
         (AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize) = pickle.load(pickleFile)
-    execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize)
+    continueData = checkSaveDirectory(morphologyName, saveDir)
+    if np.sum(continueData[:-2]) != 0:
+        morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize)
+    return morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize
