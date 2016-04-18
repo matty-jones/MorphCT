@@ -85,12 +85,15 @@ def calcCOM(listOfPositions, listOfMasses):
     return np.array([massWeightedX/float(totalMass), massWeightedY/float(totalMass), massWeightedZ/float(totalMass)])
 
         
-def findAxis(atom1, atom2):
+def findAxis(atom1, atom2, normalise=True):
     '''This function determines the normalised vector from the location of atom1 to atom2. The positions can enter as lists or arrays, but are output as arrays'''
     xSep = atom2[0] - atom1[0]
     ySep = atom2[1] - atom1[1]
     zSep = atom2[2] - atom1[2]
-    axisVector = normaliseVec(np.array([xSep, ySep, zSep]))
+    if normalise == True:
+        axisVector = normaliseVec(np.array([xSep, ySep, zSep]))
+    else:
+        axisVector = np.array([xSep, ySep, zSep])
     return axisVector
 
 
@@ -854,6 +857,8 @@ def checkORCAFileStructure(outputDir):
         os.makedirs(outputDir+'/chromophores')
         print "Making /inputORCA directory..."
         os.makedirs(outputDir+'/chromophores/inputORCA')
+        os.makedirs(outputDir+'/chromophores/inputORCA/single')
+        os.makedirs(outputDir+'/chromophores/inputORCA/pair')
         print "Making /outputORCA directory..."
         os.makedirs(outputDir+'/chromophores/outputORCA')
     else:
@@ -861,40 +866,50 @@ def checkORCAFileStructure(outputDir):
         if 'inputORCA' not in chromophoresDirList:
             print "Making /inputORCA directory..."
             os.makedirs(outputDir+'/chromophores/inputORCA')
+            os.makedirs(outputDir+'/chromophores/inputORCA/single')
+            os.makedirs(outputDir+'/chromophores/inputORCA/pair')
         if 'outputORCA' not in chromophoresDirList:
             print "Making /outputORCA directory..."
             os.makedirs(outputDir+'/chromophores/outputORCA')
 
 
-def writeORCAInp(inputDictList, outputDir):
+def writeORCAInp(inputDictList, outputDir, mode):
     '''This function loads the ORCA input template and creates the segment pair ORCA inputs for this morphology, for running later'''
     chromophore1 = inputDictList[0]
-    chromophore2 = inputDictList[1]
-    # First check that the file doesn't already exist
     chromo1Name = str(chromophore1['realChromoID'])
     while len(chromo1Name) < 4:
         chromo1Name = '0'+chromo1Name
-    chromo2Name = str(chromophore2['realChromoID'])
-    while len(chromo2Name) < 4:
-        chromo2Name = '0'+chromo2Name
-    ORCAFileName = 'chromo'+chromo1Name+'_chromo'+chromo2Name+'.inp'
+    if mode == 'pair':
+        chromophore2 = inputDictList[1]
+        # First check that the file doesn't already exist
+        chromo2Name = str(chromophore2['realChromoID'])
+        while len(chromo2Name) < 4:
+            chromo2Name = '0'+chromo2Name
+        ORCAFileName = 'chromo'+chromo1Name+'_chromo'+chromo2Name+'.inp'
+    elif mode == 'single':
+        ORCAFileName = 'chromo'+chromo1Name+'.inp'
     # Check by opening the file - saves time on regenerating the os.listdirs list for many thousands of files
     try:
-        with open(outputDir+'/chromophores/inputORCA/'+ORCAFileName, 'r') as testFile:
+        with open(outputDir+'/chromophores/inputORCA/'+mode+'/'+ORCAFileName, 'r') as testFile:
             fileExists = True
     except IOError:
         fileExists = False
-    inputFileName = outputDir+'/chromophores/inputORCA/'+ORCAFileName
+    inputFileName = outputDir+'/chromophores/inputORCA/'+mode+'/'+ORCAFileName
     if fileExists == True:
         print "\n"
         print "File", ORCAFileName, "already exists, skipping..."
         #return
         print "Creating file anyway to check that they are the same"
         inputFileName = inputFileName.replace('.inp', '_2.inp')
-    # Centre the dimer pair at the origin
-    COM = calcCOM(chromophore1['position']+chromophore2['position'], chromophore1['mass']+chromophore2['mass'])
+    if mode == 'pair':
+        # Centre the dimer pair at the origin
+        COM = calcCOM(chromophore1['position']+chromophore2['position'], chromophore1['mass']+chromophore2['mass'])
+    elif mode == 'single':
+        # Centre the chromophore at the origin
+        COM = calcCOM(chromophore1['position'], chromophore1['mass'])
     chromophore1 = centre(chromophore1, COM)
-    chromophore2 = centre(chromophore2, COM)
+    if mode == 'pair':
+        chromophore2 = centre(chromophore2, COM)
     # Now write the file
     with open(os.getcwd()+'/templates/template.inp', 'r') as templateFile:
         inpFileLines = templateFile.readlines()
@@ -902,9 +917,10 @@ def writeORCAInp(inputDictList, outputDir):
     for atomID, atomCoords in enumerate(chromophore1['position']):
         thisAtomData = ' '+chromophore1['type'][atomID][0]+' '+' '.join(map(str, atomCoords))+'\n'
         linesToWrite.append(thisAtomData)
-    for atomID, atomCoords in enumerate(chromophore2['position']):
-        thisAtomData = ' '+chromophore2['type'][atomID][0]+' '+' '.join(map(str, atomCoords))+'\n'
-        linesToWrite.append(thisAtomData)
+    if mode == 'pair':
+        for atomID, atomCoords in enumerate(chromophore2['position']):
+            thisAtomData = ' '+chromophore2['type'][atomID][0]+' '+' '.join(map(str, atomCoords))+'\n'
+            linesToWrite.append(thisAtomData)
     inpFileLines[-1:-1] = linesToWrite
     with open(inputFileName, 'w+') as ORCAInputFile:
         ORCAInputFile.writelines(inpFileLines)
@@ -912,6 +928,7 @@ def writeORCAInp(inputDictList, outputDir):
     if fileExists == True:
         raw_input("Hit return to continue...")
 
+        
 def getORCAJobs(inputDir):
     ORCAFileList = os.listdir(inputDir)
     ORCAFilesToRun = []

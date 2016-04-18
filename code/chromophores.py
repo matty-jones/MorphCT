@@ -17,14 +17,18 @@ except ImportError:
 class obtain:
     def __init__(self, morphologyData, moleculeProperties, boxSize, outputDir, moleculeAAIDs):
         self.morphologyData = morphologyData
+        self.interMonomerBonds, self.terminatingHydrogenBonds = self.getImportantMonomerBonds()
+        self.terminatingHydrogenAtoms = []
+        for bond in self.terminatingHydrogenBonds:
+            if bond[1] not in self.terminatingHydrogenAtoms:
+                self.terminatingHydrogenAtoms.append(bond[1])
         self.moleculeProperties = moleculeProperties # Thio COMs are wrapped
         self.boxSize = boxSize
         self.simDims = [[-boxSize[0]/2.0, boxSize[0]/2.0], [-boxSize[1]/2.0, boxSize[1]/2.0], [-boxSize[2]/2.0, boxSize[2]/2.0]]
-        print "BoxSize =", self.boxSize, "SimDims =", self.simDims
         self.maximumHoppingDistance = 10.0 # REMEMBER, this is in angstroems not distance units
         self.getChromoPosns()
-        self.updateNeighbourList()
-        chromophorePairIDs, chromophorePairs = self.obtainHoppingPairs()
+        #self.updateNeighbourList()
+        #chromophorePairIDs, chromophorePairs = self.obtainHoppingPairs()
 
         # chromophorePairIDs = [[12, 373], [12, 374], [13, 375], [14, 376], [15, 377], [16, 373], [17, 378], [18, 379], [19, 380]]
         # for hoppingPair in chromophorePairs:
@@ -36,11 +40,135 @@ class obtain:
         #     print ' '.join(str(ID) for ID in hoppingPair[1]['atomID'])
         #     raw_input('PAUSE')
         # exit()
+
+
+
+        
+        # Some runs fail because they are at the end of the molecule and have terminating hydrogens
+        # Testing showed that unbonded electrons mess up the MOs, so the transfer integral and energy levels are wrong
+        # To be as realistic as possible, need every segment to have two terminating hydrogens
+        # AS LONG AS the chromophores are not already intramolecular.
+        # Therefore, we use self.includeAdditionalHydrogens to modify the input files correctly.
+        print "Posn Complete"
         helperFunctions.checkORCAFileStructure(outputDir)
+        print "Fine Structure Checked"
+        for chromophore in self.chromophores.keys():
+            if self.chromophores[chromophore]['periodic'] == True:
+                continue
+            modifiedChromophore = self.includeAdditionalHydrogens([self.chromophores[chromophore]])
+            helperFunctions.writeORCAInp(modifiedChromophore, outputDir, 'single')
+        exit()
         for chromophorePair in chromophorePairs:
-            helperFunctions.writeORCAInp(chromophorePair, outputDir)
+            modifiedChromophorePair = self.includeAdditionalHydrogens(chromophorePair)
+            helperFunctions.writeORCAInp(modifiedChromophorePair, outputDir, 'pair')
         print "\n"
 
+
+    def addChromophoreEnds(self, chromoDict):
+        importantCarbons = {}
+        for index, atomType in enumerate(chromoDict['type']):
+            if (atomType == 'C1') or (atomType == 'C10'):
+                importantCarbons[chromoDict['atomID'][index]] = index
+        for bond in self.interMonomerBonds:
+            if (bond[1] in importantCarbons) and (bond[2] in importantCarbons):
+                importantCarbons.pop(bond[1])
+                importantCarbons.pop(bond[2])
+        #Sanity check
+        if len(importantCarbons.keys()) != 2:
+            print chromoDict
+            raise SystemError('Expected two chromophore terminating carbons, got '+str(len(importantCarbons.keys())))
+        chromoDict['ends'] = importantCarbons
+        return chromoDict
+        
+
+    def getImportantMonomerBonds(self):
+        interMonomerBonds = []
+        terminatingHydrogenBonds = []
+        for bond in self.morphologyData['bond']:
+            if (bond[0] == 'C1-C10') or (bond[0] == 'C10-C1'): # Latter should never happen but just in case
+                interMonomerBonds.append(bond)
+            elif (bond[0] == 'C1-H1') or (bond[0] == 'C10-H1'):
+                terminatingHydrogenBonds.append(bond)
+        return interMonomerBonds, terminatingHydrogenBonds
+
+
+    def getBondedIDs(self, ID):
+        bondedAtoms = []
+        for bond in self.morphologyData['bond']:
+            if bond[1] == ID:
+                bondedAtoms.append([bond[2], self.morphologyData['type'][bond[2]]])
+            elif bond[2] == ID:
+                bondedAtoms.append([bond[1], self.morphologyData['type'][bond[1]]])
+        return bondedAtoms
+        
+
+    def includeAdditionalHydrogens(self, chromoList):
+        CHBondLength = 1.09
+        carbonsToAddTo = []
+        # We might have one or two chromophores coming in but the treatment is the same
+        for chromo in chromoList:
+            # First get the carbons that matter
+            for importantCarbon in chromo['ends'].keys():
+                # chromo['ends'] is a dictionary with {morphologyAtomID:indexInChromo}
+                # Don't add another hydrogen if there already is one!
+                if importantCarbon in self.terminatingHydrogenAtoms:
+                    continue
+                else:
+                    carbonsToAddTo.append(importantCarbon)
+        ignoreTheseCarbons = []
+        for carbon in carbonsToAddTo:
+            # Get the relevant inter-monomer bond for this carbon.
+            # If its bonding partner is also a `carbonToAddTo', then remove both
+            # (this means we have two adjacent chromophores that are bonded)
+            for bond in self.interMonomerBonds:
+                if (carbon == bond[1]):
+                    if bond[2] in carbonsToAddTo:
+                        ignoreTheseCarbons += [carbon, bond[2]]
+                elif (carbon == bond[2]):
+                    if bond[1] in carbonsToAddTo:
+                        ignoreTheseCarbons += [bond[1], carbon]
+        for ignoreCarbon in ignoreTheseCarbons:
+            carbonsToAddTo.remove(ignoreCarbon)
+        # We now have a list of "carbonsToAddTo" that we need to add hydrogens to.
+        # Now, calculate the C-H vector. This shouldn't matter.
+        positionOfHydrogenToAdd = []
+        for carbon in carbonsToAddTo:
+            carbonType = self.morphologyData['type'][carbon]
+            carbonPosn = np.array(self.morphologyData['position'][carbon])
+            bondedAtoms = self.getBondedIDs(carbon)
+            vectorAtoms = []
+            if carbonType == 'C1':
+                for bondedAtom in bondedAtoms:
+                    if (bondedAtom[1] == 'C2') or (bondedAtom[1] == 'S1'):
+                        vectorAtoms.append(bondedAtom[0])
+            elif carbonType == 'C10':
+                for bondedAtom in bondedAtoms:
+                    if (bondedAtom[1] == 'C9') or (bondedAtom[1] == 'S1'):
+                        vectorAtoms.append(bondedAtom[0])
+            else:
+                print carbon
+                print carbonType
+                print bondedAtoms
+                raise SystemError('Unexpected atom type for monomer-terminating carbon')
+            CHVector = np.array([0.0, 0.0, 0.0])
+            vectors = []
+            for vectorAtom in vectorAtoms:
+                vector = helperFunctions.findAxis(carbonPosn, self.morphologyData['position'][vectorAtom], normalise=False)
+                vectors.append(vector)
+                CHVector += vector
+            CHVector = -CHVector*(CHBondLength/(np.sqrt(CHVector[0]**2 + CHVector[1]**2 + CHVector[2]**2)))
+            positionOfHydrogenToAdd = list(carbonPosn + CHVector)
+            checkAdded = False
+            for chromo in chromoList:
+                if carbon in chromo['ends'].keys():
+                    chromo['position'].append(positionOfHydrogenToAdd)
+                    chromo['type'].append('H1')
+                    chromo['mass'].append(1.00794)
+                    checkAdded = True
+            if checkAdded == False:
+                raise SystemError("Didn't add the hydrogen...")
+        return chromoList
+        
 
     def getChromoPosns(self):
         self.chromophores = {}
@@ -58,6 +186,9 @@ class obtain:
                     chromoDict['unwrapped_position'].append(self.morphologyData['unwrapped_position'][atomID])
                     chromoDict['type'].append(self.morphologyData['type'][atomID])
                     chromoDict['mass'].append(self.morphologyData['mass'][atomID])
+                # Need to find each end of the chromophore and add it to the dictionary for later
+                # (Will need it to add additional hydrogens in)
+                chromoDict = self.addChromophoreEnds(chromoDict)
                 # To calculate the COMPosn and avoid cross-boundary issues:
                 # Calc it from the unwrapped positions, then wrap it back into the box
                 unwrappedThioCOMs = molecule['unwrappedThioCOMs'][chromoNo]
