@@ -27,9 +27,19 @@ class obtain:
         self.simDims = [[-boxSize[0]/2.0, boxSize[0]/2.0], [-boxSize[1]/2.0, boxSize[1]/2.0], [-boxSize[2]/2.0, boxSize[2]/2.0]]
         self.maximumHoppingDistance = 10.0 # REMEMBER, this is in angstroems not distance units
         self.getChromoPosns()
-        #self.updateNeighbourList()
-        #chromophorePairIDs, chromophorePairs = self.obtainHoppingPairs()
 
+        # for chromoNo in self.chromophores.keys():
+        #     if self.chromophores[chromoNo]['realChromoID'] == 30:
+        #         print "--=== CHROMO", self.chromophores[chromoNo]['realChromoID'], " ===---"
+        #         for i, typeName in enumerate(self.chromophores[chromoNo]['type']):
+        #             if typeName == 'H1':
+        #                 print self.chromophores[chromoNo]['type'][i], self.chromophores[chromoNo]['position'][i]
+        #         raw_input("Check and resume...")
+
+        self.updateNeighbourList()
+        chromophorePairIDs, chromophorePairs = self.obtainHoppingPairs()
+
+        ### DEBUG AND QUICK TESTING ###
         # chromophorePairIDs = [[12, 373], [12, 374], [13, 375], [14, 376], [15, 377], [16, 373], [17, 378], [18, 379], [19, 380]]
         # for hoppingPair in chromophorePairs:
         #     print "PairType =", hoppingPair[0]['periodic'], hoppingPair[1]['periodic']
@@ -40,24 +50,22 @@ class obtain:
         #     print ' '.join(str(ID) for ID in hoppingPair[1]['atomID'])
         #     raw_input('PAUSE')
         # exit()
-
-
-
+        # chromophorePairIDs = [[0, 30], [131, 174], [303, 413], [571, 635]]
+        # chromophorePairs = [[self.chromophores[0], self.chromophores[30]], [self.chromophores[131], self.chromophores[174]], [self.chromophores[303], self.chromophores[413]], [self.chromophores[571], self.chromophores[635]]]
+        #################################
         
         # Some runs fail because they are at the end of the molecule and have terminating hydrogens
         # Testing showed that unbonded electrons mess up the MOs, so the transfer integral and energy levels are wrong
         # To be as realistic as possible, need every segment to have two terminating hydrogens
         # AS LONG AS the chromophores are not already intramolecular.
         # Therefore, we use self.includeAdditionalHydrogens to modify the input files correctly.
-        print "Posn Complete"
         helperFunctions.checkORCAFileStructure(outputDir)
-        print "Fine Structure Checked"
         for chromophore in self.chromophores.keys():
             if self.chromophores[chromophore]['periodic'] == True:
                 continue
             modifiedChromophore = self.includeAdditionalHydrogens([self.chromophores[chromophore]])
             helperFunctions.writeORCAInp(modifiedChromophore, outputDir, 'single')
-        exit()
+        print "\n"
         for chromophorePair in chromophorePairs:
             modifiedChromophorePair = self.includeAdditionalHydrogens(chromophorePair)
             helperFunctions.writeORCAInp(modifiedChromophorePair, outputDir, 'pair')
@@ -114,7 +122,8 @@ class obtain:
                 if importantCarbon in self.terminatingHydrogenAtoms:
                     continue
                 else:
-                    carbonsToAddTo.append(importantCarbon)
+                    if importantCarbon not in carbonsToAddTo:
+                        carbonsToAddTo.append(importantCarbon)
         ignoreTheseCarbons = []
         for carbon in carbonsToAddTo:
             # Get the relevant inter-monomer bond for this carbon.
@@ -123,18 +132,29 @@ class obtain:
             for bond in self.interMonomerBonds:
                 if (carbon == bond[1]):
                     if bond[2] in carbonsToAddTo:
-                        ignoreTheseCarbons += [carbon, bond[2]]
+                        if carbon not in ignoreTheseCarbons:
+                            ignoreTheseCarbons.append(carbon)
+                        if bond[2] not in ignoreTheseCarbons:
+                            ignoreTheseCarbons.append(bond[2])
                 elif (carbon == bond[2]):
                     if bond[1] in carbonsToAddTo:
-                        ignoreTheseCarbons += [bond[1], carbon]
+                        if carbon not in ignoreTheseCarbons:
+                            ignoredTheseCarbons.append(carbon)
+                        if bond[1] not in ignoreTheseCarbons:
+                            ignoreTheseCarbons.append(bond[1])
         for ignoreCarbon in ignoreTheseCarbons:
             carbonsToAddTo.remove(ignoreCarbon)
         # We now have a list of "carbonsToAddTo" that we need to add hydrogens to.
         # Now, calculate the C-H vector. This shouldn't matter.
+        if len(carbonsToAddTo) > 4:
+            for chromo in chromoList:
+                print "\n", chromo
+            print carbonsToAddTo
+            raise SystemError('Adding more than 4 hydrogens, check the calculation.')
         positionOfHydrogenToAdd = []
         for carbon in carbonsToAddTo:
             carbonType = self.morphologyData['type'][carbon]
-            carbonPosn = np.array(self.morphologyData['position'][carbon])
+            carbonPosn = self.getAtomPosition(chromoList, carbon)
             bondedAtoms = self.getBondedIDs(carbon)
             vectorAtoms = []
             if carbonType == 'C1':
@@ -153,7 +173,7 @@ class obtain:
             CHVector = np.array([0.0, 0.0, 0.0])
             vectors = []
             for vectorAtom in vectorAtoms:
-                vector = helperFunctions.findAxis(carbonPosn, self.morphologyData['position'][vectorAtom], normalise=False)
+                vector = helperFunctions.findAxis(carbonPosn, self.getAtomPosition(chromoList, vectorAtom), normalise=False)
                 vectors.append(vector)
                 CHVector += vector
             CHVector = -CHVector*(CHBondLength/(np.sqrt(CHVector[0]**2 + CHVector[1]**2 + CHVector[2]**2)))
@@ -161,6 +181,13 @@ class obtain:
             checkAdded = False
             for chromo in chromoList:
                 if carbon in chromo['ends'].keys():
+                    if checkAdded == True:
+                        print "Chromo =", chromo['realChromoID']
+                        print "Ends =", chromo['ends']
+                        raise SystemError('ALREADY ADDED THIS HYDROGEN')
+                    # print "Carbon Position =", carbonPosn
+                    # print "Added Hydrogen Position =", positionOfHydrogenToAdd
+                    # print "Separation =", helperFunctions.calculateSeparation(carbonPosn, positionOfHydrogenToAdd)
                     chromo['position'].append(positionOfHydrogenToAdd)
                     chromo['type'].append('H1')
                     chromo['mass'].append(1.00794)
@@ -168,8 +195,21 @@ class obtain:
             if checkAdded == False:
                 raise SystemError("Didn't add the hydrogen...")
         return chromoList
-        
 
+    
+    def getAtomPosition(self, chromoList, targetAtomID):
+        atomFound = False
+        for chromoDict in chromoList:
+            for index, atomID in enumerate(chromoDict['atomID']):
+                if atomID == targetAtomID:
+                    targetPosition = chromoDict['position'][index]
+                    atomFound = True
+                    break
+            if atomFound == True:
+                break
+        return targetPosition
+    
+    
     def getChromoPosns(self):
         self.chromophores = {}
         globalChromoNo = -1 # This number includes any periodic chromophores that are not in the original simulation volume

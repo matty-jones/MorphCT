@@ -5,7 +5,7 @@ import copy
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import pickle
+import cPickle as pickle
 import helperFunctions
 import sys
             

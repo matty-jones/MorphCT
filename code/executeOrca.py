@@ -18,7 +18,6 @@ def execute(morphologyFile):
     for CPURank in procIDs:
         print 'python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &'
         os.system('python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &')
-    print "WOBBEY"
     
 
 if __name__ == '__main__':

@@ -3,7 +3,7 @@ import numpy as np
 import os
 import runHoomd
 import helperFunctions
-import pickle
+import cPickle as pickle
 
 class morphology:
     def __init__(self, morphologyName, sigma=1.):

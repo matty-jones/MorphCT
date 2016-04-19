@@ -12,7 +12,7 @@ if __name__ == '__main__':
     CPURank = int(sys.argv[2])
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile, '/')[-1]+1:]
     inputDir = os.getcwd()+'/outputFiles/'+morphologyName+'/chromophores/inputORCA'
-    logFile = inputDir.replace('/inputORCA', '/log_'+str(CPURank)+'.log')
+    logFile = inputDir.replace('/inputORCA', '/ORCAlog_'+str(CPURank)+'.log')
     outputDir = os.getcwd()+'/outputFiles/'+morphologyName+'/chromophores/outputORCA'
     procIDs, jobsList = helperFunctions.getORCAJobs(inputDir)
     jobsToRun = jobsList[CPURank]

@@ -6,7 +6,7 @@ import chromophores
 import matplotlib
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import pickle
+import cPickle as pickle
 import cme_utils
 try:
     import mpl_toolkits.mplot3d.axes3d as p3

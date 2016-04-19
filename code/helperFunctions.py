@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 import os
-import pickle
+import cPickle as pickle
 import multiprocessing as mp
 #from cme_utils.manip import pbc
 
@@ -857,10 +857,6 @@ def checkORCAFileStructure(outputDir):
         os.makedirs(outputDir+'/chromophores')
         print "Making /inputORCA directory..."
         os.makedirs(outputDir+'/chromophores/inputORCA')
-        os.makedirs(outputDir+'/chromophores/inputORCA/single')
-        os.makedirs(outputDir+'/chromophores/inputORCA/pair')
-        print "Making /outputORCA directory..."
-        os.makedirs(outputDir+'/chromophores/outputORCA')
     else:
         chromophoresDirList = os.listdir(outputDir+'/chromophores')
         if 'inputORCA' not in chromophoresDirList:
@@ -868,9 +864,23 @@ def checkORCAFileStructure(outputDir):
             os.makedirs(outputDir+'/chromophores/inputORCA')
             os.makedirs(outputDir+'/chromophores/inputORCA/single')
             os.makedirs(outputDir+'/chromophores/inputORCA/pair')
+        else:
+            inputDirList = os.listdir(outputDir+'/chromophores/inputORCA')
+            if 'single' not in inputDirList:
+                os.makedirs(outputDir+'/chromophores/inputORCA/single')
+            if 'pair' not in inputDirList:
+                os.makedirs(outputDir+'/chromophores/inputORCA/pair')
         if 'outputORCA' not in chromophoresDirList:
             print "Making /outputORCA directory..."
             os.makedirs(outputDir+'/chromophores/outputORCA')
+            os.makedirs(outputDir+'/chromophores/outputORCA/single')
+            os.makedirs(outputDir+'/chromophores/outputORCA/pair')
+        else:
+            outputDirList = os.listdir(outputDir+'/chromophores/outputORCA')
+            if 'single' not in outputDirList:
+                os.makedirs(outputDir+'/chromophores/outputORCA/single')
+            if 'pair' not in outputDirList:
+                os.makedirs(outputDir+'/chromophores/outputORCA/pair')
 
 
 def writeORCAInp(inputDictList, outputDir, mode):
@@ -896,20 +906,27 @@ def writeORCAInp(inputDictList, outputDir, mode):
         fileExists = False
     inputFileName = outputDir+'/chromophores/inputORCA/'+mode+'/'+ORCAFileName
     if fileExists == True:
-        print "\n"
         print "File", ORCAFileName, "already exists, skipping..."
-        #return
+        return
         print "Creating file anyway to check that they are the same"
         inputFileName = inputFileName.replace('.inp', '_2.inp')
-    if mode == 'pair':
-        # Centre the dimer pair at the origin
-        COM = calcCOM(chromophore1['position']+chromophore2['position'], chromophore1['mass']+chromophore2['mass'])
-    elif mode == 'single':
-        # Centre the chromophore at the origin
-        COM = calcCOM(chromophore1['position'], chromophore1['mass'])
-    chromophore1 = centre(chromophore1, COM)
-    if mode == 'pair':
-        chromophore2 = centre(chromophore2, COM)
+
+    # chromophore1COM = calcCOM(chromophore1['position'], chromophore1['mass'])
+    # if mode == 'pair':
+    #     # Centre the dimer pair at the origin
+    #     chromophore2COM = calcCOM(chromophore2['position'], chromophore2['mass'])
+    #     COM = calcCOM(chromophore1['position']+chromophore2['position'], chromophore1['mass']+chromophore2['mass'])
+    #     chromophore1 = centre(chromophore1, COM-chromophore1COM)
+    #     chromophore2 = centre(chromophore2, COM-chromophore2COM)
+    # elif mode == 'single':
+    #     # Centre the chromophore at the origin
+    #     COM = chromophore1COM
+    #     chromophore1 = centre(chromophore1, COM)
+
+    # chromophore1 = centre(chromophore1, COM)
+    # if mode == 'pair':
+    #     chromophore2 = centre(chromophore2, COM)
+
     # Now write the file
     with open(os.getcwd()+'/templates/template.inp', 'r') as templateFile:
         inpFileLines = templateFile.readlines()
@@ -921,21 +938,39 @@ def writeORCAInp(inputDictList, outputDir, mode):
         for atomID, atomCoords in enumerate(chromophore2['position']):
             thisAtomData = ' '+chromophore2['type'][atomID][0]+' '+' '.join(map(str, atomCoords))+'\n'
             linesToWrite.append(thisAtomData)
+    linesToWrite = list(set(linesToWrite)) # Randomly the code adds a repeat line which breaks ORCA. No idea why it does this, so this should fix it
     inpFileLines[-1:-1] = linesToWrite
     with open(inputFileName, 'w+') as ORCAInputFile:
         ORCAInputFile.writelines(inpFileLines)
     print "ORCA input file written to", inputFileName, "\r",
     if fileExists == True:
+        print "\n"
         raw_input("Hit return to continue...")
 
         
 def getORCAJobs(inputDir):
-    ORCAFileList = os.listdir(inputDir)
+    singleORCAFileList = os.listdir(inputDir+'/single')
+    pairORCAFileList = os.listdir(inputDir+'/pair')
     ORCAFilesToRun = []
-    for fileName in ORCAFileList:
+    for fileName in singleORCAFileList:
         if '.inp' in fileName:
-            ORCAFilesToRun.append(inputDir+'/'+fileName)
+            ORCAFilesToRun.append(inputDir+'/single/'+fileName)
+    for fileName in pairORCAFileList:
+        if '.inp' in fileName:
+            ORCAFilesToRun.append(inputDir+'/pair/'+fileName)
     ORCAFilesToRun.sort()
+    # Delete any jobs that have already at least started running
+    popList = []
+    for jobNo, job in enumerate(ORCAFilesToRun):
+        try:
+            with open(job.replace('orcaInput', 'orcaOutput').replace('.inp', '.out'), 'r') as testFile:
+                popList.append(jobNo)
+        except IOError:
+            pass
+    popList.sort(reverse=True)
+    for popIndex in popList:
+        ORCAFilesToRun.pop(popIndex)
+    # Now split the list of remaining jobs based on the number of processors
     try:
         procIDs = os.environ.get('SLURM_GTIDS').split(',')
     except AttributeError:
