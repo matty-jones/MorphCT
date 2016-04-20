@@ -99,7 +99,7 @@ def findAxis(atom1, atom2, normalise=True):
 
 def normaliseVec(vector):
     '''This function normalises an input vector to unit magnitude'''
-    return vector/float(np.sqrt(vector[0]**2 + vector[1]**2 + vector[2]**2))
+    return vector/np.linalg.norm(vector)#float(np.sqrt(vector[0]**2 + vector[1]**2 + vector[2]**2))
 
 
 def findIndex(string, character):
@@ -856,7 +856,12 @@ def checkORCAFileStructure(outputDir):
         print "Making /chromophores directory..."
         os.makedirs(outputDir+'/chromophores')
         print "Making /inputORCA directory..."
-        os.makedirs(outputDir+'/chromophores/inputORCA')
+        os.makedirs(outputDir+'/chromophores/outputORCA')
+        os.makedirs(outputDir+'/chromophores/outputORCA/single')
+        os.makedirs(outputDir+'/chromophores/outputORCA/pair')
+        os.makedirs(outputDir+'/chromophores/outputORCA')
+        os.makedirs(outputDir+'/chromophores/outputORCA/single')
+        os.makedirs(outputDir+'/chromophores/outputORCA/pair')
     else:
         chromophoresDirList = os.listdir(outputDir+'/chromophores')
         if 'inputORCA' not in chromophoresDirList:
