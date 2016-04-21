@@ -74,15 +74,12 @@ def linearInterpDescendingY(targetValue, xArray, yArray):
 
 def calcCOM(listOfPositions, listOfMasses):
     '''This function calculates the centre of mass of a collection of sites/atoms (listOfPositions) with corresponding mass (listOfMasses)'''
-    massWeightedX = 0.
-    massWeightedY = 0.
-    massWeightedZ = 0.
+    massWeighted = np.array([0.0, 0.0, 0.0])
     totalMass = np.sum(listOfMasses)
-    for atomID in range(len(listOfPositions)):
-        massWeightedX += listOfPositions[atomID][0]*listOfMasses[atomID]
-        massWeightedY += listOfPositions[atomID][1]*listOfMasses[atomID]
-        massWeightedZ += listOfPositions[atomID][2]*listOfMasses[atomID]
-    return np.array([massWeightedX/float(totalMass), massWeightedY/float(totalMass), massWeightedZ/float(totalMass)])
+    for atomID, position in enumerate(listOfPositions):
+        for axis in range(3):
+            massWeighted[axis] += position[axis]*listOfMasses[atomID]
+    return massWeighted/float(totalMass)
 
         
 def findAxis(atom1, atom2, normalise=True):
@@ -134,12 +131,13 @@ def parallelSort(list1, list2):
     return list1, list2
 
 
-def writeCSV(dataX, dataY, name):
-    '''Appends a CSV file with X and Y Data'''
-    filename = './'+name+'.csv'
-    document = csv.writer(open(filename, 'a+'), delimiter = ',')
-    document.writerow([dataX, dataY])
-
+def writeCSV(fileName, data):
+    '''Writes a CSV file given a 2D array `data' of arbitrary size'''
+    with open(fileName, 'w+') as csvFile:
+        document = csv.writer(csvFile, delimiter = ',')
+        for row in data:
+            document.writerow(list(row))
+            
 
 def rotationMatrix(vector1, vector2):
     '''A function to return the rotation matrix around the origin that maps vector1 to vector 2'''
@@ -856,9 +854,9 @@ def checkORCAFileStructure(outputDir):
         print "Making /chromophores directory..."
         os.makedirs(outputDir+'/chromophores')
         print "Making /inputORCA directory..."
-        os.makedirs(outputDir+'/chromophores/outputORCA')
-        os.makedirs(outputDir+'/chromophores/outputORCA/single')
-        os.makedirs(outputDir+'/chromophores/outputORCA/pair')
+        os.makedirs(outputDir+'/chromophores/inputORCA')
+        os.makedirs(outputDir+'/chromophores/inputORCA/single')
+        os.makedirs(outputDir+'/chromophores/inputORCA/pair')
         os.makedirs(outputDir+'/chromophores/outputORCA')
         os.makedirs(outputDir+'/chromophores/outputORCA/single')
         os.makedirs(outputDir+'/chromophores/outputORCA/pair')
@@ -958,10 +956,10 @@ def getORCAJobs(inputDir):
     pairORCAFileList = os.listdir(inputDir+'/pair')
     ORCAFilesToRun = []
     for fileName in singleORCAFileList:
-        if '.inp' in fileName:
+        if fileName[-4:] == '.inp':
             ORCAFilesToRun.append(inputDir+'/single/'+fileName)
     for fileName in pairORCAFileList:
-        if '.inp' in fileName:
+        if fileName[-4:] == '.inp':
             ORCAFilesToRun.append(inputDir+'/pair/'+fileName)
     ORCAFilesToRun.sort()
     # Delete any jobs that have already at least started running
@@ -977,7 +975,7 @@ def getORCAJobs(inputDir):
         ORCAFilesToRun.pop(popIndex)
     # Now split the list of remaining jobs based on the number of processors
     try:
-        procIDs = os.environ.get('SLURM_GTIDS').split(',')
+        procIDs = list(np.arange(int(os.environ.get('SLURM_NPROCS'))))
     except AttributeError:
         # Was not loaded using SLURM, so use all physical processors
         procIDs = list(np.arange(mp.cpu_count()))

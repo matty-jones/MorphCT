@@ -1,10 +1,22 @@
 import os
 import numpy as np
-import multiprocessing as mp
 import time as T
 import helperFunctions
 
-def execute(morphologyFile):
+def countOutputFiles(directory):
+    singleOutputs = os.listdir(directory+'/single/')
+    pairOutputs = os.listdir(directory+'/pair/')
+    orcaOutputs = 0
+    for fileName in singleOutputs:
+        if fileName[-4:] == '.out':
+            orcaOutputs += 1
+    for fileName in pairOutputs:
+        if fileName[-4:] == '.out':
+            orcaOutputs += 1
+    return orcaOutputs
+
+
+def execute(morphologyFile, slurmJobNumber):
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
     inputDir = os.getcwd()+'/outputFiles/'+morphologyName+'/chromophores/inputORCA'
     # Clear input files
@@ -13,13 +25,32 @@ def execute(morphologyFile):
     except OSError:
         pass
     procIDs, jobsList = helperFunctions.getORCAJobs(inputDir)
-    print "Found", sum([len(ORCAFilesToRun) for ORCAFilesToRun in jobsList]), "ORCA files to run."
+    numberOfInputs = sum([len(ORCAFilesToRun) for ORCAFilesToRun in jobsList])
+    print "Found", numberOfInputs, "ORCA files to run."
     print procIDs
     for CPURank in procIDs:
         print 'python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &'
         os.system('python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &')
-    
+
+    print "Checking for completed output files..."
+    previousNumberOfOutputs = -1
+    slurmCancel = False
+    while True:
+        if slurmCancel == True:
+            print "Terminating program..."
+            os.system('scancel', slurmJobNumber)
+            exit()
+        numberOfOutputs = countOutputFiles(os.getcwd()+'/outputFiles/'+morphologyName+'/chromophores/outputORCA')
+        if numberOfOutputs == numberOfInputs:
+            print "All", numberOfInputs, "output files present. Waiting one more iteration for current jobs to complete..."
+            slurmCancel = True
+        if numberOfOutputs == previousNumberOfOutputs:
+            print "No additional output files found this iteration - there are still", numberOfOutputs, "output files present. Is everything still working?"
+        previousNumberOfOutputs = numberOfOutputs
+        # Sleep for 20 minutes
+        T.sleep(1200)
 
 if __name__ == '__main__':
     morphologyFile = sys.argv[1]
-    execute(morphologyFile)
+    slurmJobNumber = sys.argv[2]
+    execute(morphologyFile, slurmJobNumber)

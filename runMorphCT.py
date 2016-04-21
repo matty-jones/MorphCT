@@ -9,6 +9,8 @@ import helperFunctions
 import runHoomd
 import extractMol
 import analyseMolecules
+import executeOrca
+import transferIntegrals
 
 def getFilesList(direc):
     fileList = os.listdir(direc)
@@ -49,7 +51,29 @@ def checkOutputDirectory(morphologyFile, outputDir, mode="<NO MODE>"):
     return True, True
 
 
+
+def getCurrentSlurmID(squeueOutput):
+    if len(squeueOutput[1]) != 0:
+        # Something in stdErr, so return None.
+        print "StdErr not empty:", squeueOutput[1]
+        return None
+    outputLines = squeueOutput[0].split('\n')
+    # The output is sorted by ascending runtime, so this job will be the most recent submission from the current user which is outputLines[1]
+    for element in outputLines[1].split(' '):
+        if len(element) != 0:
+            # First element come across is the jobID
+            return int(element)
+
+
+
 if __name__ == '__main__':
+    # FIRST THING to do is get the SLURM job ID (should be the most recent SLURM job)
+    try:
+        slurmJobID = getCurrentSlurmID(sp.Popen(['squeue', '-u', os.getenv('USER'), '--sort=t'], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE).communicate())
+    except OSError:
+        # Not submitted as as slurm job
+        slurmJobID = None
+    
     #### Put these into an input parameter file at some point along with everything else so that they are not defined here
     inputDir = 'inputCGMorphs'
     outputDir = 'outputFiles'
@@ -205,7 +229,8 @@ if __name__ == '__main__':
             runORCA = True
             if runORCA == True:
                 t8 = T.time()
-                os.system('hoomd ./code/executeOrca.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4])
+                executeOrca.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], slurmJobID)
+                #os.system('hoomd ./code/executeOrca.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4])
                 t9 = T.time()
                 elapsedTime = float(t9) - float(t8)
                 if elapsedTime < 60:
@@ -223,3 +248,31 @@ if __name__ == '__main__':
                 print "executeORCA calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
                 print "----------====================----------"
 
+        runTij = True
+            if runTij == True:
+                t10 = T.time()
+                transferIntegrals.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], slurmJobID)
+                #os.system('hoomd ./code/executeOrca.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4])
+                t11 = T.time()
+                elapsedTime = float(t11) - float(t10)
+                if elapsedTime < 60:
+                    timeunits = 'seconds.'
+                elif elapsedTime < 3600:
+                    elapsedTime /= 60.0
+                    timeunits = 'minutes.'
+                elif elapsedTime < 86400:
+                    elapsedTime /= 3600.0
+                    timeunits = 'hours.'
+                else:
+                    elapsedTime /= 86400.0
+                    timeunits = 'days.'
+                print "----------====================----------"
+                print "transferIntegrals calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
+                print "----------====================----------"
+
+
+
+
+            # Close program
+            exitFlag = 1
+            break
