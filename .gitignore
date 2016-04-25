@@ -1,6 +1,11 @@
 ./temp/*
 temp/
 *.pyc
+*.inp
+*.gbw
+*.out
+*.tmp
+*.csv
 *.dcd
 *.png
 *.log
@@ -9,4 +14,4 @@ temp/
 relaxedP3HT.xml
 *.DS_Store
 outputChains/*
-plotter/*.xml
+extraAnalysis/plotter/*.xml

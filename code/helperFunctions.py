@@ -3,6 +3,7 @@ import copy
 import os
 import cPickle as pickle
 import multiprocessing as mp
+import csv
 #from cme_utils.manip import pbc
 
 def findMagnitude(vector):
@@ -137,6 +138,7 @@ def writeCSV(fileName, data):
         document = csv.writer(csvFile, delimiter = ',')
         for row in data:
             document.writerow(list(row))
+    print "CSV written to", fileName
             
 
 def rotationMatrix(vector1, vector2):

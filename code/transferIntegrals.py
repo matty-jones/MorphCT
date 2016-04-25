@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import helperFunctions
+import csv
 
 
 class ORCAError(Exception):
@@ -12,7 +13,11 @@ class ORCAError(Exception):
 class chromophore:
     def __init__(self, inputFile, chromoID, singleChromos = None):
         self.inputFile = inputFile
-        self.chromo1ID = chromoID[0]
+        self.chromo1ID = int(chromoID[0])
+        if len(chromoID) == 1:
+            self.ORCAType = 'single'
+        else:
+            self.ORCAType = 'pair'            
         try:
             self.loadORCAOutput(inputFile)
         except ORCAError as errorMessage:
@@ -20,8 +25,8 @@ class chromophore:
             self.error = 1
             return
         if len(chromoID) == 2:
-            self.chromo2ID = chromoID[1]
-            self.calculateTransferIntegral(singleChromos)
+            self.chromo2ID = int(chromoID[1])
+            self.Tij = self.calculateTransferIntegral(singleChromos)
         self.error = 0
 
 
@@ -33,6 +38,7 @@ class chromophore:
         listOfPositions = []
         listOfMasses = []
         orbitalData = []
+        self.chromoLength = 0
         for line in dataFile:
             if 'CARTESIAN COORDINATES (ANGSTROEM)' in line:
                 recordPosData = True
@@ -53,6 +59,8 @@ class chromophore:
                                 elif element == 'C':
                                     listOfMasses.append(12.0107)
                                 elif element == 'S':
+                                    if self.ORCAType == 'single':
+                                        self.chromoLength += 1
                                     listOfMasses.append(32.0660)
                                 else:
                                     print element
@@ -111,9 +119,9 @@ def prepareCSVData(singleChromoDict, pairChromoList):
     pairChromoCSVData = [] # each row = 1 pair: [ID1, ID2, HOMO-1, HOMO, LUMO, LUMO+1, Tij]
     singleChromoKeys = sorted(singleChromoDict.keys())
     for singleChromoKey in singleChromoKeys:
-        chromophore = singleChromoDict[key]
-        singleChromoCSVData.append([chromophore.chromo1ID, chromophore.position[0], chromophore.position[1], chromophore.position[2], chromophore.HOMO_1, chromophore.HOMO, chromophore.LUMO, chromophore.LUMO_1])
-    for chromophore in pairChromoCSVData:
+        chromophore = singleChromoDict[singleChromoKey]
+        singleChromoCSVData.append([chromophore.chromo1ID, chromophore.position[0], chromophore.position[1], chromophore.position[2], chromophore.HOMO_1, chromophore.HOMO, chromophore.LUMO, chromophore.LUMO_1, chromophore.chromoLength])
+    for chromophore in pairChromoList:
         pairChromoCSVData.append([chromophore.chromo1ID, chromophore.chromo2ID, chromophore.HOMO_1, chromophore.HOMO, chromophore.LUMO, chromophore.LUMO_1, chromophore.Tij])
     return np.array(singleChromoCSVData), np.array(pairChromoCSVData)
         
@@ -153,35 +161,52 @@ def execute(morphologyFile):
     # Load all of the single ORCA chromophores first to get their energy levels
     # (We need these first to calculate Tij for the pairs)
     singleChromoDict = {} # Is a dictionary because we need to be able to look up energy levels quickly
-    failedSingles = []
+    failedSingleFiles = []
+    failedSingleNos = []
+    singleOutputs = []
     for fileName in os.listdir(singleDir):
         if '.out' in fileName:
-            chromoID = getChromoID(fileName)
-            chromo = chromophore(singleDir+fileName, chromoID)
-            if chromo.error == 0:
-                singleChromoDict[chromoID[0]] = chromo
-            else:
-                failedSingles.append(fileName)
-
+            singleOutputs.append(fileName)
+    for fileNo, fileName in enumerate(singleOutputs):
+        print "Examining single chromophore", fileNo+1, "of", str(len(singleOutputs))+"...\r",
+        chromoID = getChromoID(fileName)
+        chromo = chromophore(singleDir+fileName, chromoID)
+        if chromo.error == 0:
+            singleChromoDict[chromoID[0]] = chromo
+        else:
+            failedSingleFiles.append(fileName)
+            failedSingleNos.append(chromoID[0])
+    print "\n"
+    print failedSingleNos
+    print "There were", len(failedSingleNos), "failed single chromophore runs"
     # Now do the pairs
     pairChromos = []
-    failedPairs = []
+    failedPairFiles = []
     needKoopmans = 0
+    pairOutputs = []
     for fileName in os.listdir(pairDir):
         if '.out' in fileName:
-            chromoID = getChromoID(fileName)
-            chromoPair = chromophore(pairDir+fileName, chromoID, singleChromoDict)
-            if chromoPair.error == 0:
-                pairChromos.append(chromoPair)
-                if chromoPair.needKoopmans == 1:
-                    print fileName
-                needKoopmans += chromoPair.needKoopmans
-            else:
-                failedPairs.append(chromoPair)
-
+            pairOutputs.append(fileName)
+    for fileNo, fileName in enumerate(pairOutputs):
+        chromoID = getChromoID(fileName)
+        print "Examining chromophore pair", fileNo+1, "of", str(len(pairOutputs))+"...\r",
+        if (chromoID[0] in failedSingleNos) or (chromoID[1] in failedSingleNos):
+            print "\n"
+            print "One of", chromoID, "failed in the singles. Skipping..."
+            continue
+        chromoPair = chromophore(pairDir+fileName, chromoID, singleChromoDict)
+        if chromoPair.error == 0:
+            pairChromos.append(chromoPair)
+            if chromoPair.needKoopmans == 1:
+                pass
+            needKoopmans += chromoPair.needKoopmans
+        else:
+            failedPairFiles.append(fileName)
+            
+    print "\n"
+    print failedPairFiles
     print needKoopmans, "pairs out of", len(pairChromos), "had DeltaE > HOMO splitting and so need Koopmans approximation to avoid complex Tij"
-    print "There were", len(failedSingles), "failed single chromophore runs"
-    print "There were", len(failedPairs), "failed pair chromophore runs"
+    print "There were", len(failedPairFiles), "failed pair chromophore runs"
     # Now write the CSV outputs for the KMC code
     singleChromoCSVData, pairChromoCSVData = prepareCSVData(singleChromoDict, pairChromos)
     helperFunctions.writeCSV(CSVDir+'/singles.csv', singleChromoCSVData)

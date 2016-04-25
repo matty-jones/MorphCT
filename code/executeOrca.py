@@ -38,7 +38,7 @@ def execute(morphologyFile, slurmJobNumber):
     while True:
         if slurmCancel == True:
             print "Terminating program..."
-            os.system('scancel', slurmJobNumber)
+            os.system('scancel '+slurmJobNumber)
             exit()
         numberOfOutputs = countOutputFiles(os.getcwd()+'/outputFiles/'+morphologyName+'/chromophores/outputORCA')
         if numberOfOutputs == numberOfInputs:

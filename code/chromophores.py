@@ -112,6 +112,7 @@ class obtain:
 
     def includeAdditionalHydrogens(self, chromoList):
         CHBondLength = 1.09
+        CCBondLength = 1.54
         carbonsToAddTo = []
         # We might have one or two chromophores coming in but the treatment is the same
         for chromo in chromoList:
@@ -139,9 +140,18 @@ class obtain:
                 elif (carbon == bond[2]):
                     if bond[1] in carbonsToAddTo:
                         if carbon not in ignoreTheseCarbons:
-                            ignoredTheseCarbons.append(carbon)
+                            ignoreTheseCarbons.append(carbon)
                         if bond[1] not in ignoreTheseCarbons:
                             ignoreTheseCarbons.append(bond[1])
+        # Also, it's come up in testing that if two carbons are close enough for VMD/ORCA to automatically put a bond in, adding a hydrogen really messes that up
+        #UNTESTED (in the morphology, there were 35 that failed)
+        for index, carboni in enumerate(carbonsToAddTo[:-1]):
+            for carbonj in carbonsToAddTo[index+1:]:
+                if helperFunctions.calculateSeparation(self.morphologyData['position'][carboni], self.morphologyData['position'][carbonj]) <= CCBondLength:
+                    if carboni not in ignoreTheseCarbons:
+                        ignoreTheseCarbons.append(carboni)
+                    if carbonj not in ignoreTheseCarbons:
+                        ignoreTheseCarbons.append(carbonj)
         for ignoreCarbon in ignoreTheseCarbons:
             carbonsToAddTo.remove(ignoreCarbon)
         # We now have a list of "carbonsToAddTo" that we need to add hydrogens to.
