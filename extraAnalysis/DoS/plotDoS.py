@@ -41,6 +41,16 @@ def plotHist(yvals, mode, xvals=None):
         plt.ylabel('Frequency')
         plt.xlabel('HOMO Level (eV)')
         fileName = 'HOMODoS.png'
+    elif mode == 'Bandgap':
+        plt.hist(yvals, 20)
+        plt.ylabel('Frequency')
+        plt.xlabel('Bandgap (eV)')
+        fileName = 'Bandgap.png'
+    elif mode == 'BandgapLength':
+        plt.scatter(xvals, yvals)
+        plt.ylabel('Bandgap (eV)')
+        plt.xlabel('Chromo Length (monomers)')
+        fileName = 'BandgapLength.png'
     elif mode == 'Splitting':
         plt.hist(yvals, 20)
         plt.ylabel('Frequency')
@@ -71,6 +81,11 @@ def plotHist(yvals, mode, xvals=None):
         plt.ylabel('Frequency')
         plt.xlabel('Delta Eij (eV)')
         fileName = 'deltaEij.png'
+    elif mode == 'averageHOMO':
+        plt.scatter(xvals, yvals)
+        plt.xlabel('Chromo Length (monomers)')
+        plt.ylabel('Average HOMO level (eV)')
+        fileName = 'averageHOMO.png'
     plt.savefig('./'+fileName)
     print "Figure saved as ./"+fileName
 
@@ -94,9 +109,11 @@ if __name__ == "__main__":
     # pairData = [chromo1, chromo2, HOMO-1, HOMO, LUMO, LUMO+1, TransferIntegral]
     chromoLength = []
     HOMOLevels = []
+    bandgap = []
     for chromophore in singleData.values():
         chromoLength.append(chromophore[7])
         HOMOLevels.append(chromophore[4])
+        bandgap.append(chromophore[5] - chromophore[4])
     HOMOSplitting = []
     transferIntegrals = []
     trimmedTIs = []
@@ -113,9 +130,26 @@ if __name__ == "__main__":
     plotHist(trimmedTIs, 'Trimmed')
     plotHist(chromoLength, 'Length', HOMOLevels)
     plotHist(deltaEij, 'deltaEij')
-
+    plotHist(bandgap, 'Bandgap')
+    plotHist(bandgap, 'BandgapLength', chromoLength)
     chromoLengths = np.arange(16)
     lambdaIJ = []
-    for chromoLength in chromoLengths:
-        lambdaIJ.append(calculateLambdaij(chromoLength))
+    for monomers in chromoLengths:
+        lambdaIJ.append(calculateLambdaij(monomers))
     plotHist(lambdaIJ, 'lambda', chromoLengths)
+
+
+
+    HOMODict = {}
+    for i, HOMO in enumerate(HOMOLevels):
+        length = chromoLength[i]
+        if length not in HOMODict:
+            HOMODict[chromoLength[i]] = [HOMO]
+        else:
+            HOMODict[chromoLength[i]].append(HOMO)
+    chromophoreLength = []
+    averageHOMO = []
+    for length, HOMOs in HOMODict.iteritems():
+        chromophoreLength.append(length)
+        averageHOMO.append(np.average(HOMOs))
+    plotHist(averageHOMO, 'averageHOMO', chromophoreLength)

@@ -1,13 +1,13 @@
 import numpy as np
 import sys
 import os
-import helperFunctions
-import chromophores
 import matplotlib
-#matplotlib.use('Agg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import cPickle as pickle
 import cme_utils
+import helperFunctions
+import chromophores
 try:
     import mpl_toolkits.mplot3d.axes3d as p3
 except ImportError:
@@ -172,9 +172,9 @@ def fixAngles(inputAngle):
 
     
 def calculateChromophores(molecule, molName, outputDir, moleculeBackbone):
-    bendingAngleTolerance = np.pi*(1/3.)
+    bendingAngleTolerance = np.pi#*(1/3.)
     # The bending angle, beyond which the pi conjugation is said to be broken
-    torsionAngleTolerance = np.pi*(3/8.) # The torsional angle, beyond which, the pi conjugation is said to be broken
+    torsionAngleTolerance = np.pi#*(3/8.) # The torsional angle, beyond which, the pi conjugation is said to be broken
     previousThioPlaneAxis = moleculeBackbone[0]['plane']
     previousThioNormalAxis = moleculeBackbone[0]['normal']
     bendingAngles = []

@@ -26,7 +26,7 @@ class chargeCarrier:
         self.singlesData = singlesData
         # SinglesData Dictionary is of the form:
         # key = realChromoID, val = [xPos, yPos, zPos, HOMO-1, HOMO, LUMO, LUMO+1]
-        self.initialPosition = np.array(singlesData[initialChromophore][1:4])
+        self.initialPosition = np.array(singlesData[initialChromophore][0:3])
         self.currentChromophore = initialChromophore
         self.imagePosition = [0, 0, 0]
         self.globalTime = 0
@@ -37,7 +37,7 @@ class chargeCarrier:
 
         
     def reinitialise(self):
-        self.position = np.array(self.singlesData[self.currentChromophore][1:4])
+        self.position = np.array(self.singlesData[self.currentChromophore][0:3])
         self.chromoLength = int(self.singlesData[self.currentChromophore][7])
         if plottingSubroutines == True:
             plotCarrier(self.singlesData, self.TIDict, self.currentChromophore, self.position, self.imagePosition, self.initialPosition, self.simDims, self.globalTime)
@@ -67,8 +67,10 @@ class chargeCarrier:
 
     
     def calculateHopRate(self, lambdaij, Tij, deltaEij):
-        # Check this, got it from Lan2008
-        kij = ((2*np.pi)/(hbar**2))*(Tij**2)*np.sqrt(1.0/(4*lambdaij*np.pi*kB*self.T))*np.exp(-((deltaEij+lambdaij)**2)/(4*lambdaij*kB*self.T))
+        # Error in Lan 2008, should be just 1/hbar not squared
+        kij = ((2*np.pi)/hbar)*(Tij**2)*np.sqrt(1.0/(4*lambdaij*np.pi*kB*self.T))*np.exp(-((deltaEij+lambdaij)**2)/(4*lambdaij*kB*self.T))
+        #print "Prefactor =", ((2*np.pi)/hbar)*(Tij**2)*np.sqrt(1.0/(4*lambdaij*np.pi*kB*self.T))
+        #print "Exponent =", (np.exp(-((deltaEij+lambdaij)**2)/(4*lambdaij*kB*self.T)))
         # Durham code had a different prefactor == Tij**2/hbar * sqrt(pi/(lambda*kB*T))
         return kij
 
@@ -90,12 +92,27 @@ class chargeCarrier:
         hopTimes = []
         lambdaij = self.calculateLambdaij()
         for hopTarget in self.TIDict[self.currentChromophore]:
+            #print "\n"
             transferIntegral = hopTarget[1]*elementaryCharge
             deltaEij = self.calculateEij(hopTarget[0])
             hopRate = self.calculateHopRate(lambdaij, transferIntegral, deltaEij)
             hopTime = self.determineHopTime(hopRate)
+            #print "For this hop target:", hopTarget
+            #print "TI =", transferIntegral
+            #print "deltaEij =", deltaEij
+            #print "hopRate =", hopRate
+            #print "hopTime =", hopTime
             hopTimes.append([hopTarget[0], hopTime])
         hopTimes.sort(key = lambda x:x[1]) # Sort by ascending hop time
+        deltaEij = self.calculateEij(hopTimes[0][0])
+        #print "\n"
+        #print hopTimes
+        # if deltaEij <= 0.0:
+        #     print "Downstream hop", deltaEij
+        # else:
+        #     print "Upstream hop", deltaEij
+        # print "HopTime =", hopTimes[0][1]
+        # raw_input('Post Hop Pause')
         self.performHop(hopTimes[0][0], hopTimes[0][1])
         return self.globalTime
 
@@ -104,6 +121,9 @@ class chargeCarrier:
         initialPosition = np.array(self.singlesData[self.currentChromophore][0:3])
         destinationPosition = np.array(self.singlesData[destinationChromophore][0:3])
         deltaPosition = destinationPosition - initialPosition
+        # print "Hopping from", self.currentChromophore, "to", destinationChromophore
+        # print "Current =", initialPosition, "Destination =", destinationPosition
+        # print "deltaPosition =", deltaPosition
         # Work out if we've crossed a periodic boundary
         for axis in range(3):
             if np.absolute(deltaPosition[axis]) > self.boxSize[axis]/2.0:
@@ -144,7 +164,7 @@ def plotCarrier(singleChromos, TIDict, currentChromo, currentPosn, image, initia
     ax.scatter(currentPosn[0], currentPosn[1], currentPosn[2], s = 50, c = 'r')
     # Draw neighbouring chromos
     for hopOption in TIDict[currentChromo]:
-        hopOptionPosn = np.array(singleChromos[hopOption[0]][1:4])
+        hopOptionPosn = np.array(singleChromos[hopOption[0]][0:3])
         ax.scatter(hopOptionPosn[0], hopOptionPosn[1], hopOptionPosn[2], s = 20, c = 'b')
 
     # Complete plot
@@ -176,6 +196,8 @@ def plotCarrier(singleChromos, TIDict, currentChromo, currentPosn, image, initia
     while len(fileNameAddon) < 3:
         fileNameAddon = '0'+fileNameAddon
     plt.savefig('./test'+fileNameAddon+'.png')
+    # plt.show()
+    # raw_input('Break for Ctrl-C')
     print "Image saved as ./test"+fileNameAddon+".png"
     plt.close(fig)
 
@@ -194,6 +216,7 @@ def randomPosition(boxSize, singleChromos):
     
     
 def execute(morphologyName, boxSize):
+    R.seed(32)
     CSVDir = os.getcwd()+'/outputFiles/'+morphologyName+'/chromophores'
     singlesData = {}
     pairsData = []
@@ -211,6 +234,8 @@ def execute(morphologyName, boxSize):
         print "Please run transferIntegrals.py to generate these files from the ORCA outputs."
         return
     TIDict = {}
+    totalPairs = 0
+    numberOfZeroes = 0
     for pair in pairsData:
         if pair[0] not in TIDict:
             TIDict[pair[0]] = []
@@ -218,12 +243,15 @@ def execute(morphologyName, boxSize):
             TIDict[pair[1]] = []
         TIDict[pair[0]].append([pair[1], pair[-1]]) # Neighbour and corresponding Tij
         TIDict[pair[1]].append([pair[0], pair[-1]]) # Reverse Hop
+        if pair[-1] == 0.0:
+            numberOfZeroes += 1
+        totalPairs += 1
 
-
+    print "There are", totalPairs, "total possible hop destinations, and", numberOfZeroes, "of them have a transfer integral of zero ("+str(int(float(numberOfZeroes)/float(totalPairs)*100))+"%)..."
     # Loop Start Here
-        
     # Pick a random chromophore to inject to
     initialChromophore = randomPosition(boxSize, singlesData)
+    #print "Injecting onto", initialChromophore, "TIDict =", TIDict[initialChromophore]
     # Initialise a carrier
     hole = chargeCarrier(initialChromophore, singlesData, TIDict, boxSize, temperature)
     numberOfHops = 0

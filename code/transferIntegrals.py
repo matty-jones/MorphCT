@@ -108,10 +108,11 @@ class chromophore:
             # print "Delta E =", deltaE
             # raw_input("Complex Transfer Integral")
             self.needKoopmans = 1
-            #return 0.5*(self.HOMO - self.HOMO_1)
             return 0
-        self.needKoopmans = 0
-        return 0.5*(np.sqrt((self.HOMO - self.HOMO_1)**2 - (epsilon1 - epsilon2)**2))
+        else:
+            self.needKoopmans = 0
+        return 0.5*(np.sqrt(np.abs((self.HOMO - self.HOMO_1)**2 - (epsilon2 - epsilon1)**2))) # Positive anyway so np.abs unnecessary
+        # return 0.5*(np.sqrt((self.HOMO - self.HOMO_1)**2 - (epsilon2 - epsilon1)**2))
 
 
 def prepareCSVData(singleChromoDict, pairChromoList):
@@ -126,7 +127,32 @@ def prepareCSVData(singleChromoDict, pairChromoList):
     return np.array(singleChromoCSVData), np.array(pairChromoCSVData)
         
     
-
+def scaleEnergies(singleChromoDict):
+    # Shorter chromophores have significantly deeper HOMOs because they are treated as small molecules instead of chain segments.
+    # To rectify this, find the average HOMO level for each chromophore length and then map that average to the literature P3HT HOMO
+    litHOMO = -5.0 #eV
+    # Calculate the average HOMO for each length
+    HOMOLengthDict = {}
+    for singleChromoKey in singleChromoDict.keys():
+        chromophore = singleChromoDict[singleChromoKey]
+        if chromophore.chromoLength not in HOMOLengthDict:
+            HOMOLengthDict[chromophore.chromoLength] = [chromophore.HOMO]
+        else:
+            HOMOLengthDict[chromophore.chromoLength].append(chromophore.HOMO)
+    # Calculate the change required to map the energy levels to experiment
+    deltaHOMO = {}
+    for length, HOMO in HOMOLengthDict.iteritems():
+        avHOMO = np.average(HOMO)
+        deltaHOMO[length] = litHOMO - avHOMO
+    # Perform the map
+    for singleChromoKey in singleChromoDict.keys():
+        chromoLength = singleChromoDict[singleChromoKey].chromoLength
+        singleChromoDict[singleChromoKey].HOMO_1 += deltaHOMO[chromoLength]
+        singleChromoDict[singleChromoKey].HOMO += deltaHOMO[chromoLength]
+        singleChromoDict[singleChromoKey].LUMO += deltaHOMO[chromoLength]
+        singleChromoDict[singleChromoKey].LUMO_1 += deltaHOMO[chromoLength]
+    return singleChromoDict
+    
         
 def getChromoID(fileName):
     return map(int, ('_'+fileName[:-4]).split('_chromo')[1:])
@@ -179,6 +205,15 @@ def execute(morphologyFile):
     print "\n"
     print failedSingleNos
     print "There were", len(failedSingleNos), "failed single chromophore runs"
+    # Modify the energy levels to get the experimental DoS distribution
+    for i in singleChromoDict.keys():
+        print singleChromoDict[i].HOMO
+        break
+    singleChromoDict = scaleEnergies(singleChromoDict)
+    for i in singleChromoDict.keys():
+        print singleChromoDict[i].HOMO
+        break
+    exit()
     # Now do the pairs
     pairChromos = []
     failedPairFiles = []

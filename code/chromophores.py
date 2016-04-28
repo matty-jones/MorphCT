@@ -59,12 +59,27 @@ class obtain:
         # To be as realistic as possible, need every segment to have two terminating hydrogens
         # AS LONG AS the chromophores are not already intramolecular.
         # Therefore, we use self.includeAdditionalHydrogens to modify the input files correctly.
+        chromoMolData = {}
         helperFunctions.checkORCAFileStructure(outputDir)
         for chromophore in self.chromophores.keys():
             if self.chromophores[chromophore]['periodic'] == True:
                 continue
+            chromoID = self.chromophores[chromophore]['realChromoID']
+            molID = self.chromophores[chromophore]['molID']
+            if molID not in chromoMolData:
+                chromoMolData[molID] = [chromoID]
+            else:
+                chromoMolData[molID].append(chromoID)
             modifiedChromophore = self.includeAdditionalHydrogens([self.chromophores[chromophore]])
             helperFunctions.writeORCAInp(modifiedChromophore, outputDir, 'single')
+        print "Writing single chromophore molecule data..."
+        csvRows = []
+        for molID, chromoIDs in chromoMolData.iteritems():
+            csvRow = [molID]
+            for chromoID in chromoIDs:
+                csvRow.append(chromoID)
+            csvRows.append(csvRow)
+        helperFunctions.writeCSV(outputDir+'/chromophores/molIDs.csv', csvRows)
         print "\n"
         for chromophorePair in chromophorePairs:
             modifiedChromophorePair = self.includeAdditionalHydrogens(chromophorePair)
