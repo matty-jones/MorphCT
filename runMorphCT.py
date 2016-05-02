@@ -248,7 +248,7 @@ if __name__ == '__main__':
                 print "executeORCA calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
                 print "----------====================----------"
 
-        runTij = True
+            runTij = True
             if runTij == True:
                 t10 = T.time()
                 transferIntegrals.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], slurmJobID)

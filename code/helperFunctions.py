@@ -132,6 +132,13 @@ def parallelSort(list1, list2):
     return list1, list2
 
 
+def appendCSV(fileName, data):
+    '''Appends a CSV file (fileName) with a row given by data (as a list)'''
+    with open(fileName, 'a+') as csvFile:
+        document = csv.writer(csvFile, delimiter = ',')
+        document.writerow(list(data))
+
+
 def writeCSV(fileName, data):
     '''Writes a CSV file given a 2D array `data' of arbitrary size'''
     with open(fileName, 'w+') as csvFile:
@@ -850,12 +857,13 @@ def loadPoscar(inputFilePath):
 
 
 def checkORCAFileStructure(outputDir):
-    '''This function checks that the correct directories are in place for the ORCA transfer-integral calculation'''
+    '''This function checks that the correct directories are in place for the ORCA transfer-integral calculation and KMC simulations'''
     morphologyDirList = os.listdir(outputDir)
+    if 'KMC' not in morphologyDirList:
+        os.makedirs(outputDir+'/KMC')
     if 'chromophores' not in morphologyDirList:
         print "Making /chromophores directory..."
         os.makedirs(outputDir+'/chromophores')
-        print "Making /inputORCA directory..."
         os.makedirs(outputDir+'/chromophores/inputORCA')
         os.makedirs(outputDir+'/chromophores/inputORCA/single')
         os.makedirs(outputDir+'/chromophores/inputORCA/pair')
@@ -968,7 +976,7 @@ def getORCAJobs(inputDir):
     popList = []
     for jobNo, job in enumerate(ORCAFilesToRun):
         try:
-            with open(job.replace('orcaInput', 'orcaOutput').replace('.inp', '.out'), 'r') as testFile:
+            with open(job.replace('inputORCA', 'outputORCA').replace('.inp', '.out'), 'r') as testFile:
                 popList.append(jobNo)
         except IOError:
             pass
@@ -981,5 +989,14 @@ def getORCAJobs(inputDir):
     except AttributeError:
         # Was not loaded using SLURM, so use all physical processors
         procIDs = list(np.arange(mp.cpu_count()))
-    jobsList = [ORCAFilesToRun[i:i+(len(ORCAFilesToRun)/len(procIDs))] for i in xrange(0, len(ORCAFilesToRun), int(np.ceil(len(ORCAFilesToRun)/float(len(procIDs)))))]
+    jobsList = [ORCAFilesToRun[i:i+(int(np.ceil(len(ORCAFilesToRun)/len(procIDs))))+1] for i in xrange(0, len(ORCAFilesToRun), int(np.ceil(len(ORCAFilesToRun)/float(len(procIDs)))))]
     return procIDs, jobsList
+
+def writeToFile(logFile, stringList, mode='logFile'):
+    if mode == 'outputFile':
+        openAs = 'w+'
+    else:
+        openAs = 'a+'
+    with open(logFile, openAs) as logWrite:
+        for line in stringList:
+            logWrite.writelines(line+'\n')
