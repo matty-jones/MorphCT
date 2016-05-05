@@ -2,6 +2,7 @@ import os
 import numpy as np
 import time as T
 import helperFunctions
+import subprocess as sp
 import cPickle as pickle
 
 def countOutputFiles(directory):
@@ -39,12 +40,13 @@ def execute(morphologyFile, slurmJobNumber):
     for CPURank in procIDs:
         print 'python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &'
         # os.system('python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &')
-        runningJobs.append(sp.Popen([str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank)]))
+        runningJobs.append(sp.Popen(['python', str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank)]))
     # Wait for all jobs to complete
     exitCodes = [p.wait() for p in runningJobs]
     print "Terminating program..."
     os.system('rm '+inputDir.replace('inputORCA', 'ORCAJobs.pickle'))
-    os.system('scancel '+str(slurmJobNumber))
+    if slurmJobNumber != None:
+        os.system('scancel '+str(slurmJobNumber))
     exit()
 
     # print "Checking for completed output files..."

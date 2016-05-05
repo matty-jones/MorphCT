@@ -251,7 +251,7 @@ if __name__ == '__main__':
             runTij = True
             if runTij == True:
                 t10 = T.time()
-                transferIntegrals.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], slurmJobID)
+                transferIntegrals.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4])
                 #os.system('hoomd ./code/executeOrca.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4])
                 t11 = T.time()
                 elapsedTime = float(t11) - float(t10)
@@ -269,9 +269,6 @@ if __name__ == '__main__':
                 print "----------====================----------"
                 print "transferIntegrals calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
                 print "----------====================----------"
-
-
-
 
             # Close program
             exitFlag = 1

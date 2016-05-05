@@ -172,9 +172,9 @@ def fixAngles(inputAngle):
 
     
 def calculateChromophores(molecule, molName, outputDir, moleculeBackbone):
-    bendingAngleTolerance = np.pi#*(1/3.)
+    bendingAngleTolerance = 0.0#np.pi#*(1/3.)
     # The bending angle, beyond which the pi conjugation is said to be broken
-    torsionAngleTolerance = np.pi#*(3/8.) # The torsional angle, beyond which, the pi conjugation is said to be broken
+    torsionAngleTolerance = 0.0#np.pi#*(3/8.) # The torsional angle, beyond which, the pi conjugation is said to be broken
     previousThioPlaneAxis = moleculeBackbone[0]['plane']
     previousThioNormalAxis = moleculeBackbone[0]['normal']
     bendingAngles = []

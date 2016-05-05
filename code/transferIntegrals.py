@@ -129,7 +129,7 @@ class chromophore:
         epsilon1 = singleChromos[self.chromo1ID].HOMO
         epsilon2 = singleChromos[self.chromo2ID].HOMO
         HOMOSplitting = self.HOMO-self.HOMO_1
-        deltaE = np.absolute(epsilon1-epsilon2)
+        deltaE = epsilon2-epsilon1
         if deltaE**2 > HOMOSplitting**2:
             # print "\n"
             # print self.inputFile
@@ -160,16 +160,18 @@ def readCSVData(fileName, mode):
         return pairChromoList
     
         
-def prepareCSVData(singleChromoDict):#, pairChromoList):
+def prepareCSVData(singleChromoDict = None, pairChromoList = None):
     singleChromoCSVData = [] # each row = 1 chromo: [ID, x, y, z, HOMO-1, HOMO, LUMO, LUMO+1, chromoLength]
-    #pairChromoCSVData = [] # each row = 1 pair: [ID1, ID2, HOMO-1, HOMO, LUMO, LUMO+1, Tij]
-    singleChromoKeys = sorted(singleChromoDict.keys())
-    for singleChromoKey in singleChromoKeys:
-        chromophore = singleChromoDict[singleChromoKey]
-        singleChromoCSVData.append([chromophore.chromo1ID, chromophore.position[0], chromophore.position[1], chromophore.position[2], chromophore.HOMO_1, chromophore.HOMO, chromophore.LUMO, chromophore.LUMO_1, chromophore.chromoLength])
-    # for chromophore in pairChromoList:
-    #     pairChromoCSVData.append([chromophore.chromo1ID, chromophore.chromo2ID, chromophore.HOMO_1, chromophore.HOMO, chromophore.LUMO, chromophore.LUMO_1, chromophore.Tij])
-    return np.array(singleChromoCSVData)#, np.array(pairChromoCSVData)
+    pairChromoCSVData = [] # each row = 1 pair: [ID1, ID2, HOMO-1, HOMO, LUMO, LUMO+1, Tij]
+    if singleChromoDict != None:
+        singleChromoKeys = sorted(singleChromoDict.keys())
+        for singleChromoKey in singleChromoKeys:
+            chromophore = singleChromoDict[singleChromoKey]
+            singleChromoCSVData.append([chromophore.chromo1ID, chromophore.position[0], chromophore.position[1], chromophore.position[2], chromophore.HOMO_1, chromophore.HOMO, chromophore.LUMO, chromophore.LUMO_1, chromophore.chromoLength])
+    if pairChromoList != None:
+        for chromophore in pairChromoList:
+            pairChromoCSVData.append([chromophore.chromo1ID, chromophore.chromo2ID, chromophore.HOMO_1, chromophore.HOMO, chromophore.LUMO, chromophore.LUMO_1, chromophore.Tij])
+    return np.array(singleChromoCSVData), np.array(pairChromoCSVData)
         
     
 def scaleEnergies(singleChromoDict):
@@ -196,7 +198,36 @@ def scaleEnergies(singleChromoDict):
         singleChromoDict[singleChromoKey].HOMO += deltaHOMO[chromoLength]
         singleChromoDict[singleChromoKey].LUMO += deltaHOMO[chromoLength]
         singleChromoDict[singleChromoKey].LUMO_1 += deltaHOMO[chromoLength]
+    # Now shrink down the DoS to 100 meV
+    targetstd = 0.1
+    HOMOLevels = []
+    for singleChromoKey in singleChromoDict.keys():
+        HOMOLevels.append(singleChromoDict[singleChromoKey].HOMO)
+    mean = np.mean(np.array(HOMOLevels))
+    std = np.std(np.array(HOMOLevels))
+    for singleChromoKey in singleChromoDict.keys():
+        sigma = (singleChromoDict[singleChromoKey].HOMO - mean)/float(std)
+        newDeviation = targetstd*sigma
+        singleChromoDict[singleChromoKey].HOMO = mean + newDeviation
+    newHOMOLevels = []
+    for singleChromoKey in singleChromoDict.keys():
+        newHOMOLevels.append(singleChromoDict[singleChromoKey].HOMO)
     return singleChromoDict
+
+def recalculateTij(pairChromos, singleChromoDict):
+    koopmans = 0
+    for chromoPair in pairChromos:
+        chromo1ID = chromoPair.chromo1ID
+        chromo2ID = chromoPair.chromo2ID
+        HOMOSplitting = chromoPair.HOMO-chromoPair.HOMO_1
+        deltaE = singleChromoDict[chromo2ID].HOMO - singleChromoDict[chromo1ID].HOMO
+        if deltaE**2 > HOMOSplitting**2:
+            chromoPair.Tij = 0
+            koopmans += 1
+        else:
+            chromoPair.Tij = 0.5*np.sqrt((HOMOSplitting**2) - (deltaE**2))
+    return pairChromos, koopmans
+    
     
         
 def getChromoID(fileName):
@@ -367,7 +398,7 @@ def execute(morphologyFile):
             for CPURank in procIDs:
                 print 'python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &'
                 #os.system('python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &')
-                runningJobs.append(sp.Popen([str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank)]))
+                runningJobs.append(sp.Popen(['python', str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank)]))
                     # orcaJob = sp.Popen([str(orcaPath), str(fileName)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
                     # orcaShellOutput = orcaJob.communicate()
                     # helperFunctions.writeToFile(fileName.replace('inputORCA', 'outputORCA').replace('.inp', '.out'), orcaShellOutput[0].split('\n'), mode = 'outputFile')
@@ -394,7 +425,7 @@ def execute(morphologyFile):
             sys.exit(0)
     # Now write the singles.csv file now we have all the data
     singleChromoDict = scaleEnergies(singleChromoDict)
-    singleChromoCSVData = prepareCSVData(singleChromoDict)
+    singleChromoCSVData, emptyVar = prepareCSVData(singleChromoDict, None)
     helperFunctions.writeCSV(CSVDir+'/singles.csv', singleChromoCSVData)
 
     print "Calculations completed for single-segments with no errors."
@@ -427,6 +458,11 @@ def execute(morphologyFile):
             needKoopmans += chromoPair.needKoopmans
         else:
             failedPairFiles.append(pairDir.replace('outputORCA', 'inputORCA')+'/'+fileName.replace('.out', '.inp'))
+    # Recalculate the transfer integrals if the csv file is already present (in case scaling the single energies has affected things)
+    if pairCSVPresent == True:
+        pairChromos, needKoopmans = recalculateTij(pairChromos, singleChromoDict)
+        emptyVar, pairCSVData = prepareCSVData(None, pairChromos)
+        helperFunctions.writeCSV(CSVDir+'/pairs.csv', pairCSVData)
 
     print "\n"
     print failedPairFiles
@@ -478,7 +514,7 @@ def execute(morphologyFile):
             runningJobs = []
             for CPURank in procIDs:
                 print 'python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &'
-                runningJobs.append(sp.Popen([str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank)]))
+                runningJobs.append(sp.Popen(['python', str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank)]))
             # for failIndex, fileName in enumerate(failedPairFiles):
             #     orcaJob = sp.Popen([str(orcaPath), str(fileName)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
             #     orcaShellOutput = orcaJob.communicate()

@@ -20,7 +20,7 @@ hbar = 1.05457173E-34 # m^{2} kg s^{-1}
 temperature = 290 # K
 defaultSimTime = 5e-6
 limitByHops = False
-hopLimit = 100
+hopLimit = 200
 numberOfCarriersToSimulate = 10000
 
 
@@ -308,13 +308,14 @@ def execute(morphologyName, boxSize, simulationTime):
                     break
             initialPos = hole.initialPosition
             currentPos = np.array([hole.position[0]+(hole.imagePosition[0]*boxSize[0]), hole.position[1]+(hole.imagePosition[1]*boxSize[1]), hole.position[2]+(hole.imagePosition[2]*boxSize[2])])
-            displacement = helperFunctions.calculateSeparation(hole.initialPosition, hole.position)
+            displacement = helperFunctions.calculateSeparation(initialPos, currentPos)
             # Update CSV file
             if plottingSubroutines == False:
                 print numberOfHops, "hops complete. Displacement of", displacement, "for carrier number", carrierNo, "in", newGlobalTime, "s."
                 writeCSVFile(csvFileName, carrierNo, displacement, numberOfHops, newGlobalTime)
             else:
                 print numberOfHops, "hops complete. Graphs plotted. Simulation terminating. No CSV data will be saved while plotting == True."
+                break
 
     
     
