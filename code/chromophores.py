@@ -1,6 +1,7 @@
 import numpy as np
 import helperFunctions
 import copy
+import cPickle as pickle
 import matplotlib
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -27,7 +28,12 @@ class obtain:
         self.simDims = [[-boxSize[0]/2.0, boxSize[0]/2.0], [-boxSize[1]/2.0, boxSize[1]/2.0], [-boxSize[2]/2.0, boxSize[2]/2.0]]
         self.maximumHoppingDistance = 10.0 # REMEMBER, this is in angstroems not distance units
         self.getChromoPosns()
-
+        # Now we have the chromophore list for the whole morphology, write this to a pickle file so that I can use it later in the pipeline
+        chromoList = []
+        for chromophore in self.chromophores.keys():
+            if self.chromophores[chromophore]['realChromoID'] not in chromoList:
+                chromoList.append(self.chromophores[chromophore]['realChromoID'])
+        self.writePickle(outputDir)
         # for chromoNo in self.chromophores.keys():
         #     if self.chromophores[chromoNo]['realChromoID'] == 30:
         #         print "--=== CHROMO", self.chromophores[chromoNo]['realChromoID'], " ===---"
@@ -86,7 +92,14 @@ class obtain:
             helperFunctions.writeORCAInp(modifiedChromophorePair, outputDir, 'pair')
         print "\n"
 
+    def writePickle(self, outputDir):
+        pickleName = outputDir+'/morphology/chromophores.pickle'
+        print "Writing chromophore data to", pickleName
+        with open(pickleName, 'w+') as pickleFile:
+            pickle.dump(self.chromophores, pickleFile)
+        print "Pickle file written to", pickleName
 
+        
     def addChromophoreEnds(self, chromoDict):
         importantCarbons = {}
         for index, atomType in enumerate(chromoDict['type']):

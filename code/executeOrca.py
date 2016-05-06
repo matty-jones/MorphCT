@@ -43,11 +43,7 @@ def execute(morphologyFile, slurmJobNumber):
         runningJobs.append(sp.Popen(['python', str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank)]))
     # Wait for all jobs to complete
     exitCodes = [p.wait() for p in runningJobs]
-    print "Terminating program..."
     os.system('rm '+inputDir.replace('inputORCA', 'ORCAJobs.pickle'))
-    if slurmJobNumber != None:
-        os.system('scancel '+str(slurmJobNumber))
-    exit()
 
     # print "Checking for completed output files..."
     # previousNumberOfOutputs = -1

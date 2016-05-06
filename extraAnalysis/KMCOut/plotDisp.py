@@ -36,11 +36,11 @@ def plotHist(CSVFile, targetTime):
     squaredDisps = []
     times = []
     for carrierNo, carrierData in enumerate(CSVFile):
-        if (carrierData[3] > targetTime*2) or (carrierData[3] < targetTime/2.0):
-            # When we don't squeeze the HOMO distribution, some hops take an extraordinarily long time
-            # which means that we end up with crazy long hop times. This check just makes sure that
-            # we only take into account ones that we care about
-            continue
+        # if (carrierData[3] > targetTime*2) or (carrierData[3] < targetTime/2.0):
+        #     # When we don't squeeze the HOMO distribution, some hops take an extraordinarily long time
+        #     # which means that we end up with crazy long hop times. This check just makes sure that
+        #     # we only take into account ones that we care about
+        #     continue
         if carrierData[2] != 1: #Skip single hops
             disps.append(carrierData[1])
             squaredDisps.append(carrierData[1]**2)

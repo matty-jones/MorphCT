@@ -986,7 +986,7 @@ def getORCAJobs(inputDir):
     # Now split the list of remaining jobs based on the number of processors
     try:
         procIDs = list(np.arange(int(os.environ.get('SLURM_NPROCS'))))
-    except AttributeError:
+    except (AttributeError, TypeError):
         # Was not loaded using SLURM, so use all physical processors
         procIDs = list(np.arange(mp.cpu_count()))
     jobsList = [ORCAFilesToRun[i:i+(int(np.ceil(len(ORCAFilesToRun)/len(procIDs))))+1] for i in xrange(0, len(ORCAFilesToRun), int(np.ceil(len(ORCAFilesToRun)/float(len(procIDs)))))]

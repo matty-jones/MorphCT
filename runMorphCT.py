@@ -269,7 +269,12 @@ if __name__ == '__main__':
                 print "----------====================----------"
                 print "transferIntegrals calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
                 print "----------====================----------"
-
+    
             # Close program
             exitFlag = 1
             break
+
+    print "Exitting program normally..."
+    if slurmJobNumber != None:
+        os.system('scancel '+str(slurmJobID))
+    exit()
