@@ -95,6 +95,7 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
         if chromoDict[chromoID]['realChromoID'] not in realChromoIDs:
             realChromoIDs.append(chromoDict[chromoID]['realChromoID'])
     print sorted(realChromoIDs)
+    print len(realChromoIDs)
     exit()
     connectedChromoDict = getConnectedChromos(pairsData)
     clusterDict = getClusterDict(connectedChromoDict)

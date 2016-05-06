@@ -11,6 +11,7 @@ import extractMol
 import analyseMolecules
 import executeOrca
 import transferIntegrals
+import KMCExecute
 
 def getFilesList(direc):
     fileList = os.listdir(direc)
@@ -269,7 +270,31 @@ if __name__ == '__main__':
                 print "----------====================----------"
                 print "transferIntegrals calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
                 print "----------====================----------"
-    
+
+
+            runKMC = True
+            if runKMC == True:
+                t12 = T.time()
+                KMCExecute.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4])
+                #os.system('hoomd ./code/executeOrca.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4])
+                t13 = T.time()
+                elapsedTime = float(t13) - float(t12)
+                if elapsedTime < 60:
+                    timeunits = 'seconds.'
+                elif elapsedTime < 3600:
+                    elapsedTime /= 60.0
+                    timeunits = 'minutes.'
+                elif elapsedTime < 86400:
+                    elapsedTime /= 3600.0
+                    timeunits = 'hours.'
+                else:
+                    elapsedTime /= 86400.0
+                    timeunits = 'days.'
+                print "----------====================----------"
+                print "KMC calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
+                print "----------====================----------"
+
+                
             # Close program
             exitFlag = 1
             break

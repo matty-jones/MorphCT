@@ -30,21 +30,22 @@ def execute(morphologyFile, slurmJobNumber):
     procIDs, jobsList = helperFunctions.getORCAJobs(inputDir)
     numberOfInputs = sum([len(ORCAFilesToRun) for ORCAFilesToRun in jobsList])
     print "Found", numberOfInputs, "ORCA files to run."
-    # Create pickle file containing the jobs sorted by ProcID
-    pickleName = inputDir.replace('inputORCA', 'ORCAJobs.pickle')
-    with open(pickleName, 'w+') as pickleFile:
-        pickle.dump(jobsList, pickleFile)
-    print "ORCA job pickle written to", pickleName
-    if len(jobsList) <= len(procIDs):
-        procIDs = procIDs[:len(jobsList)]
-    runningJobs = []
-    for CPURank in procIDs:
-        print 'python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &'
-        # os.system('python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &')
-        runningJobs.append(sp.Popen(['python', str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank)]))
-    # Wait for all jobs to complete
-    exitCodes = [p.wait() for p in runningJobs]
-    os.system('rm '+inputDir.replace('inputORCA', 'ORCAJobs.pickle'))
+    if numberOfInputs > 0:
+        # Create pickle file containing the jobs sorted by ProcID
+        pickleName = inputDir.replace('inputORCA', 'ORCAJobs.pickle')
+        with open(pickleName, 'w+') as pickleFile:
+            pickle.dump(jobsList, pickleFile)
+        print "ORCA job pickle written to", pickleName
+        if len(jobsList) <= len(procIDs):
+            procIDs = procIDs[:len(jobsList)]
+        runningJobs = []
+        for CPURank in procIDs:
+            print 'python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &'
+            # os.system('python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &')
+            runningJobs.append(sp.Popen(['python', str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank)]))
+        # Wait for all jobs to complete
+        exitCodes = [p.wait() for p in runningJobs]
+        os.system('rm '+inputDir.replace('inputORCA', 'ORCAJobs.pickle'))
 
     # print "Checking for completed output files..."
     # previousNumberOfOutputs = -1

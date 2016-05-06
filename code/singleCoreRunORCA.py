@@ -9,6 +9,11 @@ import cPickle as pickle
 if __name__ == '__main__':
     morphologyFile = sys.argv[1]
     CPURank = int(sys.argv[2])
+    overwrite = False
+    try:
+        overwrite = bool(sys.argv[3])
+    except:
+        pass
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile, '/')[-1]+1:]
     orcaDir = os.getenv('ORCA_BIN', str(os.getcwd())+'/ORCA')
     orcaPath = orcaDir+'/orca'
@@ -26,13 +31,14 @@ if __name__ == '__main__':
         helperFunctions.writeToFile(logFile, ['Running job '+str(job)+'...'])
         outputFileName = job.replace('.inp', '.out').replace('inputORCA', 'outputORCA')
         # Check if file exists already
-        try:
-            with open(outputFileName, 'r') as testFile:
+        if overwrite == False:
+            try:
+                with open(outputFileName, 'r') as testFile:
+                    pass
+                helperFunctions.writeToFile(logFile, [outputFileName+' already exists! Skipping...'])
+                continue
+            except IOError:
                 pass
-            helperFunctions.writeToFile(logFile, [outputFileName+' already exists! Skipping...'])
-            continue
-        except IOError:
-            pass
         orcaJob = sp.Popen([str(orcaPath), str(job)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
         jobPID = orcaJob.pid
         try:

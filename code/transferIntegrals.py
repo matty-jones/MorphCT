@@ -398,16 +398,19 @@ def execute(morphologyFile):
             for CPURank in procIDs:
                 print 'python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &'
                 #os.system('python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &')
-                runningJobs.append(sp.Popen(['python', str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank)]))
+                runningJobs.append(sp.Popen(['python', str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank), '1'])) # The final argument here tells ORCA to ignore the presence of the output file and recalculate
                     # orcaJob = sp.Popen([str(orcaPath), str(fileName)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
                     # orcaShellOutput = orcaJob.communicate()
                     # helperFunctions.writeToFile(fileName.replace('inputORCA', 'outputORCA').replace('.inp', '.out'), orcaShellOutput[0].split('\n'), mode = 'outputFile')
             # Wait for running jobs to finish
+            t0 = T.time()
             exitCodes = [p.wait() for p in runningJobs]
+            t1 = T.time()
             # Now check if the file is fixed
             for failIndex, fileName in enumerate(failedSingleFiles):
                 outputFileName = fileName.replace('inputORCA', 'outputORCA').replace('.inp', '.out')
-                chromoID = getChromoID(outputFileName)
+                shortFileName = outputFileName[helperFunctions.findIndex(outputFileName, '/')[-1]+1:]
+                chromoID = getChromoID(shortFileName)
                 chromo = chromophore(outputFileName, chromoID)
                 if chromo.error == 0:
                     fixedFilesIndices.append(failIndex)
@@ -514,7 +517,7 @@ def execute(morphologyFile):
             runningJobs = []
             for CPURank in procIDs:
                 print 'python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &'
-                runningJobs.append(sp.Popen(['python', str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank)]))
+                runningJobs.append(sp.Popen(['python', str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank), '1']))# The final argument here tells ORCA to ignore the presence of the output file and recalculate
             # for failIndex, fileName in enumerate(failedPairFiles):
             #     orcaJob = sp.Popen([str(orcaPath), str(fileName)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
             #     orcaShellOutput = orcaJob.communicate()

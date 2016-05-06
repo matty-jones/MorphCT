@@ -989,6 +989,8 @@ def getORCAJobs(inputDir):
     except (AttributeError, TypeError):
         # Was not loaded using SLURM, so use all physical processors
         procIDs = list(np.arange(mp.cpu_count()))
+    if len(ORCAFilesToRun) == 0:
+        return procIDs, []
     jobsList = [ORCAFilesToRun[i:i+(int(np.ceil(len(ORCAFilesToRun)/len(procIDs))))+1] for i in xrange(0, len(ORCAFilesToRun), int(np.ceil(len(ORCAFilesToRun)/float(len(procIDs)))))]
     return procIDs, jobsList
 
