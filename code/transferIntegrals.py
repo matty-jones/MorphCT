@@ -1,5 +1,6 @@
 import numpy as np
 import sys
+import os
 import helperFunctions
 import csv
 import subprocess as sp
