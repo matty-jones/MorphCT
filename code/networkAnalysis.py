@@ -39,56 +39,6 @@ def getConnectedChromos(pairsData):
     return connectedChromoDict
 
 
-def getConnectedChromos2(pairsData):
-    connectedChromoDict = {}
-    for pair in pairsData:
-        if pair[0] not in connectedChromoDict:
-            connectedChromoDict[pair[0]] = []
-        if pair[1] not in connectedChromoDict:
-            connectedChromoDict[pair[1]] = []
-        # If non-zero transfer integral:
-        if pair[-1] != 0.0:
-            # Add `neighbours' to dict
-            if pair[0] > pair[1]:
-                connectedChromoDict[pair[1]].append(pair[0])
-            else:
-                connectedChromoDict[pair[0]].append(pair[1])
-    for index, neighbours in connectedChromoDict.iteritems():
-        connectedChromoDict[index] = sorted(neighbours)
-    return connectedChromoDict
-
-
-def getClusterDict(connectedChromoDict):
-    clusterDict = {}
-    for chromoID in connectedChromoDict.keys():
-        clusterDict[chromoID] = chromoID
-    while True:
-        # Run this chunk of code until it stops updating clusters
-        numberOfChanges = 0
-        for chromoID, neighbours in connectedChromoDict.iteritems():
-            for neighbour in neighbours:
-                if clusterDict[chromoID] < clusterDict[neighbour]:
-                    if clusterDict[neighbour] != clusterDict[chromoID]:
-                        numberOfChanges += 1
-                    clusterDict[neighbour] = clusterDict[chromoID]
-                else:
-                    if clusterDict[chromoID] != clusterDict[neighbour]:
-                        numberOfChanges += 1
-                    clusterDict[chromoID] = clusterDict[neighbour]
-        if numberOfChanges == 0:
-            break
-    # ClusterDict is currently {ChromoID: Cluster No}.
-    # It would be more useful for plotting etc. to flip it around
-    clustDict = {}
-    for chromoID in clusterDict.keys():
-        clusterID = clusterDict[chromoID]
-        if clusterID not in clustDict:
-            clustDict[clusterID] = [chromoID]
-        else:
-            clustDict[clusterID].append(chromoID)
-    return clustDict
-
-
 def updateClusterList(chromoID, completeNeighbourList, clusterList):
     neighbourList = completeNeighbourList[chromoID]
     for neighbour in neighbourList:
@@ -107,13 +57,12 @@ def updateClusterList(chromoID, completeNeighbourList, clusterList):
     return clusterList
 
 
-def getClusterDict2(connectedChromoDict):
+def getClusterDict(connectedChromoDict):
     clusterDict = {}
     for chromoID in connectedChromoDict.keys():
         clusterDict[chromoID] = chromoID
     for chromoID in sorted(connectedChromoDict.keys()):
         clusterDict = updateClusterList(chromoID, connectedChromoDict, clusterDict)
-
     # Flip the dictionary around as we did before
     clustDict = {}
     for chromoID in clusterDict.keys():
@@ -150,43 +99,8 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
     for chromoID in chromoDict.keys():
         if chromoDict[chromoID]['realChromoID'] not in realChromoIDs:
             realChromoIDs.append(chromoDict[chromoID]['realChromoID'])
-    t0 = T.time()
     connectedChromoDict = getConnectedChromos(pairsData)
     clusterDict = getClusterDict(connectedChromoDict)
-    t1 = T.time()
-    print "While loop time taken =", t1-t0, "s."
-    t2 = T.time()
-    connectedChromoDict2 = getConnectedChromos2(pairsData)
-    clusterDict2 = getClusterDict2(connectedChromoDict)
-    t3 = T.time()
-    print "Recursive Fn time taken =", t3-t2, "s."
-    
-    print "\n\n"
-    for chromo, neighbours in connectedChromoDict.iteritems():
-        print chromo, neighbours, connectedChromoDict2[chromo]
-    print "\n\n"
-    
-    print clusterDict
-    print clusterDict2
-
-
-    print "Number of clusters in clusterDict =", len(clusterDict.keys())
-    print "Number of clusters in clusterDict2 =", len(clusterDict2.keys())
-    # check1 = []
-    # check2 = []
-    # for i, chromos in clusterDict.iteritems():
-    #     check1 += chromos
-    #     check1.append(i)
-    # for i, chromos in clusterDict.iteritems():
-    #     check2 += chromos
-    #     check2.append(i)
-    # print len(check1), len(list(set(check1)))
-    # print len(check2), len(list(set(check2)))
-    
-    if clusterDict2 != clusterDict:
-        raise SystemError("Dictionaries not the same.")
-    print "Dictionaries identical."
-    exit()
     atomIDsByCluster = getAtomIDs(clusterDict, chromoDict)
     VMDCommands = []
     for clusterID in atomIDsByCluster.keys():
