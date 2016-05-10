@@ -140,7 +140,7 @@ class obtain:
 
     def includeAdditionalHydrogens(self, chromoList):
         CHBondLength = 1.09
-        CCBondLength = 1.54
+        CCBondLength = 1.6
         carbonsToAddTo = []
         # We might have one or two chromophores coming in but the treatment is the same
         for chromo in chromoList:

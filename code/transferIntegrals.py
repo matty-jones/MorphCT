@@ -232,6 +232,9 @@ def recalculateTij(pairChromos, singleChromoDict):
     
         
 def getChromoID(fileName):
+    slashList = helperFunctions.findIndex(fileName, '/')
+    if slashList != None:
+        fileName = fileName[slashList[-1]+1:]
     return map(int, ('_'+fileName[:-4]).split('_chromo')[1:])
 
 
@@ -419,7 +422,7 @@ def execute(morphologyFile):
                     singleChromoDict[chromoID[0]] = chromo
             # At end of loop, pop all the fixed files
             if len(fixedFilesIndices) > 0:
-                for index in fixedFilesIndices.sort(reverse=True):
+                for index in sorted(fixedFilesIndices, reverse=True):
                     failedSingleFiles.pop(index)
         except KeyboardInterrupt:
             print "Kill command recieved. Reverting ORCA files..."
@@ -534,7 +537,14 @@ def execute(morphologyFile):
                     fixedFilesIndices.append(failIndex)
                     failedPairsDict.pop(fileName)
                     pairChromos.append(chromoPair)
-                    dataToWrite = [chromoPair.chromo1ID, chromoPair.chromo2ID, chromoPair.HOMO_1, chromoPair.HOMO, chromoPair.LUMO, chromoPair.LUMO_1, chromoPair.Tij]
+                    # Put in a check here to see why certain attributes don't exist
+                    try:
+                        dataToWrite = [chromoPair.chromo1ID, chromoPair.chromo2ID, chromoPair.HOMO_1, chromoPair.HOMO, chromoPair.LUMO, chromoPair.LUMO_1, chromoPair.Tij]
+                    except AttributeError:
+                        print "outputFileName =", outputFileName
+                        print "chromoID =", chromoID
+                        print "chromoPair attributes =", dir(chromoPair)
+                        continue
                     helperFunctions.appendCSV(CSVDir+'/pairs.csv', dataToWrite)
             # At end of loop, pop all the fixed files
             if len(fixedFilesIndices) > 0:
