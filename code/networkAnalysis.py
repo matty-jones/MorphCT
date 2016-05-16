@@ -5,6 +5,7 @@ import cPickle as pickle
 import helperFunctions
 import csv
 import time as T
+import random as R
 
 
 def loadCSVs(outputDir):
@@ -23,6 +24,8 @@ def loadCSVs(outputDir):
 
 
 def getConnectedChromos(pairsData):
+    pairsDataArray = np.array(pairsData)
+    maximumTI = np.amax(np.array(pairsData)[:,6])
     connectedChromoDict = {}
     for pair in pairsData:
         if pair[0] not in connectedChromoDict:
@@ -30,10 +33,11 @@ def getConnectedChromos(pairsData):
         if pair[1] not in connectedChromoDict:
             connectedChromoDict[pair[1]] = []
         # If non-zero transfer integral:
-        if pair[-1] != 0.0:
-            # Add `neighbours' to dict
-            connectedChromoDict[pair[0]].append(pair[1])
-            connectedChromoDict[pair[1]].append(pair[0])
+        if pair[6] != 0.0:
+            # Add `neighbours' to dict if a random number is < scaled TI
+            if R.random() < pair[6]/float(maximumTI):
+                connectedChromoDict[pair[0]].append(pair[1])
+                connectedChromoDict[pair[1]].append(pair[0])
     for index, neighbours in connectedChromoDict.iteritems():
         connectedChromoDict[index] = sorted(neighbours)
     return connectedChromoDict
@@ -45,14 +49,12 @@ def updateClusterList(chromoID, completeNeighbourList, clusterList):
         if clusterList[neighbour] > clusterList[chromoID]:
             previousCluster = clusterList[neighbour]
             clusterList[neighbour] = clusterList[chromoID]
-            if (chromoID == 2) or (chromoID == 113) or (chromoID == 308) or (neighbour == 2) or (neighbour == 113) or (neighbour == 308):
-                print "Current ChromoID =", chromoID, "moving", neighbour, "from", previousCluster, "to", clusterList[neighbour]
+            #print "Current ChromoID =", chromoID, "moving", neighbour, "from", previousCluster, "to", clusterList[neighbour]
             updateClusterList(neighbour, completeNeighbourList, clusterList)
         elif clusterList[neighbour] < clusterList[chromoID]:
             previousCluster = clusterList[neighbour]
             clusterList[chromoID] = clusterList[neighbour]
-            if (chromoID == 2) or (chromoID == 113) or (chromoID == 308) or (neighbour == 2) or (neighbour == 113) or (neighbour == 308):
-                print "Current ChromoID =", chromoID, "moving", chromoID, "from", previousCluster, "to", clusterList[chromoID]
+            #print "Current ChromoID =", chromoID, "moving", chromoID, "from", previousCluster, "to", clusterList[chromoID]
             updateClusterList(chromoID, completeNeighbourList, clusterList)
     return clusterList
 
@@ -75,22 +77,36 @@ def getClusterDict(connectedChromoDict):
 
 
 def getAtomIDs(clusterDict, chromoDict):
-    for key in chromoDict.keys():
-        print chromoDict[key]['chromoID'], chromoDict[key]['realChromoID']
+    #print chromoDict[6541]
     atomIDsByCluster = {}
     for clusterID in clusterDict.keys():
-        chromoIDs = clusterDict[clusterID]
         AAIDs = []
-        for chromoID in chromoIDs:
+        for chromoID in clusterDict[clusterID]:
             AAIDs += chromoDict[chromoID]['atomID']
         atomIDsByCluster[clusterID] = AAIDs
     return atomIDsByCluster
 
 
-def generateVMDSelection(AAIDList):
+def generateVMDSelection(AAIDList, printFlag):
+    # Work out a compact way of VMD taking AAIDList and importing it to tcl
+    selectionCommand = ['index']
     AAIDList = sorted(AAIDList)
-    print AAIDList
-    exit()
+    previousAtom = None
+    inRange = False
+    for AAID in AAIDList:
+        if AAID - 1 != previousAtom:
+            if previousAtom != None:
+                selectionCommand.append('to')
+                selectionCommand.append(str(previousAtom))
+            selectionCommand.append(str(AAID))
+        previousAtom = AAID
+    if selectionCommand[-1] != str(previousAtom):
+        selectionCommand.append('to')
+        selectionCommand.append(str(previousAtom))
+    if printFlag == True:
+        print AAIDList
+        print selectionCommand
+    return selectionCommand
 
 
 
@@ -101,16 +117,24 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
             realChromoIDs.append(chromoDict[chromoID]['realChromoID'])
     connectedChromoDict = getConnectedChromos(pairsData)
     clusterDict = getClusterDict(connectedChromoDict)
+
+    # for chromoID, neighbours in connectedChromoDict.iteritems():
+    #     print chromoID, neighbours
+    # print clusterDict
     atomIDsByCluster = getAtomIDs(clusterDict, chromoDict)
+    # for clusterID, atomsIDs in enumerate(atomIDsByCluster):
+    #     print clusterID, atomsIDs
+    # print len(clusterDict)
+    # print len(atomIDsByCluster)
     VMDCommands = []
+    printFlag = False
     for clusterID in atomIDsByCluster.keys():
-        VMDCommand = ['index']
-        selectionCommand = generateVMDSelection(atomIDsByCluster[clusterID])
-        VMDCommand += selectionCommand
-        print VMDCommand
-        exit()
-        VMDCommands.append(VMDCommand)
-        
+        selectionCommand = generateVMDSelection(atomIDsByCluster[clusterID], printFlag)
+        VMDCommands.append(selectionCommand)
+        #printFlag = True
+    print "-= VMD ATOM SELECTIONS PER CLUSTER =-"
+    for command in VMDCommands:
+        print ' '.join(command)
     return morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize, chromoDict, singlesData, pairsData
 
 
@@ -152,5 +176,7 @@ def loadData(morphologyFile):
 
 
 if __name__ == '__main__':
+    sys.setrecursionlimit(10000) # If I use the 01mon system, I hit the recursion limit even though the program is working fine.
+    R.seed(32)
     morphologyFile = sys.argv[1]
     loadData(morphologyFile)

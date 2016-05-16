@@ -2,6 +2,7 @@ import os
 import sys
 import time as T
 import subprocess as sp
+import executeKMC
 
 sys.path.append(os.getcwd()+'/code')
 import fineGrainer
@@ -11,7 +12,7 @@ import extractMol
 import analyseMolecules
 import executeOrca
 import transferIntegrals
-import KMCExecute
+
 
 def getFilesList(direc):
     fileList = os.listdir(direc)
@@ -86,7 +87,7 @@ if __name__ == '__main__':
     inputDir = os.getcwd()+'/'+inputDir
     outputDir = os.getcwd()+'/'+outputDir
     
-    morphologyFiles = getFilesList(inputDir)
+    morphologyFiles = sorted(getFilesList(inputDir))
     exitFlag = 0
     while exitFlag == 0:
         while True:
@@ -227,6 +228,7 @@ if __name__ == '__main__':
                 print "AnalyseMolecules calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
                 print "----------====================----------"
 
+
             runORCA = True
             if runORCA == True:
                 t8 = T.time()
@@ -275,7 +277,7 @@ if __name__ == '__main__':
             runKMC = True
             if runKMC == True:
                 t12 = T.time()
-                KMCExecute.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4])
+                executeKMC.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4])
                 #os.system('hoomd ./code/executeOrca.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4])
                 t13 = T.time()
                 elapsedTime = float(t13) - float(t12)

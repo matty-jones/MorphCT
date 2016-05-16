@@ -46,7 +46,7 @@ if __name__ == "__main__":
     inputDir = os.getcwd()+'/'+inputDir
     outputDir = os.getcwd()+'/'+outputDir
     
-    morphologyFiles = getFilesList(inputDir)
+    morphologyFiles = sorted(getFilesList(inputDir))
     exitFlag = 0
     while exitFlag == 0:
         while True:

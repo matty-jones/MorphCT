@@ -548,7 +548,7 @@ def execute(morphologyFile):
                     helperFunctions.appendCSV(CSVDir+'/pairs.csv', dataToWrite)
             # At end of loop, pop all the fixed files
             if len(fixedFilesIndices) > 0:
-                for index in fixedFilesIndices.sort(reverse=True):
+                for index in sorted(fixedFilesIndices, reverse=True):
                     failedPairFiles.pop(index)
         except KeyboardInterrupt:
             print "Kill command recieved. Reverting ORCA files..."

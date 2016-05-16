@@ -9,8 +9,7 @@ elementaryCharge = 1.60217657E-19 # C
 kB = 1.3806488E-23 # m^{2} kg s^{-2} K^{-1}
 temperature = 290 # K
 
-def loadCSVs():
-    CSVDir = os.getcwd()
+def loadCSVs(CSVDir):
     CSVList = []
     completeCSVData = []
     targetTimes = []
@@ -28,7 +27,7 @@ def loadCSVs():
     return completeCSVData, targetTimes
         
     
-def plotHist(CSVFile, targetTime):
+def plotHist(CSVFile, targetTime, CSVDir):
     # CSVArray = np.array(CSVFile)
     # MSD = np.average(CSVArray[:,1]**2)
     # meanTime = np.average(CSVArray[:,3])
@@ -47,40 +46,41 @@ def plotHist(CSVFile, targetTime):
             times.append(carrierData[3])
     MSD = np.average(squaredDisps)
     meanTime = np.average(times)
-    plt.figure()
+    #plt.figure()
     plt.hist(disps, 20)
     plt.ylabel('Frequency')
     plt.xlabel('Displacement (m)')
     fileName = 'disp_%.2E.png' % (targetTime)
-    plt.savefig('./'+fileName)
-    print "Figure saved as ./"+fileName
+    plt.savefig(CSVDir+'/'+fileName)
+    plt.clf()
+    print "Figure saved as", CSVDir+"/"+fileName
     return MSD, meanTime
 
 
-def plotMSD(times, MSDs):
+def plotMSD(times, MSDs, CSVDir):
     fit = np.polyfit(times, MSDs, 1)
     fitX = np.linspace(np.min(times), np.max(times), 100)
     fitY = np.poly1d(fit)
     mobility = calcMobility(fitX, fitY(fitX))
-    plt.figure()
+    #plt.figure()
     plt.plot(times, MSDs)
     plt.plot(fitX, fitY(fitX), 'r')
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m^{2})')
     plt.title('Mob = '+str(mobility)+' cm^{2}/Vs')
     fileName = 'LinMSD.png'
-    plt.savefig('./'+fileName)
-    print "Figure saved as ./"+fileName
+    plt.savefig(CSVDir+'/'+fileName)
     plt.clf()
+    print "Figure saved as", CSVDir+"/"+fileName
     plt.semilogx(times, MSDs)
     plt.semilogx(fitX, fitY(fitX), 'r')
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m^{2})')
     plt.title('Mob = '+str(mobility)+' cm^{2}/Vs')
     fileName = 'LogMSD.png'
-    plt.savefig('./'+fileName)
-    plt.close()
-    print "Figure saved as ./"+fileName
+    plt.savefig(CSVDir+'/'+fileName)
+    plt.clf()
+    print "Figure saved as", CSVDir+"/"+fileName
     return mobility
 
 
@@ -113,15 +113,32 @@ def findIndex(string, character):
 
 
 if __name__ == "__main__":
-    completeCSVData, targetTimes = loadCSVs()
-    times = []
-    MSDs = []
-    for index, CSVFile in enumerate(completeCSVData):
-        MSD, meanTime = plotHist(CSVFile, targetTimes[index])
-        times.append(meanTime)
-        MSDs.append(MSD)
-    times, MSDs = parallelSort(times, MSDs)
-    mobility = plotMSD(times, MSDs)
-    print "---=== Mobility for this KMC run ===---"
-    print "Mobility =", mobility, "cm^{2} / Vs"
-    print "---=================================---"
+    tempDirs = []
+    for fileName in os.listdir(os.getcwd()):
+        if fileName[0] == 'T':
+            tempDirs.append(fileName)
+    temps = []
+    mobs = []
+    plt.figure()
+    for tempDir in tempDirs:
+        CSVDir = os.getcwd()+'/'+tempDir+'/01mon/TIZero'
+        completeCSVData, targetTimes = loadCSVs(CSVDir)
+        times = []
+        MSDs = []
+        for index, CSVFile in enumerate(completeCSVData):
+            MSD, meanTime = plotHist(CSVFile, targetTimes[index], CSVDir)
+            times.append(meanTime)
+            MSDs.append(MSD)
+        times, MSDs = parallelSort(times, MSDs)
+        mobility = plotMSD(times, MSDs, CSVDir)
+        print "---=== Mobility for this KMC run ===---"
+        print "Mobility =", mobility, "cm^{2} / Vs"
+        print "---=================================---"
+        temps.append(tempDir[1:])
+        mobs.append(mobility)
+
+    plt.scatter(temps, mobs)
+    plt.xlabel('Temperature, Arb. U')
+    plt.ylabel('Mobility, cm'+r'$^{2}$ '+'V'+r'$^{-1}$'+r's$^{-1}$')
+    plt.savefig('./mobTemp.png')
+    plt.close()

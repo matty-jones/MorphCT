@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -p batch 
-#SBATCH -J morphCT
-#SBATCH -o logMorphCT.log
+#SBATCH -J KMC
+#SBATCH -o logKMC.log
 #SBATCH -N 1
 #SBATCH -n 16
 #SBATCH --mail-type=All
