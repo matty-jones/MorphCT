@@ -4,9 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import csv
 
+from scipy.optimize import curve_fit
 
-def loadCSVs():
-    CSVDir = os.getcwd()
+
+def loadCSVs(CSVDir):
     singlesData = {}
     pairsData = []
     molIDs = {}
@@ -40,8 +41,22 @@ def calculateLambdaij(chromoLength):
     return lambdaeV
 
 
-def plotHist(yvals, mode, xvals=None):
-    plt.figure()
+def gaussian(x, a, x0, sigma):
+    return a*np.exp(-(x-x0)**2/(2*sigma**2))
+
+
+def gaussFit(data):
+    n = len(data)
+    mean = np.mean(data)
+    std = np.std(data)
+    print "\n"
+    print "Delta Eij stats: mean =", mean, "std =", std
+    hist, binEdges = np.histogram(data, bins=100)
+    fitArgs, fitConv = curve_fit(gaussian, binEdges[:-1], hist, p0=[1, mean, std])
+    return binEdges, fitArgs
+
+
+def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
     if mode == 'HOMO':
         plt.hist(yvals, 20)
         plt.ylabel('Frequency')
@@ -83,9 +98,13 @@ def plotHist(yvals, mode, xvals=None):
         plt.ylabel('Reorganisation energy (eV)')
         fileName = 'LambdaIJ.png'
     elif mode == 'deltaEij':
-        plt.hist(yvals, 20)
+        n, bins, patches = plt.hist(yvals, 20)
+        gaussY = gaussian(gaussBins[:-1], *fitArgs)
+        scaleFactor = max(n)/max(gaussY)
+        plt.plot(gaussBins[:-1], gaussY*scaleFactor, 'ro:')
         plt.ylabel('Frequency')
         plt.xlabel('Delta Eij (eV)')
+        plt.xlim([-1.5, 1.5])
         fileName = 'deltaEij.png'
     elif mode == 'averageHOMO':
         plt.scatter(xvals, yvals)
@@ -121,8 +140,9 @@ def plotHist(yvals, mode, xvals=None):
         plt.xlabel('Chromo Length (monomers)')
         plt.ylabel('A (eV)')
         fileName = 'averageHOMO.png'
-    plt.savefig('./'+fileName)
-    print "Figure saved as ./"+fileName
+    plt.savefig(saveDir+'/'+fileName)
+    plt.clf()
+    print "Figure saved as", saveDir+"/"+fileName
 
 
 def findIndex(string, character):
@@ -139,74 +159,83 @@ def findIndex(string, character):
 
 
 if __name__ == "__main__":
-    singleData, pairData, molIDs = loadCSVs()
-    # singleData = {ChromoID: [x, y, z, HOMO-1, HOMO, LUMO, LUMO+1, Length]}
-    # pairData = [chromo1, chromo2, HOMO-1, HOMO, LUMO, LUMO+1, TransferIntegral]
-    # molIDs = {ChromoID: molID}
-    chromoLength = []
-    HOMOLevels = []
-    bandgap = []
-    for chromophore in singleData.values():
-        chromoLength.append(chromophore[7])
-        HOMOLevels.append(chromophore[4])
-        bandgap.append(chromophore[5] - chromophore[4])
-    HOMOSplitting = []
-    transferIntegrals = []
-    trimmedTIs = []
-    deltaEij = []
-    for chromoPair in pairData:
-        HOMOSplitting.append(chromoPair[3]-chromoPair[2])
-        transferIntegrals.append(chromoPair[6])
-        if chromoPair[6] != 0.0:
-            trimmedTIs.append(chromoPair[6])
-        deltaEij.append((singleData[chromoPair[0]][4])-(singleData[chromoPair[1]][4]))
-    plotHist(HOMOLevels, 'HOMO')
-    plotHist(HOMOSplitting, 'Splitting')
-    plotHist(transferIntegrals, 'TI')
-    plotHist(trimmedTIs, 'Trimmed')
-    plotHist(chromoLength, 'Length', HOMOLevels)
-    plotHist(deltaEij, 'deltaEij')
-    plotHist(bandgap, 'Bandgap')
-    plotHist(bandgap, 'BandgapLength', chromoLength)
-    chromoLengths = np.arange(16)
-    lambdaIJ = []
-    for monomers in chromoLengths:
-        lambdaIJ.append(calculateLambdaij(monomers))
-    plotHist(lambdaIJ, 'lambda', chromoLengths)
-
-
-
-    HOMODict = {}
-    for i, HOMO in enumerate(HOMOLevels):
-        length = chromoLength[i]
-        if length not in HOMODict:
-            HOMODict[chromoLength[i]] = [HOMO]
-        else:
-            HOMODict[chromoLength[i]].append(HOMO)
-    chromophoreLength = []
-    averageHOMO = []
-    for length, HOMOs in HOMODict.iteritems():
-        chromophoreLength.append(length)
-        averageHOMO.append(np.average(HOMOs))
-    plotHist(averageHOMO, 'averageHOMO', chromophoreLength)
-
-    interChain = []
-    intraChain = []
-    interChainTrim = []
-    intraChainTrim = []
-    for chromoPair in pairData:
-        molID = molIDs[chromoPair[0]]
-        if molIDs[chromoPair[1]] == molID:
-            intraChain.append(chromoPair[6])
+    tempDirs = []
+    for fileName in os.listdir(os.getcwd()):
+        if fileName[0] == 'T':
+            tempDirs.append(fileName)
+    plt.figure()
+    for tempDir in tempDirs:
+        CSVDir = os.getcwd()+'/'+tempDir+'/01mon/TIZero'
+        singleData, pairData, molIDs = loadCSVs(CSVDir)
+        # singleData = {ChromoID: [x, y, z, HOMO-1, HOMO, LUMO, LUMO+1, Length]}
+        # pairData = [chromo1, chromo2, HOMO-1, HOMO, LUMO, LUMO+1, TransferIntegral]
+        # molIDs = {ChromoID: molID}
+        chromoLength = []
+        HOMOLevels = []
+        bandgap = []
+        for chromophore in singleData.values():
+            chromoLength.append(chromophore[7])
+            HOMOLevels.append(chromophore[4])
+            bandgap.append(chromophore[5] - chromophore[4])
+        HOMOSplitting = []
+        transferIntegrals = []
+        trimmedTIs = []
+        deltaEij = []
+        for chromoPair in pairData:
+            HOMOSplitting.append(chromoPair[3]-chromoPair[2])
+            transferIntegrals.append(chromoPair[6])
             if chromoPair[6] != 0.0:
-                intraChainTrim.append(chromoPair[6])
-        else:
-            interChain.append(chromoPair[6])
-            if chromoPair[6] != 0.0:
-                interChainTrim.append(chromoPair[6])
-    plotHist(intraChain, 'intraChain')
-    plotHist(interChain, 'interChain')
-    plotHist(intraChainTrim, 'intraChainTrim')
-    plotHist(interChainTrim, 'interChainTrim')
-    
+                trimmedTIs.append(chromoPair[6])
+            deltaEij.append((singleData[chromoPair[0]][4])-(singleData[chromoPair[1]][4]))
+
+        binEdges, fitArgs = gaussFit(deltaEij)
+
+            
+        plotHist(CSVDir, HOMOLevels, 'HOMO')
+        plotHist(CSVDir, HOMOSplitting, 'Splitting')
+        plotHist(CSVDir, transferIntegrals, 'TI')
+        plotHist(CSVDir, trimmedTIs, 'Trimmed')
+        plotHist(CSVDir, chromoLength, 'Length', xvals=HOMOLevels)
+        plotHist(CSVDir, deltaEij, 'deltaEij', gaussBins=binEdges, fitArgs=fitArgs)
+        plotHist(CSVDir, bandgap, 'Bandgap')
+        plotHist(CSVDir, bandgap, 'BandgapLength', xvals=chromoLength)
+        chromoLengths = np.arange(16)
+        lambdaIJ = []
+        for monomers in chromoLengths:
+            lambdaIJ.append(calculateLambdaij(monomers))
+        plotHist(CSVDir, lambdaIJ, 'lambda', xvals=chromoLengths)
+
+        HOMODict = {}
+        for i, HOMO in enumerate(HOMOLevels):
+            length = chromoLength[i]
+            if length not in HOMODict:
+                HOMODict[chromoLength[i]] = [HOMO]
+            else:
+                HOMODict[chromoLength[i]].append(HOMO)
+        chromophoreLength = []
+        averageHOMO = []
+        for length, HOMOs in HOMODict.iteritems():
+            chromophoreLength.append(length)
+            averageHOMO.append(np.average(HOMOs))
+        plotHist(CSVDir, averageHOMO, 'averageHOMO', xvals=chromophoreLength)
+
+        interChain = []
+        intraChain = []
+        interChainTrim = []
+        intraChainTrim = []
+        for chromoPair in pairData:
+            molID = molIDs[chromoPair[0]]
+            if molIDs[chromoPair[1]] == molID:
+                intraChain.append(chromoPair[6])
+                if chromoPair[6] != 0.0:
+                    intraChainTrim.append(chromoPair[6])
+            else:
+                interChain.append(chromoPair[6])
+                if chromoPair[6] != 0.0:
+                    interChainTrim.append(chromoPair[6])
+        plotHist(CSVDir, intraChain, 'intraChain')
+        plotHist(CSVDir, interChain, 'interChain')
+        plotHist(CSVDir, intraChainTrim, 'intraChainTrim')
+        plotHist(CSVDir, interChainTrim, 'interChainTrim')
+
 

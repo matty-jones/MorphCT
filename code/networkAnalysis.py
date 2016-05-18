@@ -6,6 +6,7 @@ import helperFunctions
 import csv
 import time as T
 import random as R
+import matplotlib.pyplot as plt
 
 
 def loadCSVs(outputDir):
@@ -35,7 +36,9 @@ def getConnectedChromos(pairsData):
         # If non-zero transfer integral:
         if pair[6] != 0.0:
             # Add `neighbours' to dict if a random number is < scaled TI
+            ## LINEARLY SCALED RANDOM NUMBERS ##
             if R.random() < pair[6]/float(maximumTI):
+            ####################################
                 connectedChromoDict[pair[0]].append(pair[1])
                 connectedChromoDict[pair[1]].append(pair[0])
     for index, neighbours in connectedChromoDict.iteritems():
@@ -109,8 +112,68 @@ def generateVMDSelection(AAIDList, printFlag):
     return selectionCommand
 
 
+def createTCLScript(morphologyName, clusterCommands, highlightClusters):
+    xmlFileName = os.getcwd()+'/outputFiles/'+morphologyName+'/morphology/relaxed_'+morphologyName+'.xml'
+    hyphenLocs = helperFunctions.findIndex(morphologyName, '-')
+    tempName = morphologyName[hyphenLocs[3]+1:hyphenLocs[4]]
+    tclLinesToWrite = ['#! /bin/env wish\n', 'mol delrep 0 0\n'] # Load the tcl environment and delete the original representation
+    # Now wrap the box and reset the view
+    tclLinesToWrite += ['pbc wrap -center origin\n', 'pbc box -color black -center origin -width 6\n', 'display resetview\n']
+    # Create the new `faded' material so that we can do cluster highlighting
+    tclLinesToWrite += ['material add copy AOEdgy\n', 'material rename Material23 Faded\n', 'material change opacity Faded 0.02\n']
+    # The pink looks too similar to the red so change it
+    tclLinesToWrite += ['color change rgb 9 1.0 0.29 0.5\n']
+    # Make all of the atoms faded to begin with (excluding the ones we're going to highlight because otherwise this command dominates in the snapshot)
+    if len(highlightClusters) > 0:
+        commandsToWrite = [['all and not index']]
+    else:
+        commandsToWrite = [['all']]
+    for cluster in highlightClusters:
+        commandsToWrite.append(clusterCommands[cluster])
+        commandsToWrite[0] += clusterCommands[cluster][1:]
+    for repNo, command in enumerate(commandsToWrite):
+        if repNo == 0:
+            tclLinesToWrite += ['mol color ColorID '+str(repNo%33)+'\n', 'mol representation VDW 1.0 8.0\n', 'mol material Faded\n', 'mol addrep 0\n']
+            tclLinesToWrite += ['mol modselect '+str(repNo)+' 0 '+' '.join(command)+' and not type H1 C3 C4 C5 C6 C7 C8\n']
+            continue
+        tclLinesToWrite += ['mol color ColorID '+str(repNo%33)+'\n', 'mol representation VDW 1.0 8.0\n', 'mol material AOEdgy\n', 'mol addrep 0\n']
+        tclLinesToWrite += ['mol modselect '+str(repNo)+' 0 '+' '.join(command)+' and not type H1 C3 C4 C5 C6 C7 C8\n']
 
-def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize, chromoDict, singlesData, pairsData):
+
+    
+    # # Too many reps causes mem error, so have everything faded then highlight the big clusters
+    # tclLinesToWrite += ['mol color ColorID 0\n', 'mol representation VDW 1.0 8.0\n', 'mol material AOEdgy\n', 'mol addrep 0\n']
+    # for repNo, cluster in enumerate(clusterCommands):
+    #     # Create a new representation, coloured by the repNo
+    #     # tclLinesToWrite += ['mol color ColorID '+str(repNo%33)+'\n', 'mol representation VDW 1.0 8.0\n', 'mol selection all\n', 'mol material AOEdgy\n', 'mol addrep 0\n']
+    #     if repNo in highlightCluster:
+    #         tclLinesToWrite += ['mol color ColorID '+str(repNo%33)+'\n', 'mol representation VDW 1.0 8.0\n', 'mol material AOEdgy\n', 'mol addrep 0\n']
+    #         tclLinesToWrite += ['mol modselect '+str(repNo)+' 0 '+' '.join(cluster)+' and not type H1 S1 C3 C4 C5 C6 C7 C8\n']
+
+    #     # Too many representations causes memory error
+    #     # else:
+    #     #     tclLinesToWrite += ['mol color ColorID '+str(repNo%33)+'\n', 'mol representation VDW 1.0 8.0\n', 'mol material Faded\n', 'mol addrep 0\n']
+    #     # Now change what we're showing for this repNo and remove the sidechains
+    tclFileName = './VMD_'+tempName+'.tcl'
+    with open(tclFileName, 'w+') as tclFile:
+        tclFile.writelines(tclLinesToWrite)
+    print 'TCL file written to', tclFileName
+    return float(tempName[1:])
+
+
+
+def plotClusterDist(clusterDist, temperature):
+    plt.figure()
+    plt.hist(clusterDist)
+    plt.xlabel('Size of cluster')
+    plt.ylabel('Frequency')
+    plt.savefig('ClusterDistT'+str(temperature)+'.png')
+    plt.close()
+    return clusterDist[-1], len(clusterDist)
+
+
+
+def execute(morphologyFile, morphologyName, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize, chromoDict, singlesData, pairsData):
     realChromoIDs = []
     for chromoID in chromoDict.keys():
         if chromoDict[chromoID]['realChromoID'] not in realChromoIDs:
@@ -132,10 +195,24 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAA
         selectionCommand = generateVMDSelection(atomIDsByCluster[clusterID], printFlag)
         VMDCommands.append(selectionCommand)
         #printFlag = True
-    print "-= VMD ATOM SELECTIONS PER CLUSTER =-"
-    for command in VMDCommands:
-        print ' '.join(command)
-    return morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize, chromoDict, singlesData, pairsData
+    # print "-= VMD ATOM SELECTIONS PER CLUSTER =-"
+    # for command in VMDCommands:
+    #     print ' '.join(command)
+    # Create a tcl script
+    clusterIDs = range(len(atomIDsByCluster.keys()))
+    clusterLengths = [len(cluster) for cluster in atomIDsByCluster.values()]
+    sortedLengths, sortedIDs = helperFunctions.parallelSort(clusterLengths, clusterIDs)
+    # Highlight the second biggest cluster and then fade out all the others
+    # This breaks everything because I have too many small clusters.
+    # How about I just pick some clusters and highlight those, make the rest into one faded blob.
+    # Ten biggest
+    highlightClusters = sortedIDs[-10:]
+    # All but the biggest
+    #highlightClusters = sortedIDs[:-1]
+    temperature = createTCLScript(morphologyName, VMDCommands, highlightClusters)
+
+    return sortedLengths, temperature
+    # return morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize, chromoDict, singlesData, pairsData
 
 
 
@@ -171,12 +248,38 @@ def loadData(morphologyFile):
     with open(chromoPickleLoc, 'r') as pickleFile:
         chromoDict = pickle.load(pickleFile)
     singlesData, pairsData = loadCSVs(outputDir)
-    morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize, chromoDict, singlesData, pairsData = execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize, chromoDict, singlesData, pairsData)
-    return morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize, chromoDict, singlesData, pairsData
+    # morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize, chromoDict, singlesData, pairsData = execute(morphologyFile, morphologyName, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize, chromoDict, singlesData, pairsData)
+    clusterDist, temperature = execute(morphologyFile, morphologyName, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize, chromoDict, singlesData, pairsData)
+    sizeOfBiggestCluster, numberOfClusters = plotClusterDist(clusterDist, temperature)
+    return sizeOfBiggestCluster, numberOfClusters, temperature
+    # return morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize, chromoDict, singlesData, pairsData
 
 
 if __name__ == '__main__':
     sys.setrecursionlimit(10000) # If I use the 01mon system, I hit the recursion limit even though the program is working fine.
     R.seed(32)
-    morphologyFile = sys.argv[1]
-    loadData(morphologyFile)
+    morphologyDir = './outputFiles'
+    sizeOfBiggestCluster = []
+    temperature = []
+    numberOfClusters = []
+    for morphologyFile in os.listdir(morphologyDir):
+        biggestClusterSize, clusterQuantity, temp = loadData(morphologyDir+'/'+morphologyFile)
+        sizeOfBiggestCluster.append(biggestClusterSize)
+        numberOfClusters.append(clusterQuantity)
+        temperature.append(temp)
+
+    plt.figure()
+    plt.plot(temperature, sizeOfBiggestCluster)
+    plt.xlabel('Temperature')
+    plt.ylabel('Size of Biggest Cluster')
+    plt.ylim([0, 1000])
+    plt.savefig('./clusterSize.png')
+    print "Figure saved to ./clusterSize.png"
+
+    plt.clf()
+    plt.plot(temperature, numberOfClusters)
+    plt.xlabel('Temperature')
+    plt.ylabel('Number of Clusters')
+    plt.savefig('./clusterQuantity.png')
+    plt.close()
+    print "Figure saved to ./clusterQuantity.png"

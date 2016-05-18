@@ -11,20 +11,34 @@ temperature = 290 # K
 
 def loadCSVs(CSVDir):
     CSVList = []
-    completeCSVData = []
-    targetTimes = []
+    completeCSVData = {}
+    targetTimes = {}
+    dataDirs = []
+    #dataDirs = [CSVDir+'/attempt2']
     for fileName in os.listdir(CSVDir):
-        if ".csv" in fileName:
-            CSVList.append(CSVDir+'/'+fileName)
+        if 'attempt' in fileName:
+            dataDirs.append(CSVDir+'/'+fileName)
+    for dataDir in dataDirs:
+        for fileName in os.listdir(dataDir):
+            if ".csv" in fileName:
+                CSVList.append(dataDir+'/'+fileName)
     for CSVFileName in CSVList:
-        completeCSVData.append([])
+        slashLocs = findIndex(CSVFileName, '/')
+        CSVName = str(CSVFileName[slashLocs[-1]+1:])
+        completeCSVData[CSVName] = []
         underscoreLoc = findIndex(CSVFileName, '_')
-        targetTimes.append(float(CSVFileName[underscoreLoc[0]+1:underscoreLoc[0]+6]))
+        dotLoc = findIndex(CSVFileName, '.')
+        targetTimes[CSVName] = float(CSVFileName[underscoreLoc[0]+1:dotLoc[-1]])
         with open(CSVFileName, 'r') as CSVFile:
             CSVData = csv.reader(CSVFile, delimiter=',')
             for row in CSVData:
-                completeCSVData[-1].append(map(float, row))
-    return completeCSVData, targetTimes
+                completeCSVData[CSVName].append(map(float, row))
+    targetTimesList = []
+    CSVDataList = []
+    for key in completeCSVData.keys():
+        targetTimesList.append(targetTimes[key])
+        CSVDataList.append(completeCSVData[key])
+    return CSVDataList, targetTimesList
         
     
 def plotHist(CSVFile, targetTime, CSVDir):
@@ -39,11 +53,17 @@ def plotHist(CSVFile, targetTime, CSVDir):
         #     # When we don't squeeze the HOMO distribution, some hops take an extraordinarily long time
         #     # which means that we end up with crazy long hop times. This check just makes sure that
         #     # we only take into account ones that we care about
-        #     continue
+        #     # NOTE: There is a negligible number of these for 01mon
+        #    continue
         if carrierData[2] != 1: #Skip single hops
             disps.append(carrierData[1])
             squaredDisps.append(carrierData[1]**2)
             times.append(carrierData[3])
+    if len(squaredDisps) == 0:
+        print CSVFile
+        print CSVDir
+        print targetTime
+        raise SystemError('HALT')
     MSD = np.average(squaredDisps)
     meanTime = np.average(times)
     #plt.figure()
@@ -137,7 +157,7 @@ if __name__ == "__main__":
         temps.append(tempDir[1:])
         mobs.append(mobility)
 
-    plt.scatter(temps, mobs)
+    plt.semilogy(temps, mobs)
     plt.xlabel('Temperature, Arb. U')
     plt.ylabel('Mobility, cm'+r'$^{2}$ '+'V'+r'$^{-1}$'+r's$^{-1}$')
     plt.savefig('./mobTemp.png')
