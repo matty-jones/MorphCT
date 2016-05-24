@@ -34,7 +34,7 @@ class obtain:
             if self.chromophores[chromophore]['realChromoID'] not in chromoList:
                 chromoList.append(self.chromophores[chromophore]['realChromoID'])
         self.writePickle(outputDir)
-        # for chromoNo in self.chromophores.keys():
+# for chromoNo in self.chromophores.keys():
         #     if self.chromophores[chromoNo]['realChromoID'] == 30:
         #         print "--=== CHROMO", self.chromophores[chromoNo]['realChromoID'], " ===---"
         #         for i, typeName in enumerate(self.chromophores[chromoNo]['type']):
@@ -76,8 +76,15 @@ class obtain:
                 chromoMolData[molID] = [chromoID]
             else:
                 chromoMolData[molID].append(chromoID)
-            modifiedChromophore = self.includeAdditionalHydrogens([self.chromophores[chromophore]])
+            modifiedChromophore = [copy.deepcopy(self.chromophores[chromophore])]
+            # # This bit of code overwrites the original chromophore data
+            # # So store it here and then revert it afterwards.
+            # originalChromophore = copy.deepcopy(self.chromophores[chromophore])
+            modifiedChromophore = self.includeAdditionalHydrogens(modifiedChromophore)
             helperFunctions.writeORCAInp(modifiedChromophore, outputDir, 'single')
+            # # Now revert the chromoDict back
+            # self.chromophores[chromophore] = originalChromophore
+
         print "Writing single chromophore molecule data..."
         csvRows = []
         for molID, chromoIDs in chromoMolData.iteritems():
@@ -87,8 +94,10 @@ class obtain:
             csvRows.append(csvRow)
         helperFunctions.writeCSV(outputDir+'/chromophores/molIDs.csv', csvRows)
         print "\n"
+        
         for chromophorePair in chromophorePairs:
-            modifiedChromophorePair = self.includeAdditionalHydrogens(chromophorePair)
+            modifiedChromophorePair = copy.deepcopy(chromophorePair)
+            modifiedChromophorePair = self.includeAdditionalHydrogens(modifiedChromophorePair)
             helperFunctions.writeORCAInp(modifiedChromophorePair, outputDir, 'pair')
         print "\n"
 
@@ -154,28 +163,35 @@ class obtain:
                     if importantCarbon not in carbonsToAddTo:
                         carbonsToAddTo.append(importantCarbon)
         ignoreTheseCarbons = []
-        for carbon in carbonsToAddTo:
-            # Get the relevant inter-monomer bond for this carbon.
-            # If its bonding partner is also a `carbonToAddTo', then remove both
-            # (this means we have two adjacent chromophores that are bonded)
-            for bond in self.interMonomerBonds:
-                if (carbon == bond[1]):
-                    if bond[2] in carbonsToAddTo:
-                        if carbon not in ignoreTheseCarbons:
-                            ignoreTheseCarbons.append(carbon)
-                        if bond[2] not in ignoreTheseCarbons:
-                            ignoreTheseCarbons.append(bond[2])
-                elif (carbon == bond[2]):
-                    if bond[1] in carbonsToAddTo:
-                        if carbon not in ignoreTheseCarbons:
-                            ignoreTheseCarbons.append(carbon)
-                        if bond[1] not in ignoreTheseCarbons:
-                            ignoreTheseCarbons.append(bond[1])
+
+
+        # Get the relevant inter-monomer bond for this carbon.
+        # If its bonding partner is also a `carbonToAddTo', then remove both
+        # (this means we have two adjacent chromophores that are bonded)
+        for bond in self.interMonomerBonds:
+            if (bond[1] in carbonsToAddTo) and (bond[2] in carbonsToAddTo):
+                ignoreTheseCarbons.append(bond[1])
+                ignoreTheseCarbons.append(bond[2])
+
+        
+        # for carbon in carbonsToAddTo:
+        #     for bond in self.interMonomerBonds:
+        #         if (carbon == bond[1]):
+        #             if bond[2] in carbonsToAddTo:
+        #                 if carbon not in ignoreTheseCarbons:
+        #                     ignoreTheseCarbons.append(carbon)
+        #                 if bond[2] not in ignoreTheseCarbons:
+        #                     ignoreTheseCarbons.append(bond[2])
+        #         elif (carbon == bond[2]):
+        #             if bond[1] in carbonsToAddTo:
+        #                 if carbon not in ignoreTheseCarbons:
+        #                     ignoreTheseCarbons.append(carbon)
+        #                 if bond[1] not in ignoreTheseCarbons:
+        #                     ignoreTheseCarbons.append(bond[1])
         # Also, it's come up in testing that if two carbons are close enough for VMD/ORCA to automatically put a bond in, adding a hydrogen really messes that up
-        #UNTESTED (in the morphology, there were 35 that failed)
         for index, carboni in enumerate(carbonsToAddTo[:-1]):
             for carbonj in carbonsToAddTo[index+1:]:
-                if helperFunctions.calculateSeparation(self.morphologyData['position'][carboni], self.morphologyData['position'][carbonj]) <= CCBondLength:
+                if helperFunctions.calculateSeparation(self.morphologyData['unwrapped_position'][carboni], self.morphologyData['unwrapped_position'][carbonj]) <= CCBondLength:
                     if carboni not in ignoreTheseCarbons:
                         ignoreTheseCarbons.append(carboni)
                     if carbonj not in ignoreTheseCarbons:
@@ -191,6 +207,16 @@ class obtain:
             raise SystemError('Adding more than 4 hydrogens, check the calculation.')
         positionOfHydrogenToAdd = []
         for carbon in carbonsToAddTo:
+            # if (carbon == 175) or (carbon == 178) or (carbon == 200) or (carbon == 203):
+            #     print "\nCarbon", carbon, "is getting a hydrogen from"
+            #     if len(chromoList) == 1:
+            #         print "The single", chromoList[0]['chromoID']
+            #     else:
+            #         print "The pair", str(chromoList[0]['chromoID'])+"-"+str(chromoList[1]['chromoID'])
+            #         print "Which will generate the file", str(chromoList[0]['realChromoID'])+"-"+str(chromoList[1]['realChromoID'])
+            #     print "Carbons to Add To =", carbonsToAddTo
+            #     print "IgnoreTheseCarbons =", ignoreTheseCarbons
+            #     print "---======---"
             carbonType = self.morphologyData['type'][carbon]
             carbonPosn = self.getAtomPosition(chromoList, carbon)
             bondedAtoms = self.getBondedIDs(carbon)
@@ -223,9 +249,6 @@ class obtain:
                         print "Chromo =", chromo['realChromoID']
                         print "Ends =", chromo['ends']
                         raise SystemError('ALREADY ADDED THIS HYDROGEN')
-                    # print "Carbon Position =", carbonPosn
-                    # print "Added Hydrogen Position =", positionOfHydrogenToAdd
-                    # print "Separation =", helperFunctions.calculateSeparation(carbonPosn, positionOfHydrogenToAdd)
                     chromo['position'].append(positionOfHydrogenToAdd)
                     chromo['type'].append('H1')
                     chromo['mass'].append(1.00794)

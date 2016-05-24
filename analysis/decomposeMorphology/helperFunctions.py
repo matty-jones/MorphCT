@@ -809,10 +809,7 @@ def loadDict(masterDict, moleculeIDs, bondPickleName):
             moleculeDict[key].append(masterDict[key][atomID])
     # Then add in the simulation properties
     for key in ['lx', 'ly', 'lz', 'xy', 'xz', 'yz', 'dimensions']:
-        try:
-            moleculeDict[key] = masterDict[key]
-        except:
-            continue
+        moleculeDict[key] = masterDict[key]
     # Then load the relevant bonds
     with open(bondPickleName, 'r') as bondPickle:
         moleculeDict['bond'] = pickle.load(bondPickle)

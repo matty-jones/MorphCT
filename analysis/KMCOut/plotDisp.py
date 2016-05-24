@@ -14,7 +14,7 @@ def loadCSVs(CSVDir):
     completeCSVData = {}
     targetTimes = {}
     dataDirs = []
-    #dataDirs = [CSVDir+'/attempt2']
+    # dataDirs = [CSVDir+'/attempt2']
     for fileName in os.listdir(CSVDir):
         if 'attempt' in fileName:
             dataDirs.append(CSVDir+'/'+fileName)
