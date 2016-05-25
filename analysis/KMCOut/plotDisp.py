@@ -13,11 +13,11 @@ def loadCSVs(CSVDir):
     CSVList = []
     completeCSVData = {}
     targetTimes = {}
-    dataDirs = []
+    dataDirs = [CSVDir]
     # dataDirs = [CSVDir+'/attempt2']
-    for fileName in os.listdir(CSVDir):
-        if 'attempt' in fileName:
-            dataDirs.append(CSVDir+'/'+fileName)
+    # for fileName in os.listdir(CSVDir):
+    #     if 'attempt' in fileName:
+    #         dataDirs.append(CSVDir+'/'+fileName)
     for dataDir in dataDirs:
         for fileName in os.listdir(dataDir):
             if ".csv" in fileName:
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     mobs = []
     plt.figure()
     for tempDir in tempDirs:
-        CSVDir = os.getcwd()+'/'+tempDir+'/01mon/TIZero'
+        CSVDir = os.getcwd()+'/'+tempDir
         completeCSVData, targetTimes = loadCSVs(CSVDir)
         times = []
         MSDs = []
@@ -154,7 +154,8 @@ if __name__ == "__main__":
         print "---=== Mobility for this KMC run ===---"
         print "Mobility =", mobility, "cm^{2} / Vs"
         print "---=================================---"
-        temps.append(tempDir[1:])
+        MLoc = findIndex(tempDir, 'M')
+        temps.append(tempDir[1:MLoc[0]])
         mobs.append(mobility)
 
     plt.semilogy(temps, mobs)
