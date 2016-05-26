@@ -216,9 +216,9 @@ def execute(morphologyFile, morphologyName, AAfileName, CGMoleculeDict, AAMorpho
     # This breaks everything because I have too many small clusters.
     # How about I just pick some clusters and highlight those, make the rest into one faded blob.
     # Ten biggest
-    highlightClusters = sortedIDs[-10:]
+    #highlightClusters = sortedIDs[-10:]
     # All but the biggest
-    #highlightClusters = sortedIDs[:-1]
+    highlightClusters = sortedIDs[:-1]
     temperature = createTCLScript(morphologyName, VMDCommands, highlightClusters)
 
     return sortedLengths, temperature
@@ -260,7 +260,7 @@ def loadData(morphologyFile, figSaveDir):
     singlesData, pairsData = loadCSVs(outputDir)
     # morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize, chromoDict, singlesData, pairsData = execute(morphologyFile, morphologyName, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize, chromoDict, singlesData, pairsData)
     clusterDist, temperature = execute(morphologyFile, morphologyName, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize, chromoDict, singlesData, pairsData)
-    print "Cluster Distribution =", clusterDist
+    #print "Cluster Distribution =", clusterDist
     sizeOfBiggestCluster, numberOfClusters = plotClusterDist(clusterDist, temperature, figSaveDir)
     return sizeOfBiggestCluster, numberOfClusters, temperature, clusterDist
     # return morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize, chromoDict, singlesData, pairsData
@@ -272,44 +272,45 @@ if __name__ == '__main__':
     morphologyDir = './outputFiles'
 
     #for tempVal in np.arange(1000, 10001, 1000):
-    for tempVal in [290, 390, 590, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]:
-        global effectiveT
-        effectiveT = tempVal
-        tempString = str(tempVal)
-        while len(tempString) < 5:
-            tempString = '0'+tempString
-        saveDir = './percolationGraphs/'+tempString+'K'
-    
-        sizeOfBiggestCluster = []
-        temperature = []
-        numberOfClusters = []
-        clusterDists = []
-        for morphologyFile in os.listdir(morphologyDir):
-            biggestClusterSize, clusterQuantity, temp, clusterDist = loadData(morphologyDir+'/'+morphologyFile, saveDir)
-            sizeOfBiggestCluster.append(biggestClusterSize)
-            numberOfClusters.append(clusterQuantity)
-            temperature.append(temp)
-            clusterDists.append(clusterDist)
+    #for tempVal in [290, 390, 590, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]:
+    tempVal = 8000
+    global effectiveT
+    effectiveT = tempVal
+    tempString = str(tempVal)
+    while len(tempString) < 5:
+        tempString = '0'+tempString
+    saveDir = './percolationGraphs/'+tempString+'K'
 
-        plt.figure()
-        plt.plot(temperature, sizeOfBiggestCluster)
-        plt.xlabel('Temperature')
-        plt.ylabel('Size of Biggest Cluster')
-        #plt.ylim([0, 1000])
-        plt.savefig(saveDir+'/clusterSize.png')
-        print "Figure saved to "+saveDir+"/clusterSize.png"
+    sizeOfBiggestCluster = []
+    temperature = []
+    numberOfClusters = []
+    clusterDists = []
+    for morphologyFile in os.listdir(morphologyDir):
+        biggestClusterSize, clusterQuantity, temp, clusterDist = loadData(morphologyDir+'/'+morphologyFile, saveDir)
+        sizeOfBiggestCluster.append(biggestClusterSize)
+        numberOfClusters.append(clusterQuantity)
+        temperature.append(temp)
+        clusterDists.append(clusterDist)
 
-        plt.clf()
-        plt.plot(temperature, numberOfClusters)
-        plt.xlabel('Temperature')
-        plt.ylabel('Number of Clusters')
-        plt.savefig(saveDir+'/clusterQuantity.png')
-        plt.close()
-        print "Figure saved to "+saveDir+"/clusterQuantity.png"
+    plt.figure()
+    plt.plot(temperature, sizeOfBiggestCluster)
+    plt.xlabel('Temperature')
+    plt.ylabel('Size of Biggest Cluster')
+    #plt.ylim([0, 1000])
+    plt.savefig(saveDir+'/clusterSize.png')
+    print "Figure saved to "+saveDir+"/clusterSize.png"
 
-        with open(saveDir+'/clusterData.csv', 'w+') as csvFile:
-            csvWriter = csv.writer(csvFile)
-            # Data in structure:
-            # Temperature, Size of Biggest, Number of Clusters, ClusterDist
-            for morphNo in range(len(temperature)):
-                csvWriter.writerow([temperature[morphNo], sizeOfBiggestCluster[morphNo], numberOfClusters[morphNo], str(clusterDists[morphNo])])
+    plt.clf()
+    plt.plot(temperature, numberOfClusters)
+    plt.xlabel('Temperature')
+    plt.ylabel('Number of Clusters')
+    plt.savefig(saveDir+'/clusterQuantity.png')
+    plt.close()
+    print "Figure saved to "+saveDir+"/clusterQuantity.png"
+
+    with open(saveDir+'/clusterData.csv', 'w+') as csvFile:
+        csvWriter = csv.writer(csvFile)
+        # Data in structure:
+        # Temperature, Size of Biggest, Number of Clusters, ClusterDist
+        for morphNo in range(len(temperature)):
+            csvWriter.writerow([temperature[morphNo], sizeOfBiggestCluster[morphNo], numberOfClusters[morphNo], str(clusterDists[morphNo])])

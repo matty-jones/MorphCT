@@ -17,6 +17,10 @@ def getClusterDistData(effectiveTemperatureData):
     clusterSizeYVals = []
     clusterQuantYVals = []
     for effTemp, morphology in effectiveTemperatureData.iteritems():
+        effTempXVals.append(effTemp)
+        clusterSizeYVals.append(morphology.largestCluster)
+        clusterQuantYVals.append(morphology.clusterQuantity)
+    return clusterSizeXVals, clusterQuantXVals, effectiveTempXVals
         
 
         
