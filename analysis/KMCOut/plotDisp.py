@@ -3,6 +3,8 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import csv
+import scipy.optimize
+import scipy.stats
 
 
 elementaryCharge = 1.60217657E-19 # C
@@ -53,7 +55,7 @@ def plotHist(CSVFile, targetTime, CSVDir):
         #     # When we don't squeeze the HOMO distribution, some hops take an extraordinarily long time
         #     # which means that we end up with crazy long hop times. This check just makes sure that
         #     # we only take into account ones that we care about
-        #     # NOTE: There is a negligible number of these for 01mon
+        #     # NOTE: There is a negligible number of these for M01TI0
         #    continue
         if carrierData[2] != 1: #Skip single hops
             disps.append(carrierData[1])
@@ -66,6 +68,9 @@ def plotHist(CSVFile, targetTime, CSVDir):
         raise SystemError('HALT')
     MSD = np.average(squaredDisps)
     meanTime = np.average(times)
+    if len(disps) < 2:
+        plt.clf()
+        return None, None
     #plt.figure()
     plt.hist(disps, 20)
     plt.ylabel('Frequency')
@@ -77,26 +82,48 @@ def plotHist(CSVFile, targetTime, CSVDir):
     return MSD, meanTime
 
 
+
+def linearFit(x, y):
+    x = np.array(x)
+    y = np.array(y)
+    '''Fits a linear fit of the form y = mx + c to the data'''
+    fitfunc = lambda params, x: params[0] * x    #create fitting function of form y = mx + c
+    errfunc = lambda p, x, y: fitfunc(p, x) - y              #create error function for least squares fit
+
+    init_a = 0.5                            #find initial value for a (gradient)
+    init_p = np.array((init_a))  #bundle initial values in initial parameters
+    #calculate best fitting parameters (i.e. m and b) using the error function
+    p1, success = scipy.optimize.leastsq(errfunc, init_p.copy(), args = (x, y))
+    f = fitfunc(p1, x)          #create a fit with those parameters
+    print p1
+    print f
+    return p1, f
+
+
 def plotMSD(times, MSDs, CSVDir):
     fit = np.polyfit(times, MSDs, 1)
     fitX = np.linspace(np.min(times), np.max(times), 100)
-    fitY = np.poly1d(fit)
-    mobility = calcMobility(fitX, fitY(fitX))
+    gradient, intercept, rVal, pVal, stdErr = scipy.stats.linregress(times, MSDs)
+    print "Fitting rVal =", rVal
+    #gradient, F = linearFit(times, MSDs)
+    #exit()
+    fitY = (fitX*gradient)
+    mobility = calcMobility(fitX, fitY)
     #plt.figure()
     plt.plot(times, MSDs)
-    plt.plot(fitX, fitY(fitX), 'r')
+    plt.plot(fitX, fitY, 'r')
     plt.xlabel('Time (s)')
-    plt.ylabel('MSD (m^{2})')
-    plt.title('Mob = '+str(mobility)+' cm^{2}/Vs')
+    plt.ylabel('MSD (m'+r'$^{2}$)')
+    plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
     fileName = 'LinMSD.png'
     plt.savefig(CSVDir+'/'+fileName)
     plt.clf()
     print "Figure saved as", CSVDir+"/"+fileName
     plt.semilogx(times, MSDs)
-    plt.semilogx(fitX, fitY(fitX), 'r')
+    plt.semilogx(fitX, fitY, 'r')
     plt.xlabel('Time (s)')
-    plt.ylabel('MSD (m^{2})')
-    plt.title('Mob = '+str(mobility)+' cm^{2}/Vs')
+    plt.ylabel('MSD (m'+r'$^{2}$)')
+    plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
     fileName = 'LogMSD.png'
     plt.savefig(CSVDir+'/'+fileName)
     plt.clf()
@@ -147,6 +174,8 @@ if __name__ == "__main__":
         MSDs = []
         for index, CSVFile in enumerate(completeCSVData):
             MSD, meanTime = plotHist(CSVFile, targetTimes[index], CSVDir)
+            if MSD == None:
+                continue
             times.append(meanTime)
             MSDs.append(MSD)
         times, MSDs = parallelSort(times, MSDs)
@@ -163,3 +192,4 @@ if __name__ == "__main__":
     plt.ylabel('Mobility, cm'+r'$^{2}$ '+'V'+r'$^{-1}$'+r's$^{-1}$')
     plt.savefig('./mobTemp.png')
     plt.close()
+    print "Mobility curve saved as './mobTemp.png'"

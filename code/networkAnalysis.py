@@ -123,13 +123,13 @@ def createTCLScript(morphologyName, clusterCommands, highlightClusters):
     xmlFileName = os.getcwd()+'/outputFiles/'+morphologyName+'/morphology/relaxed_'+morphologyName+'.xml'
     hyphenLocs = helperFunctions.findIndex(morphologyName, '-')
     tempName = morphologyName[hyphenLocs[3]+1:hyphenLocs[4]]
-    tclLinesToWrite = ['#! /bin/env wish\n', 'mol delrep 0 0\n'] # Load the tcl environment and delete the original representation
+    tclLinesToWrite = ['mol delrep 0 0;'] # Load the tcl environment and delete the original representation
     # Now wrap the box and reset the view
-    tclLinesToWrite += ['pbc wrap -center origin\n', 'pbc box -color black -center origin -width 6\n', 'display resetview\n']
+    tclLinesToWrite += ['pbc wrap -center origin;', 'pbc box -color black -center origin -width 6;', 'display resetview;']
     # Create the new `faded' material so that we can do cluster highlighting
-    tclLinesToWrite += ['material add copy AOEdgy\n', 'material rename Material23 Faded\n', 'material change opacity Faded 0.02\n']
+    tclLinesToWrite += ['material add copy AOEdgy;', 'material rename Material23 Faded;', 'material change opacity Faded 0.02;']
     # The pink looks too similar to the red so change it
-    tclLinesToWrite += ['color change rgb 9 1.0 0.29 0.5\n']
+    tclLinesToWrite += ['color change rgb 9 1.0 0.29 0.5;']
     # Make all of the atoms faded to begin with (excluding the ones we're going to highlight because otherwise this command dominates in the snapshot)
     if len(highlightClusters) > 0:
         commandsToWrite = [['all and not index']]
@@ -140,11 +140,11 @@ def createTCLScript(morphologyName, clusterCommands, highlightClusters):
         commandsToWrite[0] += clusterCommands[cluster][1:]
     for repNo, command in enumerate(commandsToWrite):
         if repNo == 0:
-            tclLinesToWrite += ['mol color ColorID '+str(repNo%33)+'\n', 'mol representation VDW 1.0 8.0\n', 'mol material Faded\n', 'mol addrep 0\n']
-            tclLinesToWrite += ['mol modselect '+str(repNo)+' 0 '+' '.join(command)+' and not type H1 C3 C4 C5 C6 C7 C8\n']
+            tclLinesToWrite += ['mol color ColorID '+str(repNo%33)+';', 'mol representation VDW 1.0 8.0;', 'mol material Faded;', 'mol addrep 0;']
+            tclLinesToWrite += ['mol modselect '+str(repNo)+' 0 '+' '.join(command)+' and not type H1 C3 C4 C5 C6 C7 C8;']
             continue
-        tclLinesToWrite += ['mol color ColorID '+str(repNo%33)+'\n', 'mol representation VDW 1.0 8.0\n', 'mol material AOEdgy\n', 'mol addrep 0\n']
-        tclLinesToWrite += ['mol modselect '+str(repNo)+' 0 '+' '.join(command)+' and not type H1 C3 C4 C5 C6 C7 C8\n']
+        tclLinesToWrite += ['mol color ColorID '+str(repNo%33)+';', 'mol representation VDW 1.0 8.0;', 'mol material AOEdgy;', 'mol addrep 0;']
+        tclLinesToWrite += ['mol modselect '+str(repNo)+' 0 '+' '.join(command)+' and not type H1 C3 C4 C5 C6 C7 C8;']
 
 
     
@@ -216,9 +216,9 @@ def execute(morphologyFile, morphologyName, AAfileName, CGMoleculeDict, AAMorpho
     # This breaks everything because I have too many small clusters.
     # How about I just pick some clusters and highlight those, make the rest into one faded blob.
     # Ten biggest
-    #highlightClusters = sortedIDs[-10:]
+    highlightClusters = sortedIDs[-10:]
     # All but the biggest
-    highlightClusters = sortedIDs[:-1]
+    #highlightClusters = sortedIDs[:-1]
     temperature = createTCLScript(morphologyName, VMDCommands, highlightClusters)
 
     return sortedLengths, temperature
@@ -273,7 +273,7 @@ if __name__ == '__main__':
 
     #for tempVal in np.arange(1000, 10001, 1000):
     #for tempVal in [290, 390, 590, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]:
-    tempVal = 8000
+    tempVal = 3000
     global effectiveT
     effectiveT = tempVal
     tempString = str(tempVal)

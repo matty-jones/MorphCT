@@ -16,11 +16,14 @@ def getClusterDistData(effectiveTemperatureData):
     effTempXVals = []
     clusterSizeYVals = []
     clusterQuantYVals = []
-    for effTemp, morphology in effectiveTemperatureData.iteritems():
-        effTempXVals.append(effTemp)
-        clusterSizeYVals.append(morphology.largestCluster)
-        clusterQuantYVals.append(morphology.clusterQuantity)
-    return clusterSizeXVals, clusterQuantXVals, effectiveTempXVals
+    morphologyTemp = []
+    for effTemp, morphologyList in effectiveTemperatureData.iteritems():
+        for morphology in morphologyList:
+            effTempXVals.append(effTemp)
+            clusterSizeYVals.append(morphology.largestCluster)
+            clusterQuantYVals.append(morphology.clusterQuantity)
+            morphologyTemp.append(morphology.temperature)
+    return clusterSizeYVals, clusterQuantYVals, effTempXVals, morphologyTemp
         
 
         
@@ -48,10 +51,9 @@ def findIndex(string, character):
     return locations
 
 
-def plotXY(xvals, yvals, mode, morphologyName = None):
-    fig = plt.figure()
+def plotXY(xvals, yvals, mode, morphologyName, labels=None):
     ax = plt.subplot(111)
-    ax.plot(xvals, yvals, c='#0000a5')
+    ax.scatter(xvals, yvals, c='#0000a5')
     if mode == "effTempSize":
         ax.set_xlabel(r"Effective Temperature (Arb. U.)")
         ax.set_ylabel(r"Biggest Cluster Size")
@@ -63,10 +65,18 @@ def plotXY(xvals, yvals, mode, morphologyName = None):
     elif mode == "sizeMob":
         ax.set_xlabel(r"Biggest Cluster Size")
         ax.set_ylabel(r"Mobility (cm$^{2}$ V$^{-1}$ s$^{-1}$)")
+        ax.set_yscale('log')
+        ax.set_ylim([1E-6, 1E-1])
+        for label, x, y in zip(labels, xvals, yvals):
+            plt.annotate(label, xy = (x, y), xytext = (0, 5), textcoords = 'offset points', ha = 'center', size=12)
         plotName = "./"+morphologyName+"_sizeMob.pdf"
     elif mode == "quantMob":
         ax.set_xlabel(r"Cluster Quantity")
         ax.set_ylabel(r"Mobility (cm$^{2}$ V$^{-1}$ s$^{-1}$)")
+        ax.set_yscale('log')
+        ax.set_ylim([1E-6, 1E-1])
+        for label, x, y in zip(labels, xvals, yvals):
+            plt.annotate(label, xy = (x, y), xytext = (0, 5), textcoords = 'offset points', ha = 'center', size=12)
         plotName = "./"+morphologyName+"_quantMob.pdf"
     fig.savefig(plotName)
     print "Figure saved as", plotName
@@ -76,6 +86,7 @@ def plotXY(xvals, yvals, mode, morphologyName = None):
 
 
 if __name__ == "__main__":
+    fig = plt.figure()
     mobData = importMobility()
     effectiveTempDirs = []
     for dirName in os.listdir(os.getcwd()):
@@ -88,9 +99,39 @@ if __name__ == "__main__":
         with open(CSVFileName, 'r') as csvFile:
             csvReader = csv.reader(csvFile)
             for row in csvReader:
-                effectiveTemperatureData[effectiveTemperature] = morphology(CSVFileName, row)
-        
+                if effectiveTemperature not in effectiveTemperatureData:
+                    effectiveTemperatureData[effectiveTemperature] = [morphology(CSVFileName, row)]
+                else:
+                    effectiveTemperatureData[effectiveTemperature].append(morphology(CSVFileName, row))
+    clusterSizeVals, clusterQuantVals, effectiveTempVals, morphologyTemp = getClusterDistData(effectiveTemperatureData)
+    # Get mobility information
+    mobData = {}
+    with open('./mobility.csv', 'r') as csvFile:
+        csvReader = csv.reader(csvFile)
+        for row in csvReader:
+            mobData[row[0]] = float(row[1])
     # Plot out the variation in Cluster Size and Cluster Quantity for each morphology as a function of effective temp
-    clusterSizeXVals, clusterQuantXVals, effectiveTempXVals = getClusterDistData(effectiveTemperatureData)
-
+    for morphTemp in list(set(morphologyTemp)):
+        effectiveTempXVals = []
+        clusterSizeYVals = []
+        clusterQuantYVals = []
+        for index, morphology in enumerate(morphologyTemp):
+            if morphology == morphTemp:
+                effectiveTempXVals.append(effectiveTempVals[index])
+                clusterSizeYVals.append(clusterSizeVals[index])
+                clusterQuantYVals.append(clusterQuantVals[index])
+        plotXY(effectiveTempXVals, clusterSizeYVals, 'effTempSize', 'T'+str(morphTemp))
+        plotXY(effectiveTempXVals, clusterQuantYVals, 'effTempQuant', 'T'+str(morphTemp))
     # For each effective temperature, plot Cluster Size and Quantity against mobility value to see if there's any sort of trend at all
+    for effTemp in effectiveTemperatureData.keys():
+        clusterSizeVals2 = []
+        clusterQuantVals2 = []
+        mobility = []
+        morphologyNames = []
+        for morphology in effectiveTemperatureData[effTemp]:
+            clusterSizeVals2.append(morphology.largestCluster)
+            clusterQuantVals2.append(morphology.clusterQuantity)
+            mobility.append(mobData[str(morphology.temperature)])
+            morphologyNames.append('T'+str(morphology.temperature))
+        plotXY(clusterSizeVals2, mobility, 'sizeMob', 'effT'+str(effTemp), labels = morphologyNames)
+        plotXY(clusterQuantVals2, mobility, 'quantMob', 'effT'+str(effTemp), labels = morphologyNames)
