@@ -119,7 +119,6 @@ class chargeCarrier:
         # print "HopTime =", hopTimes[0][1]
         # raw_input('Post Hop Pause')
         self.performHop(hopTimes[0][0], hopTimes[0][1])
-        return self.globalTime
 
         
     def performHop(self, destinationChromophore, hopTime):
@@ -227,11 +226,9 @@ def writeCSVFile(fileName, carrierNo, displacement, hops, time):
         document.writerow([carrierNo, displacementInM, hops, time])
     print "CSV file,", str(fileName)+", appended to successfully."
     
-    
-def execute(morphologyName, boxSize, simulationTime):
-    #R.seed(32)
-    CSVDir = os.getcwd()+'/outputFiles/'+morphologyName+'/chromophores'
-    CTOutputDir = os.getcwd()+'/outputFiles/'+morphologyName+'/KMC'
+
+def loadChromophoreFiles(CSVDir, CTOutputDir):
+    failed = False
     singlesData = {}
     pairsData = []
     try:
@@ -246,7 +243,7 @@ def execute(morphologyName, boxSize, simulationTime):
     except IOError:
         print "CSV files singles.csv and pairs.csv not found in the chromophores directory."
         print "Please run transferIntegrals.py to generate these files from the ORCA outputs."
-        return
+        failed = True
     TIDict = {}
     totalPairs = 0
     numberOfZeroes = 0
@@ -260,13 +257,11 @@ def execute(morphologyName, boxSize, simulationTime):
         if pair[-1] == 0.0:
             numberOfZeroes += 1
         totalPairs += 1
-
     print "There are", totalPairs, "total possible hop destinations, and", numberOfZeroes, "of them have a transfer integral of zero ("+str(int(float(numberOfZeroes)/float(totalPairs)*100))+"%)..."
-    if limitByHops == True:
-        csvFileName = CTOutputDir+'/CTHops_'+str(hopLimit)+'.csv'
-    else:
-        csvFileName = CTOutputDir+'/CTTime_'+str(simulationTime)+'.csv'
-    # Load the CSV file for this configuration (if it exists)
+    return singlesData, pairsData, TIDict, failed
+
+
+def getPreviousCarriers(csvFileName):
     try:
         with open(csvFileName, 'r') as csvFile:
             csvLines = csv.reader(csvFile, delimiter=',')
@@ -275,6 +270,55 @@ def execute(morphologyName, boxSize, simulationTime):
         nextCarrierNo = int(row[0])+1
     except:
         nextCarrierNo = 0
+    return nextCarrierNo
+
+
+def runCarrier(singlesData, TIDict, boxSize, temperature):
+    # Loop Start Here
+    # Pick a random chromophore to inject to
+    while True:
+        initialChromophore = randomPosition(boxSize, singlesData)
+        #print "Injecting onto", initialChromophore, "TIDict =", TIDict[initialChromophore]
+        # Initialise a carrier
+        hole = chargeCarrier(initialChromophore, singlesData, TIDict, boxSize, temperature)
+        numberOfHops = 0
+        newGlobalTime = 0.0
+        # Start hopping!
+        while True:
+            if limitByHops == True:
+                if numberOfHops == hopLimit:
+                    break
+                print "Performing hop number", numberOfHops+1
+            else:
+                if newGlobalTime > simulationTime:
+                    break
+            hole.calculateHop()
+            newGlobalTime = hole.globalTime
+            numberOfHops += 1
+        if numberOfHops != 1:
+            # Put a catch in in case we start on a trap site where hopping time > simulation Time
+            # (otherwise this messes up the average time calculation)
+            break
+    initialPos = hole.initialPosition
+    currentPos = np.array([hole.position[0]+(hole.imagePosition[0]*boxSize[0]), hole.position[1]+(hole.imagePosition[1]*boxSize[1]), hole.position[2]+(hole.imagePosition[2]*boxSize[2])])
+    displacement = helperFunctions.calculateSeparation(initialPos, currentPos)
+    return displacement, numberOfHops, newGlobalTime
+
+
+
+def execute(morphologyName, boxSize, simulationTime):
+    #R.seed(32)
+    CSVDir = os.getcwd()+'/outputFiles/'+morphologyName+'/chromophores'
+    CTOutputDir = os.getcwd()+'/outputFiles/'+morphologyName+'/KMC'
+    singlesData, pairsData, TIDict, failed = loadChromophoreFiles(CSVDir, CTOutputDir)
+    if failed == True:
+        return
+    if limitByHops == True:
+        csvFileName = CTOutputDir+'/CTHops_'+str(hopLimit)+'.csv'
+    else:
+        csvFileName = CTOutputDir+'/CTTime_'+str(simulationTime)+'.csv'
+    # Load the CSV file for this configuration (if it exists)
+    nextCarrierNo = getPreviousCarriers(csvFileName)
     firstRun = True
     if nextCarrierNo < numberOfCarriersToSimulate:
         for carrierNo in range(numberOfCarriersToSimulate):
@@ -283,33 +327,7 @@ def execute(morphologyName, boxSize, simulationTime):
                     continue
                 else:
                     firstRun = False
-            # Loop Start Here
-            # Pick a random chromophore to inject to
-            while True:
-                initialChromophore = randomPosition(boxSize, singlesData)
-                #print "Injecting onto", initialChromophore, "TIDict =", TIDict[initialChromophore]
-                # Initialise a carrier
-                hole = chargeCarrier(initialChromophore, singlesData, TIDict, boxSize, temperature)
-                numberOfHops = 0
-                newGlobalTime = 0.0
-                # Start hopping!
-                while True:
-                    if limitByHops == True:
-                        if numberOfHops == hopLimit:
-                            break
-                        print "Performing hop number", numberOfHops+1
-                    else:
-                        if newGlobalTime > simulationTime:
-                            break
-                    newGlobalTime = hole.calculateHop()
-                    numberOfHops += 1
-                if numberOfHops != 1:
-                    # Put a catch in in case we start on a trap site where hopping time > simulation Time
-                    # (otherwise this messes up the average time calculation)
-                    break
-            initialPos = hole.initialPosition
-            currentPos = np.array([hole.position[0]+(hole.imagePosition[0]*boxSize[0]), hole.position[1]+(hole.imagePosition[1]*boxSize[1]), hole.position[2]+(hole.imagePosition[2]*boxSize[2])])
-            displacement = helperFunctions.calculateSeparation(initialPos, currentPos)
+            displacement, numberOfHops, newGlobalTime = runCarrier(singlesData, TIDict, boxSize, temperature)
             # Update CSV file
             if plottingSubroutines == False:
                 print numberOfHops, "hops complete. Displacement of", displacement, "for carrier number", carrierNo, "in", newGlobalTime, "s."
