@@ -8,8 +8,13 @@ temp/
 *.csv
 *.dcd
 *.png
+*.pdf
 *.log
+*.sh
+*.tcl
+*.xml
 *#*
+*~
 *.pickle
 relaxedP3HT.xml
 *.DS_Store
