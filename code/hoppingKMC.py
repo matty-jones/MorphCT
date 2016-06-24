@@ -20,13 +20,17 @@ kB = 1.3806488E-23 # m^{2} kg s^{-2} K^{-1}
 hbar = 1.05457173E-34 # m^{2} kg s^{-1}
 temperature = 290 # K
 defaultSimTime = 5e-6
-limitByHops = False
-hopLimit = 200
-numberOfCarriersToSimulate = 10000
+limitByHops = True
+hopLimit = 5000
+numberOfCarriersToSimulate = 100
+
+# Flag for outputting all hop times to a CSV (slow!)
+debug = True
+###
 
 
 class chargeCarrier:
-    def __init__(self, initialChromophore, singlesData, TIDict, boxSize, temperature):
+    def __init__(self, initialChromophore, singlesData, TIDict, boxSize, temperature, CTOutputDir):
         self.TIDict = TIDict
         self.singlesData = singlesData
         # SinglesData Dictionary is of the form:
@@ -38,6 +42,8 @@ class chargeCarrier:
         self.T = temperature
         self.boxSize = boxSize
         self.simDims = [[-boxSize[0]/2.0, boxSize[0]/2.0], [-boxSize[1]/2.0, boxSize[1]/2.0], [-boxSize[2]/2.0, boxSize[2]/2.0]]
+        self.CTOutputDir = CTOutputDir
+        self.hopHistory = [int(initialChromophore)]
         self.reinitialise()
 
         
@@ -142,6 +148,10 @@ class chargeCarrier:
         self.currentChromophore = destinationChromophore
         # Increment the time
         self.globalTime += hopTime
+        self.hopHistory.append(int(destinationChromophore))
+        if debug == True:
+            fileName = self.CTOutputDir+'/hopTimes.csv'
+            writeDebugCSV(fileName, hopTime)
         self.reinitialise()
 
 
@@ -219,11 +229,17 @@ def randomPosition(boxSize, singleChromos):
     return int(separationToSegments[0][0])
 
 
-def writeCSVFile(fileName, carrierNo, displacement, hops, time):
+def writeDebugCSV(fileName, data):
+    with open(fileName, 'a+') as fileHandle:
+        document = csv.writer(fileHandle, delimiter = ',')
+        document.writerow([data])
+
+
+def writeCSVFile(fileName, carrierNo, displacement, hops, time, hopHistory):
     with open(fileName, 'a+') as fileHandle:
         document = csv.writer(fileHandle, delimiter = ',')
         displacementInM = float(displacement)*1E-10 # Convert from angstroms to metres
-        document.writerow([carrierNo, displacementInM, hops, time])
+        document.writerow([carrierNo, displacementInM, hops, time]+hopHistory)
     print "CSV file,", str(fileName)+", appended to successfully."
     
 
@@ -273,14 +289,14 @@ def getPreviousCarriers(csvFileName):
     return nextCarrierNo
 
 
-def runCarrier(singlesData, TIDict, boxSize, temperature):
+def runCarrier(singlesData, TIDict, boxSize, temperature, CTOutputDir):
     # Loop Start Here
     # Pick a random chromophore to inject to
     while True:
         initialChromophore = randomPosition(boxSize, singlesData)
         #print "Injecting onto", initialChromophore, "TIDict =", TIDict[initialChromophore]
         # Initialise a carrier
-        hole = chargeCarrier(initialChromophore, singlesData, TIDict, boxSize, temperature)
+        hole = chargeCarrier(initialChromophore, singlesData, TIDict, boxSize, temperature, CTOutputDir)
         numberOfHops = 0
         newGlobalTime = 0.0
         # Start hopping!
@@ -302,7 +318,8 @@ def runCarrier(singlesData, TIDict, boxSize, temperature):
     initialPos = hole.initialPosition
     currentPos = np.array([hole.position[0]+(hole.imagePosition[0]*boxSize[0]), hole.position[1]+(hole.imagePosition[1]*boxSize[1]), hole.position[2]+(hole.imagePosition[2]*boxSize[2])])
     displacement = helperFunctions.calculateSeparation(initialPos, currentPos)
-    return displacement, numberOfHops, newGlobalTime
+    hopHistory = hole.hopHistory
+    return displacement, numberOfHops, newGlobalTime, hopHistory
 
 
 
@@ -327,11 +344,11 @@ def execute(morphologyName, boxSize, simulationTime):
                     continue
                 else:
                     firstRun = False
-            displacement, numberOfHops, newGlobalTime = runCarrier(singlesData, TIDict, boxSize, temperature)
+            displacement, numberOfHops, newGlobalTime, hopHistory = runCarrier(singlesData, TIDict, boxSize, temperature, CTOutputDir)
             # Update CSV file
             if plottingSubroutines == False:
                 print numberOfHops, "hops complete. Displacement of", displacement, "for carrier number", carrierNo, "in", newGlobalTime, "s."
-                writeCSVFile(csvFileName, carrierNo, displacement, numberOfHops, newGlobalTime)
+                writeCSVFile(csvFileName, carrierNo, displacement, numberOfHops, newGlobalTime, hopHistory)
             else:
                 print numberOfHops, "hops complete. Graphs plotted. Simulation terminating. No CSV data will be saved while plotting == True."
                 break
