@@ -20,12 +20,12 @@ kB = 1.3806488E-23 # m^{2} kg s^{-2} K^{-1}
 hbar = 1.05457173E-34 # m^{2} kg s^{-1}
 temperature = 290 # K
 defaultSimTime = 5e-6
-limitByHops = True
+limitByHops = False
 hopLimit = 5000
 numberOfCarriersToSimulate = 100
 
 # Flag for outputting all hop times to a CSV (slow!)
-debug = True
+debug = False
 ###
 
 
