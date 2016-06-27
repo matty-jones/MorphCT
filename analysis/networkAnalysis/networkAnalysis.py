@@ -2,15 +2,20 @@ import os
 import sys
 import numpy as np
 import cPickle as pickle
-import helperFunctions
 import csv
 import time as T
 import random as R
 import matplotlib.pyplot as plt
 
+sys.path.append(os.getcwd()+'/../../code')
+import helperFunctions
+
 
 elementaryCharge = 1.60217657E-19 # C
 kB = 1.3806488E-23 # m^{2} kg s^{-2} K^{-1}
+hbar = 1.05457173E-34 # m^{2} kg s^{-1}
+simulationTemperature = 290 # K
+
 
 
 def loadCSVs(outputDir):
@@ -28,7 +33,25 @@ def loadCSVs(outputDir):
     return singlesData, pairsData
 
 
-def getConnectedChromos(pairsData):
+def calculateEij(chromo1, chromo2, singlesData):
+    Ei = singlesData[chromo1][4] # HOMO LEVEL
+    Ej = singlesData[chromo2][4]
+    deltaEijeV = Ej - Ei
+    deltaEijJ = deltaEijeV*elementaryCharge
+    return deltaEijJ
+
+
+def calculateHopRate(Tij, deltaEij):
+    lambdaij = 0.1963*elementaryCharge # For M01, single monomer chromophores
+    # Error in Lan 2008, should be just 1/hbar not squared
+    kij = ((2*np.pi)/hbar)*(Tij**2)*np.sqrt(1.0/(4*lambdaij*np.pi*kB*simulationTemperature))*np.exp(-((deltaEij+lambdaij)**2)/(4*lambdaij*kB*simulationTemperature))
+    #print "Prefactor =", ((2*np.pi)/hbar)*(Tij**2)*np.sqrt(1.0/(4*lambdaij*np.pi*kB*self.T))
+    #print "Exponent =", (np.exp(-((deltaEij+lambdaij)**2)/(4*lambdaij*kB*self.T)))
+    # Durham code had a different prefactor == Tij**2/hbar * sqrt(pi/(lambda*kB*T))
+    return kij
+
+
+def getConnectedChromos(singlesData, pairsData):
     pairsDataArray = np.array(pairsData)
     maximumTI = np.amax(np.array(pairsData)[:,6])
     connectedChromoDict = {}
@@ -44,7 +67,14 @@ def getConnectedChromos(pairsData):
         #if R.random() < pair[6]/float(maximumTI):
         ####################################
         #### EXPONENTIAL BOLTZMANN TERM ####
-        if R.random() > np.exp(-pair[6]*elementaryCharge/(kB*effectiveT)):
+        #if R.random() > np.exp(-pair[6]*elementaryCharge/(kB*effectiveT)):
+        ####################################
+        # RATE COEFFICIENT WITHIN THRESHOLD#
+        Tij = pair[6]
+        deltaEij = calculateEij(pair[0], pair[1], singlesData)
+        hopRate = calculateHopRate(Tij, deltaEij)
+        #if hopRate > 3.57E6: # Corresponds to a T of 1E-7 if x < 0.7 in KMC
+        if hopRate > 1.2E7:
         ####################################
             connectedChromoDict[pair[0]].append(pair[1])
             connectedChromoDict[pair[1]].append(pair[0])
@@ -177,7 +207,11 @@ def plotClusterDist(clusterDist, temperature, figSaveDir):
     plt.hist(clusterDist)
     plt.xlabel('Size of cluster')
     plt.ylabel('Frequency')
-    plt.savefig(figSaveDir+'/ClusterDistT'+str(temperature)+'.png')
+    try:
+        plt.savefig(figSaveDir+'/ClusterDistT'+str(temperature)+'.png')
+    except IOError:
+        os.system('mkdir -p '+figSaveDir)
+        plt.savefig(figSaveDir+'/ClusterDistT'+str(temperature)+'.png')
     plt.close()
     return clusterDist[-1], len(clusterDist)
 
@@ -188,7 +222,7 @@ def execute(morphologyFile, morphologyName, AAfileName, CGMoleculeDict, AAMorpho
     for chromoID in chromoDict.keys():
         if chromoDict[chromoID]['realChromoID'] not in realChromoIDs:
             realChromoIDs.append(chromoDict[chromoID]['realChromoID'])
-    connectedChromoDict = getConnectedChromos(pairsData)
+    connectedChromoDict = getConnectedChromos(singlesData, pairsData)
     clusterDict = getClusterDict(connectedChromoDict)
 
     # for chromoID, neighbours in connectedChromoDict.iteritems():
@@ -227,9 +261,8 @@ def execute(morphologyFile, morphologyName, AAfileName, CGMoleculeDict, AAMorpho
 
 
 
-def loadData(morphologyFile, figSaveDir):
+def loadData(morphologyFile, outputDir, figSaveDir):
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
-    outputDir = './outputFiles'
     morphologyList = os.listdir(outputDir)
     for allMorphologies in morphologyList:
         if morphologyName in allMorphologies:
@@ -269,7 +302,7 @@ def loadData(morphologyFile, figSaveDir):
 if __name__ == '__main__':
     sys.setrecursionlimit(10000) # If I use the 01mon system, I hit the recursion limit even though the program is working fine.
     R.seed(32)
-    morphologyDir = './outputFiles'
+    morphologyDir = '../../outputFiles'
 
     #for tempVal in np.arange(1000, 10001, 1000):
     #for tempVal in [290, 390, 590, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]:
@@ -286,7 +319,7 @@ if __name__ == '__main__':
     numberOfClusters = []
     clusterDists = []
     for morphologyFile in os.listdir(morphologyDir):
-        biggestClusterSize, clusterQuantity, temp, clusterDist = loadData(morphologyDir+'/'+morphologyFile, saveDir)
+        biggestClusterSize, clusterQuantity, temp, clusterDist = loadData(morphologyDir+'/'+morphologyFile, morphologyDir, saveDir)
         sizeOfBiggestCluster.append(biggestClusterSize)
         numberOfClusters.append(clusterQuantity)
         temperature.append(temp)
