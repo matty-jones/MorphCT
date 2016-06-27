@@ -318,7 +318,7 @@ def runCarrier(singlesData, TIDict, boxSize, temperature, CTOutputDir):
     initialPos = hole.initialPosition
     currentPos = np.array([hole.position[0]+(hole.imagePosition[0]*boxSize[0]), hole.position[1]+(hole.imagePosition[1]*boxSize[1]), hole.position[2]+(hole.imagePosition[2]*boxSize[2])])
     displacement = helperFunctions.calculateSeparation(initialPos, currentPos)
-    hopHistory = hole.hopHistory
+    hopHistory = list(set(hole.hopHistory))
     return displacement, numberOfHops, newGlobalTime, hopHistory
 
 
