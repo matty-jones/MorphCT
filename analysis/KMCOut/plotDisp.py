@@ -79,7 +79,7 @@ def plotHist(CSVFile, targetTime, CSVDir):
     averageNumberOfChromophoresVisited = np.average(chromophoresVisited)
     if len(disps) < 2:
         plt.clf()
-        return None, None
+        return None, None, None
     #plt.figure()
     plt.hist(disps, 20)
     plt.ylabel('Frequency')
@@ -151,6 +151,16 @@ def plotMSD(times, MSDs, CSVDir):
     return mobility
 
 
+def plotChromoHistory(times, chromosVisited, CSVDir):
+    plt.semilogx(times, chromosVisited)
+    plt.xlabel('Time (s)')
+    plt.ylabel('New Chromos')
+    fileName = 'ChromosOverTime.png'
+    plt.savefig(CSVDir+'/'+fileName)
+    plt.clf()
+    print "Figure saved as", CSVDir+"/"+fileName
+
+
 def calcMobility(linFitX, linFitY):
     diffusionCoeff = (linFitY[-1] - linFitY[0])/(linFitX[-1] - linFitX[0])
     # Use Einstein relation (include the factor of 1/6!! It is in the Carbone/Troisi 2014 paper)
@@ -186,41 +196,47 @@ if __name__ == "__main__":
             tempDirs.append(fileName)
     temps = []
     mobs = []
-    chromosVisited = []
+    chromosData = []
     plt.figure()
     for tempDir in tempDirs:
         CSVDir = os.getcwd()+'/'+tempDir
         completeCSVData, targetTimes = loadCSVs(CSVDir)
         times = []
         MSDs = []
+        chromophoresVisited = []
+        chromophoresPerTime = []
         for index, CSVFile in enumerate(completeCSVData):
             MSD, meanTime, chromoVisit = plotHist(CSVFile, targetTimes[index], CSVDir)
             if MSD == None:
                 continue
             times.append(meanTime)
             MSDs.append(MSD)
+            chromophoresVisited.append(chromoVisit)
+            chromophoresPerTime.append(chromoVisit/meanTime)
         times, MSDs = parallelSort(times, MSDs)
         mobility = plotMSD(times, MSDs, CSVDir)
+        plotChromoHistory(times, chromophoresVisited, CSVDir)
         print "---=== Mobility for this KMC run ===---"
         print "Mobility =", mobility, "cm^{2} / Vs"
-        print "Av. Number of Chromophores Visited Per Carrier =", chromoVisit
+        print "Av. Number of New Chromophores Visited Per Unit Time By Each Carrier =", np.average(chromophoresPerTime)
         print "---=================================---"
         MLoc = findIndex(tempDir, 'M')
         temps.append(tempDir[1:MLoc[0]])
         mobs.append(mobility)
-        chromosVisited.append(chromoVisit)
+        chromosData.append(np.average(chromophoresPerTime))
 
     plt.semilogy(temps, mobs)
     plt.xlabel('Temperature, Arb. U')
     plt.ylabel('Mobility, cm'+r'$^{2}$ '+'V'+r'$^{-1}$'+r's$^{-1}$')
+    # plt.ylim([1E-6, 1E1])
     plt.savefig('./mobTemp.png')
     plt.clf()
     print "Mobility curve saved as './mobTemp.png'"
 
-    if None not in chromosVisited:
-        plt.semilogy(temps, chromosVisited)
+    if None not in chromosData:
+        plt.semilogy(temps, chromosData)
         plt.xlabel('Temperature, Arb. U')
-        plt.ylabel('Number of Chromophores Visited Per Carrier')
+        plt.ylabel('New Chromos/s')
         plt.savefig('./chromoTemp.png')
         print "Chromophore Visitation curve saved as './chromoTemp.png'"
 

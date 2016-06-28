@@ -55,6 +55,7 @@ def getConnectedChromos(singlesData, pairsData):
     pairsDataArray = np.array(pairsData)
     maximumTI = np.amax(np.array(pairsData)[:,6])
     connectedChromoDict = {}
+    hopRates = []
     for pair in pairsData:
         if pair[0] not in connectedChromoDict:
             connectedChromoDict[pair[0]] = []
@@ -73,14 +74,27 @@ def getConnectedChromos(singlesData, pairsData):
         Tij = pair[6]
         deltaEij = calculateEij(pair[0], pair[1], singlesData)
         hopRate = calculateHopRate(Tij, deltaEij)
+        hopRates.append(hopRate)
         #if hopRate > 3.57E6: # Corresponds to a T of 1E-7 if x < 0.7 in KMC
-        if hopRate > 1.2E7:
+        #if hopRate > 1E52:
+        if hopRate > 1:
         ####################################
             connectedChromoDict[pair[0]].append(pair[1])
             connectedChromoDict[pair[1]].append(pair[0])
+    plotHopRates(hopRates)
     for index, neighbours in connectedChromoDict.iteritems():
         connectedChromoDict[index] = sorted(neighbours)
     return connectedChromoDict
+
+
+def plotHopRates(hopRates):
+    plt.figure()
+    plt.hist(hopRates, bins = np.logspace(0,20, 100))
+    plt.gca().set_xscale("log")
+    plt.savefig('./hopRates.png')
+    plt.show()
+    #raw_input('PAUSE TO RENAME FIG...')
+
 
 
 def updateClusterList(chromoID, completeNeighbourList, clusterList):
@@ -329,7 +343,7 @@ if __name__ == '__main__':
     plt.plot(temperature, sizeOfBiggestCluster)
     plt.xlabel('Temperature')
     plt.ylabel('Size of Biggest Cluster')
-    #plt.ylim([0, 1000])
+    plt.ylim([0, 5000])
     plt.savefig(saveDir+'/clusterSize.png')
     print "Figure saved to "+saveDir+"/clusterSize.png"
 
