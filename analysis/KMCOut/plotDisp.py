@@ -34,7 +34,9 @@ def loadCSVs(CSVDir):
         with open(CSVFileName, 'r') as CSVFile:
             CSVData = csv.reader(CSVFile, delimiter=',')
             for row in CSVData:
-                completeCSVData[CSVName].append(map(float, row))
+                completeCSVData[CSVName].append(map(float, row[:4]))
+                if len(row[4:]) > 0:
+                    completeCSVData[CSVName][-1].append(int(len(row[4:]))) # Number of chromophores considered
     targetTimesList = []
     CSVDataList = []
     for key in completeCSVData.keys():
@@ -50,6 +52,7 @@ def plotHist(CSVFile, targetTime, CSVDir):
     disps = []
     squaredDisps = []
     times = []
+    chromophoresVisited = []
     for carrierNo, carrierData in enumerate(CSVFile):
         # if (carrierData[3] > targetTime*2) or (carrierData[3] < targetTime/2.0):
         #     # When we don't squeeze the HOMO distribution, some hops take an extraordinarily long time
@@ -61,6 +64,11 @@ def plotHist(CSVFile, targetTime, CSVDir):
             disps.append(carrierData[1])
             squaredDisps.append(carrierData[1]**2)
             times.append(carrierData[3])
+            try:
+                plotChromoVisit = True
+                chromophoresVisited.append(carrierData[4])
+            except IndexError:
+                plotChromoVisit = False
     if len(squaredDisps) == 0:
         print CSVFile
         print CSVDir
@@ -68,6 +76,7 @@ def plotHist(CSVFile, targetTime, CSVDir):
         raise SystemError('HALT')
     MSD = np.average(squaredDisps)
     meanTime = np.average(times)
+    averageNumberOfChromophoresVisited = np.average(chromophoresVisited)
     if len(disps) < 2:
         plt.clf()
         return None, None
@@ -79,7 +88,18 @@ def plotHist(CSVFile, targetTime, CSVDir):
     plt.savefig(CSVDir+'/'+fileName)
     plt.clf()
     print "Figure saved as", CSVDir+"/"+fileName
-    return MSD, meanTime
+
+    if plotChromoVisit == True:
+        plt.hist(chromophoresVisited, 20)
+        plt.ylabel('Frequency')
+        plt.xlabel('Number of Chromophores Visited')
+        fileName = 'chromo_%.2E.png' % (targetTime)
+        plt.savefig(CSVDir+'/'+fileName)
+        plt.clf()
+        print "Figure saved as", CSVDir+"/"+fileName
+        return MSD, meanTime, averageNumberOfChromophoresVisited
+
+    return MSD, meanTime, None
 
 
 
@@ -166,6 +186,7 @@ if __name__ == "__main__":
             tempDirs.append(fileName)
     temps = []
     mobs = []
+    chromosVisited = []
     plt.figure()
     for tempDir in tempDirs:
         CSVDir = os.getcwd()+'/'+tempDir
@@ -173,7 +194,7 @@ if __name__ == "__main__":
         times = []
         MSDs = []
         for index, CSVFile in enumerate(completeCSVData):
-            MSD, meanTime = plotHist(CSVFile, targetTimes[index], CSVDir)
+            MSD, meanTime, chromoVisit = plotHist(CSVFile, targetTimes[index], CSVDir)
             if MSD == None:
                 continue
             times.append(meanTime)
@@ -182,14 +203,25 @@ if __name__ == "__main__":
         mobility = plotMSD(times, MSDs, CSVDir)
         print "---=== Mobility for this KMC run ===---"
         print "Mobility =", mobility, "cm^{2} / Vs"
+        print "Av. Number of Chromophores Visited Per Carrier =", chromoVisit
         print "---=================================---"
         MLoc = findIndex(tempDir, 'M')
         temps.append(tempDir[1:MLoc[0]])
         mobs.append(mobility)
+        chromosVisited.append(chromoVisit)
 
     plt.semilogy(temps, mobs)
     plt.xlabel('Temperature, Arb. U')
     plt.ylabel('Mobility, cm'+r'$^{2}$ '+'V'+r'$^{-1}$'+r's$^{-1}$')
     plt.savefig('./mobTemp.png')
-    plt.close()
+    plt.clf()
     print "Mobility curve saved as './mobTemp.png'"
+
+    if None not in chromosVisited:
+        plt.semilogy(temps, chromosVisited)
+        plt.xlabel('Temperature, Arb. U')
+        plt.ylabel('Number of Chromophores Visited Per Carrier')
+        plt.savefig('./chromoTemp.png')
+        print "Chromophore Visitation curve saved as './chromoTemp.png'"
+
+    plt.close()
