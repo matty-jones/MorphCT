@@ -64,17 +64,17 @@ class hoomdRun:
         self.continueFile = continueData[6]
         
 
-    def initialiseRun(self, inputFilename, pairPotentialType='lj'):
+    def initialiseRun(self, inputFilename):
         self.system = init.read_xml(filename=inputFilename)
         self.thioGroup = group.tag_list(name="thio", tags=self.thioGroupIDs)
         self.alk1Group = group.tag_list(name="alk1", tags=self.alk1GroupIDs)
         self.alk2Group = group.tag_list(name="alk2", tags=self.alk2GroupIDs)
-        self.setForcefieldCoeffs(self.eScale, self.sScale, pairPotentialType)
+        self.setForcefieldCoeffs(self.eScale, self.sScale)
         self.energyLog = analyze.log(filename = self.outputLOG, quantities=['potential_energy', 'kinetic_energy', 'pair_lj_energy', 'bond_harmonic_energy', 'angle_harmonic_energy', 'dihedral_table_energy'], period=self.dumpPeriod, overwrite = self.overwriteEnergies)
         self.overwriteEnergies = False
 
 
-    def setForcefieldCoeffs(self, eScale, sScale, pairPotentialType):
+    def setForcefieldCoeffs(self, eScale, sScale):
         # Forcefield parameters obtained from:
         # Bhatta, R. S., Yimer, Y. Y, Perry, D. S., Tsige, M., "Improved Force Field for Molecular Modeling of Poly(3-Hexylthiophene)", 2013, J. Phys. Chem. B, DOI: 10.1021/jp404629a
         # Marcon, V., Raos, G., "Free Energies of Molecular Crystal Surfaces by Computer Simlations: Application to Tetrathiophene", 2006, J. Am. Chem. Soc., DOI: 10.1021/ja056548t
@@ -82,96 +82,12 @@ class hoomdRun:
         # Huang, D. M., Faller, R., Do, K., Moule, A. J., "Coarse-Grained Computer Simulations of Polymer/Fullerene Bulk Heterojunctions for Organic Photovoltaic Applications", 2010, J. Chem. Theory Comput., DOI: 10.1021/ct900496t
         # Jorgensen, W. L., Maxwell, D. S., Tirdao-Rives, J., "Development and Testing of the OPLS All-Atom Forcefield on Conformational Energetics and Properties of Organic Liquids", 1996, J. Am. Chem. Soc. DOI: 10.1021/ja9621760
         # Bhatta, R. S., Yimer, Y. Y., Tsige, M., Perry, D. S., "Conformations and Torsional Potentials of Poly(3-Hexylthiophene) Oligomers: Density Functional Calculations Up to the Dodecamer", 2012, Comput. & Theor. Chem., DOI: 10.1016/j.comptc.2012.06.026
-        if pairPotentialType == 'dpd':
-            self.setDPDParameters(eScale, sScale)
-        else:
-            self.setLJParameters(eScale, sScale)
+        self.setLJParameters(eScale, sScale)
         self.setHarmonicBondParameters(eScale, sScale)
         self.setHarmonicAngleParameters(eScale, sScale)
         self.setTableDihedralParameters(eScale, sScale)
         self.setImproperParameters(eScale, sScale)
 
-        
-    def setDPDParameters(self, eScale, sScale):
-        self.pair = pair.dpd(r_cut=10*sScale)
-        self.pair.pair_coeff.set('C1','C1',A=0.070*eScale,gamma=0,r_cut=3.550*sScale)
-        self.pair.pair_coeff.set('C1','C2',A=0.070*eScale,gamma=0,r_cut=3.550*sScale)
-        self.pair.pair_coeff.set('C1','C3',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C1','C4',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C1','C5',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C1','C6',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C1','C7',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C1','C8',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C1','C9',A=0.070*eScale,gamma=0,r_cut=3.550*sScale)
-        self.pair.pair_coeff.set('C1','C10',A=0.070*eScale,gamma=0,r_cut=3.550*sScale)
-        self.pair.pair_coeff.set('C1','H1',A=0.046*eScale,gamma=0,r_cut=2.979*sScale)
-        self.pair.pair_coeff.set('C1','S1',A=0.132*eScale,gamma=0,r_cut=3.550*sScale)
-        self.pair.pair_coeff.set('C2','C2',A=0.070*eScale,gamma=0,r_cut=3.550*sScale)
-        self.pair.pair_coeff.set('C2','C3',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C2','C4',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C2','C5',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C2','C6',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C2','C7',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C2','C8',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C2','C9',A=0.070*eScale,gamma=0,r_cut=3.550*sScale)
-        self.pair.pair_coeff.set('C2','C10',A=0.070*eScale,gamma=0,r_cut=3.550*sScale)
-        self.pair.pair_coeff.set('C2','H1',A=0.046*eScale,gamma=0,r_cut=2.979*sScale)
-        self.pair.pair_coeff.set('C2','S1',A=0.132*eScale,gamma=0,r_cut=3.550*sScale)
-        self.pair.pair_coeff.set('C3','C3',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C3','C4',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C3','C5',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C3','C6',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C3','C7',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C3','C8',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C3','C9',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C3','C10',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C3','H1',A=0.044*eScale,gamma=0,r_cut=2.958*sScale)
-        self.pair.pair_coeff.set('C3','S1',A=0.128*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C4','C4',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C4','C5',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C4','C6',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C4','C7',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C4','C8',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C4','C9',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C4','C10',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C4','H1',A=0.044*eScale,gamma=0,r_cut=2.958*sScale)
-        self.pair.pair_coeff.set('C4','S1',A=0.128*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C5','C5',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C5','C6',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C5','C7',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C5','C8',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C5','C9',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C5','C10',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C5','H1',A=0.044*eScale,gamma=0,r_cut=2.958*sScale)
-        self.pair.pair_coeff.set('C5','S1',A=0.128*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C6','C6',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C6','C7',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C6','C8',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C6','C9',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C6','C10',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C6','H1',A=0.044*eScale,gamma=0,r_cut=2.958*sScale)
-        self.pair.pair_coeff.set('C6','S1',A=0.128*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C7','C7',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C7','C8',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C7','C9',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C7','C10',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C7','H1',A=0.044*eScale,gamma=0,r_cut=2.958*sScale)
-        self.pair.pair_coeff.set('C7','S1',A=0.128*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C8','C8',A=0.066*eScale,gamma=0,r_cut=3.500*sScale)
-        self.pair.pair_coeff.set('C8','C9',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C8','C10',A=0.068*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C8','H1',A=0.044*eScale,gamma=0,r_cut=2.958*sScale)
-        self.pair.pair_coeff.set('C8','S1',A=0.128*eScale,gamma=0,r_cut=3.525*sScale)
-        self.pair.pair_coeff.set('C9','C9',A=0.070*eScale,gamma=0,r_cut=3.550*sScale)
-        self.pair.pair_coeff.set('C9','C10',A=0.070*eScale,gamma=0,r_cut=3.550*sScale)
-        self.pair.pair_coeff.set('C9','H1',A=0.046*eScale,gamma=0,r_cut=2.931*sScale)
-        self.pair.pair_coeff.set('C9','S1',A=0.132*eScale,gamma=0,r_cut=3.550*sScale)
-        self.pair.pair_coeff.set('C10','C10',A=0.070*eScale,gamma=0,r_cut=3.550*sScale)
-        self.pair.pair_coeff.set('C10','H1',A=0.046*eScale,gamma=0,r_cut=2.979*sScale)
-        self.pair.pair_coeff.set('C10','S1',A=0.132*eScale,gamma=0,r_cut=3.550*sScale)
-        self.pair.pair_coeff.set('H1','H1',A=0.030*eScale,gamma=0,r_cut=2.500*sScale)
-        self.pair.pair_coeff.set('H1','S1',A=0.087*eScale,gamma=0,r_cut=2.979*sScale)
-        self.pair.pair_coeff.set('S1','S1',A=0.250*eScale,gamma=0,r_cut=3.550*sScale)
         
 
     def setLJParameters(self, eScale, sScale):
@@ -381,12 +297,8 @@ class hoomdRun:
                     alk2Atoms.append(self.CG2AAIDs[moleculeNo][CGAtomID][1:])
                     self.alk2GroupIDs += self.CG2AAIDs[moleculeNo][CGAtomID][1]
 
-        # DEBUG COMMAND
-        print "ALWAYS RUNNING PHASE 1 FOR TESTING"
-        self.runPhase1 = True
-        ###############
         if self.runPhase1 == True:
-            self.initialiseRun(self.fileName, pairPotentialType='lj')
+            self.initialiseRun(self.fileName)
             phase1DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase1'), period=1, overwrite=True)
             phase1Step = integrate.mode_standard(dt = self.dtPhase1)
             # phase1 = integrate.brownian(group=group.all(), seed=3, dscale=1e11, T=self.T)
@@ -401,9 +313,6 @@ class hoomdRun:
             print "Phase 1 already completed for this morphology...skipping"
 
 
-        raise SystemError("STOPPING AFTER PHASE 1 FOR TESTING")
-
-            
         if self.runPhase2 == True:
             self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'))
             phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=100, overwrite=True)
