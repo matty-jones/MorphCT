@@ -431,7 +431,10 @@ class atomistic:
                 thisMonomerDictionary['unwrapped_position'][thioAAID] = list(np.array(thisMonomerDictionary['unwrapped_position'][thioAAID])+thioTranslation)
                 thisMonomerDictionary['velocity'][thioAAID] = self.CGDictionary['velocity'][thioID]
                 # Set the thiophenes to be rigid bodies
-                thisMonomerDictionary['body'][thioAAID] = currentMonomerIndex
+                if thisMonomerDictionary['type'][thioAAID] == 'H1':
+                    thisMonomerDictionary['body'][thioAAID] = -1
+                else:
+                    thisMonomerDictionary['body'][thioAAID] = currentMonomerIndex
             for alk1AAID in alk1AAIDs:
                 thisMonomerDictionary['unwrapped_position'][alk1AAID] = list(np.array(thisMonomerDictionary['unwrapped_position'][alk1AAID])+alk1Translation)
                 thisMonomerDictionary['velocity'][alk1AAID] = self.CGDictionary['velocity'][alk1ID]

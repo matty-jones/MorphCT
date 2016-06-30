@@ -282,7 +282,9 @@ def addTerminatingHydrogens(inputDictionary):
         inputDictionary['diameter'].append(0.53)
         inputDictionary['type'].append('H1')
         inputDictionary['velocity'].append(inputDictionary['velocity'][terminatingCarbon[0]])
-        inputDictionary['body'].append(inputDictionary['body'][terminatingCarbon[0]])
+        # Terminating hydrogens should be flexible (they get added to the flexible group in hoomd)
+        inputDictionary['body'].append(-1)
+        #inputDictionary['body'].append(inputDictionary['body'][terminatingCarbon[0]])
         inputDictionary['charge'].append(inputDictionary['charge'][terminatingCarbon[0]])
         # Add the bond information (angles and dihedrals are unnecessary)
         newBond = [inputDictionary['type'][terminatingCarbon[0]]+'-H1', terminatingCarbon[0], len(inputDictionary['type'])-1]
