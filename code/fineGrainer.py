@@ -32,11 +32,18 @@ class morphology:
         # dictionary key is the CG site, the value is a list containing the CG type (e.g. 'thio') as the
         # first element and then another list of all the AAIDs corresponding to that CG site as the second
         # element.
+
+        # Create a ghost particle dictionary to be added at the end of the morphology.
+        # This way, we don't mess up the order of atoms later on when trying to split
+        # back up into individual molecules and monomers.
+        # The ghost dictionary contains all of the type T and type X particles that will
+        # anchor the thiophene rings to the CG COM positions.
+        ghostDictionary = {'position':[], 'image':[], 'unwrapped_position':[], 'velocity':[], 'mass':[], 'diameter':[], 'type':[], 'body':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[], 'charge':[]}
         print "Adding molecules to the system..."
         for moleculeNumber in range(len(moleculeIDs)):
             print "Adding molecule number", moleculeNumber, "\r",
             # print "Rolling AA Index =", rollingAAIndex
-            CGMoleculeDict, AAMoleculeDict, CGtoAAIDs = atomistic(moleculeIDs[moleculeNumber], self.CGDictionary, morphologyName, rollingAAIndex).returnData()
+            CGMoleculeDict, AAMoleculeDict, CGtoAAIDs, ghostDictionary = atomistic(moleculeIDs[moleculeNumber], self.CGDictionary, morphologyName, rollingAAIndex, moleculeNumber, ghostDictionary).returnData()
             CGtoAAIDMaster.append(CGtoAAIDs)
             for key in CGMoleculeDict.keys():
                 if key not in ['lx', 'ly', 'lz']:
@@ -49,6 +56,24 @@ class morphology:
                     else:
                         AAMorphologyDict[key] += AAMoleculeDict[key]
             rollingAAIndex += len(AAMoleculeDict['type'])
+
+        # Now add the ghost dictionary to the end of the morphology file
+        totalNumberOfAtoms = len(AAMorphologyDict['type']) # Should be == rollingAAIndex, but don't want to take any chances
+        # Add in the wrapped positions of the ghosts. Need to know sim dims for this
+        for key in ['lx', 'ly', 'lz']:
+            ghostDictionary[key] = AAMorphologyDict[key]
+        ghostDictionary = helperFunctions.addWrappedPositions(ghostDictionary)
+        for key in ['lx', 'ly', 'lz']:
+            ghostDictionary.pop(key)
+        # Increment the bond IDs to match the ghost particle IDs
+        for bondNo, bond in enumerate(ghostDictionary['bond']):
+            ghostDictionary['bond'][bondNo] = [bond[0], bond[1]+totalNumberOfAtoms, bond[2]+totalNumberOfAtoms]
+        # Now append all ghosts to morphology
+        for key in ghostDictionary.keys():
+            AAMorphologyDict[key] += ghostDictionary[key]
+        # Finally, update the number of atoms
+        AAMorphologyDict['natoms'] += len(ghostDictionary['type'])
+            
         print "\n"
         print "Writing XML file..."
         AAFileName = './outputFiles/'+morphologyName+'/morphology/'+morphologyName+'.xml'
@@ -243,8 +268,9 @@ class molecule:
         
         
 class atomistic:
-    def __init__(self, atomIDs, CGDictionary, morphologyName, rollingAAIndex):
+    def __init__(self, atomIDs, CGDictionary, morphologyName, rollingAAIndex, moleculeIndex, ghostDictionary):
         self.noAtomsInMorphology = rollingAAIndex
+        self.moleculeIndex = moleculeIndex
         self.atomIDs = atomIDs
         self.CGDictionary = CGDictionary
         self.CGMonomerDictionary = self.getCGMonomerDict()
@@ -253,10 +279,10 @@ class atomistic:
         # HARD CODED IN HERE
         templateDict, thioAA, alk1AA, alk2AA = self.loadAATemplate()
         self.AATemplateDictionary = templateDict
-        self.AADictionary, self.atomIDLookupTable = self.runFineGrainer(thioAA, alk1AA, alk2AA, polymerBackboneIDs, moleculeEnds)
+        self.AADictionary, self.atomIDLookupTable, self.ghostDictionary = self.runFineGrainer(thioAA, alk1AA, alk2AA, polymerBackboneIDs, moleculeEnds, ghostDictionary)
 
     def returnData(self):
-        return self.CGMonomerDictionary, self.AADictionary, self.atomIDLookupTable
+        return self.CGMonomerDictionary, self.AADictionary, self.atomIDLookupTable, self.ghostDictionary
 
                 
     def obtainBackboneAtoms(self):
@@ -358,8 +384,9 @@ class atomistic:
         return CGMonomerDictionary
 
     
-    def runFineGrainer(self, thioAAIDs, alk1AAIDs, alk2AAIDs, polymerBackboneIDs, moleculeEnds):
+    def runFineGrainer(self, thioAAIDs, alk1AAIDs, alk2AAIDs, polymerBackboneIDs, moleculeEnds, ghostDictionary):
         AADictionary = {'position':[], 'image':[], 'unwrapped_position':[], 'velocity':[], 'mass':[], 'diameter':[], 'type':[], 'body':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[], 'charge':[], 'lx':0, 'ly':0, 'lz':0}
+        
         thioAACOM, alk1AACOM, alk2AACOM = self.getAATemplatePosition(thioAAIDs, alk1AAIDs, alk2AAIDs)
         atomIDLookupTable = {}
         # Begin at one terminating monomer and build up the monomers
@@ -371,6 +398,11 @@ class atomistic:
         # Normalisation no longer needed, but need to keep track of the atom ID numbers globally - runFineGrainer sees individual monomers, atomistic sees molecules and the XML needs to contain the entire morphology.
         # If this isn't the first molecule in the morphology, we need to offset the CG indices in the atomIDLookupTable, because runhoomd treats each molecule as isolated
         #CGIDOffset = bondedCGSites[0][0]
+
+        # Keep track of the current monomer number because this will be used to describe
+        # the index of the thiophene rigid bodies
+        currentMonomerIndex = 15*self.moleculeIndex
+        
         for monomer in bondedCGSites:
             thisMonomerDictionary = copy.deepcopy(self.AATemplateDictionary)
             for key in ['lx', 'ly', 'lz']:
@@ -398,6 +430,8 @@ class atomistic:
             for thioAAID in thioAAIDs:
                 thisMonomerDictionary['unwrapped_position'][thioAAID] = list(np.array(thisMonomerDictionary['unwrapped_position'][thioAAID])+thioTranslation)
                 thisMonomerDictionary['velocity'][thioAAID] = self.CGDictionary['velocity'][thioID]
+                # Set the thiophenes to be rigid bodies
+                thisMonomerDictionary['body'][thioAAID] = currentMonomerIndex
             for alk1AAID in alk1AAIDs:
                 thisMonomerDictionary['unwrapped_position'][alk1AAID] = list(np.array(thisMonomerDictionary['unwrapped_position'][alk1AAID])+alk1Translation)
                 thisMonomerDictionary['velocity'][alk1AAID] = self.CGDictionary['velocity'][alk1ID]
@@ -424,6 +458,37 @@ class atomistic:
             # print "CGCOM =", thioPosn
             # print "AACOM =", COMPosn
             #####################
+
+
+            # Now add in the two ghost particles:
+            # Type T = COM ghost particle of the thiophene ring that has the same rigid body as the thiophene
+            #          atoms, but does not interact with them. Its initial position is has the COM from the
+            #          CG morph.
+            # Type X = Anchor particle that is never integrated over, has no interactions with anything except
+            #          a bond to the corresponding type T. The type X particle never moves from its position,
+            #          which is the Type A position from the CG morph (COM of Thiophene ring)
+
+            # Type T:
+            ghostDictionary['unwrapped_position'].append(list(thioPosn))
+            ghostDictionary['velocity'].append(self.CGDictionary['velocity'][thioID])
+            ghostDictionary['mass'].append(1.0)
+            ghostDictionary['diameter'].append(1.0)
+            ghostDictionary['type'].append('T')
+            ghostDictionary['body'].append(currentMonomerIndex)
+            ghostDictionary['charge'].append(0.0)
+
+            # Type X:
+            ghostDictionary['unwrapped_position'].append(list(thioPosn))
+            ghostDictionary['velocity'].append([0.0, 0.0, 0.0])
+            ghostDictionary['mass'].append(1.0)
+            ghostDictionary['diameter'].append(1.0)
+            ghostDictionary['type'].append('X')
+            ghostDictionary['body'].append(-1)
+            ghostDictionary['charge'].append(0.0)
+
+            # Now add the T-X bond
+            ghostDictionary['bond'].append(['T-X', 2*currentMonomerIndex, 2*currentMonomerIndex+1])
+            
                 
                                    
             # Now add in the inter-monomer bond.
@@ -454,6 +519,7 @@ class atomistic:
             # Now we update the atom IDs to mirror the fact that we have added an additional monomer to the system
             thisMonomerDictionary = helperFunctions.incrementAtomIDs(thisMonomerDictionary, noAtomsInMolecule)
             noAtomsInMolecule += 25
+            currentMonomerIndex += 1
             AADictionary = self.updateMoleculeDictionary(thisMonomerDictionary, AADictionary)
         AADictionary['natoms'] = noAtomsInMolecule
         for key in ['lx', 'ly', 'lz']:
@@ -465,7 +531,7 @@ class atomistic:
         # Now the molecule is done, we need to add on the correct identifying numbers for all the bonds, angles and dihedrals
         # (just as we did between monomers) for the other molecules in the system, so that they all connect to the right atoms
         AADictionary = helperFunctions.incrementAtomIDs(AADictionary, self.noAtomsInMorphology)
-        return AADictionary, atomIDLookupTable
+        return AADictionary, atomIDLookupTable, ghostDictionary
 
 
     def rotateFunctionalGroups(self, atomDictionary, thioAlk1Axis, alk1Alk2Axis, thioAACOM, alk1AACOM, alk2AACOM, thioAAIDs, alk1AAIDs, alk2AAIDs):
