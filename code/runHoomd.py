@@ -498,7 +498,7 @@ class hoomdRun:
             phase1Flex.disable()
             phase1Rig.disable()
             phase1DumpDCD.disable()
-            del self.system, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase1DumpDCD, phase1Step, phase1, phase1DumpXML
+            del self.system, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase1DumpDCD, phase1Step, phase1Flex, phase1Rig, phase1DumpXML
             init.reset()
         else:
             print "Phase 1 already completed for this morphology...skipping"
@@ -514,7 +514,7 @@ class hoomdRun:
             phase2Flex.disable()
             phase2Rig.disable()
             phase2DumpDCD.disable()
-            del self.system, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase2DumpDCD, phase2Step, phase2, phase2DumpXML
+            del self.system, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase2DumpDCD, phase2Step, phase2Flex, phase2Rig, phase2DumpXML
             init.reset()
         else:
             print "Phase 2 already completed for this morphology...skipping"
@@ -532,7 +532,7 @@ class hoomdRun:
             phase3Flex.disable()
             phase3Rig.disable()
             phase3DumpDCD.disable()
-            del self.system, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase3DumpDCD, phase3Step, phase3, phase3DumpXML
+            del self.system, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase3DumpDCD, phase3Step, phase3Flex, phase3Rig, phase3DumpXML
             init.reset()
         else:
             print "Phase 3 already completed for this morphology...skipping"
