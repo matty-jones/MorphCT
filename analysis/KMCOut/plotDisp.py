@@ -37,6 +37,11 @@ def loadCSVs(CSVDir):
                 completeCSVData[CSVName].append(map(float, row[:4]))
                 if len(row[4:]) > 0:
                     completeCSVData[CSVName][-1].append(int(len(row[4:]))) # Number of chromophores considered
+        # for temperature, data in completeCSVData.iteritems():
+        #     print "TEMPERATURE =", temperature
+        #     print "Displacement Average =", np.average([row[1] for row in data])
+        #     print "Number of hops Average =", np.average([row[2] for row in data])
+        #     print "Time Average =", np.average([row[3] for row in data])
     targetTimesList = []
     CSVDataList = []
     for key in completeCSVData.keys():
@@ -53,13 +58,17 @@ def plotHist(CSVFile, targetTime, CSVDir):
     squaredDisps = []
     times = []
     chromophoresVisited = []
+    dataPointsAveragedOver = 0
+    totalDataPoints = 0
     for carrierNo, carrierData in enumerate(CSVFile):
-        # if (carrierData[3] > targetTime*2) or (carrierData[3] < targetTime/2.0):
-        #     # When we don't squeeze the HOMO distribution, some hops take an extraordinarily long time
-        #     # which means that we end up with crazy long hop times. This check just makes sure that
-        #     # we only take into account ones that we care about
-        #     # NOTE: There is a negligible number of these for M01TI0
-        #    continue
+        if (carrierData[3] > targetTime*2) or (carrierData[3] < targetTime/2.0):
+            # When we don't squeeze the HOMO distribution, some hops take an extraordinarily long time
+            # which means that we end up with crazy long hop times. This check just makes sure that
+            # we only take into account ones that we care about
+            # NOTE: There is a negligible number of these for M01TI0
+            # NOTE2: Apparently not for the dastardly T1.75 dataset which records crazy low mobilities if this if statement isn't included. The others seem unaffected though.
+            totalDataPoints += 1
+            continue
         if carrierData[2] != 1: #Skip single hops
             disps.append(carrierData[1])
             squaredDisps.append(carrierData[1]**2)
@@ -69,11 +78,14 @@ def plotHist(CSVFile, targetTime, CSVDir):
                 chromophoresVisited.append(carrierData[4])
             except IndexError:
                 plotChromoVisit = False
+            dataPointsAveragedOver += 1
+        totalDataPoints += 1
     if len(squaredDisps) == 0:
         print CSVFile
         print CSVDir
         print targetTime
         raise SystemError('HALT')
+    print "Data points averaged over (carriers) =", dataPointsAveragedOver, "Total Data Points =", totalDataPoints
     MSD = np.average(squaredDisps)
     meanTime = np.average(times)
     averageNumberOfChromophoresVisited = np.average(chromophoresVisited)
@@ -229,6 +241,7 @@ if __name__ == "__main__":
     plt.xlabel('Temperature, Arb. U')
     plt.ylabel('Mobility, cm'+r'$^{2}$ '+'V'+r'$^{-1}$'+r's$^{-1}$')
     # plt.ylim([1E-6, 1E1])
+    plt.xlim([1.4, 2.6])
     plt.savefig('./mobTemp.png')
     plt.clf()
     print "Mobility curve saved as './mobTemp.png'"

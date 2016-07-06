@@ -7,9 +7,12 @@ def plotEnergy(timesteps, yvals, mode, molNumber):
     plt.clf()
     if mode != 'Std':
         plt.plot(timesteps, yvals, 'ro')
-        plt.ylabel(mode+' Energy')
+        plt.ylabel(mode)
         plt.xlabel('Timestep')
-        fileName = mode+'_'+molNumber+'.png'
+        if 'Energy' in mode:
+            fileName = mode[:-7]+'_'+molNumber+'.png'
+        else:
+            fileName = mode+'_'+molNumber+'.png'
     else:
         xvals = np.arange(len(yvals))
         plt.plot(xvals, yvals, 'bo')
@@ -28,6 +31,9 @@ def loadLog(fileName):
     bondE = []
     angleE = []
     dihedralE = []
+    temperature = []
+    pressure = []
+    volume = []
     for line in data[1:]:
         splitLine = line.split('\t')
         splitLine[-1] = splitLine[-1][:-1]
@@ -38,6 +44,15 @@ def loadLog(fileName):
         bondE.append(float(splitLine[4]))
         angleE.append(float(splitLine[5]))
         dihedralE.append(float(splitLine[6]))
+        try:
+            temperature.append(float(splitLine[7]))
+            pressure.append(float(splitLine[8]))
+            volume.append(float(splitLine[9]))
+        except IndexError:
+            # Old log file
+            temperature = [0]*len(timestep)
+            pressure = [0]*len(timestep)
+            volume = [0]*len(timestep)
     totalEnergy = []
     totalPotential = []
     totalEnergyStd = []
@@ -46,7 +61,7 @@ def loadLog(fileName):
         totalPotential.append(PE[valueNo] + pairE[valueNo] + bondE[valueNo] + angleE[valueNo] + dihedralE[valueNo])
         if valueNo >= 9:
             totalEnergyStd.append(np.std(totalEnergy[valueNo-10:valueNo]))
-    return timestep, PE, KE, pairE, bondE, angleE, dihedralE, totalEnergy, totalPotential, totalEnergyStd
+    return timestep, PE, KE, pairE, bondE, angleE, dihedralE, temperature, pressure, volume, totalEnergy, totalPotential, totalEnergyStd
 
 def findIndex(string, character):
     '''This function returns the locations of an inputted character in an inputted string'''
@@ -86,7 +101,7 @@ if __name__ == "__main__":
     cwd = os.getcwd()
     logFileName = sys.argv[1]
     molName = logFileName[findIndex(logFileName,'_')[0]+1:-4]
-    timestep, PE, KE, pairE, bondE, angleE, dihedralE, totalE, totalPE, totalEStd = loadLog(cwd+'/'+logFileName)
+    timestep, PE, KE, pairE, bondE, angleE, dihedralE, temperature, pressure, volume, totalE, totalPE, totalEStd = loadLog(cwd+'/'+logFileName)
 
     newHeuristic = []
     movingPointAverageDegree = 100
@@ -103,12 +118,15 @@ if __name__ == "__main__":
 
 
     
-    plotEnergy(timestep[85:], PE[85:], 'Potential', molName)
-    plotEnergy(timestep[85:], KE[85:], 'Kinetic', molName)
-    plotEnergy(timestep[85:], pairE[85:], 'Pair', molName)
-    plotEnergy(timestep[85:], bondE[85:], 'Bond', molName)
-    plotEnergy(timestep[85:], angleE[85:], 'Angle', molName)
-    plotEnergy(timestep[85:], dihedralE[85:], 'Dihedral', molName)
-    plotEnergy(timestep[85:], totalE[85:], 'Total', molName)
-    plotEnergy(timestep[85:], totalPE[85:], 'Total_Potential', molName)
-    plotEnergy(timestep[85:], totalEStd[85:], 'Std', molName)
+    plotEnergy(timestep[10:-10], PE[10:-10], 'Potential Energy', molName)
+    plotEnergy(timestep[10:-10], KE[10:-10], 'Kinetic Energy', molName)
+    plotEnergy(timestep[10:-10], pairE[10:-10], 'Pair Energy', molName)
+    plotEnergy(timestep[10:-10], bondE[10:-10], 'Bond Energy', molName)
+    plotEnergy(timestep[10:-10], angleE[10:-10], 'Angle Energy', molName)
+    plotEnergy(timestep[10:-10], dihedralE[10:-10], 'Dihedral Energy', molName)
+    plotEnergy(timestep[10:-10], temperature[10:-10], 'Temperature', molName)
+    plotEnergy(timestep[10:-10], pressure[10:-10], 'Pressure', molName)
+    plotEnergy(timestep[10:-10], volume[10:-10], 'Volume', molName)
+    plotEnergy(timestep[10:-10], totalE[10:-10], 'Total Energy', molName)
+    plotEnergy(timestep[10:-10], totalPE[10:-10], 'Total_Potential Energy', molName)
+    plotEnergy(timestep[10:-10], totalEStd[10:-10], 'Std', molName)

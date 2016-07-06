@@ -40,12 +40,12 @@ class hoomdRun:
         self.tau = 1.0
         #self.dtPhase1 = 1e-5
         self.dtPhase1 = 1e-3
-        self.dtPhase2 = 1e-2
+        self.dtPhase2 = 1e-6
         self.dtPhase3 = 1e-5
         self.dtPhase4 = 1e-4
         self.dtPhase5 = 1e-3
-        self.phase1RunLength = 5e3
-        self.phase2RunLength = 5e3
+        self.phase1RunLength = 2e5
+        self.phase2RunLength = 1e4
         self.phase3RunLength = 1e4
         self.phase4RunLength = 1e6 # This is a maximum because sim is curtailed
         self.phase5RunLength = 5e4
@@ -80,7 +80,10 @@ class hoomdRun:
         alk2Group = group.tag_list(name="alk2", tags=self.alk2GroupIDs)
         self.sideChainsGroup = group.union(name="sideChains", a = alk1Group, b = alk2Group)
         self.setForcefieldCoeffs(self.eScale, self.sScale, pairType, gradientRamp)
-        self.energyLog = analyze.log(filename = self.outputLOG, quantities=['potential_energy', 'kinetic_energy', 'pair_lj_energy', 'bond_harmonic_energy', 'angle_harmonic_energy', 'dihedral_table_energy'], period=self.dumpPeriod, overwrite = self.overwriteEnergies)
+        if pairType == 'soft':
+            self.energyLog = analyze.log(filename = self.outputLOG, quantities=['potential_energy', 'kinetic_energy', 'pair_dpd_energy', 'bond_harmonic_energy', 'angle_harmonic_energy', 'dihedral_table_energy', 'temperature', 'pressure', 'volume'], period=self.dumpPeriod, overwrite = self.overwriteEnergies)
+        elif pairType == 'hard':
+            self.energyLog = analyze.log(filename = self.outputLOG, quantities=['potential_energy', 'kinetic_energy', 'pair_lj_energy', 'bond_harmonic_energy', 'angle_harmonic_energy', 'dihedral_table_energy', 'temperature', 'pressure', 'volume'], period=self.dumpPeriod, overwrite = self.overwriteEnergies)
         self.overwriteEnergies = False
 
 
@@ -95,7 +98,7 @@ class hoomdRun:
         if pairType == 'soft':
             self.setSoftPairParameters(eScale, sScale, gradientRamp)
         else:
-            self.setLJParameters(eScale, sScale)
+            self.setLJParameters(eScale, sScale, gradientRamp)
         self.setHarmonicBondParameters(eScale, sScale)
         self.setHarmonicAngleParameters(eScale, sScale)
         self.setTableDihedralParameters(eScale, sScale)
@@ -103,96 +106,101 @@ class hoomdRun:
 
 
     def setSoftPairParameters(self, eScale, sScale, gradientRamp):
+        gammaVal = 1.0
         # Set Rcut to be the minimum of the LJ potential
-        sScale *= 2**(1./6.)
+        #sScale *= 2**(1./6.)
+        # Didn't work, set the rcut to be the cut-off of the LJ potential
+        sScale *= 2.5
         # Ramp the gradient of the forcefield to reduce overlap
         eScale *= gradientRamp
         self.pair = pair.dpd(r_cut=10*sScale, T=1.0)
-        self.pair.pair_coeff.set('C1','C1',A=0.070*eScale,r_cut=3.550*sScale,gamma=0)
-        self.pair.pair_coeff.set('C1','C2',A=0.070*eScale,r_cut=3.550*sScale,gamma=0)
-        self.pair.pair_coeff.set('C1','C3',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C1','C4',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C1','C5',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C1','C6',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C1','C7',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C1','C8',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C1','C9',A=0.070*eScale,r_cut=3.550*sScale,gamma=0)
-        self.pair.pair_coeff.set('C1','C10',A=0.070*eScale,r_cut=3.550*sScale,gamma=0)
-        self.pair.pair_coeff.set('C1','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma=0)
-        self.pair.pair_coeff.set('C1','S1',A=0.132*eScale,r_cut=3.550*sScale,gamma=0)
-        self.pair.pair_coeff.set('C2','C2',A=0.070*eScale,r_cut=3.550*sScale,gamma=0)
-        self.pair.pair_coeff.set('C2','C3',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C2','C4',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C2','C5',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C2','C6',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C2','C7',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C2','C8',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C2','C9',A=0.070*eScale,r_cut=3.550*sScale,gamma=0)
-        self.pair.pair_coeff.set('C2','C10',A=0.070*eScale,r_cut=3.550*sScale,gamma=0)
-        self.pair.pair_coeff.set('C2','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma=0)
-        self.pair.pair_coeff.set('C2','S1',A=0.132*eScale,r_cut=3.550*sScale,gamma=0)
-        self.pair.pair_coeff.set('C3','C3',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C3','C4',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C3','C5',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C3','C6',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C3','C7',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C3','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C3','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C3','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C3','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=0)
-        self.pair.pair_coeff.set('C3','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C4','C4',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C4','C5',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C4','C6',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C4','C7',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C4','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C4','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C4','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C4','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=0)
-        self.pair.pair_coeff.set('C4','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C5','C5',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C5','C6',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C5','C7',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C5','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C5','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C5','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C5','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=0)
-        self.pair.pair_coeff.set('C5','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C6','C6',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C6','C7',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C6','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C6','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C6','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C6','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=0)
-        self.pair.pair_coeff.set('C6','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C7','C7',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C7','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C7','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C7','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C7','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=0)
-        self.pair.pair_coeff.set('C7','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C8','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('C8','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C8','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C8','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=0)
-        self.pair.pair_coeff.set('C8','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma=0)
-        self.pair.pair_coeff.set('C9','C9',A=0.070*eScale,r_cut=3.550*sScale,gamma=0)
-        self.pair.pair_coeff.set('C9','C10',A=0.070*eScale,r_cut=3.550*sScale,gamma=0)
-        self.pair.pair_coeff.set('C9','H1',A=0.046*eScale,r_cut=2.931*sScale,gamma=0)
-        self.pair.pair_coeff.set('C9','S1',A=0.132*eScale,r_cut=3.550*sScale,gamma=0)
-        self.pair.pair_coeff.set('C10','C10',A=0.070*eScale,r_cut=3.550*sScale,gamma=0)
-        self.pair.pair_coeff.set('C10','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma=0)
-        self.pair.pair_coeff.set('C10','S1',A=0.132*eScale,r_cut=3.550*sScale,gamma=0)
-        self.pair.pair_coeff.set('H1','H1',A=0.030*eScale,r_cut=2.500*sScale,gamma=0)
-        self.pair.pair_coeff.set('H1','S1',A=0.087*eScale,r_cut=2.979*sScale,gamma=0)
-        self.pair.pair_coeff.set('S1','S1',A=0.250*eScale,r_cut=3.550*sScale,gamma=0)
+        self.pair.pair_coeff.set('C1','C1',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C1','C2',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C1','C3',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C1','C4',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C1','C5',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C1','C6',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C1','C7',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C1','C8',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C1','C9',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C1','C10',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C1','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C1','S1',A=0.132*eScale,r_cut=3.550*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C2','C2',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C2','C3',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C2','C4',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C2','C5',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C2','C6',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C2','C7',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C2','C8',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C2','C9',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C2','C10',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C2','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C2','S1',A=0.132*eScale,r_cut=3.550*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C3','C3',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C3','C4',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C3','C5',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C3','C6',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C3','C7',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C3','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C3','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C3','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C3','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C3','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C4','C4',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C4','C5',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C4','C6',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C4','C7',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C4','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C4','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C4','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C4','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C4','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C5','C5',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C5','C6',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C5','C7',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C5','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C5','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C5','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C5','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C5','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C6','C6',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C6','C7',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C6','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C6','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C6','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C6','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C6','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C7','C7',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C7','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C7','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C7','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C7','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C7','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C8','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C8','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C8','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C8','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C8','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C9','C9',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C9','C10',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C9','H1',A=0.046*eScale,r_cut=2.931*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C9','S1',A=0.132*eScale,r_cut=3.550*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C10','C10',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C10','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('C10','S1',A=0.132*eScale,r_cut=3.550*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('H1','H1',A=0.030*eScale,r_cut=2.500*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('H1','S1',A=0.087*eScale,r_cut=2.979*sScale,gamma = gammaVal)
+        self.pair.pair_coeff.set('S1','S1',A=0.250*eScale,r_cut=3.550*sScale,gamma = gammaVal)
         # Set Ghost Particle Interactions
         for ghostAtomType in ['T', 'X']:
             for realAtomType in ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'S1', 'H1', 'T', 'X']:
-                self.pair.pair_coeff.set(ghostAtomType, realAtomType, A=0, r_cut = 0, gamma = 0)
+                self.pair.pair_coeff.set(ghostAtomType, realAtomType, A=0, r_cut = 0, gamma = gammaVal)
+        print self.eScale, eScale
 
 
-    def setLJParameters(self, eScale, sScale):
+    def setLJParameters(self, eScale, sScale, gradientRamp):
+        eScale *= gradientRamp
         self.pair = pair.lj(r_cut=10*sScale)
         self.pair.set_params(mode='xplor')
         self.pair.pair_coeff.set('C1','C1',epsilon=0.070*eScale,sigma=3.550*sScale)
@@ -277,6 +285,7 @@ class hoomdRun:
         for ghostAtomType in ['T', 'X']:
             for realAtomType in ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'S1', 'H1', 'T', 'X']:
                 self.pair.pair_coeff.set(ghostAtomType, realAtomType, epsilon=0, sigma = 0)
+        print self.eScale, eScale
 
         
     def setHarmonicBondParameters(self, eScale, sScale):
@@ -411,7 +420,7 @@ class hoomdRun:
                     
         if self.runPhase1 == True:
             self.initialiseRun(self.fileName, pairType='soft', gradientRamp = 1.0)
-            phase1DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase1'), period=10, overwrite=True)
+            phase1DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase1'), period=1000, overwrite=True)
             phase1Step = integrate.mode_standard(dt = self.dtPhase1)
             # phase1 = integrate.brownian(group=group.all(), seed=3, dscale=1e11, T=self.T)
             phase1Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
@@ -427,8 +436,8 @@ class hoomdRun:
             print "Phase 1 already completed for this morphology...skipping"
 
         if self.runPhase2 == True:
-            self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='soft', gradientRamp = 1000.0)
-            phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=100, overwrite=True)
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='hard', gradientRamp = 1.0)
+            phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=1, overwrite=True)
             phase2Step = integrate.mode_standard(dt = self.dtPhase2)
             phase2Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
             phase2Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
@@ -446,7 +455,7 @@ class hoomdRun:
 
         if self.runPhase3 == True:
             self.initialiseRun(self.outputXML.replace('relaxed', 'phase2'), pairType='hard')
-            phase3DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase3'), period=100, overwrite=True)
+            phase3DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase3'), period=1, overwrite=True)
             phase3Step = integrate.mode_standard(dt = self.dtPhase3)
             phase3Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
             phase3Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
