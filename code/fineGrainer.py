@@ -38,7 +38,7 @@ class morphology:
         # back up into individual molecules and monomers.
         # The ghost dictionary contains all of the type T and type X particles that will
         # anchor the thiophene rings to the CG COM positions.
-        ghostDictionary = {'position':[], 'image':[], 'unwrapped_position':[], 'velocity':[], 'mass':[], 'diameter':[], 'type':[], 'body':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[], 'charge':[]}
+        ghostDictionary = {'position':[], 'image':[], 'unwrapped_position':[], 'mass':[], 'diameter':[], 'type':[], 'body':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[], 'charge':[]}
         print "Adding molecules to the system..."
         for moleculeNumber in range(len(moleculeIDs)):
             print "Adding molecule number", moleculeNumber, "\r",
@@ -361,12 +361,12 @@ class atomistic:
 
     
     def getCGMonomerDict(self):
-        CGMonomerDictionary = {'position':[], 'image':[], 'velocity':[], 'mass':[], 'diameter':[], 'type':[], 'body':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[], 'charge':[], 'lx':0, 'ly':0, 'lz':0}
+        CGMonomerDictionary = {'position':[], 'image':[], 'mass':[], 'diameter':[], 'type':[], 'body':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[], 'charge':[], 'lx':0, 'ly':0, 'lz':0}
         # First, do just the positions and find the newAtomIDs for each CG site
         for atomID in self.atomIDs:
             CGMonomerDictionary['position'].append(self.CGDictionary['position'][atomID])
         # Now sort out the other one-per-atom properties
-        for key in ['image', 'velocity', 'mass', 'diameter', 'type', 'body', 'charge']:
+        for key in ['image', 'mass', 'diameter', 'type', 'body', 'charge']:
             if len(self.CGDictionary[key]) != 0:
                 for atomID in self.atomIDs:
                     CGMonomerDictionary[key].append(self.CGDictionary[key][atomID])
@@ -385,7 +385,7 @@ class atomistic:
 
     
     def runFineGrainer(self, thioAAIDs, alk1AAIDs, alk2AAIDs, polymerBackboneIDs, moleculeEnds, ghostDictionary):
-        AADictionary = {'position':[], 'image':[], 'unwrapped_position':[], 'velocity':[], 'mass':[], 'diameter':[], 'type':[], 'body':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[], 'charge':[], 'lx':0, 'ly':0, 'lz':0}
+        AADictionary = {'position':[], 'image':[], 'unwrapped_position':[], 'mass':[], 'diameter':[], 'type':[], 'body':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[], 'charge':[], 'lx':0, 'ly':0, 'lz':0}
         
         thioAACOM, alk1AACOM, alk2AACOM = self.getAATemplatePosition(thioAAIDs, alk1AAIDs, alk2AAIDs)
         atomIDLookupTable = {}
@@ -407,8 +407,6 @@ class atomistic:
             thisMonomerDictionary = copy.deepcopy(self.AATemplateDictionary)
             for key in ['lx', 'ly', 'lz']:
                 thisMonomerDictionary[key] = self.CGDictionary[key]
-            if len(thisMonomerDictionary['velocity']) == 0:
-                thisMonomerDictionary['velocity'] = [[0.0, 0.0, 0.0]]*len(thisMonomerDictionary['position'])
             if len(thisMonomerDictionary['image']) == 0:
                 thisMonomerDictionary['image'] = [[0, 0, 0]]*len(thisMonomerDictionary['position'])
             thioID = monomer[0]
@@ -429,7 +427,6 @@ class atomistic:
             atomIDLookupTable[alk2ID] = ['alk2', [x + noAtomsInMolecule + self.noAtomsInMorphology for x in alk2AAIDs]]
             for thioAAID in thioAAIDs:
                 thisMonomerDictionary['unwrapped_position'][thioAAID] = list(np.array(thisMonomerDictionary['unwrapped_position'][thioAAID])+thioTranslation)
-                thisMonomerDictionary['velocity'][thioAAID] = self.CGDictionary['velocity'][thioID]
                 # Set the thiophenes to be rigid bodies
                 if thisMonomerDictionary['type'][thioAAID] == 'H1':
                     thisMonomerDictionary['body'][thioAAID] = -1
@@ -437,10 +434,8 @@ class atomistic:
                     thisMonomerDictionary['body'][thioAAID] = currentMonomerIndex
             for alk1AAID in alk1AAIDs:
                 thisMonomerDictionary['unwrapped_position'][alk1AAID] = list(np.array(thisMonomerDictionary['unwrapped_position'][alk1AAID])+alk1Translation)
-                thisMonomerDictionary['velocity'][alk1AAID] = self.CGDictionary['velocity'][alk1ID]
             for alk2AAID in alk2AAIDs:
                 thisMonomerDictionary['unwrapped_position'][alk2AAID] = list(np.array(thisMonomerDictionary['unwrapped_position'][alk2AAID])+alk2Translation)
-                thisMonomerDictionary['velocity'][alk2AAID] = self.CGDictionary['velocity'][alk2ID]
             thisMonomerDictionary = helperFunctions.addWrappedPositions(thisMonomerDictionary)
             thisMonomerDictionary = helperFunctions.addMasses(thisMonomerDictionary)
             thisMonomerDictionary = helperFunctions.addDiameters(thisMonomerDictionary)
@@ -473,7 +468,6 @@ class atomistic:
 
             # Type T:
             ghostDictionary['unwrapped_position'].append(list(thioPosn))
-            ghostDictionary['velocity'].append(self.CGDictionary['velocity'][thioID])
             ghostDictionary['mass'].append(1.0)
             ghostDictionary['diameter'].append(1.0)
             ghostDictionary['type'].append('T')
@@ -482,7 +476,6 @@ class atomistic:
 
             # Type X:
             ghostDictionary['unwrapped_position'].append(list(thioPosn))
-            ghostDictionary['velocity'].append([0.0, 0.0, 0.0])
             ghostDictionary['mass'].append(1.0)
             ghostDictionary['diameter'].append(1.0)
             ghostDictionary['type'].append('X')
@@ -712,14 +705,6 @@ class writeXML:
                                 stringToWrite += str(coordinate)+' '
                             stringToWrite = stringToWrite[:-1]
                             templateData.insert(lineNo+1, str(stringToWrite)+'\n')
-            elif "<velocity" in templateData[lineNo]:
-                if (len(self.dataDictionary['velocity']) != 0):
-                    for dataToWrite in list(reversed(self.dataDictionary['velocity'])):
-                        stringToWrite = ''
-                        for coordinate in dataToWrite:
-                            stringToWrite += str(coordinate)+' '
-                        stringToWrite = stringToWrite[:-1]
-                        templateData.insert(lineNo+1, str(stringToWrite)+'\n')
             elif "<mass" in templateData[lineNo]:
                 for dataToWrite in list(reversed(self.dataDictionary['mass'])):
                     templateData.insert(lineNo+1, str(dataToWrite)+'\n')

@@ -40,12 +40,12 @@ class hoomdRun:
         self.tau = 1.0
         #self.dtPhase1 = 1e-5
         self.dtPhase1 = 1e-3
-        self.dtPhase2 = 1e-6
-        self.dtPhase3 = 1e-5
+        self.dtPhase2 = 5e-3
+        self.dtPhase3 = 1e-6
         self.dtPhase4 = 1e-4
         self.dtPhase5 = 1e-3
         self.phase1RunLength = 2e5
-        self.phase2RunLength = 1e4
+        self.phase2RunLength = 2e5
         self.phase3RunLength = 1e4
         self.phase4RunLength = 1e6 # This is a maximum because sim is curtailed
         self.phase5RunLength = 5e4
@@ -426,7 +426,7 @@ class hoomdRun:
             phase1Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
             phase1Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
             run(self.phase1RunLength)
-            phase1DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase1'), all=True)
+            phase1DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase1'), vis=True)
             phase1Flex.disable()
             phase1Rig.disable()
             phase1DumpDCD.disable()
@@ -436,13 +436,13 @@ class hoomdRun:
             print "Phase 1 already completed for this morphology...skipping"
 
         if self.runPhase2 == True:
-            self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='hard', gradientRamp = 1.0)
-            phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=1, overwrite=True)
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='soft', gradientRamp = 1.0)
+            phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=1000, overwrite=True)
             phase2Step = integrate.mode_standard(dt = self.dtPhase2)
             phase2Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
             phase2Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
             run(self.phase2RunLength)
-            phase2DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase2'), all=True)
+            phase2DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase2'), vis=True)
             phase2Flex.disable()
             phase2Rig.disable()
             phase2DumpDCD.disable()
@@ -460,7 +460,7 @@ class hoomdRun:
             phase3Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
             phase3Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
             run(self.phase3RunLength)
-            phase3DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase3'), all=True)
+            phase3DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase3'), vis=True)
             phase3Flex.disable()
             phase3Rig.disable()
             phase3DumpDCD.disable()
@@ -508,7 +508,7 @@ class hoomdRun:
             if self.loadFromSnapshot == True:
                 print "Loading from snapshot..."
                 self.system.restore_snapshot(self.snapshotToLoad)
-            phase4DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase4'), all=True)
+            phase4DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase4'), vis=True)
             phase4.disable()
             phase4DumpDCD.disable()
             checkKEs.disable()
@@ -542,12 +542,12 @@ class hoomdRun:
             # self.maxStandardDeviation = 0
             # self.consecutiveDumpPeriodsUnderTarget = 0
             # checkTotalEs = analyze.callback(callback = self.getEnergies, period=self.dumpPeriod)
-            resetXML = dump.xml(filename=self.outputXML.replace('relaxed_', 'temp_'), all=True, restart=True, period=self.phase5RunLength/10)
+            resetXML = dump.xml(filename=self.outputXML.replace('relaxed_', 'temp_'), vis=True, restart=True, period=self.phase5RunLength/10)
             try:
                 run(self.phase5RunLength)
             except ExitHoomd as exitMessage:
                 print exitMessage
-            phase5DumpXML = dump.xml(filename=self.outputXML, all=True)
+            phase5DumpXML = dump.xml(filename=self.outputXML, vis=True)
             phase5.disable()
             phase5DumpDCD.disable()
             # checkTotalEs.disable()

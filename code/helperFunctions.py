@@ -281,7 +281,6 @@ def addTerminatingHydrogens(inputDictionary):
         inputDictionary['mass'].append(1.00794)
         inputDictionary['diameter'].append(0.53)
         inputDictionary['type'].append('H1')
-        inputDictionary['velocity'].append(inputDictionary['velocity'][terminatingCarbon[0]])
         # Terminating hydrogens should be flexible (they get added to the flexible group in hoomd)
         inputDictionary['body'].append(-1)
         #inputDictionary['body'].append(inputDictionary['body'][terminatingCarbon[0]])
@@ -308,7 +307,7 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
     # Dihedral as <dihedral
     # Improper as <improper (usually none in xml)
     # Charge as <charge
-    AtomDictionary = {'position':[], 'image':[], 'velocity':[], 'mass':[], 'diameter':[], 'type':[], 'body':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[], 'charge':[]}
+    AtomDictionary = {'position':[], 'image':[], 'mass':[], 'diameter':[], 'type':[], 'body':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[], 'charge':[]}
     record = False
     with open(xmlPath, 'r') as xmlFile:
         xmlData = xmlFile.readlines()
@@ -342,10 +341,6 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
             elif ('<image' in line):
                 record = True
                 recordType = 'image'
-                continue
-            elif ('<velocity' in line):
-                record = True
-                recordType = 'velocity'
                 continue
             elif ('<mass' in line):
                 record = True
@@ -385,7 +380,7 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
                 continue
             # Now we know what the variable is, append it to the dictionary data
             if (record == True):
-                if (recordType == 'position') or (recordType == 'velocity'):
+                if (recordType == 'position'):
                     # NOTE: VELOCITIES ARE NOT NORMALISED IN THE MORPHOLOGY FILE...DO THEY NEED TO BE SCALED BY SIGMA OR NOT? CURRENTLY THEY ARE.
                     # Write to dictionary as floats scaled by sigma
                     splitLine = line.split(' ')
@@ -460,11 +455,6 @@ def writeMorphologyXML(inputDictionary, outputFile):
     for imageData in inputDictionary['image']:
         linesToWrite.append(" ".join(str(coord) for coord in imageData)+'\n')
     linesToWrite.append('</image>\n')
-    # Velocity
-    linesToWrite.append('<velocity num="'+str(inputDictionary['natoms'])+'">\n')
-    for velocityData in inputDictionary['velocity']:
-        linesToWrite.append(" ".join(str(coord) for coord in velocityData)+'\n')
-    linesToWrite.append('</velocity>\n')
     # Mass
     linesToWrite.append('<mass num="'+str(inputDictionary['natoms'])+'">\n')
     for massData in inputDictionary['mass']:
@@ -804,7 +794,7 @@ def getsScale(outputDir, morphologyName):
 
 def loadDict(masterDict, moleculeIDs, bondPickleName):
     '''This function generates a molecule dictionary by picking the relevant data from a masterDict using a list of atomIDs given by moleculeIDs'''
-    moleculeDict = {'position':[], 'unwrapped_position':[], 'type':[], 'diameter':[], 'image':[], 'charge':[], 'mass':[], 'velocity':[]}
+    moleculeDict = {'position':[], 'unwrapped_position':[], 'type':[], 'diameter':[], 'image':[], 'charge':[], 'mass':[]}
     # First get atom-specific properties
     for atomID in moleculeIDs:
         for key in moleculeDict.keys():
