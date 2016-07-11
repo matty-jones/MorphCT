@@ -38,15 +38,14 @@ class hoomdRun:
         self.mainTrajDumpPeriod = 1e3
         self.T = 1.0
         self.tau = 1.0
-        #self.dtPhase1 = 1e-5
-        self.dtPhase1 = 1e-3
-        self.dtPhase2 = 5e-3
-        self.dtPhase3 = 1e-6
-        self.dtPhase4 = 1e-4
+        self.dtPhase1 = 1e-5
+        self.dtPhase2 = 5e-5
+        self.dtPhase3 = 1e-4
+        self.dtPhase4 = 5e-4
         self.dtPhase5 = 1e-3
-        self.phase1RunLength = 2e5
-        self.phase2RunLength = 2e5
-        self.phase3RunLength = 1e4
+        self.phase1RunLength = 1000
+        self.phase2RunLength = 1e5
+        self.phase3RunLength = 5e5
         self.phase4RunLength = 1e6 # This is a maximum because sim is curtailed
         self.phase5RunLength = 5e4
         self.outputXML = self.saveDirectory+'relaxed_'+self.morphologyName+'.xml'
@@ -419,24 +418,24 @@ class hoomdRun:
                 self.thioGroupIDs.append(atomID)
                     
         if self.runPhase1 == True:
-            self.initialiseRun(self.fileName, pairType='soft', gradientRamp = 1.0)
+            self.initialiseRun(self.fileName, pairType='hard')
             phase1DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase1'), period=1000, overwrite=True)
             phase1Step = integrate.mode_standard(dt = self.dtPhase1)
             # phase1 = integrate.brownian(group=group.all(), seed=3, dscale=1e11, T=self.T)
-            phase1Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
-            phase1Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
+            phase1Flex = integrate.nve(group=self.sideChainsGroup, limit=0.001)
+            #phase1Rig = integrate.nve_rigid(group=self.thioGroup)
             run(self.phase1RunLength)
             phase1DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase1'), vis=True)
             phase1Flex.disable()
-            phase1Rig.disable()
+            #phase1Rig.disable()
             phase1DumpDCD.disable()
-            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase1DumpDCD, phase1Step, phase1Flex, phase1Rig, phase1DumpXML
+            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase1DumpDCD, phase1Step, phase1Flex, phase1DumpXML#, phase1Rig
             init.reset()
         else:
             print "Phase 1 already completed for this morphology...skipping"
 
         if self.runPhase2 == True:
-            self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='soft', gradientRamp = 1.0)
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='hard')
             phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=1000, overwrite=True)
             phase2Step = integrate.mode_standard(dt = self.dtPhase2)
             phase2Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
