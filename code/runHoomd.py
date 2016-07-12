@@ -38,15 +38,16 @@ class hoomdRun:
         self.mainTrajDumpPeriod = 1e3
         self.T = 1.0
         self.tau = 1.0
-        self.dtPhase1 = 1e-5
-        self.dtPhase2 = 5e-5
-        self.dtPhase3 = 1e-4
-        self.dtPhase4 = 5e-4
+        #self.dtPhase1 = 1e-5
+        self.dtPhase1 = 1e-3
+        self.dtPhase2 = 1e-3
+        self.dtPhase3 = 1e-3
+        self.dtPhase4 = 1e-6
         self.dtPhase5 = 1e-3
-        self.phase1RunLength = 1000
+        self.phase1RunLength = 1e5
         self.phase2RunLength = 1e5
-        self.phase3RunLength = 5e5
-        self.phase4RunLength = 1e6 # This is a maximum because sim is curtailed
+        self.phase3RunLength = 1e5
+        self.phase4RunLength = 1e5 # This is a maximum because sim is curtailed
         self.phase5RunLength = 5e4
         self.outputXML = self.saveDirectory+'relaxed_'+self.morphologyName+'.xml'
         self.outputDCD = self.saveDirectory+'relaxed_'+self.morphologyName+'.dcd'
@@ -423,29 +424,30 @@ class hoomdRun:
             phase1Step = integrate.mode_standard(dt = self.dtPhase1)
             # phase1 = integrate.brownian(group=group.all(), seed=3, dscale=1e11, T=self.T)
             phase1Flex = integrate.nve(group=self.sideChainsGroup, limit=0.001)
-            #phase1Rig = integrate.nve_rigid(group=self.thioGroup)
+            #phase1Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
+            phase1Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
             run(self.phase1RunLength)
             phase1DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase1'), vis=True)
             phase1Flex.disable()
-            #phase1Rig.disable()
+            phase1Rig.disable()
             phase1DumpDCD.disable()
-            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase1DumpDCD, phase1Step, phase1Flex, phase1DumpXML#, phase1Rig
+            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase1DumpDCD, phase1Step, phase1Flex, phase1DumpXML, phase1Rig
             init.reset()
         else:
             print "Phase 1 already completed for this morphology...skipping"
 
         if self.runPhase2 == True:
-            self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='hard')
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='soft', gradientRamp = 1.0)
             phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=1000, overwrite=True)
             phase2Step = integrate.mode_standard(dt = self.dtPhase2)
-            phase2Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
+            #phase2Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
             phase2Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
             run(self.phase2RunLength)
             phase2DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase2'), vis=True)
-            phase2Flex.disable()
+            #phase2Flex.disable()
             phase2Rig.disable()
             phase2DumpDCD.disable()
-            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase2DumpDCD, phase2Step, phase2Flex, phase2Rig, phase2DumpXML
+            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase2DumpDCD, phase2Step, phase2Rig, phase2DumpXML#, phase2Flex
             init.reset()
         else:
             print "Phase 2 already completed for this morphology...skipping"
@@ -453,7 +455,7 @@ class hoomdRun:
         # debugDump = dump.dcd(filename=self.outputDCD, period=1, overwrite=False)
 
         if self.runPhase3 == True:
-            self.initialiseRun(self.outputXML.replace('relaxed', 'phase2'), pairType='hard')
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase2'), pairType='soft')
             phase3DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase3'), period=1, overwrite=True)
             phase3Step = integrate.mode_standard(dt = self.dtPhase3)
             phase3Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
@@ -470,55 +472,42 @@ class hoomdRun:
         # initDump.disable()
         # debugDump = dump.dcd(filename=self.outputDCD, period=1, overwrite=False)
 
-        
-        raise SystemError('STOP HERE TO CHECK OUTPUTS')
-        
 
         if self.runPhase4 == True:
             self.initialiseRun(self.outputXML.replace('relaxed', 'phase3'))
             phase4DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase4'), period=self.dumpPeriod, overwrite=True)
             phase4Step = integrate.mode_standard(dt=self.dtPhase4)
-            phase4 = integrate.nvt(group=group.all(), T=self.T, tau=self.tau)
-            # timesteps = 6
-            # currentTimestep = 1
-            # while True:
-            #     if currentTimestep == timesteps:
-            #         break
-            #     # snapshot = moleculeData.take_snapshot()
-            #     # LEAVE COM FIX FOR NOW, INSTEAD LOCK SIDECHAINS AFTER SHORT TRAJ RUN
-            #     # self.fixCOM(thioAtoms)
-            #     # self.fixCOM(alk1Atoms)
-            #     # self.fixCOM(alk2Atoms)
-            #     run(1e3)
-            #     currentTimestep += 1
-            self.initialPotentialEnergies = []
-            self.initialKineticEnergies = []
-            self.loadFromSnapshot = False
-            self.lowestKE = 9e999
-            self.KEIncreased = 0
-            self.firstKEValue = True
+            phase4Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
+            phase4Rig = integrate.nvt(group=self.thioGroup, T=self.T, tau=self.tau)
+            run(self.phase4RunLength)
+            # self.initialPotentialEnergies = []
+            # self.initialKineticEnergies = []
+            # self.loadFromSnapshot = False
+            # self.lowestKE = 9e999
+            # self.KEIncreased = 0
+            # self.firstKEValue = True
             # Modeler_hoomd wipes out the velocity data, and so we start with 0 kinetic energy. Skip this step (firstKEValue == True). Then, take the snapshot with the lowest KE.
-            checkKEs = analyze.callback(callback = self.checkKE, period=self.dumpPeriod)
-            try:
-                run_upto(self.phase4RunLength)
-                #run(self.maximumInitialRunLength)
-            except ExitHoomd as exitMessage:
-                print exitMessage
-            if self.loadFromSnapshot == True:
-                print "Loading from snapshot..."
-                self.system.restore_snapshot(self.snapshotToLoad)
-            phase4DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase4'), vis=True)
+            #checkKEs = analyze.callback(callback = self.checkKE, period=self.dumpPeriod)
+            # try:
+            #     run_upto(self.phase4RunLength)
+            #     #run(self.maximumInitialRunLength)
+            # except ExitHoomd as exitMessage:
+            #     print exitMessage
+            # if self.loadFromSnapshot == True:
+            #     print "Loading from snapshot..."
+            #     self.system.restore_snapshot(self.snapshotToLoad)
+            phase4DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase4'), viz=True)
             phase4.disable()
             phase4DumpDCD.disable()
-            checkKEs.disable()
-            del self.system, self.snapshotToLoad, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase4DumpDCD, phase4Step, phase4, phase4DumpXML, checkKEs, self.initialKineticEnergies, self.initialPotentialEnergies, self.loadFromSnapshot, exitMessage
+            #checkKEs.disable()
+            del self.system, self.snapshotToLoad, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase4DumpDCD, phase4Step, phase4Flex, phase4Rig, phase4DumpXML#, checkKEs, self.initialKineticEnergies, self.initialPotentialEnergies, self.loadFromSnapshot, exitMessage
             # print dir()
             # print dir(self)
             init.reset()
         else:
             print "Phase 4 already completed for this morphology. Skipping..."
 
-            
+        raise SystemError('Phase 4 Completed. Check Outputs')
         ##### TESTING: FOR NOW JUST RUN THIS FOR AS LONG AS POSSIBLE TO SEE HOW THE ENERGY EVOLVES
         # return self.outputXML
         print os.listdir(self.saveDirectory)
