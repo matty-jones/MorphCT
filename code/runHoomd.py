@@ -35,7 +35,7 @@ class hoomdRun:
         self.eScale = eScale
         self.sScale = sScale
         self.dumpPeriod = 1e2
-        self.mainTrajDumpPeriod = 1e3
+        self.mainTrajDumpPeriod = 1e2
         self.T = 1.0
         self.tau = 1.0
         #self.dtPhase1 = 1e-5
@@ -43,12 +43,12 @@ class hoomdRun:
         self.dtPhase2 = 1e-15
         self.dtPhase3 = 1e-12
         self.dtPhase4 = 1e-9
-        self.dtPhase5 = 1e-3
+        self.dtPhase5 = 1e-6
         self.phase1RunLength = 1e4 
         self.phase2RunLength = 1e4 # THIS IS NOT USED (FIRE RUNS UNTIL CONVERGED)
         self.phase3RunLength = 1e4 
         self.phase4RunLength = 1e4 # This is a maximum because sim is curtailed
-        self.phase5RunLength = 5e4
+        self.phase5RunLength = 1e4
         self.outputXML = self.saveDirectory+'relaxed_'+self.morphologyName+'.xml'
         self.outputDCD = self.saveDirectory+'relaxed_'+self.morphologyName+'.dcd'
         self.outputLOG = self.saveDirectory+'energies_'+self.morphologyName+'.log'
@@ -460,7 +460,7 @@ class hoomdRun:
 
         if self.runPhase3 == True:
             self.initialiseRun(self.outputXML.replace('relaxed', 'phase2'), pairType='hard')
-            phase3DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase3'), period=1, overwrite=True)
+            phase3DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase3'), period=100, overwrite=True)
             phase3Step = integrate.mode_standard(dt = self.dtPhase3)
             phase3Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
             phase3Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
@@ -482,7 +482,7 @@ class hoomdRun:
             phase4DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase4'), period=self.dumpPeriod, overwrite=True)
             phase4Step = integrate.mode_standard(dt=self.dtPhase4)
             phase4Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
-            phase4Rig = integrate.nvt(group=self.thioGroup, T=self.T, tau=self.tau)
+            phase4Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
             run(self.phase4RunLength)
             # self.initialPotentialEnergies = []
             # self.initialKineticEnergies = []
@@ -500,8 +500,9 @@ class hoomdRun:
             # if self.loadFromSnapshot == True:
             #     print "Loading from snapshot..."
             #     self.system.restore_snapshot(self.snapshotToLoad)
-            phase4DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase4'), viz=True)
-            phase4.disable()
+            phase4DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase4'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
+            phase4Flex.disable()
+            phase4Rig.disable()
             phase4DumpDCD.disable()
             #checkKEs.disable()
             del self.system, self.snapshotToLoad, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase4DumpDCD, phase4Step, phase4Flex, phase4Rig, phase4DumpXML#, checkKEs, self.initialKineticEnergies, self.initialPotentialEnergies, self.loadFromSnapshot, exitMessage
@@ -511,14 +512,13 @@ class hoomdRun:
         else:
             print "Phase 4 already completed for this morphology. Skipping..."
 
-        raise SystemError('Phase 4 Completed. Check Outputs')
         ##### TESTING: FOR NOW JUST RUN THIS FOR AS LONG AS POSSIBLE TO SEE HOW THE ENERGY EVOLVES
         # return self.outputXML
         print os.listdir(self.saveDirectory)
         if (self.runPhase5 == True) or (self.continuePhase5 == True):
             # Then lock the sidechains in place and run the thiophenes for longer to make sure they equilibrate properly
             if self.continuePhase5 == False:
-                self.initialiseRun(self.outputXML.replace('relaxed', 'phase4'))
+                self.initialiseRun(self.outputXML.replace('relaxed', 'phase4'), pairType = 'hard')
             else:
                 self.initialiseRun(self.continueFile)
                 # underscoreList = helperFunctions.findIndex(self.continueFile, '_')
@@ -526,7 +526,8 @@ class hoomdRun:
                 # self.mainRunLength -= timestepsCompleted
             phase5DumpDCD = dump.dcd(filename=self.outputDCD, period=self.mainTrajDumpPeriod, overwrite=True)
             phase5Step = integrate.mode_standard(dt=self.dtPhase5)
-            phase5 = integrate.nvt(group=self.thioGroup, T=self.T, tau=self.tau)
+            phase5Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
+            phase5Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
             # self.mainPotentialEnergies = []
             # self.mainKineticEnergies = []
             # self.mainTotalEnergies = []
@@ -540,10 +541,11 @@ class hoomdRun:
             except ExitHoomd as exitMessage:
                 print exitMessage
             phase5DumpXML = dump.xml(filename=self.outputXML, position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
-            phase5.disable()
+            phase5Flex.disable()
+            phase5Rig.disable()
             phase5DumpDCD.disable()
             # checkTotalEs.disable()
-            del self.system, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase5DumpDCD, phase5Step, phase5, phase5DumpXML
+            del self.system, self.thioGroup, self.alk1Group, self.alk2Group, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase5DumpDCD, phase5Step, phase5Flex, phase5Rig, phase5DumpXML
             init.reset()
             # Run is complete so delete any temporary files
             saveFiles = os.listdir(self.saveDirectory)
