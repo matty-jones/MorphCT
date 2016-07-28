@@ -40,14 +40,14 @@ class hoomdRun:
         self.tau = 1.0
         #self.dtPhase1 = 1e-5
         self.dtPhase1 = 1e-3
-        self.dtPhase2 = 1e-3
-        self.dtPhase3 = 1e-3
-        self.dtPhase4 = 1e-6
+        self.dtPhase2 = 1e-15
+        self.dtPhase3 = 1e-12
+        self.dtPhase4 = 1e-9
         self.dtPhase5 = 1e-3
-        self.phase1RunLength = 1e5
-        self.phase2RunLength = 1e5
-        self.phase3RunLength = 1e5
-        self.phase4RunLength = 1e5 # This is a maximum because sim is curtailed
+        self.phase1RunLength = 1e4 
+        self.phase2RunLength = 1e4 # THIS IS NOT USED (FIRE RUNS UNTIL CONVERGED)
+        self.phase3RunLength = 1e4 
+        self.phase4RunLength = 1e4 # This is a maximum because sim is curtailed
         self.phase5RunLength = 5e4
         self.outputXML = self.saveDirectory+'relaxed_'+self.morphologyName+'.xml'
         self.outputDCD = self.saveDirectory+'relaxed_'+self.morphologyName+'.dcd'
@@ -332,18 +332,20 @@ class hoomdRun:
         # Alkyl Bond Angles
         self.a.set_coeff('C3-C2-C9',k=166.545*eScale,t0=2.15335)
         self.a.set_coeff('C2-C3-C4',k=120.14*eScale,t0=2.01481)
-        self.a.set_coeff('C2-C3-H1',k=74.06*eScale,t0=1.90571)
+
         self.a.set_coeff('C1-C2-C3',k=166.32*eScale,t0=2.17388)
         self.a.set_coeff('C3-C4-C5',k=58.35*eScale,t0=1.96699)
+        self.a.set_coeff('C4-C5-C6',k=58.35*eScale,t0=1.96699)
+        self.a.set_coeff('C5-C6-C7',k=58.35*eScale,t0=1.96699)
+        self.a.set_coeff('C6-C7-C8',k=58.35*eScale,t0=1.96699)
+        # Alkyl Bond Angles, with Hydrogens Only
+        self.a.set_coeff('C2-C3-H1',k=74.06*eScale,t0=1.90571)
         self.a.set_coeff('C3-C4-H1',k=37.5*eScale,t0=1.93208)
         self.a.set_coeff('C4-C3-H1',k=37.5*eScale,t0=1.93208)
-        self.a.set_coeff('C4-C5-C6',k=58.35*eScale,t0=1.96699)
         self.a.set_coeff('C4-C5-H1',k=37.5*eScale,t0=1.93208)
         self.a.set_coeff('C5-C4-H1',k=37.5*eScale,t0=1.93208)
-        self.a.set_coeff('C5-C6-C7',k=58.35*eScale,t0=1.96699)
         self.a.set_coeff('C5-C6-H1',k=37.5*eScale,t0=1.93208)
         self.a.set_coeff('C6-C5-H1',k=37.5*eScale,t0=1.93208)
-        self.a.set_coeff('C6-C7-C8',k=58.35*eScale,t0=1.96699)
         self.a.set_coeff('C6-C7-H1',k=37.5*eScale,t0=1.93208)
         self.a.set_coeff('C7-C6-H1',k=37.5*eScale,t0=1.93208)
         self.a.set_coeff('C7-C8-H1',k=37.5*eScale,t0=1.93208)
@@ -353,7 +355,7 @@ class hoomdRun:
         self.a.set_coeff('H1-C6-H1',k=33.0*eScale,t0=1.88146)
         self.a.set_coeff('H1-C5-H1',k=33.0*eScale,t0=1.88146)
         self.a.set_coeff('H1-C4-H1',k=33.0*eScale,t0=1.88146)
-        self.a.set_coeff('H1-C3-H1',k=33.0*eScale,t0=1.88146)
+        self.a.set_coeff('H1-C3-H1',k=33.0*eScale,t0=1.88146)   
         # Inter-monomer Bond Angles
         self.a.set_coeff('C1-C10-C9',k=54.694*eScale,t0=2.27137)
         self.a.set_coeff('C1-C10-S1',k=41.74*eScale,t0=2.08687)
@@ -419,53 +421,55 @@ class hoomdRun:
                 self.thioGroupIDs.append(atomID)
                     
         if self.runPhase1 == True:
-            self.initialiseRun(self.fileName, pairType='hard')
-            phase1DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase1'), period=1000, overwrite=True)
+            self.initialiseRun(self.fileName, pairType='soft', gradientRamp = 5.0)
+            phase1DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase1'), period=10, overwrite=True)
             phase1Step = integrate.mode_standard(dt = self.dtPhase1)
             # phase1 = integrate.brownian(group=group.all(), seed=3, dscale=1e11, T=self.T)
-            phase1Flex = integrate.nve(group=self.sideChainsGroup, limit=0.001)
-            #phase1Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
+            #phase1Flex = integrate.nve(group=self.sideChainsGroup, limit=0.001)
+            phase1Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
             phase1Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
             run(self.phase1RunLength)
-            phase1DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase1'), vis=True)
+            phase1DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase1'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
             phase1Flex.disable()
             phase1Rig.disable()
             phase1DumpDCD.disable()
-            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase1DumpDCD, phase1Step, phase1Flex, phase1DumpXML, phase1Rig
+            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase1DumpDCD, phase1Step, phase1DumpXML, phase1Rig, phase1Flex
             init.reset()
         else:
             print "Phase 1 already completed for this morphology...skipping"
 
+            
         if self.runPhase2 == True:
-            self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='soft', gradientRamp = 1.0)
-            phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=1000, overwrite=True)
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='hard')
+            phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=100, overwrite=True)
             phase2Step = integrate.mode_standard(dt = self.dtPhase2)
-            #phase2Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
+            phase2Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
             phase2Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
             run(self.phase2RunLength)
-            phase2DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase2'), vis=True)
-            #phase2Flex.disable()
+            phase2DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase2'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
+            phase2Flex.disable()
             phase2Rig.disable()
             phase2DumpDCD.disable()
-            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase2DumpDCD, phase2Step, phase2Rig, phase2DumpXML#, phase2Flex
+            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase2DumpDCD, phase2Step, phase2Rig, phase2DumpXML, phase2Flex
             init.reset()
         else:
             print "Phase 2 already completed for this morphology...skipping"
         # initDump.disable()
         # debugDump = dump.dcd(filename=self.outputDCD, period=1, overwrite=False)
 
+
         if self.runPhase3 == True:
-            self.initialiseRun(self.outputXML.replace('relaxed', 'phase2'), pairType='soft')
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase2'), pairType='hard')
             phase3DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase3'), period=1, overwrite=True)
             phase3Step = integrate.mode_standard(dt = self.dtPhase3)
             phase3Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
             phase3Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
             run(self.phase3RunLength)
-            phase3DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase3'), vis=True)
+            phase3DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase3'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
             phase3Flex.disable()
             phase3Rig.disable()
             phase3DumpDCD.disable()
-            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase3DumpDCD, phase3Step, phase3Flex, phase3Rig, phase3DumpXML
+            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase3DumpDCD, phase3Step, phase3Rig, phase3DumpXML, phase3Flex
             init.reset()
         else:
             print "Phase 3 already completed for this morphology...skipping"
@@ -530,12 +534,12 @@ class hoomdRun:
             # self.maxStandardDeviation = 0
             # self.consecutiveDumpPeriodsUnderTarget = 0
             # checkTotalEs = analyze.callback(callback = self.getEnergies, period=self.dumpPeriod)
-            resetXML = dump.xml(filename=self.outputXML.replace('relaxed_', 'temp_'), vis=True, restart=True, period=self.phase5RunLength/10)
+            resetXML = dump.xml(filename=self.outputXML.replace('relaxed_', 'temp_'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True, restart=True, period=self.phase5RunLength/10)
             try:
                 run(self.phase5RunLength)
             except ExitHoomd as exitMessage:
                 print exitMessage
-            phase5DumpXML = dump.xml(filename=self.outputXML, vis=True)
+            phase5DumpXML = dump.xml(filename=self.outputXML, position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
             phase5.disable()
             phase5DumpDCD.disable()
             # checkTotalEs.disable()
@@ -581,6 +585,13 @@ class hoomdRun:
                 raise ExitHoomd("Standard Deviation Condition Met", self.morphologyName)
         return 0
 
+    def checkConvergence(self, timestepNumber):
+        print "Flex Convergence =", self.phase2Flex.has_converged()
+        #print "Rig Convergence =", self.phase2Rig.has_converged()
+        if self.phase2Flex.has_converged():# and self.phase2Rig.has_converged():
+            raise ExitHoomd("Position Minimisation has converged.")
+            
+    
         
     def checkKE(self, timestepNumber):
         currentPE = self.energyLog.query('potential_energy')
