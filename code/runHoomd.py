@@ -40,14 +40,14 @@ class hoomdRun:
         #self.dtPhase1 = 1e-5
         self.dtPhase1 = 1e-3
         self.dtPhase2 = 1e-5
-        self.dtPhase3 = 5e-5
+        self.dtPhase3 = 1e-4
         self.dtPhase4 = 1e-4
         self.dtPhase5 = 5e-4
         self.dtPhase6 = 1e-3
         self.phase1RunLength = 1e4 
-        self.phase2RunLength = 1e3
-        self.phase3RunLength = 1e4 
-        self.phase4RunLength = 1e4
+        self.phase2RunLength = 1e5
+        self.phase3RunLength = 1e5 
+        self.phase4RunLength = 1e5
         self.phase5RunLength = 1e5
         self.phase6RunLength = 1e5
         self.outputXML = self.saveDirectory+'relaxed_'+self.morphologyName+'.xml'
@@ -452,17 +452,18 @@ class hoomdRun:
         else:
             print "Phase 1 already completed for this morphology...skipping"
 
-        exit()
         if self.runPhase2 == True:
-            self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='hard', rigidBodies=False)
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='hard', rigidBodies=True)
             phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=100, overwrite=True)
             phase2Step = integrate.mode_standard(dt = self.dtPhase2)
-            phase2 = integrate.nve(group=group.all(), limit=0.001)
+            phase2Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
+            phase2Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
             run(self.phase2RunLength)
             phase2DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase2'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
-            phase2.disable()
+            phase2Flex.disable()
+            phase2Rig.disable()
             phase2DumpDCD.disable()
-            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase2DumpDCD, phase2Step, phase2DumpXML, phase2
+            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase2DumpDCD, phase2Step, phase2DumpXML, phase2Flex, phase2Rig
             init.reset()
         else:
             print "Phase 2 already completed for this morphology...skipping"
@@ -474,19 +475,23 @@ class hoomdRun:
             self.initialiseRun(self.outputXML.replace('relaxed', 'phase2'), pairType='hard', rigidBodies=False)
             phase3DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase3'), period=100, overwrite=True)
             phase3Step = integrate.mode_standard(dt = self.dtPhase3)
-            phase3 = integrate.nvt(group=group.all(), T=self.T, tau=self.tau)
+            phase3Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
+            phase3Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
             run(self.phase3RunLength)
             phase3DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase3'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
-            phase3.disable()
+            phase3Flex.disable()
+            phase3Rig.disable()
             phase3DumpDCD.disable()
-            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase3DumpDCD, phase3Step, phase3DumpXML, phase3
+            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase3DumpDCD, phase3Step, phase3DumpXML, phase3Flex, phase3Rig
             init.reset()
         else:
             print "Phase 3 already completed for this morphology...skipping"
         # initDump.disable()
         # debugDump = dump.dcd(filename=self.outputDCD, period=1, overwrite=False)
 
+        raise SystemError("DID IT WORK!??!?!!")
 
+                
         if self.runPhase4 == True:
             self.initialiseRun(self.outputXML.replace('relaxed', 'phase3'))
             phase4DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase4'), period=self.dumpPeriod, overwrite=True)
