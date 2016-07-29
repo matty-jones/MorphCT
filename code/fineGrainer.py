@@ -67,7 +67,10 @@ class morphology:
             ghostDictionary.pop(key)
         # Increment the bond IDs to match the ghost particle IDs
         for bondNo, bond in enumerate(ghostDictionary['bond']):
-            ghostDictionary['bond'][bondNo] = [bond[0], bond[1]+totalNumberOfAtoms, bond[2]+totalNumberOfAtoms]
+            if ('C4' not in bond[0]) and ('C7' not in bond[0]):
+                ghostDictionary['bond'][bondNo] = [bond[0], bond[1]+totalNumberOfAtoms, bond[2]+totalNumberOfAtoms]
+            else:
+                ghostDictionary['bond'][bondNo] = [bond[0], bond[1]+totalNumberOfAtoms, bond[2]]
         # Now append all ghosts to morphology
         for key in ghostDictionary.keys():
             AAMorphologyDict[key] += ghostDictionary[key]
@@ -439,6 +442,7 @@ class atomistic:
             thisMonomerDictionary = helperFunctions.addWrappedPositions(thisMonomerDictionary)
             thisMonomerDictionary = helperFunctions.addMasses(thisMonomerDictionary)
             thisMonomerDictionary = helperFunctions.addDiameters(thisMonomerDictionary)
+
             
             #### DEBUG CODE ####
             # listOfMasses = []
@@ -458,11 +462,11 @@ class atomistic:
             #####################
 
 
-            # Now add in the two ghost particles:
+            # Now add in the two ghost particles for the thiophene ring:
             # Type T = COM ghost particle of the thiophene ring that has the same rigid body as the thiophene
             #          atoms, but does not interact with them. Its initial position is has the COM from the
             #          CG morph.
-            # Type X = Anchor particle that is never integrated over, has no interactions with anything except
+            # Type X1 = Anchor particle that is never integrated over, has no interactions with anything except
             #          a bond to the corresponding type T. The type X particle never moves from its position,
             #          which is the Type A position from the CG morph (COM of Thiophene ring)
 
@@ -474,18 +478,58 @@ class atomistic:
             ghostDictionary['body'].append(currentMonomerIndex)
             ghostDictionary['charge'].append(0.0)
 
-            # Type X:
+            # Type X1:
             ghostDictionary['unwrapped_position'].append(list(thioPosn))
             ghostDictionary['mass'].append(1.0)
             ghostDictionary['diameter'].append(1.0)
-            ghostDictionary['type'].append('X')
+            ghostDictionary['type'].append('X1')
             ghostDictionary['body'].append(-1)
             ghostDictionary['charge'].append(0.0)
 
-            # Now add the T-X bond
-            ghostDictionary['bond'].append(['T-X', 2*currentMonomerIndex, 2*currentMonomerIndex+1])
+
+            # Now add the T-X1 bond
+            ghostDictionary['bond'].append(['T-X1', 4*currentMonomerIndex, 4*currentMonomerIndex+1])
+            # NOTE: The 4x is because I am adding 4 different ghost particles to the system
+            # It keeps the numbering here constant. Later on it gets added on
             
-                
+
+            # Now add in the two ghost particles for the alkyl sidechains:
+            # Type X2 = Anchor particle that is never integrated over, has no interactions with anything except
+            #           except a bond to the alkyl sidechain atom C4 to constrain the alk1 COM posn.
+            #           Its initial position is has the COM from the CG morph.
+            # Type X3 = Anchor particle that is never integrated over, has no interactions with anything except
+            #           except a bond to the alkyl sidechain atom C7 to constrain the alk2 COM posn.
+            #           Its initial position is has the COM from the CG morph.
+
+            # Type X2:
+            ghostDictionary['unwrapped_position'].append(list(alk1Posn))
+            ghostDictionary['mass'].append(1.0)
+            ghostDictionary['diameter'].append(1.0)
+            ghostDictionary['type'].append('X2')
+            ghostDictionary['body'].append(-1)
+            ghostDictionary['charge'].append(0.0)
+
+            for atomID, atomType in enumerate(thisMonomerDictionary['type']):
+                if atomType == 'C4':
+                    C4Index = atomID
+                if atomType == 'C7':
+                    C7Index = atomID
+                    
+            # Now add the X2-C4 bond
+            ghostDictionary['bond'].append(['X2-C4', 4*currentMonomerIndex+2, self.noAtomsInMorphology + noAtomsInMolecule + C4Index])
+            
+            # Type X3:
+            ghostDictionary['unwrapped_position'].append(list(alk2Posn))
+            ghostDictionary['mass'].append(1.0)
+            ghostDictionary['diameter'].append(1.0)
+            ghostDictionary['type'].append('X3')
+            ghostDictionary['body'].append(-1)
+            ghostDictionary['charge'].append(0.0)
+
+            # Now add the X3-C7 bond
+            ghostDictionary['bond'].append(['X3-C7', 4*currentMonomerIndex+3, self.noAtomsInMorphology + noAtomsInMolecule + C7Index])
+
+            
                                    
             # Now add in the inter-monomer bond.
             # In the template, the inter-monomer bonding carbons are given by type C10 and C1, which are thioAAIDs 0 and 3

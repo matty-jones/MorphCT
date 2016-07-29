@@ -205,8 +205,8 @@ class hoomdRun:
         self.pair.pair_coeff.set('H1','S1',A=0.087*eScale,r_cut=2.979*sScale,gamma = gammaVal)
         self.pair.pair_coeff.set('S1','S1',A=0.250*eScale,r_cut=3.550*sScale,gamma = gammaVal)
         # Set Ghost Particle Interactions
-        for ghostAtomType in ['T', 'X']:
-            for realAtomType in ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'S1', 'H1', 'T', 'X']:
+        for ghostAtomType in ['T', 'X1', 'X2', 'X3']:
+            for realAtomType in ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'S1', 'H1', 'T', 'X1', 'X2', 'X2', 'X3']:
                 self.pair.pair_coeff.set(ghostAtomType, realAtomType, A=0, r_cut = 0, gamma = gammaVal)
         print self.eScale, eScale
 
@@ -294,8 +294,8 @@ class hoomdRun:
         self.pair.pair_coeff.set('H1','S1',epsilon=0.087*eScale,sigma=2.979*sScale)
         self.pair.pair_coeff.set('S1','S1',epsilon=0.250*eScale,sigma=3.550*sScale)
         # Set Ghost Particle Interactions
-        for ghostAtomType in ['T', 'X']:
-            for realAtomType in ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'S1', 'H1', 'T', 'X']:
+        for ghostAtomType in ['T', 'X1', 'X2', 'X3']:
+            for realAtomType in ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'S1', 'H1', 'T', 'X1', 'X2', 'X3']:
                 self.pair.pair_coeff.set(ghostAtomType, realAtomType, epsilon=0, sigma = 0)
         print self.eScale, eScale
 
@@ -328,7 +328,9 @@ class hoomdRun:
         self.b.bond_coeff.set('C1-H1',k=741.26*(eScale/(sScale**2)),r0=1.0822*sScale)
         self.b.bond_coeff.set('C10-H1',k=741.26*(eScale/(sScale**2)),r0=1.0822*sScale)
         # Ghost-Anchor Bonds
-        self.b.bond_coeff.set('T-X',k=1E6,r0=0)
+        self.b.bond_coeff.set('T-X1',k=1E6,r0=0)
+        self.b.bond_coeff.set('X2-C4',k=1E6,r0=0)
+        self.b.bond_coeff.set('X3-C7',k=1E6,r0=0)
 
         
     def setHarmonicAngleParameters(self, eScale, sScale):
@@ -450,7 +452,7 @@ class hoomdRun:
         else:
             print "Phase 1 already completed for this morphology...skipping"
 
-            
+        exit()
         if self.runPhase2 == True:
             self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='hard', rigidBodies=False)
             phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=100, overwrite=True)
