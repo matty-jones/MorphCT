@@ -1,6 +1,5 @@
 from hoomd_script import *
 import numpy as np
-import modeler_hoomd as mh
 import copy
 import matplotlib
 matplotlib.use('Agg')
