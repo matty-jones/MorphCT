@@ -434,6 +434,7 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
 
 
 def removeRigidBodies(inputDictionary):
+    print "Removing rigid bodies..."
     atomsToRemove = []
     bondsToRemove = []
     # First remove the anchor points
@@ -446,12 +447,15 @@ def removeRigidBodies(inputDictionary):
             bondsToRemove.append(index)
     for atomIndex in sorted(atomsToRemove, reverse=True):
         for key in ['position', 'image', 'mass', 'diameter', 'type', 'body', 'charge']:
-            inputDictionary[key][atomIndex].pop()
+            inputDictionary[key].pop(atomIndex)
     for bondIndex in sorted(bondsToRemove, reverse=True):
-        inputDictionary['bond'][bondIndex].pop()
-    # Finally, undo all of the rigid bodies
+        inputDictionary['bond'].pop(bondIndex)
+    # Undo all of the rigid bodies
     for index, bodyData in enumerate(inputDictionary['body']):
         inputDictionary['body'][index] = -1
+    # Finally, update the number of atoms in the morphology
+    inputDictionary['natoms'] -= len(atomsToRemove)
+    print len(atomsToRemove), "atoms and", len(bondsToRemove), "bonds removed."
     return inputDictionary
 
 
