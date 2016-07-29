@@ -433,6 +433,28 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
     return AtomDictionary
 
 
+def removeRigidBodies(inputDictionary):
+    atomsToRemove = []
+    bondsToRemove = []
+    # First remove the anchor points
+    for index, typeData in enumerate(inputDictionary['type']):
+        if typeData == 'T' or typeData == 'X':
+            atomsToRemove.append(index)
+    # Then remove the bonds
+    for index, bondData in enumerate(inputDictionary['bond']):
+        if ('T' in bondData[0]) or ('X' in bondData[0]):
+            bondsToRemove.append(index)
+    for atomIndex in sorted(atomsToRemove, reverse=True):
+        for key in ['position', 'image', 'mass', 'diameter', 'type', 'body', 'charge']:
+            inputDictionary[key][atomIndex].pop()
+    for bondIndex in sorted(bondsToRemove, reverse=True):
+        inputDictionary['bond'][bondIndex].pop()
+    # Finally, undo all of the rigid bodies
+    for index, bodyData in enumerate(inputDictionary['body']):
+        inputDictionary['body'][index] = -1
+    return inputDictionary
+
+
 def writeMorphologyXML(inputDictionary, outputFile):
     # First, need to check the positions of the atoms to ensure that everything is correctly contained inside the box
     print "Checking wrapped positions before writing XML..."
