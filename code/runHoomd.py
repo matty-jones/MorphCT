@@ -434,7 +434,7 @@ class hoomdRun:
                 self.thioGroupIDs.append(atomID)
                     
         if self.runPhase1 == True:
-            self.initialiseRun(self.fileName, pairType='soft', gradientRamp = 5.0)
+            self.initialiseRun(self.fileName, pairType='soft', gradientRamp = 1.0)
             phase1DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase1'), period=10, overwrite=True)
             phase1Step = integrate.mode_standard(dt = self.dtPhase1)
             # phase1 = integrate.brownian(group=group.all(), seed=3, dscale=1e11, T=self.T)
