@@ -42,15 +42,15 @@ class hoomdRun:
         # Phase 1 = KE-truncated relaxation with pair potentials off
         self.dtPhase1 = 1e-3
         # Phase 2+ = LJ interactions turned on after overlap has been reduced
-        self.dtPhase2 = 1e-9
-        self.dtPhase3 = 1e-7
-        self.dtPhase4 = 1e-5
+        self.dtPhase2 = 1e-12
+        self.dtPhase3 = 1e-9
+        self.dtPhase4 = 1e-6
         self.dtPhase5 = 5e-4
         self.dtPhase6 = 1e-3
         self.phase1RunLength = 1e5 # Maximum, this run is KE truncated
-        self.phase2RunLength = 1e5
-        self.phase3RunLength = 1e5 
-        self.phase4RunLength = 1e5
+        self.phase2RunLength = 1e4
+        self.phase3RunLength = 1e4 
+        self.phase4RunLength = 1e4
         self.phase5RunLength = 1e5
         self.phase6RunLength = 1e5
         self.outputXML = self.saveDirectory+'relaxed_'+self.morphologyName+'.xml'
@@ -112,6 +112,8 @@ class hoomdRun:
         # Bhatta, R. S., Yimer, Y. Y., Tsige, M., Perry, D. S., "Conformations and Torsional Potentials of Poly(3-Hexylthiophene) Oligomers: Density Functional Calculations Up to the Dodecamer", 2012, Comput. & Theor. Chem., DOI: 10.1016/j.comptc.2012.06.026
         if pairType == 'none':
             self.setLJParameters(eScale, sScale, 0)
+        elif pairType == 'hydrogen':
+            self.setDPDHydrogenParameters(eScale, sScale, 0)
         else:
             self.setLJParameters(eScale, sScale, gradientRamp)
         self.setHarmonicBondParameters(eScale, sScale)
@@ -119,7 +121,29 @@ class hoomdRun:
         self.setTableDihedralParameters(eScale, sScale)
         self.setImproperParameters(eScale, sScale)
 
+    def setDPDHydrogenParameters(self, eScale, sScale, gradientRamp):
+        gammaVal = 0.0
+        eScale *= gradientRamp
+        self.pair = pair.dpd(r_cut=10*sScale, T=1.0)
+        sScale *= 2**(1./6.)
+        for type1 in ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'S1', 'H1', 'T', 'X1', 'X2', 'X3']:
+            for type2 in ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'S1', 'H1', 'T', 'X1', 'X2', 'X3']:
+                    self.pair.pair_coeff.set(type1, type2, A = 0, r_cut = 0)
+        self.pair.pair_coeff.set('C1','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma=gammaVal)
+        self.pair.pair_coeff.set('C2','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma=gammaVal)
+        self.pair.pair_coeff.set('C3','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
+        self.pair.pair_coeff.set('C4','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
+        self.pair.pair_coeff.set('C5','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
+        self.pair.pair_coeff.set('C6','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
+        self.pair.pair_coeff.set('C7','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
+        self.pair.pair_coeff.set('C8','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
+        self.pair.pair_coeff.set('C9','H1',A=0.046*eScale,r_cut=2.931*sScale,gamma=gammaVal)
+        self.pair.pair_coeff.set('C10','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma=gammaVal)
+        self.pair.pair_coeff.set('H1','H1',A=0.030*eScale,r_cut=2.500*sScale,gamma=gammaVal)
+        self.pair.pair_coeff.set('H1','S1',A=0.087*eScale,r_cut=2.979*sScale,gamma=gammaVal)
 
+        
+        
     def setLJParameters(self, eScale, sScale, gradientRamp):
         eScale *= gradientRamp
         self.pair = pair.lj(r_cut=10*sScale)
@@ -377,11 +401,11 @@ class hoomdRun:
             print "Phase 1 already completed for this morphology...skipping"
 
         if self.runPhase2 == True:
-            self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='hard', rigidBodies=True)
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='hydrogen', rigidBodies=True)
             phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=100, overwrite=True)
             phase2Step = integrate.mode_standard(dt = self.dtPhase2)
-            phase2Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
-            phase2Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
+            phase2Flex = integrate.nvt(group=self.hydrogens, T=self.T, tau=self.tau)
+            #phase2Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
             run(self.phase2RunLength)
             phase2DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase2'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
             phase2Flex.disable()
