@@ -19,7 +19,7 @@ class ExitHoomd(Exception):
         self.string = string+" At Timestep = "+str(get_step())+" For Molecule = "+moleculeName
     def __str__(self):
         return self.string
-    
+
 
 class hoomdRun:
     def __init__(self, fileName, CGMoleculeDict, CG2AAIDs, eScale, sScale, continueData, AAMorphologyDict):
@@ -38,13 +38,16 @@ class hoomdRun:
         self.T = 1.0
         self.tau = 1.0
         #self.dtPhase1 = 1e-5
+
+        # Phase 1 = KE-truncated relaxation with pair potentials off
         self.dtPhase1 = 1e-3
-        self.dtPhase2 = 1e-5
-        self.dtPhase3 = 1e-4
-        self.dtPhase4 = 1e-4
+        # Phase 2+ = LJ interactions turned on after overlap has been reduced
+        self.dtPhase2 = 1e-9
+        self.dtPhase3 = 1e-7
+        self.dtPhase4 = 1e-5
         self.dtPhase5 = 5e-4
         self.dtPhase6 = 1e-3
-        self.phase1RunLength = 1e4 
+        self.phase1RunLength = 1e5 # Maximum, this run is KE truncated
         self.phase2RunLength = 1e5
         self.phase3RunLength = 1e5 
         self.phase4RunLength = 1e5
@@ -92,8 +95,8 @@ class hoomdRun:
             self.alk1Group = group.tag_list(name="alk1", tags=self.alk1GroupIDs)
             self.alk2Group = group.tag_list(name="alk2", tags=self.alk2GroupIDs)
         self.setForcefieldCoeffs(self.eScale, self.sScale, pairType, gradientRamp)
-        if pairType == 'soft':
-            self.energyLog = analyze.log(filename = self.outputLOG, quantities=['potential_energy', 'kinetic_energy', 'pair_dpd_energy', 'bond_harmonic_energy', 'angle_harmonic_energy', 'dihedral_table_energy', 'temperature', 'pressure', 'volume'], period=self.dumpPeriod, overwrite = self.overwriteEnergies)
+        if pairType == 'none':
+            self.energyLog = analyze.log(filename = self.outputLOG, quantities=['potential_energy', 'kinetic_energy', 'bond_harmonic_energy', 'angle_harmonic_energy', 'dihedral_table_energy', 'temperature', 'pressure', 'volume'], period=self.dumpPeriod, overwrite = self.overwriteEnergies)
         elif pairType == 'hard':
             self.energyLog = analyze.log(filename = self.outputLOG, quantities=['potential_energy', 'kinetic_energy', 'pair_lj_energy', 'bond_harmonic_energy', 'angle_harmonic_energy', 'dihedral_table_energy', 'temperature', 'pressure', 'volume'], period=self.dumpPeriod, overwrite = self.overwriteEnergies)
         self.overwriteEnergies = False
@@ -107,108 +110,14 @@ class hoomdRun:
         # Huang, D. M., Faller, R., Do, K., Moule, A. J., "Coarse-Grained Computer Simulations of Polymer/Fullerene Bulk Heterojunctions for Organic Photovoltaic Applications", 2010, J. Chem. Theory Comput., DOI: 10.1021/ct900496t
         # Jorgensen, W. L., Maxwell, D. S., Tirdao-Rives, J., "Development and Testing of the OPLS All-Atom Forcefield on Conformational Energetics and Properties of Organic Liquids", 1996, J. Am. Chem. Soc. DOI: 10.1021/ja9621760
         # Bhatta, R. S., Yimer, Y. Y., Tsige, M., Perry, D. S., "Conformations and Torsional Potentials of Poly(3-Hexylthiophene) Oligomers: Density Functional Calculations Up to the Dodecamer", 2012, Comput. & Theor. Chem., DOI: 10.1016/j.comptc.2012.06.026
-        if pairType == 'soft':
-            self.setSoftPairParameters(eScale, sScale, gradientRamp)
+        if pairType == 'none':
+            self.setLJParameters(eScale, sScale, 0)
         else:
             self.setLJParameters(eScale, sScale, gradientRamp)
         self.setHarmonicBondParameters(eScale, sScale)
         self.setHarmonicAngleParameters(eScale, sScale)
         self.setTableDihedralParameters(eScale, sScale)
         self.setImproperParameters(eScale, sScale)
-
-
-    def setSoftPairParameters(self, eScale, sScale, gradientRamp):
-        gammaVal = 1.0
-        # Set Rcut to be the minimum of the LJ potential
-        #sScale *= 2**(1./6.)
-        # Didn't work, set the rcut to be the cut-off of the LJ potential
-        sScale *= 2.5
-        # Ramp the gradient of the forcefield to reduce overlap
-        eScale *= gradientRamp
-        self.pair = pair.dpd(r_cut=10*sScale, T=1.0)
-        self.pair.pair_coeff.set('C1','C1',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C1','C2',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C1','C3',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C1','C4',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C1','C5',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C1','C6',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C1','C7',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C1','C8',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C1','C9',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C1','C10',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C1','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C1','S1',A=0.132*eScale,r_cut=3.550*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C2','C2',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C2','C3',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C2','C4',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C2','C5',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C2','C6',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C2','C7',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C2','C8',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C2','C9',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C2','C10',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C2','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C2','S1',A=0.132*eScale,r_cut=3.550*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C3','C3',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C3','C4',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C3','C5',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C3','C6',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C3','C7',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C3','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C3','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C3','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C3','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C3','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C4','C4',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C4','C5',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C4','C6',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C4','C7',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C4','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C4','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C4','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C4','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C4','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C5','C5',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C5','C6',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C5','C7',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C5','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C5','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C5','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C5','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C5','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C6','C6',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C6','C7',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C6','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C6','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C6','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C6','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C6','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C7','C7',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C7','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C7','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C7','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C7','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C7','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C8','C8',A=0.066*eScale,r_cut=3.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C8','C9',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C8','C10',A=0.068*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C8','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C8','S1',A=0.128*eScale,r_cut=3.525*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C9','C9',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C9','C10',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C9','H1',A=0.046*eScale,r_cut=2.931*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C9','S1',A=0.132*eScale,r_cut=3.550*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C10','C10',A=0.070*eScale,r_cut=3.550*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C10','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('C10','S1',A=0.132*eScale,r_cut=3.550*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('H1','H1',A=0.030*eScale,r_cut=2.500*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('H1','S1',A=0.087*eScale,r_cut=2.979*sScale,gamma = gammaVal)
-        self.pair.pair_coeff.set('S1','S1',A=0.250*eScale,r_cut=3.550*sScale,gamma = gammaVal)
-        # Set Ghost Particle Interactions
-        for ghostAtomType in ['T', 'X1', 'X2', 'X3']:
-            for realAtomType in ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'S1', 'H1', 'T', 'X1', 'X2', 'X2', 'X3']:
-                self.pair.pair_coeff.set(ghostAtomType, realAtomType, A=0, r_cut = 0, gamma = gammaVal)
-        print self.eScale, eScale
 
 
     def setLJParameters(self, eScale, sScale, gradientRamp):
@@ -435,14 +344,29 @@ class hoomdRun:
                 self.thioGroupIDs.append(atomID)
                     
         if self.runPhase1 == True:
-            self.initialiseRun(self.fileName, pairType='soft', gradientRamp = 1.0)
+            self.initialiseRun(self.fileName, pairType='none')
             phase1DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase1'), period=10, overwrite=True)
             phase1Step = integrate.mode_standard(dt = self.dtPhase1)
             # phase1 = integrate.brownian(group=group.all(), seed=3, dscale=1e11, T=self.T)
             #phase1Flex = integrate.nve(group=self.sideChainsGroup, limit=0.001)
             phase1Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
             phase1Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
-            run(self.phase1RunLength)
+            self.initialPotentialEnergies = []
+            self.initialKineticEnergies = []
+            self.loadFromSnapshot = False
+            self.lowestKE = 9e999
+            self.KEIncreased = 0
+            self.firstKEValue = True
+            # Modeler_hoomd wipes out the velocity data, and so we start with 0 kinetic energy. Skip this step (firstKEValue == True). Then, take the snapshot with the lowest KE.
+            checkKEs = analyze.callback(callback = self.checkKE, period=self.dumpPeriod)
+            try:
+                run_upto(self.phase1RunLength)
+                #run(self.maximumInitialRunLength)
+            except ExitHoomd as exitMessage:
+                print exitMessage
+            if self.loadFromSnapshot == True:
+                print "Loading from snapshot..."
+                self.system.restore_snapshot(self.snapshotToLoad)
             phase1DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase1'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
             phase1Flex.disable()
             phase1Rig.disable()
@@ -489,14 +413,12 @@ class hoomdRun:
         # initDump.disable()
         # debugDump = dump.dcd(filename=self.outputDCD, period=1, overwrite=False)
 
-        raise SystemError("DID IT WORK!??!?!!")
-
-                
         if self.runPhase4 == True:
-            self.initialiseRun(self.outputXML.replace('relaxed', 'phase3'))
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase3'), pairType='hard', rigidBodies=False)
             phase4DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase4'), period=self.dumpPeriod, overwrite=True)
             phase4Step = integrate.mode_standard(dt=self.dtPhase4)
-            phase4 = integrate.nvt(group=group.all(), T=self.T, tau=self.tau)
+            phase4Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
+            phase4Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
             run(self.phase4RunLength)
             # self.initialPotentialEnergies = []
             # self.initialKineticEnergies = []
@@ -515,10 +437,11 @@ class hoomdRun:
             #     print "Loading from snapshot..."
             #     self.system.restore_snapshot(self.snapshotToLoad)
             phase4DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase4'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
-            phase4.disable()
+            phase4Flex.disable()
+            phase4Rig.disable()
             phase4DumpDCD.disable()
             #checkKEs.disable()
-            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase4DumpDCD, phase4Step, phase4, phase4DumpXML#, checkKEs, self.initialKineticEnergies, self.initialPotentialEnergies, self.loadFromSnapshot, exitMessage, self.snapshotToLoad
+            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase4DumpDCD, phase4Step, phase4Rig, phase4Flex, phase4DumpXML#, checkKEs, self.initialKineticEnergies, self.initialPotentialEnergies, self.loadFromSnapshot, exitMessage, self.snapshotToLoad
             # print dir()
             # print dir(self)
             init.reset()
@@ -526,6 +449,7 @@ class hoomdRun:
             print "Phase 4 already completed for this morphology. Skipping..."
 
 
+        raise SystemError("DID IT WORK?!?!?!?")
 
         if self.runPhase5 == True:
             self.initialiseRun(self.outputXML.replace('relaxed', 'phase4'), pairType='hard', rigidBodies = False)
