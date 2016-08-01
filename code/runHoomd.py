@@ -40,11 +40,11 @@ class hoomdRun:
         #self.dtPhase1 = 1e-5
 
         # Phase 1 = KE-truncated relaxation with pair potentials off
-        self.dtPhase1 = 1e-3
-        # Phase 2+ = LJ interactions turned on after overlap has been reduced
-        self.dtPhase2 = 1e-12
-        self.dtPhase3 = 1e-9
-        self.dtPhase4 = 1e-6
+        self.dtPhase1 = 1e-3 # No Pairs
+        self.dtPhase2 = 1e-3 # DPD Hydrogens
+        self.dtPhase3 = 1e-9 # LJ
+        self.dtPhase4 = 1e-6 # LJ
+        # Raise SystemError After Phase 4
         self.dtPhase5 = 5e-4
         self.dtPhase6 = 1e-3
         self.phase1RunLength = 1e5 # Maximum, this run is KE truncated
@@ -129,18 +129,21 @@ class hoomdRun:
         for type1 in ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'S1', 'H1', 'T', 'X1', 'X2', 'X3']:
             for type2 in ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'S1', 'H1', 'T', 'X1', 'X2', 'X3']:
                     self.pair.pair_coeff.set(type1, type2, A = 0, r_cut = 0)
-        self.pair.pair_coeff.set('C1','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma=gammaVal)
-        self.pair.pair_coeff.set('C2','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma=gammaVal)
-        self.pair.pair_coeff.set('C3','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
-        self.pair.pair_coeff.set('C4','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
-        self.pair.pair_coeff.set('C5','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
-        self.pair.pair_coeff.set('C6','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
-        self.pair.pair_coeff.set('C7','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
-        self.pair.pair_coeff.set('C8','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
-        self.pair.pair_coeff.set('C9','H1',A=0.046*eScale,r_cut=2.931*sScale,gamma=gammaVal)
-        self.pair.pair_coeff.set('C10','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma=gammaVal)
-        self.pair.pair_coeff.set('H1','H1',A=0.030*eScale,r_cut=2.500*sScale,gamma=gammaVal)
-        self.pair.pair_coeff.set('H1','S1',A=0.087*eScale,r_cut=2.979*sScale,gamma=gammaVal)
+        for type1 in ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'S1', 'H1', 'T', 'X1', 'X2', 'X3']:
+            self.pair.pair_coeff.set(type1, 'H1', A = 1*eScale, r_cut = 2.96*sScale)
+        self.pair.pair_coeff.set('H1', 'S1', A = 1*eScale, r_cut = 2.96*sScale)
+        # self.pair.pair_coeff.set('C1','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma=gammaVal)
+        # self.pair.pair_coeff.set('C2','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma=gammaVal)
+        # self.pair.pair_coeff.set('C3','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
+        # self.pair.pair_coeff.set('C4','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
+        # self.pair.pair_coeff.set('C5','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
+        # self.pair.pair_coeff.set('C6','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
+        # self.pair.pair_coeff.set('C7','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
+        # self.pair.pair_coeff.set('C8','H1',A=0.044*eScale,r_cut=2.958*sScale,gamma=gammaVal)
+        # self.pair.pair_coeff.set('C9','H1',A=0.046*eScale,r_cut=2.931*sScale,gamma=gammaVal)
+        # self.pair.pair_coeff.set('C10','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma=gammaVal)
+        # self.pair.pair_coeff.set('H1','H1',A=0.030*eScale,r_cut=2.500*sScale,gamma=gammaVal)
+        # self.pair.pair_coeff.set('H1','S1',A=0.087*eScale,r_cut=2.979*sScale,gamma=gammaVal)
 
         
         
@@ -404,14 +407,13 @@ class hoomdRun:
             self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='hydrogen', rigidBodies=True)
             phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=100, overwrite=True)
             phase2Step = integrate.mode_standard(dt = self.dtPhase2)
-            phase2Flex = integrate.nvt(group=self.hydrogens, T=self.T, tau=self.tau)
+            phase2Hydrogens = integrate.nvt(group=group.type(name="hydrogens", type='H1'), T=self.T, tau=self.tau)
             #phase2Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
             run(self.phase2RunLength)
             phase2DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase2'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
-            phase2Flex.disable()
-            phase2Rig.disable()
+            phase2Hydrogens.disable()
             phase2DumpDCD.disable()
-            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase2DumpDCD, phase2Step, phase2DumpXML, phase2Flex, phase2Rig
+            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase2DumpDCD, phase2Step, phase2DumpXML, phase2Hydrogens
             init.reset()
         else:
             print "Phase 2 already completed for this morphology...skipping"
@@ -420,7 +422,7 @@ class hoomdRun:
 
 
         if self.runPhase3 == True:
-            self.initialiseRun(self.outputXML.replace('relaxed', 'phase2'), pairType='hard', rigidBodies=False)
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase2'), pairType='hard', rigidBodies=True)
             phase3DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase3'), period=100, overwrite=True)
             phase3Step = integrate.mode_standard(dt = self.dtPhase3)
             phase3Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
@@ -437,8 +439,9 @@ class hoomdRun:
         # initDump.disable()
         # debugDump = dump.dcd(filename=self.outputDCD, period=1, overwrite=False)
 
+
         if self.runPhase4 == True:
-            self.initialiseRun(self.outputXML.replace('relaxed', 'phase3'), pairType='hard', rigidBodies=False)
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase3'), pairType='hard', rigidBodies=True)
             phase4DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase4'), period=self.dumpPeriod, overwrite=True)
             phase4Step = integrate.mode_standard(dt=self.dtPhase4)
             phase4Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
