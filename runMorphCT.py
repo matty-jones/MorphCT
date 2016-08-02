@@ -176,9 +176,6 @@ if __name__ == '__main__':
                 print "RunHoomd calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
                 print "----------====================----------"
 
-            raise SystemError("STOPPING AFTER RUNHOOMD FOR TESTING")
-
-                
             print "Sorting morphology into individual molecules and outputing .xyz for DFT..."
             runMol = True
             if runMol == True:

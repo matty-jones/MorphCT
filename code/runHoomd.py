@@ -41,11 +41,11 @@ class hoomdRun:
 
         # Phase 1 = KE-truncated relaxation with pair potentials off
         self.dtPhase1 = 1e-3 # No Pairs
-        self.dtPhase2 = 1e-3 # DPD Hydrogens
+        self.dtPhase2 = 1e-3 # DPD Hydrogens and Sidechains, gradientRamp = 100, A = 1*eScale for all C*-C* and H1-*, 0 for else. r_cut = 2.96*sScale, gamma = 0
         self.dtPhase3 = 1e-9 # LJ
         self.dtPhase4 = 1e-7 # LJ
-        self.dtPhase5 = 1e-6
-        self.dtPhase6 = 1e-5
+        self.dtPhase5 = 1e-6 # LJ
+        self.dtPhase6 = 1e-5 # LJ
         self.phase1RunLength = 1e5 # Maximum, this run is KE truncated
         self.phase2RunLength = 1e4
         self.phase3RunLength = 1e2 
@@ -70,7 +70,7 @@ class hoomdRun:
         self.continueFile = continueData[7]
         
 
-    def initialiseRun(self, inputFilename, pairType='hard', gradientRamp=1.0, rigidBodies=True):
+    def initialiseRun(self, inputFilename, pairType='lj', gradientRamp=1.0, rigidBodies=True):
         if rigidBodies == True:
             # Sort out the groups. Currently self.thioGroupIDs contains all of the
             # Hydrogens in the thiophene ring and at the end of the molecules too.
@@ -96,9 +96,9 @@ class hoomdRun:
         self.setForcefieldCoeffs(self.eScale, self.sScale, pairType, gradientRamp)
         if pairType == 'none':
             self.energyLog = analyze.log(filename = self.outputLOG, quantities=['potential_energy', 'kinetic_energy', 'bond_harmonic_energy', 'angle_harmonic_energy', 'dihedral_table_energy', 'temperature', 'pressure', 'volume'], period=self.dumpPeriod, overwrite = self.overwriteEnergies)
-        elif pairType == 'hydrogen' or pairType == 'soft':
+        elif pairType == 'dpd':
             self.energyLog = analyze.log(filename = self.outputLOG, quantities=['potential_energy', 'kinetic_energy', 'pair_dpd_energy', 'bond_harmonic_energy', 'angle_harmonic_energy', 'dihedral_table_energy', 'temperature', 'pressure', 'volume'], period=self.dumpPeriod, overwrite = self.overwriteEnergies)
-        elif pairType == 'hard':
+        elif pairType == 'lj':
             self.energyLog = analyze.log(filename = self.outputLOG, quantities=['potential_energy', 'kinetic_energy', 'pair_lj_energy', 'bond_harmonic_energy', 'angle_harmonic_energy', 'dihedral_table_energy', 'temperature', 'pressure', 'volume'], period=self.dumpPeriod, overwrite = self.overwriteEnergies)
         self.overwriteEnergies = False
 
@@ -113,16 +113,17 @@ class hoomdRun:
         # Bhatta, R. S., Yimer, Y. Y., Tsige, M., Perry, D. S., "Conformations and Torsional Potentials of Poly(3-Hexylthiophene) Oligomers: Density Functional Calculations Up to the Dodecamer", 2012, Comput. & Theor. Chem., DOI: 10.1016/j.comptc.2012.06.026
         if pairType == 'none':
             self.setLJParameters(eScale, sScale, 0)
-        elif pairType == 'hydrogen':
-            self.setDPDHydrogenParameters(eScale, sScale, gradientRamp)
-        else:
+        elif pairType == 'dpd':
+            self.setDPDParameters(eScale, sScale, gradientRamp)
+        elif pairType == 'lj':
             self.setLJParameters(eScale, sScale, gradientRamp)
         self.setHarmonicBondParameters(eScale, sScale)
         self.setHarmonicAngleParameters(eScale, sScale)
         self.setTableDihedralParameters(eScale, sScale)
         self.setImproperParameters(eScale, sScale)
 
-    def setDPDHydrogenParameters(self, eScale, sScale, gradientRamp):
+        
+    def setDPDParameters(self, eScale, sScale, gradientRamp):
         gammaVal = 0.0
         eScale *= gradientRamp
         self.pair = pair.dpd(r_cut=10*sScale, T=1.0)
@@ -148,7 +149,6 @@ class hoomdRun:
         # self.pair.pair_coeff.set('C10','H1',A=0.046*eScale,r_cut=2.979*sScale,gamma=gammaVal)
         # self.pair.pair_coeff.set('H1','H1',A=0.030*eScale,r_cut=2.500*sScale,gamma=gammaVal)
         # self.pair.pair_coeff.set('H1','S1',A=0.087*eScale,r_cut=2.979*sScale,gamma=gammaVal)
-
         
         
     def setLJParameters(self, eScale, sScale, gradientRamp):
@@ -408,7 +408,7 @@ class hoomdRun:
             print "Phase 1 already completed for this morphology...skipping"
 
         if self.runPhase2 == True:
-            self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='hydrogen', rigidBodies=True, gradientRamp = 1e2)
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='dpd', rigidBodies=True, gradientRamp = 1e2)
             phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=100, overwrite=True)
             phase2Step = integrate.mode_standard(dt = self.dtPhase2)
             phase2Hydrogens = integrate.nvt(group=group.type(name="hydrogens", type='H1'), T=self.T, tau=self.tau)
@@ -427,7 +427,7 @@ class hoomdRun:
 
 
         if self.runPhase3 == True:
-            self.initialiseRun(self.outputXML.replace('relaxed', 'phase2'), pairType='hard', rigidBodies=True)
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase2'), pairType='lj', rigidBodies=True)
             phase3DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase3'), period=1, overwrite=True)
             phase3Step = integrate.mode_standard(dt = self.dtPhase3)
             phase3Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
@@ -446,7 +446,7 @@ class hoomdRun:
 
 
         if self.runPhase4 == True:
-            self.initialiseRun(self.outputXML.replace('relaxed', 'phase3'), pairType='hard', rigidBodies=True)
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase3'), pairType='lj', rigidBodies=True)
             phase4DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase4'), period=1, overwrite=True)
             phase4Step = integrate.mode_standard(dt=self.dtPhase4)
             phase4Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
@@ -482,7 +482,7 @@ class hoomdRun:
 
 
         if self.runPhase5 == True:
-            self.initialiseRun(self.outputXML.replace('relaxed', 'phase4'), pairType='hard', rigidBodies = True)
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase4'), pairType='lj', rigidBodies = True)
             phase5DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase5'), period=1e3, overwrite=True)
             phase5Step = integrate.mode_standard(dt = self.dtPhase5)
             phase5Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
@@ -508,7 +508,7 @@ class hoomdRun:
         if (self.runPhase6 == True) or (self.continuePhase6 == True):
             # Then lock the sidechains in place and run the thiophenes for longer to make sure they equilibrate properly
             if self.continuePhase6 == False:
-                self.initialiseRun(self.outputXML.replace('relaxed', 'phase5'), pairType = 'hard', rigidBodies = True)
+                self.initialiseRun(self.outputXML.replace('relaxed', 'phase5'), pairType = 'lj', rigidBodies = True)
             else:
                 print "Continuing from previous run..."
                 self.initialiseRun(self.continueFile)
