@@ -644,13 +644,13 @@ def createSlurmSubmissionScript(outputDir, runName, mode):
         if '-p batch' in templateLines[lineNo]:
             # This is queue select
             templateLines[lineNo] = templateLines[lineNo].replace('batch', queue)
-        elif '-J JOBNAME' in templateLines[lineNo]:
+        elif 'JOBNAME' in templateLines[lineNo]:
             # This is job name
             templateLines[lineNo] = templateLines[lineNo].replace('JOBNAME', jobName)
-        elif '-o OUTFILE' in templateLines[lineNo]:
+        elif 'OUTFILE' in templateLines[lineNo]:
             # This is outfile
             templateLines[lineNo] = templateLines[lineNo].replace('OUTFILE', outputFile)
-        elif '--mail-user' in templateLines[lineNo]:
+        elif 'CHANGEME' in templateLines[lineNo]:
             # E-mail address
             templateLines[lineNo] = templateLines[lineNo].replace('CHANGEME', 'mattyjones')
         elif '-t 12:00:00' in templateLines[lineNo]:

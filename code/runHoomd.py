@@ -682,7 +682,7 @@ def checkSaveDirectory(morphologyName, saveDirectory):
             elif ('temp' in fileName) and ('xml' in fileName):
                 runPhase6 = False
                 continuePhase6 = True
-                continueFile = saveDirectory+fileName
+                continueFile = saveDirectory+'/'+fileName
     return [runPhase1, runPhase2, runPhase3, runPhase4, runPhase5, runPhase6, continuePhase6, continueFile]
 
 
