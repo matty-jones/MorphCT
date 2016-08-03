@@ -8,6 +8,8 @@ import cPickle as pickle
 import helperFunctions
 import sys
 
+DEBUGWriteDCDFiles = False
+
 def multiHarmonicTorsion(theta, V0, V1, V2, V3, V4):
     V = V0 + V1*np.cos(theta) + V2*((np.cos(theta))**2) + V3*((np.cos(theta))**3) + V4*((np.cos(theta))**4)
     F = V1*np.sin(theta) + 2*V2*np.cos(theta)*np.sin(theta) + 3*V3*((np.cos(theta))**2)*np.sin(theta) + 4*V4*((np.cos(theta))**3)*np.sin(theta)
@@ -376,7 +378,10 @@ class hoomdRun:
                     
         if self.runPhase1 == True:
             self.initialiseRun(self.fileName, pairType='none')
-            phase1DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase1'), period=10, overwrite=True)
+            if DEBUGWriteDCDFiles == True:
+                phase1DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase1'), period=10, overwrite=True)
+            else:
+                phase1DumpDCD = None
             phase1Step = integrate.mode_standard(dt = self.dtPhase1)
             # phase1 = integrate.brownian(group=group.all(), seed=3, dscale=1e11, T=self.T)
             #phase1Flex = integrate.nve(group=self.sideChainsGroup, limit=0.001)
@@ -409,7 +414,10 @@ class hoomdRun:
 
         if self.runPhase2 == True:
             self.initialiseRun(self.outputXML.replace('relaxed', 'phase1'), pairType='dpd', rigidBodies=True, gradientRamp = 1e2)
-            phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=100, overwrite=True)
+            if DEBUGWriteDCDFiles == True:
+                phase2DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase2'), period=100, overwrite=True)
+            else:
+                phase2DumpDCD = None
             phase2Step = integrate.mode_standard(dt = self.dtPhase2)
             phase2Hydrogens = integrate.nvt(group=group.type(name="hydrogens", type='H1'), T=self.T, tau=self.tau)
             phase2Sidechains = integrate.nvt(group=group.difference(name="SidechainsWOH", a = self.sideChainsGroup, b = group.type(name="hydrogens", type='H1')), T=self.T, tau=self.tau)
@@ -428,7 +436,10 @@ class hoomdRun:
 
         if self.runPhase3 == True:
             self.initialiseRun(self.outputXML.replace('relaxed', 'phase2'), pairType='lj', rigidBodies=True)
-            phase3DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase3'), period=1, overwrite=True)
+            if DEBUGWriteDCDFiles == True:
+                phase3DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase3'), period=1, overwrite=True)
+            else:
+                phase3DumpDCD = None
             phase3Step = integrate.mode_standard(dt = self.dtPhase3)
             phase3Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
             phase3Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
@@ -447,7 +458,10 @@ class hoomdRun:
 
         if self.runPhase4 == True:
             self.initialiseRun(self.outputXML.replace('relaxed', 'phase3'), pairType='lj', rigidBodies=True)
-            phase4DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase4'), period=1, overwrite=True)
+            if DEBUGWriteDCDFiles == True:
+                phase4DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase4'), period=1, overwrite=True)
+            else:
+                phase4DumpDCD = None
             phase4Step = integrate.mode_standard(dt=self.dtPhase4)
             phase4Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
             phase4Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
@@ -483,7 +497,10 @@ class hoomdRun:
 
         if self.runPhase5 == True:
             self.initialiseRun(self.outputXML.replace('relaxed', 'phase4'), pairType='lj', rigidBodies = True)
-            phase5DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase5'), period=1e3, overwrite=True)
+            if DEBUGWriteDCDFiles == True:
+                phase5DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase5'), period=1e3, overwrite=True)
+            else:
+                phase5DumpDCD = None
             phase5Step = integrate.mode_standard(dt = self.dtPhase5)
             phase5Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
             phase5Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
@@ -515,7 +532,10 @@ class hoomdRun:
                 # underscoreList = helperFunctions.findIndex(self.continueFile, '_')
                 # timestepsCompleted = int(self.continueFile[underscoreList[0]+1:underscoreList[1]])
                 # self.mainRunLength -= timestepsCompleted
-            phase6DumpDCD = dump.dcd(filename=self.outputDCD, period=self.mainTrajDumpPeriod, overwrite=True)
+            if DEBUGWriteDCDFiles == True:
+                phase6DumpDCD = dump.dcd(filename=self.outputDCD, period=self.mainTrajDumpPeriod, overwrite=True)
+            else:
+                phase6DumpDCD = None
             phase6Step = integrate.mode_standard(dt=self.dtPhase6)
             phase6Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
             phase6Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)

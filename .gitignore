@@ -1,6 +1,7 @@
 ./temp/*
 temp/
 *.pyc
+*.swp
 *.inp
 *.gbw
 *.out
