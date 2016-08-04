@@ -137,8 +137,6 @@ def reorderMorphology(unorderedCGMorph):
 def calcDistances(initialMorph, finalMorph):
     distances = []
     for index, pos in enumerate(initialMorph['unwrapped_position']):
-        if finalMorph['type'][index] != 'A':
-            continue
         separationVector = np.array(finalMorph['position'][index]) - np.array(pos)
         for axis in range(len(separationVector)):
             while separationVector[axis] >= finalMorph['lx']/2.0:
