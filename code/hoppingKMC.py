@@ -251,11 +251,19 @@ def loadChromophoreFiles(CSVDir, CTOutputDir):
         with open(CSVDir+'/singles.csv', 'r') as singlesFile:
             singlesReader = csv.reader(singlesFile, delimiter=',')
             for row in singlesReader:
-                singlesData[int(float(row[0]))] = map(float, row[1:])
+                try:
+                    singlesData[int(float(row[0]))] = map(float, row[1:])
+                except IndexError:
+                    print "Nonstandard line in pairs.csv!"
+                    continue
         with open(CSVDir+'/pairs.csv', 'r') as pairsFile:
             pairsReader = csv.reader(pairsFile, delimiter=',')
             for row in pairsReader:
-                pairsData.append([int(float(row[0])), int(float(row[1]))] + [x for x in map(float, row[2:])])
+                try:
+                    pairsData.append([int(float(row[0])), int(float(row[1]))] + [x for x in map(float, row[2:])])
+                except IndexError:
+                    print "Nonstandard line in pairs.csv!"
+                    continue
     except IOError:
         print "CSV files singles.csv and pairs.csv not found in the chromophores directory."
         print "Please run transferIntegrals.py to generate these files from the ORCA outputs."
