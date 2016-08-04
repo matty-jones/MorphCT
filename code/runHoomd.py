@@ -406,7 +406,6 @@ class hoomdRun:
             phase1DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase1'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
             phase1Flex.disable()
             phase1Rig.disable()
-            phase1DumpDCD.disable()
             del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase1DumpDCD, phase1Step, phase1DumpXML, phase1Rig, phase1Flex
             init.reset()
         else:
@@ -425,7 +424,6 @@ class hoomdRun:
             run(self.phase2RunLength)
             phase2DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase2'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
             phase2Hydrogens.disable()
-            phase2DumpDCD.disable()
             del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase2DumpDCD, phase2Step, phase2DumpXML, phase2Hydrogens, phase2Sidechains
             init.reset()
         else:
@@ -447,7 +445,6 @@ class hoomdRun:
             phase3DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase3'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
             phase3Flex.disable()
             phase3Rig.disable()
-            phase3DumpDCD.disable()
             del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase3DumpDCD, phase3Step, phase3DumpXML, phase3Flex, phase3Rig
             init.reset()
         else:
@@ -485,7 +482,6 @@ class hoomdRun:
             phase4DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase4'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
             phase4Flex.disable()
             phase4Rig.disable()
-            phase4DumpDCD.disable()
             #checkKEs.disable()
             del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase4DumpDCD, phase4Step, phase4Rig, phase4Flex, phase4DumpXML#, checkKEs, self.initialKineticEnergies, self.initialPotentialEnergies, self.loadFromSnapshot, exitMessage, self.snapshotToLoad
             # print dir()
@@ -508,7 +504,6 @@ class hoomdRun:
             phase5DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase5'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
             phase5Flex.disable()
             phase5Rig.disable()
-            phase5DumpDCD.disable()
             del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase5DumpDCD, phase5Step, phase5Flex, phase5Rig, phase5DumpXML
             init.reset()
         else:
@@ -554,7 +549,6 @@ class hoomdRun:
             phase6DumpXML = dump.xml(filename=self.outputXML, position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
             phase6Flex.disable()
             phase6Rig.disable()
-            phase6DumpDCD.disable()
             # checkTotalEs.disable()
             del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase6DumpDCD, phase6Step, phase6Flex, phase6Rig, phase6DumpXML
             init.reset()
