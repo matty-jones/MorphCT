@@ -392,7 +392,7 @@ def execute(morphologyFile):
                     revertORCAFiles(fileName)
                     fixedFilesIndices.append(failIndex)
                     failedSinglesDict.pop(fileName)
-            if len(failedPairFiles) == 0:
+            if len(failedSingleFiles) == 0:
                 break
             jobsList = [failedSingleFiles[i:i+(int(np.ceil(len(failedSingleFiles)/len(procIDs))))+1] for i in xrange(0, len(failedSingleFiles), int(np.ceil(len(failedSingleFiles)/float(len(procIDs)))))]
             with open(CSVDir+'/ORCAJobs.pickle', 'w+') as pickleFile:
