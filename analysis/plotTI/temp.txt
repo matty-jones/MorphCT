@@ -1,0 +1,28 @@
+Scipy.optimize (linear fit)
+
+35.7795238758
+0.00506625367813
+0.454261711298
+0.16033880887
+0.0700038834335
+
+
+Scipy.stats
+36.6010370333
+0.00454223644345
+0.453756187918
+0.16008338975
+0.0695836234375
+
+
+
+Scipy.stats (Not ignoring Far out)
+36.6010370333 - No change
+0.00472326340617 - Basically no change
+0.453763201609 - No Change
+0.160099199031 - No change
+0.0696954985799 - No change
+
+
+Scipy.optimize (not ignoring far out)
+

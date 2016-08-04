@@ -46,8 +46,8 @@ class hoomdRun:
         self.dtPhase2 = 1e-3 # DPD Hydrogens and Sidechains, gradientRamp = 100, A = 1*eScale for all C*-C* and H1-*, 0 for else. r_cut = 2.96*sScale, gamma = 0
         self.dtPhase3 = 1e-9 # LJ
         self.dtPhase4 = 1e-7 # LJ
-        self.dtPhase5 = 1e-6 # LJ
-        self.dtPhase6 = 1e-5 # LJ
+        self.dtPhase5 = 1e-5 # LJ
+        self.dtPhase6 = 1e-4 # LJ
         self.phase1RunLength = 1e5 # Maximum, this run is KE truncated
         self.phase2RunLength = 1e4
         self.phase3RunLength = 1e2 
@@ -498,8 +498,8 @@ class hoomdRun:
             else:
                 phase5DumpDCD = None
             phase5Step = integrate.mode_standard(dt = self.dtPhase5)
-            phase5Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
-            phase5Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
+            phase5Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T*10.0, tau=self.tau)
+            phase5Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T*10.0, tau=self.tau)
             run(self.phase5RunLength)
             phase5DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase5'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
             phase5Flex.disable()
@@ -532,8 +532,8 @@ class hoomdRun:
             else:
                 phase6DumpDCD = None
             phase6Step = integrate.mode_standard(dt=self.dtPhase6)
-            phase6Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T, tau=self.tau)
-            phase6Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T, tau=self.tau)
+            phase6Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T*10.0, tau=self.tau)
+            phase6Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T*10.0, tau=self.tau)
             # self.mainPotentialEnergies = []
             # self.mainKineticEnergies = []
             # self.mainTotalEnergies = []
