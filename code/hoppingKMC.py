@@ -254,7 +254,7 @@ def loadChromophoreFiles(CSVDir, CTOutputDir):
                 try:
                     singlesData[int(float(row[0]))] = map(float, row[1:])
                 except IndexError:
-                    print "Nonstandard line in pairs.csv!"
+                    print "Nonstandard line in singles.csv!"
                     continue
         with open(CSVDir+'/pairs.csv', 'r') as pairsFile:
             pairsReader = csv.reader(pairsFile, delimiter=',')
