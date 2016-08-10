@@ -2,10 +2,7 @@
 # Orca input file made by Matty Jones
 # ================================================================
 !  ZINDO/S 
-! NormalPrint
-%output
-print [P_Basis]2
-print [P_MOs]1
-end
+! NOPOP
+! NOMOPRINT
 * xyz 0   1
 *
