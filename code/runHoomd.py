@@ -99,6 +99,7 @@ class hoomdRun:
             self.thioGroup = group.tag_list(name="thio", tags=self.thioGroupIDs)
             self.alk1Group = group.tag_list(name="alk1", tags=self.alk1GroupIDs)
             self.alk2Group = group.tag_list(name="alk2", tags=self.alk2GroupIDs)
+            self.sideChainsGroup = None
         self.setForcefieldCoeffs(self.eScale, self.sScale, pairType, gradientRamp)
         if pairType == 'none':
             self.energyLog = analyze.log(filename = self.outputLOG, quantities=['potential_energy', 'kinetic_energy', 'bond_harmonic_energy', 'angle_harmonic_energy', 'dihedral_table_energy', 'temperature', 'pressure', 'volume'], period=self.dumpPeriod, overwrite = self.overwriteEnergies)
@@ -552,9 +553,9 @@ class hoomdRun:
                 phase7DumpDCD = dump.dcd(filename=self.outputDCD, period=self.mainTrajDumpPeriod, overwrite=True)
             else:
                 phase7DumpDCD = None
-            phase7Step = integrate.mode_standard(dt=self.dtPhase6)
+            phase7Step = integrate.mode_standard(dt=self.dtPhase7)
             phase7 = integrate.nvt(group=group.all(), T=self.T, tau=self.tau)
-            resetXML = dump.xml(filename=self.outputXML.replace('relaxed_', 'temp_'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True, restart=True, period=self.phase6RunLength/10)
+            resetXML = dump.xml(filename=self.outputXML.replace('relaxed_', 'temp_'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True, restart=True, period=self.phase7RunLength/10)
             try:
                 run(self.phase7RunLength)
             except ExitHoomd as exitMessage:
