@@ -439,7 +439,7 @@ def removeRigidBodies(inputDictionary):
     bondsToRemove = []
     # First remove the anchor points
     for index, typeData in enumerate(inputDictionary['type']):
-        if typeData == 'T' or typeData == 'X':
+        if ('T' in typeData) or ('X' in typeData):
             atomsToRemove.append(index)
     # Then remove the bonds
     for index, bondData in enumerate(inputDictionary['bond']):

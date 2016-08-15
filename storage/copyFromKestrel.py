@@ -1,4 +1,5 @@
 import os
+import sys
 
 
 def getMorphologyDirs(directory):
@@ -21,13 +22,13 @@ def makeDirectoryStructure(morphologyDir):
             os.system("mkdir "+morphologyDir+"/M01TI0/KMC")
 
 
-def scpFiles(morphologyDir):
+def scpFiles(morphologyDir, kesDir):
     slashList = findIndex(morphologyDir, '/')
     morphologyName = morphologyDir[slashList[-1]+1:]
-    os.system("scp kestrel:/scratch/erjank_project/mattyMorphCT/outputFiles/"+morphologyName+"/morphology/*.pickle "+morphologyDir+"/")
-    os.system("scp kestrel:/scratch/erjank_project/mattyMorphCT/outputFiles/"+morphologyName+"/morphology/*.xml "+morphologyDir+"/")
-    os.system("scp kestrel:/scratch/erjank_project/mattyMorphCT/outputFiles/"+morphologyName+"/chromophores/*.csv "+morphologyDir+"/M01TI0")
-    os.system("scp kestrel:/scratch/erjank_project/mattyMorphCT/outputFiles/"+morphologyName+"/KMC/*.csv "+morphologyDir+"/M01TI0/KMC")
+    os.system("scp kestrel:"+kesDir+"/outputFiles/"+morphologyName+"/morphology/*.pickle "+morphologyDir+"/")
+    os.system("scp kestrel:"+kesDir+"/outputFiles/"+morphologyName+"/morphology/*.xml "+morphologyDir+"/")
+    os.system("scp kestrel:"+kesDir+"/outputFiles/"+morphologyName+"/chromophores/*.csv "+morphologyDir+"/M01TI0")
+    os.system("scp kestrel:"+kesDir+"/outputFiles/"+morphologyName+"/KMC/*.csv "+morphologyDir+"/M01TI0/KMC")
 
         
 def findIndex(string, character):
@@ -45,8 +46,9 @@ def findIndex(string, character):
             
 
 if __name__ == "__main__":
+    kesDir = sys.argv[1]
     directory = os.getcwd()
     morphologyDirs = getMorphologyDirs(directory)
     for morphologyDir in morphologyDirs:
         makeDirectoryStructure(morphologyDir)
-        scpFiles(morphologyDir)
+        scpFiles(morphologyDir, kesDir)

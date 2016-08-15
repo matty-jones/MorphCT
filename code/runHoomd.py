@@ -8,7 +8,7 @@ import cPickle as pickle
 import helperFunctions
 import sys
 
-DEBUGWriteDCDFiles = False
+DEBUGWriteDCDFiles = True
 
 def multiHarmonicTorsion(theta, V0, V1, V2, V3, V4):
     V = V0 + V1*np.cos(theta) + V2*((np.cos(theta))**2) + V3*((np.cos(theta))**3) + V4*((np.cos(theta))**4)
@@ -48,12 +48,14 @@ class hoomdRun:
         self.dtPhase4 = 1e-7 # LJ
         self.dtPhase5 = 1e-5 # LJ
         self.dtPhase6 = 1e-4 # LJ
+	self.dtPhase7 = 1e-4
         self.phase1RunLength = 1e5 # Maximum, this run is KE truncated
         self.phase2RunLength = 1e4
         self.phase3RunLength = 1e2 
         self.phase4RunLength = 1e2
         self.phase5RunLength = 1e5
         self.phase6RunLength = 1e5
+	self.phase7RunLength = 1e5
         self.outputXML = self.saveDirectory+'relaxed_'+self.morphologyName+'.xml'
         self.outputDCD = self.saveDirectory+'relaxed_'+self.morphologyName+'.dcd'
         self.outputLOG = self.saveDirectory+'energies_'+self.morphologyName+'.log'
@@ -67,12 +69,14 @@ class hoomdRun:
         self.runPhase3 = continueData[2]
         self.runPhase4 = continueData[3]
         self.runPhase5 = continueData[4]
-        self.runPhase6 = continueData[5]
-        self.continuePhase6 = continueData[6]
-        self.continueFile = continueData[7]
+	self.runPhase6 = continueData[5]
+        self.runPhase7 = continueData[6]
+        self.continuePhase7 = continueData[7]
+        self.continueFile = continueData[8]
         
 
     def initialiseRun(self, inputFilename, pairType='lj', gradientRamp=1.0, rigidBodies=True):
+        self.getAtomGroups(rigidBodies)
         if rigidBodies == True:
             # Sort out the groups. Currently self.thioGroupIDs contains all of the
             # Hydrogens in the thiophene ring and at the end of the molecules too.
@@ -90,8 +94,8 @@ class hoomdRun:
             # Current XML has all the rigid body information in it. Remove this data.
             morphologyWithRigidBodies = helperFunctions.loadMorphologyXML(inputFilename)
             morphologyWithoutRigidBodies = helperFunctions.removeRigidBodies(morphologyWithRigidBodies)
-            helperFunctions.writeMorphologyXML(morphologyWithoutRigidBodies, inputFilename.replace('phase1', 'phase1Flex'))
-            self.system = init.read_xml(filename=inputFilename.replace('phase1', 'phase1Flex'))
+            helperFunctions.writeMorphologyXML(morphologyWithoutRigidBodies, inputFilename.replace('phase', 'flexPhase'))
+            self.system = init.read_xml(filename=inputFilename.replace('phase', 'flexPhase'))
             self.thioGroup = group.tag_list(name="thio", tags=self.thioGroupIDs)
             self.alk1Group = group.tag_list(name="alk1", tags=self.alk1GroupIDs)
             self.alk2Group = group.tag_list(name="alk2", tags=self.alk2GroupIDs)
@@ -346,12 +350,8 @@ class hoomdRun:
         # Placeholder for impropers if we use them later
         self.i = None
 
-        
-    def optimiseStructure(self):
-        thioAtoms = []
-        alk1Atoms = []
-        alk2Atoms = []
 
+    def getAtomGroups(self, rigidBodies):
         self.thioGroupIDs = []
         self.alk1GroupIDs = []
         self.alk2GroupIDs = []
@@ -363,19 +363,20 @@ class hoomdRun:
                 # CG2AAIDs[moleculeNumber][CGAtomID] = [CGType, [atom1InGroup, atom2InGroup...], targetCOMPosn]
                 # Build the groups:
                 if self.CG2AAIDs[moleculeNo][CGAtomID][0] == 'thio':
-                    thioAtoms.append(self.CG2AAIDs[moleculeNo][CGAtomID][1:])
                     self.thioGroupIDs += self.CG2AAIDs[moleculeNo][CGAtomID][1]
                 elif self.CG2AAIDs[moleculeNo][CGAtomID][0] == 'alk1':
-                    alk1Atoms.append(self.CG2AAIDs[moleculeNo][CGAtomID][1:])
                     self.alk1GroupIDs += self.CG2AAIDs[moleculeNo][CGAtomID][1]
                 elif self.CG2AAIDs[moleculeNo][CGAtomID][0] == 'alk2':
-                    alk2Atoms.append(self.CG2AAIDs[moleculeNo][CGAtomID][1:])
                     self.alk2GroupIDs += self.CG2AAIDs[moleculeNo][CGAtomID][1]
-        # Add the 'T' type ghost particle into self.thioGroupIDs
-        for atomID, atomType in enumerate(self.AAMorphologyDict['type']):
-            if atomType == 'T':
-                self.thioGroupIDs.append(atomID)
-                    
+        if rigidBodies == True:
+            # Add the 'T' type ghost particle into self.thioGroupIDs
+            for atomID, atomType in enumerate(self.AAMorphologyDict['type']):
+                if atomType == 'T':
+                    self.thioGroupIDs.append(atomID)
+
+
+        
+    def optimiseStructure(self):
         if self.runPhase1 == True:
             self.initialiseRun(self.fileName, pairType='none')
             if DEBUGWriteDCDFiles == True:
@@ -514,13 +515,33 @@ class hoomdRun:
 
 
 
+        if self.runPhase6 == True:
+            self.initialiseRun(self.outputXML.replace('relaxed', 'phase5'), pairType='lj', rigidBodies = True)
+            if DEBUGWriteDCDFiles == True:
+                phase6DumpDCD = dump.dcd(filename=self.outputDCD.replace('relaxed', 'phase6'), period=1e3, overwrite=True)
+            else:
+                phase6DumpDCD = None
+            phase6Step = integrate.mode_standard(dt = self.dtPhase6)
+            phase6Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T*10.0, tau=self.tau)
+            phase6Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T*10.0, tau=self.tau)
+            run(self.phase5RunLength)
+            phase6DumpXML = dump.xml(filename=self.outputXML.replace('relaxed', 'phase6'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
+            phase5Flex.disable()
+            phase5Rig.disable()
+            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase6DumpDCD, phase6Step, phase6Flex, phase6Rig, phase6DumpXML
+            init.reset()
+        else:
+            print "Phase 6 already completed for this morphology...skipping"
+
+
+
         ##### TESTING: FOR NOW JUST RUN THIS FOR AS LONG AS POSSIBLE TO SEE HOW THE ENERGY EVOLVES
         # return self.outputXML
         print os.listdir(self.saveDirectory)
-        if (self.runPhase6 == True) or (self.continuePhase6 == True):
+        if (self.runPhase7 == True) or (self.continuePhase7 == True):
             # Then lock the sidechains in place and run the thiophenes for longer to make sure they equilibrate properly
-            if self.continuePhase6 == False:
-                self.initialiseRun(self.outputXML.replace('relaxed', 'phase5'), pairType = 'lj', rigidBodies = True)
+            if self.continuePhase7 == False:
+                self.initialiseRun(self.outputXML.replace('relaxed', 'phase6'), pairType = 'lj', rigidBodies = False)
             else:
                 print "Continuing from previous run..."
                 self.initialiseRun(self.continueFile)
@@ -528,39 +549,27 @@ class hoomdRun:
                 # timestepsCompleted = int(self.continueFile[underscoreList[0]+1:underscoreList[1]])
                 # self.mainRunLength -= timestepsCompleted
             if DEBUGWriteDCDFiles == True:
-                phase6DumpDCD = dump.dcd(filename=self.outputDCD, period=self.mainTrajDumpPeriod, overwrite=True)
+                phase7DumpDCD = dump.dcd(filename=self.outputDCD, period=self.mainTrajDumpPeriod, overwrite=True)
             else:
-                phase6DumpDCD = None
-            phase6Step = integrate.mode_standard(dt=self.dtPhase6)
-            phase6Flex = integrate.nvt(group=self.sideChainsGroup, T=self.T*10.0, tau=self.tau)
-            phase6Rig = integrate.nvt_rigid(group=self.thioGroup, T=self.T*10.0, tau=self.tau)
-            # self.mainPotentialEnergies = []
-            # self.mainKineticEnergies = []
-            # self.mainTotalEnergies = []
-            # self.standardDeviation = []
-            # self.maxStandardDeviation = 0
-            # self.consecutiveDumpPeriodsUnderTarget = 0
-            # checkTotalEs = analyze.callback(callback = self.getEnergies, period=self.dumpPeriod)
+                phase7DumpDCD = None
+            phase7Step = integrate.mode_standard(dt=self.dtPhase6)
+            phase7 = integrate.nvt(group=group.all(), T=self.T, tau=self.tau)
             resetXML = dump.xml(filename=self.outputXML.replace('relaxed_', 'temp_'), position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True, restart=True, period=self.phase6RunLength/10)
             try:
-                run(self.phase6RunLength)
+                run(self.phase7RunLength)
             except ExitHoomd as exitMessage:
                 print exitMessage
-            phase6DumpXML = dump.xml(filename=self.outputXML, position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
-            phase6Flex.disable()
-            phase6Rig.disable()
-            # checkTotalEs.disable()
-            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase6DumpDCD, phase6Step, phase6Flex, phase6Rig, phase6DumpXML
+            phase7DumpXML = dump.xml(filename=self.outputXML, position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
+            phase7.disable()
+            del self.system, self.thioGroup, self.sideChainsGroup, self.energyLog, self.pair, self.b, self.a, self.d, self.i, phase7DumpDCD, phase7Step, phase7, phase7DumpXML
             init.reset()
-            # Run is complete so delete any temporary files
             saveFiles = os.listdir(self.saveDirectory)
             for fileName in saveFiles:
                 if ('temp' in fileName) and (self.morphologyName in fileName):
                     print "Deleting temporary file:", self.saveDirectory+'/'+fileName
                     os.unlink(self.saveDirectory+'/'+fileName)
-            # Plot PE
         else:
-            print "Phase 6 already completed for this morphology. Skipping..."
+            print "Phase 7 already completed for this morphology. Skipping..."
         return self.outputXML
 
     
@@ -676,7 +685,8 @@ def checkSaveDirectory(morphologyName, saveDirectory):
     runPhase4 = True
     runPhase5 = True
     runPhase6 = True
-    continuePhase6 = False
+    runPhase7 = True
+    continuePhase7 = False
     continueFile = None
     for fileName in saveDirectoryFiles:
         if morphologyName in fileName:
@@ -693,11 +703,13 @@ def checkSaveDirectory(morphologyName, saveDirectory):
                 runPhase4 = False
             elif ('phase5' in fileName) and ('xml' in fileName):
                 runPhase5 = False
+	    elif ('phase6' in fileName) and ('xml' in fileName):
+		runPhase6 = False
             elif ('temp' in fileName) and ('xml' in fileName):
-                runPhase6 = False
-                continuePhase6 = True
+                runPhase7 = False
+                continuePhase7 = True
                 continueFile = saveDirectory+'/'+fileName
-    return [runPhase1, runPhase2, runPhase3, runPhase4, runPhase5, runPhase6, continuePhase6, continueFile]
+    return [runPhase1, runPhase2, runPhase3, runPhase4, runPhase5, runPhase6, runPhase7, continuePhase7, continueFile]
 
 
 def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize):
