@@ -8,7 +8,7 @@ import cPickle as pickle
 import helperFunctions
 import sys
 
-DEBUGWriteDCDFiles = True
+DEBUGWriteDCDFiles = False
 
 def multiHarmonicTorsion(theta, V0, V1, V2, V3, V4):
     V = V0 + V1*np.cos(theta) + V2*((np.cos(theta))**2) + V3*((np.cos(theta))**3) + V4*((np.cos(theta))**4)
