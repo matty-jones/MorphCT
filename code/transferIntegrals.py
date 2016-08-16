@@ -392,6 +392,7 @@ def execute(morphologyFile):
                     revertORCAFiles(fileName)
                     fixedFilesIndices.append(failIndex)
                     failedSinglesDict.pop(fileName)
+                    failedSinglesFiles.pop(failIndex)
             if len(failedSingleFiles) == 0:
                 break
             jobsList = [failedSingleFiles[i:i+(int(np.ceil(len(failedSingleFiles)/len(procIDs))))+1] for i in xrange(0, len(failedSingleFiles), int(np.ceil(len(failedSingleFiles)/float(len(procIDs)))))]
@@ -514,6 +515,7 @@ def execute(morphologyFile):
                     revertORCAFiles(fileName)
                     fixedFilesIndices.append(failIndex)
                     failedPairsDict.pop(fileName)
+                    failedPairFiles.pop(failIndex)
             # If failed to run 18 times, just continue and skip
             if len(failedPairFiles) == 0:
                 break
