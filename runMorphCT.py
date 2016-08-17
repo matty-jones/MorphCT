@@ -303,6 +303,6 @@ if __name__ == '__main__':
             break
 
     print "Exitting program normally..."
-    if slurmJobNumber != None:
+    if slurmJobID != None:
         os.system('scancel '+str(slurmJobID))
     exit()
