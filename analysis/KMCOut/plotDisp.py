@@ -1,4 +1,3 @@
-import sys
 import os
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,9 +6,10 @@ import scipy.optimize
 import scipy.stats
 
 
-elementaryCharge = 1.60217657E-19 # C
-kB = 1.3806488E-23 # m^{2} kg s^{-2} K^{-1}
-temperature = 290 # K
+elementaryCharge = 1.60217657E-19  # C
+kB = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}
+temperature = 290  # K
+
 
 def loadCSVs(CSVDir):
     CSVList = []
@@ -146,7 +146,7 @@ def plotMSD(times, MSDs, CSVDir):
     plt.plot(fitX, fitY, 'r')
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
-    plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
+    #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
     fileName = 'LinMSD.png'
     plt.savefig(CSVDir+'/'+fileName)
     plt.clf()
@@ -155,7 +155,7 @@ def plotMSD(times, MSDs, CSVDir):
     plt.semilogx(fitX, fitY, 'r')
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
-    plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
+    #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
     fileName = 'LogMSD.png'
     plt.savefig(CSVDir+'/'+fileName)
     plt.clf()

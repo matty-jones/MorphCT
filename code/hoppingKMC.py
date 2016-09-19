@@ -46,13 +46,13 @@ class chargeCarrier:
         self.hopHistory = [int(initialChromophore)]
         self.reinitialise()
 
-        
+
     def reinitialise(self):
         self.position = np.array(self.singlesData[self.currentChromophore][0:3])
         self.chromoLength = int(self.singlesData[self.currentChromophore][7])
         if plottingSubroutines == True:
             plotCarrier(self.singlesData, self.TIDict, self.currentChromophore, self.position, self.imagePosition, self.initialPosition, self.simDims, self.globalTime)
-        
+
 
     def calculateLambdaij(self):
         # The equation for the internal reorganisation energy was obtained from the data given in
@@ -68,7 +68,7 @@ class chargeCarrier:
         lambdaJ = lambdaeV*elementaryCharge
         return lambdaJ
 
-    
+
     def calculateEij(self, destination):
         Ei = self.singlesData[self.currentChromophore][4] # HOMO LEVEL
         Ej = self.singlesData[destination][4]
@@ -76,7 +76,7 @@ class chargeCarrier:
         deltaEijJ = deltaEijeV*elementaryCharge
         return deltaEijJ
 
-    
+
     def calculateHopRate(self, lambdaij, Tij, deltaEij):
         # Error in Lan 2008, should be just 1/hbar not squared
         kij = ((2*np.pi)/hbar)*(Tij**2)*np.sqrt(1.0/(4*lambdaij*np.pi*kB*self.T))*np.exp(-((deltaEij+lambdaij)**2)/(4*lambdaij*kB*self.T))
@@ -85,7 +85,7 @@ class chargeCarrier:
         # Durham code had a different prefactor == Tij**2/hbar * sqrt(pi/(lambda*kB*T))
         return kij
 
-    
+
     def determineHopTime(self, rate):
         if rate != 0:
             while True:
@@ -97,7 +97,7 @@ class chargeCarrier:
             # Zero rate, therefore set the hop time to very long
             tau = 1E20
         return tau
-    
+
 
     def calculateHop(self):
         hopTimes = []
