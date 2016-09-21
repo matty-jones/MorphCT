@@ -14,6 +14,78 @@ import executeOrca
 import transferIntegrals
 
 
+
+class simulation:
+    def __init__(self, **kwargs):
+        # Read in all of the keyword arguments from the par file
+        for key, value in kwargs.iteritems():
+            self.__dict__[key] = value
+        # Obtain the slurm job ID (if there is one)
+        self.slurmJobID = self.getSlurmID()
+        self.inputMorphology = os.getcwd()+'/'+self.inputDir+'/'+self.morphology
+        self.outputDirectory = os.getcwd()+'/'+self.outputDir+'/'+self.morphology
+        # Make the correct directory tree
+        self.makeDirTree()
+        # Copy the current code and the parameter file for safekeeping
+        self.copyCode()
+        # Now begin running the code
+        fineGrainer.morphology(self.inputMorphology, self.inputSigma).analyseMorphology()
+
+
+    def getSlurmID(self):
+        # Use Squeue to determine the current slurm job number
+        try:
+            squeueCommand = sp.Popen(['squeue', '-u', os.getenv('USER'), '--sort=t'], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE).communicate()
+        # If Slurm is not installed...
+        except OSError:
+            return None
+        # ...or if the squeue errors out, then return no slurm job ID
+        if len(squeueCommand[1]) != 0:
+            print "StdErr not empty:", squeueCommand[1]
+            return None
+        outputLines = squeueCommand[0].split('\n')
+        # If the command ran, the output is sorted by ascending runtime, so this job will be the most recent submission from the current user which is outputLines[1]
+        for element in outputLines[1].split(' '):
+            if len(element) != 0:
+                # First element come across is the jobID
+                return int(element)
+
+
+    def makeDirTree(self):
+        # Delete any previous data if the user asked to
+        if self.overwriteCurrentData == True:
+            sp.Popen('rm -rf '+self.outputDirectory+'/*', shell=True)
+        # Then, make sure that all the required directories are in place
+        # TODO: Remove the helperFunctions that mess around with the directory structure, do it all here instead.
+        for directoryToMake in ['chromophores/{input,output}ORCA/{single,pair}', 'KMC', 'molecules', 'morphology', 'code']:
+            sp.Popen('mkdir -p '+self.outputDirectory+'/'+directoryToMake, shell=True)
+
+
+    def copyCode(self):
+        codeDir = os.getcwd()+'/code'
+        sp.Popen('cp '+codeDir+'/*.py '+self.outputDirectory+'/code/')
+        sp.Popen('cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputDirectory+'/code/')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def getFilesList(direc):
     fileList = os.listdir(direc)
     morphologyFiles = []
@@ -47,7 +119,7 @@ def checkOutputDirectory(morphologyFile, outputDir, mode="<NO MODE>"):
                     print "Using current data..."
                     return False, True
     else:
-        os.makedirs(str(outputDir)+'/'+morphologyName)        
+        os.makedirs(str(outputDir)+'/'+morphologyName)
         os.makedirs(str(outputDir)+'/'+morphologyName+'/morphology')
         os.makedirs(str(outputDir)+'/'+morphologyName+'/molecules')
     return True, True

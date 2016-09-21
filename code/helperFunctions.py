@@ -33,7 +33,7 @@ def updateXMLBoxLength(adjustedInputFileName, boxSize):
     with open(adjustedInputFileName, 'w+') as xmlFile:
         xmlFile.writelines(xmlData)
 
-        
+
 def findIndex(string, character):
     '''This function returns the locations of an inputted character in an inputted string'''
     index = 0
@@ -82,7 +82,7 @@ def calcCOM(listOfPositions, listOfMasses):
             massWeighted[axis] += position[axis]*listOfMasses[atomID]
     return massWeighted/float(totalMass)
 
-        
+
 def findAxis(atom1, atom2, normalise=True):
     '''This function determines the normalised vector from the location of atom1 to atom2. The positions can enter as lists or arrays, but are output as arrays'''
     xSep = atom2[0] - atom1[0]
