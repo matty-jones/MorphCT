@@ -121,7 +121,7 @@ def lookForDirectory():
             exit()
         else:
             outputDirectory = potentialDirs[useThisDir]
-        return outputDirectory
+        return os.getcwd()+'/'+outputDirectory
 
 def getSigmaVal(morphology):
     while True:
@@ -379,7 +379,7 @@ def getParFileName():
     return testFileName
 
 
-def writeParFile(fileName, INPUTDIR, INPUTMORPHOLOGY, OUTPUTDIR, TEMPLATEDIR, AATEMPLATEFILE, CGToIDDictionary, CGToBondDictionary, forcefieldParameters):
+def writeParFile(fileName, INPUTDIR, INPUTMORPHOLOGY, INPUTSIGMA, OUTPUTDIR, TEMPLATEDIR, AATEMPLATEFILE, CGToIDDictionary, CGToBondDictionary, forcefieldParameters):
     with open(os.getcwd()+'/templates/parTemplate.py', 'r') as parTemplateFile:
         parTemplate = parTemplateFile.readlines()
     # Define these in the locals() before we iterate to prevent a dictionary chaning size error
@@ -432,5 +432,5 @@ if __name__ == "__main__":
     fileName = getParFileName()
     print "These, along with some default parameters will be written to "+str(fileName)+"."
     print "You are encouraged to modify "+str(fileName)+" directly now to avoid this process, and also to check that the default variables are desirable."
-    writeParFile(fileName, inputDir, inputMorphology, outputDir, templateDir, AATemplateFile, CGToTemplateAAIDs, CGToAAIDBonds, forcefieldParameters)
+    writeParFile(fileName, inputDir, inputMorphology, inputSigma, outputDir, templateDir, AATemplateFile, CGToTemplateAAIDs, CGToAAIDBonds, forcefieldParameters)
     print "Parameters written to "+str(fileName)+"."

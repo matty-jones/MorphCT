@@ -22,14 +22,15 @@ class simulation:
             self.__dict__[key] = value
         # Obtain the slurm job ID (if there is one)
         self.slurmJobID = self.getSlurmID()
-        self.inputMorphology = os.getcwd()+'/'+self.inputDir+'/'+self.morphology
-        self.outputDirectory = os.getcwd()+'/'+self.outputDir+'/'+self.morphology
+        self.inputMorphologyFile = self.inputDir+'/'+self.morphology
+        self.outputDirectory = self.outputDir+'/'+self.morphology[:-4]
+        self.AATemplateFile = self.repeatUnitTemplateDirectory+'/'+self.repeatUnitTemplateFile
         # Make the correct directory tree
         self.makeDirTree()
         # Copy the current code and the parameter file for safekeeping
         self.copyCode()
         # Now begin running the code
-        fineGrainer.morphology(self.inputMorphology, self.inputSigma).analyseMorphology()
+        fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], self.inputSigma, self.AATemplateFile, self.CGToTemplateAAIDs, self.CGToTemplateBonds).analyseMorphology()
 
 
     def getSlurmID(self):
@@ -63,8 +64,8 @@ class simulation:
 
     def copyCode(self):
         codeDir = os.getcwd()+'/code'
-        sp.Popen('cp '+codeDir+'/*.py '+self.outputDirectory+'/code/')
-        sp.Popen('cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputDirectory+'/code/')
+        sp.Popen('cp '+codeDir+'/*.py '+self.outputDirectory+'/code/', shell=True)
+        sp.Popen('cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputDirectory+'/code/', shell=True)
 
 
 
@@ -158,7 +159,7 @@ if __name__ == '__main__':
         os.makedirs(os.getcwd()+'/'+outputDir)
     inputDir = os.getcwd()+'/'+inputDir
     outputDir = os.getcwd()+'/'+outputDir
-    
+
     morphologyFiles = sorted(getFilesList(inputDir))
     exitFlag = 0
     while exitFlag == 0:

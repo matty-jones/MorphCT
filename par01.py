@@ -2,11 +2,12 @@ import runMorphCT
 
 # ---=== Directory and File Structure ===---
 inputDir = '/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/inputCGMorphs'
-outputDir = 'outputFiles'
+outputDir = '/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/outputFiles'
 
 
 # ---=== Input Morphology Details ===---
 morphology = 'p1-L15-f0.0-P0.1-T1.5-e0.5.xml'
+inputSigma = 3.0
 overwriteCurrentData = True
 
 # ---=== Execution Modules ===---

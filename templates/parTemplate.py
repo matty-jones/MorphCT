@@ -7,6 +7,7 @@ outputDir = OUTPUTDIR
 
 # ---=== Input Morphology Details ===---
 morphology = INPUTMORPHOLOGY
+inputSigma = INPUTSIGMA
 overwriteCurrentData = True
 
 # ---=== Execution Modules ===---

@@ -6,20 +6,21 @@ import helperFunctions
 import cPickle as pickle
 
 class morphology:
-    def __init__(self, morphologyName, sigma=1.):
+    def __init__(self, morphologyXML, morphologyName, sigma, AATemplateFile, CGBeadToAAIDs, CGToAABonds):
         # Sigma is the `compression value' in Angstroms that has been used to scale the morphology
         # E.G. the P3HT template uses sigma = 1, but the Marsh morphologies use sigma = 3.
-        self.xmlPath = str(morphologyName)
+        self.xmlPath = morphologyXML
+        self.morphologyName = morphologyName
         self.CGDictionary = helperFunctions.loadMorphologyXML(self.xmlPath, sigma=sigma)
         self.CGDictionary = helperFunctions.addUnwrappedPositions(self.CGDictionary)
+        self.AATemplateFile = AATemplateFile
+        self.CGBeadToAAIDs = CGBeadToAAIDs
+        self.CGToAABonds = CGToAABonds
 
 
     def analyseMorphology(self):
         print "Finding molecules..."
-        moleculeIDs = self.splitMolecules()
-        # Obtain the morphology name:
-        slashLocs = helperFunctions.findIndex(self.xmlPath, '/')
-        morphologyName = self.xmlPath[slashLocs[-1]+1:-4]
+        moleculeIDs, moleculeLengths = self.splitMolecules()
         rollingAAIndex = 0
         boxSize = [self.CGDictionary['lx'], self.CGDictionary['ly'], self.CGDictionary['lz']]
         CGMorphologyDict = {}
@@ -43,7 +44,7 @@ class morphology:
         for moleculeNumber in range(len(moleculeIDs)):
             print "Adding molecule number", moleculeNumber, "\r",
             # print "Rolling AA Index =", rollingAAIndex
-            CGMoleculeDict, AAMoleculeDict, CGtoAAIDs, ghostDictionary = atomistic(moleculeIDs[moleculeNumber], self.CGDictionary, morphologyName, rollingAAIndex, moleculeNumber, ghostDictionary).returnData()
+            CGMoleculeDict, AAMoleculeDict, CGtoAAIDs, ghostDictionary = atomistic(moleculeIDs[moleculeNumber], self.CGDictionary, self.morphologyName, self.AATemplateFile, self.CGBeadToAAIDs, rollingAAIndex, moleculeNumber, moleculeLengths, ghostDictionary).returnData()
             CGtoAAIDMaster.append(CGtoAAIDs)
             for key in CGMoleculeDict.keys():
                 if key not in ['lx', 'ly', 'lz']:
@@ -144,21 +145,25 @@ class morphology:
         
     def splitMolecules(self):
         moleculeList = []
+        moleculeLengths = []
         bondList = copy.deepcopy(self.CGDictionary['bond'])
         while len(bondList) > 0:
-            # Add the first two atoms of the molecule
+            # Add the first two CG sites of the molecule
             thisMolecule = [bondList[0][1], bondList[0][2]]
-            addedNewAtom = True
-            while addedNewAtom == True:
-                addedNewAtom = False
+            addedNewSite = True
+            currentNumberOfSitesInMolecule = 2
+            while addedNewSite == True:
+                addedNewSite = False
                 bondPopList = []
                 for bond in bondList:
                     if (bond[1] in thisMolecule) and (bond[2] not in thisMolecule):
                         thisMolecule.append(bond[2])
-                        addedNewAtom = True
+                        currentNumberOfSitesInMolecule += 1
+                        addedNewSite = True
                     elif (bond[2] in thisMolecule) and (bond[1] not in thisMolecule):
                         thisMolecule.append(bond[1])
-                        addedNewAtom = True
+                        currentNumberOfSitesInMolecule += 1
+                        addedNewSite = True
                     elif (bond[1] in thisMolecule) and (bond[2] in thisMolecule):
                         pass
                     else:
@@ -168,7 +173,13 @@ class morphology:
                 for bondIndex in bondPopList:
                     bondList.pop(bondIndex)
             moleculeList.append(thisMolecule)
-        return moleculeList
+            # Length of the molecule is the total number of CG sites / number of CG sites in each repeat unit
+            # Sanity check:
+            if currentNumberOfSitesInMolecule % len(self.CGBeadToAAIDs.keys()) != 0:
+                raise SystemError("Issue with splitting the morphology into molecules - does the template file contain exactly one repeat unit (minus any terminating groups)?")
+            moleculeLength = np.round(currentNumberOfSitesInMolecule/len(self.CGBeadToAAIDs.keys())) # Just in case of floating point errors
+            moleculeLengths.append(moleculeLength)
+        return moleculeList, moleculeLengths
 
 
 class molecule:
@@ -246,8 +257,8 @@ class molecule:
                 if bond[1] in backboneAtoms:
                     bondedNeighbours.append(bond[1])
         return bondedNeighbours
-        
-        
+
+
     def obtainBackboneAtoms(self):
         polymerBackboneIDs = []
         for atomID in self.atomIDs:
@@ -268,26 +279,36 @@ class molecule:
                 moleculeEnds.append(atomID)
         moleculeEnds.sort()
         return polymerBackboneIDs, moleculeEnds
-        
-        
+
+
 class atomistic:
-    def __init__(self, atomIDs, CGDictionary, morphologyName, rollingAAIndex, moleculeIndex, ghostDictionary):
+    def __init__(self, siteIDs, CGDictionary, morphologyName, templateFile, CGBeadToAAIDs, rollingAAIndex, moleculeIndex, moleculeLengths, ghostDictionary):
+        # This class sees individual molecules.
         self.noAtomsInMorphology = rollingAAIndex
         self.moleculeIndex = moleculeIndex
-        self.atomIDs = atomIDs
+        self.moleculeLengths = moleculeLengths
+        self.siteIDs = siteIDs
         self.CGDictionary = CGDictionary
         self.CGMonomerDictionary = self.getCGMonomerDict()
-        polymerBackboneIDs, moleculeEnds = self.obtainBackboneAtoms()
+        AATemplateDictionary = helperFunctions.loadMorphologyXML(templateFile)
+        self.AATemplateDictionary = helperFunctions.addUnwrappedPositions(AATemplateDictionary)
+        # thioAA, alk1AA, alk2AA are now all unused. Instead, use the CGToTemplateAAIDs dictionary which can have arbitrary length
+        self.CGBeadToAAIDs = CGBeadToAAIDs
+        self.AADictionary, self.atomIDLookupTable, self.ghostDictionary = self.runFineGrainer(ghostDictionary)
+
+
+
+
+        #polymerBackboneIDs, moleculeEnds = self.obtainBackboneAtoms()
         # THIS BIT IS SPECIFIC TO P3HT SO ADDITIONAL MODELS WILL NEED TO BE
         # HARD CODED IN HERE
-        templateDict, thioAA, alk1AA, alk2AA = self.loadAATemplate()
-        self.AATemplateDictionary = templateDict
-        self.AADictionary, self.atomIDLookupTable, self.ghostDictionary = self.runFineGrainer(thioAA, alk1AA, alk2AA, polymerBackboneIDs, moleculeEnds, ghostDictionary)
+        #templateDict, thioAA, alk1AA, alk2AA = self.loadAATemplate(templateFile)
+        #self.AATemplateDictionary = templateDict
 
     def returnData(self):
         return self.CGMonomerDictionary, self.AADictionary, self.atomIDLookupTable, self.ghostDictionary
 
-                
+
     def obtainBackboneAtoms(self):
         polymerBackboneIDs = []
         for atomID in self.atomIDs:
@@ -309,75 +330,22 @@ class atomistic:
         moleculeEnds.sort()
         return polymerBackboneIDs, moleculeEnds
 
-    
-    def loadAATemplate(self):
-        templateDict = morphology('./templates/mid3HT.xml').CGDictionary
-        templateDict = self.trimTemplateDihedrals(templateDict)
-        # The thiophene ring consists of S1, C10, C9, C2, C1, H1 bonded to C9
-        thioAtomIDs = []
-        alk1AtomIDs = []
-        alk2AtomIDs = []
-        # Only one sulfur (S1) and alkyl bonding carbon (C2) so we can use index here
-        thioAtomIDs.append(templateDict['type'].index('S1'))
-        thioAtomIDs.append(templateDict['type'].index('C2'))
-        thioAtomIDs.append(templateDict['type'].index('C1'))
-        thioAtomIDs.append(templateDict['type'].index('C10'))
-        # By examining the bonds, we can add all of the correct atoms to the correct lists.
-        for bond in templateDict['bond']:
-            if ('C9' in bond[0]) and ('H1' in bond[0]):
-                if bond[1] not in thioAtomIDs:
-                    thioAtomIDs.append(bond[1])
-                if bond[2] not in thioAtomIDs:
-                    thioAtomIDs.append(bond[2])
-            elif ('H1' in bond[0]) and (('C3' in bond[0]) or ('C4' in bond[0]) or ('C5' in bond[0])):
-                if bond[1] not in alk1AtomIDs:
-                    alk1AtomIDs.append(bond[1])
-                if bond[2] not in alk1AtomIDs:
-                    alk1AtomIDs.append(bond[2])
-            elif ('H1' in bond[0]) and (('C6' in bond[0]) or ('C7' in bond[0]) or ('C8' in bond[0])):
-                if bond[1] not in alk2AtomIDs:
-                    alk2AtomIDs.append(bond[1])
-                if bond[2] not in alk2AtomIDs:
-                    alk2AtomIDs.append(bond[2])
-        thioAtomIDs.sort()
-        alk1AtomIDs.sort()
-        alk2AtomIDs.sort()
-        return templateDict, thioAtomIDs, alk1AtomIDs, alk2AtomIDs
 
-
-    def trimTemplateDihedrals(self, templateDict):
-        # Remove the dihedrals that are not required in order to properly define the P3HT forcefield
-        # (hardcoded to P3HT)
-        popList = []
-        for dihedralNo in range(len(templateDict['dihedral'])):
-            dihedralAtoms = templateDict['dihedral'][dihedralNo][0]
-            # Don't need any dihedrals including H
-            if 'H1' in dihedralAtoms:
-                popList.append(dihedralNo)
-            # Some other dihedrals are overdefined. Remove them here:
-            if (dihedralAtoms == 'C9-C2-C1-S1') or (dihedralAtoms == 'C1-C2-C3-C4') or (dihedralAtoms == 'C3-C2-C1-S1'):
-                popList.append(dihedralNo)
-        popList.sort(reverse=True)
-        for popElement in popList:
-            templateDict['dihedral'].pop(popElement)
-        return templateDict
-
-    
     def getCGMonomerDict(self):
         CGMonomerDictionary = {'position':[], 'image':[], 'mass':[], 'diameter':[], 'type':[], 'body':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[], 'charge':[], 'lx':0, 'ly':0, 'lz':0}
-        # First, do just the positions and find the newAtomIDs for each CG site
-        for atomID in self.atomIDs:
-            CGMonomerDictionary['position'].append(self.CGDictionary['position'][atomID])
+        # First, do just the positions and find the newsiteIDs for each CG site
+        for siteID in self.siteIDs:
+            CGMonomerDictionary['position'].append(self.CGDictionary['position'][siteID])
         # Now sort out the other one-per-atom properties
         for key in ['image', 'mass', 'diameter', 'type', 'body', 'charge']:
             if len(self.CGDictionary[key]) != 0:
-                for atomID in self.atomIDs:
-                    CGMonomerDictionary[key].append(self.CGDictionary[key][atomID])
-        # Now rewrite the bonds based on the newAtomIDs
+                for siteID in self.siteIDs:
+                    CGMonomerDictionary[key].append(self.CGDictionary[key][siteID])
+        # Now rewrite the bonds based on the newsiteIDs
         for key in ['bond', 'angle', 'dihedral', 'improper']:
             for element in self.CGDictionary[key]:
-                for atomID in self.atomIDs:
-                    if (atomID in element) and (element not in CGMonomerDictionary[key]):
+                for siteID in self.siteIDs:
+                    if (siteID in element) and (element not in CGMonomerDictionary[key]):
                         CGMonomerDictionary[key].append(element)
         # Now update the box parameters
         for key in ['lx', 'ly', 'lz']:
@@ -386,11 +354,25 @@ class atomistic:
         CGMonomerDictionary['natoms'] = len(CGMonomerDictionary['position'])
         return CGMonomerDictionary
 
-    
-    def runFineGrainer(self, thioAAIDs, alk1AAIDs, alk2AAIDs, polymerBackboneIDs, moleculeEnds, ghostDictionary):
+
+    def runFineGrainer(self, ghostDictionary):
         AADictionary = {'position':[], 'image':[], 'unwrapped_position':[], 'mass':[], 'diameter':[], 'type':[], 'body':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[], 'charge':[], 'lx':0, 'ly':0, 'lz':0}
-        
-        thioAACOM, alk1AACOM, alk2AACOM = self.getAATemplatePosition(thioAAIDs, alk1AAIDs, alk2AAIDs)
+        CGCoMs = self.getAATemplatePosition(self.CGBeadToAAIDs)
+        # Need to keep track of the atom ID numbers globally - runFineGrainer sees individual monomers, atomistic sees molecules and the XML needs to contain the entire morphology.
+        noAtomsInMolecule = 0
+        print self.siteIDs
+        exit()
+
+
+
+
+        currentMonomerIndex = sum(self.moleculeLengths[:self.moleculeIndex])
+
+
+
+
+
+
         atomIDLookupTable = {}
         # Begin at one terminating monomer and build up the monomers
         bondedCGSites = []
@@ -398,9 +380,6 @@ class atomistic:
             monomerSites = self.identifyMonomerSites(backboneID)
             bondedCGSites.append(monomerSites)
         noAtomsInMolecule = 0
-        # Normalisation no longer needed, but need to keep track of the atom ID numbers globally - runFineGrainer sees individual monomers, atomistic sees molecules and the XML needs to contain the entire morphology.
-        # If this isn't the first molecule in the morphology, we need to offset the CG indices in the atomIDLookupTable, because runhoomd treats each molecule as isolated
-        #CGIDOffset = bondedCGSites[0][0]
 
         # Keep track of the current monomer number because this will be used to describe
         # the index of the thiophene rigid bodies
@@ -614,7 +593,7 @@ class atomistic:
             atomDictionary['unwrapped_position'][alk2AtomID] = [newPosn[0,0], newPosn[0,1], newPosn[0,2]]
         return atomDictionary
 
-    
+
     def identifyMonomerSites(self, backboneID):
         # 3 length list of the form: [thio, bonded-alk1, bonded-alk2]
         monomerSites = [backboneID]
@@ -633,7 +612,7 @@ class atomistic:
                 monomerSites.append(bond[1])
                 break
         return monomerSites
-                
+
 
     def updateMoleculeDictionary(self, currentMonomerDictionary, AADictionary):
         keyList = AADictionary.keys()
@@ -645,46 +624,35 @@ class atomistic:
                 AADictionary[key].append(value)
         return AADictionary
     
-    def getAATemplatePosition(self, thioAAIDs, alk1AAIDs, alk2AAIDs):
-        thioAAPosn = []
-        alk1AAPosn = []
-        alk2AAPosn = []
-        thioAAMasses = []
-        alk1AAMasses = []
-        alk2AAMasses = []
-        # Need to get the masses first, obtained from nist.gov
-        for atomID in thioAAIDs:
-            if ('C' in self.AATemplateDictionary['type'][atomID]):
-                thioAAMasses.append(12.00000)
-            elif ('S' in self.AATemplateDictionary['type'][atomID]):
-                thioAAMasses.append(31.97207)
-            elif ('H' in self.AATemplateDictionary['type'][atomID]):
-                thioAAMasses.append(1.00783)
-            else:
-                raise SystemError('INCORRECT ATOM TYPE', self.AATemplateDictionary['type'][atomID])
-            thioAAPosn.append(self.AATemplateDictionary['unwrapped_position'][atomID])
-        for atomID in alk1AAIDs:
-            if ('C' in self.AATemplateDictionary['type'][atomID]):
-                alk1AAMasses.append(12.00000)
-            elif ('H' in self.AATemplateDictionary['type'][atomID]):
-                alk1AAMasses.append(1.00783)
-            else:
-                raise SystemError('INCORRECT ATOM TYPE', self.AATemplateDictionary['type'][atomID])
-            alk1AAPosn.append(self.AATemplateDictionary['unwrapped_position'][atomID])
-        for atomID in alk2AAIDs:
-            if ('C' in self.AATemplateDictionary['type'][atomID]):
-                alk2AAMasses.append(12.00000)
-            elif ('H' in self.AATemplateDictionary['type'][atomID]):
-                alk2AAMasses.append(1.00783)
-            else:
-                raise SystemError('INCORRECT ATOM TYPE', self.AATemplateDictionary['type'][atomID])
-            alk2AAPosn.append(self.AATemplateDictionary['unwrapped_position'][atomID])
-        # These output as Numpy arrays because we can't do maths with lists
-        thiopheneCOM = helperFunctions.calcCOM(thioAAPosn, thioAAMasses)
-        alk1COM = helperFunctions.calcCOM(alk1AAPosn, alk1AAMasses)
-        alk2COM = helperFunctions.calcCOM(alk2AAPosn, alk2AAMasses)
-        # Now move the COM's based on the position of the atoms in self.CGDictionary
-        return thiopheneCOM, alk1COM, alk2COM
+    def getAATemplatePosition(self, CGToTemplateAAIDs):
+        CGCoMs = {}
+        for siteName in CGToTemplateAAIDs.keys():
+            atomIDs = CGToTemplateAAIDs[siteName]
+            sitePositions = []
+            siteMasses = []
+            for atomID in atomIDs:
+                # Masses obtained from nist.gov, for the atoms we are likely to simulate the most.
+                # Add in new atoms here if your molecule requires it!
+                if (self.AATemplateDictionary['type'][atomID][0] == 'BR') or (self.AATemplateDictionary['type'][atomID][0] == 'Br') or (self.AATemplateDictionary['type'][atomID][0] == 'br'):
+                    siteMasses.append(78.918338) #Note that this is Br 79 although Br 81 is equally likely isotopically
+                elif (self.AATemplateDictionary['type'][atomID][0] == 'SI') or (self.AATemplateDictionary['type'][atomID][0] == 'Si') or (self.AATemplateDictionary['type'][atomID][0] == 'si'):
+                    siteMasses.append(27.976926)
+                elif (self.AATemplateDictionary['type'][atomID][0] == 'C') or (self.AATemplateDictionary['type'][atomID][0] == 'c'):
+                    siteMasses.append(12.000000)
+                elif (self.AATemplateDictionary['type'][atomID][0] == 'H') or (self.AATemplateDictionary['type'][atomID][0] == 'h'):
+                    siteMasses.append(1.007825)
+                elif (self.AATemplateDictionary['type'][atomID][0] == 'S') or (self.AATemplateDictionary['type'][atomID][0] == 's'):
+                    siteMasses.append(31.972071)
+                elif (self.AATemplateDictionary['type'][atomID][0] == 'O') or (self.AATemplateDictionary['type'][atomID][0] == 'o'):
+                    siteMasses.append(15.994914)
+                elif (self.AATemplateDictionary['type'][atomID][0] == 'N') or (self.AATemplateDictionary['type'][atomID][0] == 'n'):
+                    siteMasses.append(14.003074)
+                else:
+                    raise SystemError('Unknown atomic mass', self.AATemplateDictionary['type'][atomID], 'please hard-code.')
+                sitePositions.append(self.AATemplateDictionary['unwrapped_position'][atomID])
+            # These output as numpy arrays because we can't do maths with lists
+            CGCoMs[siteName] = helperFunctions.calcCOM(sitePositions, siteMasses)
+        return CGCoMs
 
 
 class writeXML:
