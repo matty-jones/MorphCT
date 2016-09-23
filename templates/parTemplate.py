@@ -30,7 +30,20 @@ CGTOTEMPLATEAAIDS
 CGToTemplateBonds = {\
 CGTOTEMPLATEBONDS
 }
-### NEED TO INCLUDE RIGID BODIES HERE ###
+rigidBodySites = {\
+RIGIDBODYSITES
+}
+additionalConstraints = [\
+ADDITIONALCONSTRAINTS
+]
+moleculeTerminatingUnits = {\
+'H1':[0,0,0]
+}
+moleculeTerminatingBonds = [\
+]
+moleculeTerminatingConnections = [\
+TERMINATINGCONNECTIONS
+]
 
 # ---=== Forcefield Parameters ===---
 pairRCut = 10
@@ -78,7 +91,7 @@ groupAnchoring = ['all', 'all', 'all', 'all', 'all', 'none']
 parameterFile = __file__
 
 if __name__ == "__main__":
-    parameterNames = [i for i in dir() if (not i.startswith('__')) and (i not in ['runMorphCT'])]
+    parameterNames = [i for i in dir() if (not i.startswith('__')) and (i not in ['runMorphCT', 'os', 'sys'])]
     parameters = {}
     for name in parameterNames:
         parameters[name] = locals()[name]

@@ -73,9 +73,32 @@ def linearInterpDescendingY(targetValue, xArray, yArray):
     return xVal
 
 
-def calcCOM(listOfPositions, listOfMasses):
-    '''This function calculates the centre of mass of a collection of sites/atoms (listOfPositions) with corresponding mass (listOfMasses)'''
+def calcCOM(listOfPositions, listOfAtomTypes = None, listOfMasses = None):
+    '''This function calculates the centre of mass of a collection of sites/atoms (listOfPositions) with corresponding type (listOfAtomTypes) or mass (listOfMasses)
+    If listOfMasses is not specified, then listOfAtomTypes MUST be.'''
     massWeighted = np.array([0.0, 0.0, 0.0])
+    if listOfMasses == None:
+        listOfMasses = []
+        for atomType in listOfAtomTypes:
+            # Masses obtained from nist.gov, for the atoms we are likely to simulate the most.
+            # Add in new atoms here if your molecule requires it!
+            if ('BR' in atomType) or ('Br' in atomType) or ('br' in atomType):
+                print "Br 79 being used as the preferred isotope, change in helperFunctions.calcCOM if not!"
+                listOfMasses.append(78.918338)
+            elif ('SI' in atomType) or ('Si' in atomType) or ('si' in atomType):
+                listOfMasses.append(27.976926)
+            elif ('C' in atomType) or ('c' in atomType):
+                listOfMasses.append(12.000000)
+            elif ('H' in atomType) or ('h' in atomType):
+                listOfMasses.append(1.007825)
+            elif ('S' in atomType) or ('s' in atomType):
+                listOfMasses.append(31.972071)
+            elif ('O' in atomType) or ('o' in atomType):
+                listOfMasses.append(15.994914)
+            elif ('N' in atomType) or ('n' in atomType):
+                listOfMasses.append(14.003074)
+            else:
+                raise SystemError("Unknown atomic mass", atomType, "please hardcode into helperFunctions.calcCOM.")
     totalMass = np.sum(listOfMasses)
     for atomID, position in enumerate(listOfPositions):
         for axis in range(3):
@@ -232,66 +255,51 @@ def addDiameters(inputDictionary):
     return inputDictionary
 
 
-def addTerminatingHydrogens(inputDictionary):
-    '''This function takes a runHoomd.py input dictionary, determines the terminating monomers in the system, and creates new hydrogen atoms at a sensible position, bonded to the terminating carbon atoms of the chain'''
-    # Find terminating carbon on the molecule
-    connectingCarbons = {}
-    terminatingCarbonIDs = []
-    terminatingHydrogenIDs = []
+def addTerminatingHydrogen(inputDictionary, terminatingConnection, terminatingUnit=[['H1',0,0,0]], terminatingUnitBonds=None):
+    '''This function takes a runHoomd.py input dictionary, and the atom that the terminating unit is bonded to'''
+    # Examine the current bonds on the terminating connection
+    previousBondVectors = []
     for bond in inputDictionary['bond']:
-        if 'C1' in bond[0]:
-            # Should pick up C1 and C10
-            if 'C1' in inputDictionary['type'][bond[1]]:
-                if bond[1] not in connectingCarbons:
-                    connectingCarbons[bond[1]] = [1]
-                else:
-                    connectingCarbons[bond[1]][0] += 1
-                if 'S1' in inputDictionary['type'][bond[2]]:
-                    connectingCarbons[bond[1]].append(bond[2])
-            if 'C1' in inputDictionary['type'][bond[2]]:
-                if bond[2] not in connectingCarbons:
-                    connectingCarbons[bond[2]] = [1]
-                else:
-                    connectingCarbons[bond[2]][0] += 1
-                if 'S1' in inputDictionary['type'][bond[1]]:
-                    connectingCarbons[bond[2]].append(bond[1])
-    for connectingCarbonID in connectingCarbons:
-        # Terminating Hydrogens are needed when there are only 2 bonds
-        # (Hardcoded for P3HT)
-        if connectingCarbons[connectingCarbonID][0] == 2:
-            terminatingCarbonIDs.append([connectingCarbonID, connectingCarbons[connectingCarbonID][1]])
-    # Now add the hydrogens
-    for terminatingCarbon in terminatingCarbonIDs:
-        # Get Hydrogen Position
-        # Put the Hydrogen 1 unit (angstroems currently) away from the carbon, in the opposite direction to the sulfur.
-        carbonPosition = inputDictionary['position'][terminatingCarbon[0]]
-        sulfurPosition = inputDictionary['position'][terminatingCarbon[1]]
-        sulfurAxis = findAxis(sulfurPosition, carbonPosition)
-        hydrogenPosition = list(np.array(carbonPosition) + sulfurAxis)
-        # Update the dictionary with all of the associated information for the hydrogen
-        inputDictionary['position'].append(hydrogenPosition)
-        inputDictionary['image'].append(inputDictionary['image'][terminatingCarbon[0]])
-        # Add the unwrapped_position
-        unwrappedPosition = []
-        image = inputDictionary['image'][terminatingCarbon[0]]
-        simulationDimensions = [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']]
-        for axis in range(len(image)):
-            unwrappedPosition.append((image[axis]*simulationDimensions[axis])+hydrogenPosition[axis])
-        inputDictionary['unwrapped_position'].append(unwrappedPosition)
-        inputDictionary['mass'].append(1.00794)
-        inputDictionary['diameter'].append(0.53)
-        inputDictionary['type'].append('H1')
-        # Terminating hydrogens should be flexible (they get added to the flexible group in hoomd)
-        inputDictionary['body'].append(-1)
-        #inputDictionary['body'].append(inputDictionary['body'][terminatingCarbon[0]])
-        inputDictionary['charge'].append(inputDictionary['charge'][terminatingCarbon[0]])
-        # Add the bond information (angles and dihedrals are unnecessary)
-        newBond = [inputDictionary['type'][terminatingCarbon[0]]+'-H1', terminatingCarbon[0], len(inputDictionary['type'])-1]
-        inputDictionary['bond'].append(newBond)
-        # Finally, update the number of atoms in the system (we just added one!)
-        terminatingHydrogenIDs.append(inputDictionary['natoms'])
-        inputDictionary['natoms'] += 1
-    return inputDictionary, terminatingHydrogenIDs
+        if bond[1] == terminatingConnection:
+            previousBondVectors.append(np.array(inputDictionary['unwrapped_position'][bond[2]]) - np.array(inputDictionary['unwrapped_position'][bond[1]]))
+        elif bond[2] == terminatingConnection:
+            previousBondVectors.append(np.array(inputDictionary['unwrapped_position'][bond[1]]) - np.array(inputDictionary['unwrapped_position'][bond[2]]))
+    bondLengths = []
+    for previousBond in previousBondVectors:
+        bondLengths.append(np.linalg.norm(previousBond))
+    terminatingBondLength = np.average(bondLengths)
+    terminatingBondVector = -np.sum(previousBondVectors, 0)/terminatingBondLength
+    # The first atom of the terminatingUnit connects to the terminatingConnection.
+    # Add this atom and the bond
+    terminatingAtomPosn = list(np.array(inputDictionary['unwrapped_position'][terminatingConnection]) + terminatingBondVector + np.array(terminatingUnit[0][1:]))
+    inputDictionary['unwrapped_position'].append(terminatingAtomPosn)
+    inputDictionary['type'].append(terminatingUnit[0][0])
+    # NOTE: This is hardcoded, change to soft when implementing different terminating units
+    inputDictionary['mass'].append(1.007825)
+    inputDictionary['diameter'].append(0.53)
+    inputDictionary['body'].append(-1)
+    inputDictionary['charge'].append(inputDictionary['charge'][terminatingConnection])
+    # Add the wrapped coordinates
+    simulationDimensions = [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']]
+    image = [0, 0, 0]
+    position = copy.deepcopy(terminatingAtomPosn)
+    for axis in range(len(image)):
+        while position[axis] > simulationDimensions[axis]/2.0:
+            position[axis] -= inputDictionary[axis]
+            image[axis] += 1
+        while position[axis] < -simulationDimension/2.0:
+            position[axis] += inputDictionary[axis]
+            image[axis] -= 1
+    inputDictionary['position'].append(position)
+    inputDictionary['image'].append(image)
+    # Add the bond
+    inputDictionary['bond'].append([inputDictionary['type'][terminatingConnection]+'-'+terminatingUnit[0][0], terminatingConnection, len(inputDictionary['type'])-1])
+    # Add any subsequent atoms and bonds in the terminatingUnit as defined by the terminatingUnitBonds
+    for atom in terminatingUnit[1:]:
+        raise SystemError("Multiple-atom terminating units not yet implemented.")
+    # Finally, update the number of atoms in the system (we just added one!)
+    inputDictionary['natoms'] += 1
+    return inputDictionary, inputDictionary['natoms']-1
 
 
 def loadMorphologyXML(xmlPath, sigma=1.0):
@@ -670,7 +678,7 @@ def createSlurmSubmissionScript(outputDir, runName, mode):
     return submissionScriptName
 
 
-def incrementAtomIDs(inputDictionary, increment):
+def incrementAtomIDs(inputDictionary, ghostDictionary, increment):
     for bond in inputDictionary['bond']:
         bond[1] += increment
         bond[2] += increment
@@ -688,7 +696,14 @@ def incrementAtomIDs(inputDictionary, increment):
         improper[2] += increment
         improper[3] += increment
         improper[4] += increment
-    return inputDictionary
+    # Note that some of the atom bonds in the ghost dictionary are going to need updating too!
+    # These are distinguished by being strings that begin with an _
+    for bondNo, bond in enumerate(ghostDictionary['bond']):
+        if str(bond[1]) == '_':
+            ghostDictionary['bond'][bondNo][1] = int(bond[1][1:]) + increment
+        elif str(bond[2]) == '_':
+            ghostDictionary['bond'][bondNo][2] = int(bond[2][1:]) + increment
+    return inputDictionary, ghostDictionary
 
 
 def scale(inputDictionary, scaleFactor):

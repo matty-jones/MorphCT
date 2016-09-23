@@ -17,9 +17,11 @@ import transferIntegrals
 
 class simulation:
     def __init__(self, **kwargs):
+        parameterDict = {}
         # Read in all of the keyword arguments from the par file
         for key, value in kwargs.iteritems():
             self.__dict__[key] = value
+            parameterDict[key] = value
         # Obtain the slurm job ID (if there is one)
         self.slurmJobID = self.getSlurmID()
         self.inputMorphologyFile = self.inputDir+'/'+self.morphology
@@ -30,8 +32,9 @@ class simulation:
         # Copy the current code and the parameter file for safekeeping
         self.copyCode()
         # Now begin running the code
-        fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], self.inputSigma, self.AATemplateFile, self.CGToTemplateAAIDs, self.CGToTemplateBonds).analyseMorphology()
-
+        if self.executeFinegraining == True:
+            fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict).analyseMorphology()
+        exit()
 
     def getSlurmID(self):
         # Use Squeue to determine the current slurm job number
@@ -53,17 +56,25 @@ class simulation:
 
 
     def makeDirTree(self):
+        print "Sorting out directory structure..."
         # Delete any previous data if the user asked to
         if self.overwriteCurrentData == True:
-            sp.Popen('rm -rf '+self.outputDirectory+'/*', shell=True)
+            sp.Popen('echo rm -rf '+self.outputDirectory+'/*', shell=True)
+            # Make sure that the rm command has finished before moving on
+            sp.Popen('rm -rf '+self.outputDirectory+'/*', shell=True).communicate()
         # Then, make sure that all the required directories are in place
         # TODO: Remove the helperFunctions that mess around with the directory structure, do it all here instead.
         for directoryToMake in ['chromophores/{input,output}ORCA/{single,pair}', 'KMC', 'molecules', 'morphology', 'code']:
-            sp.Popen('mkdir -p '+self.outputDirectory+'/'+directoryToMake, shell=True)
+            sp.Popen('echo mkdir -p '+self.outputDirectory+'/'+directoryToMake, shell=True)
+            # Make sure that the mkdir command has finished before moving on
+            sp.Popen('mkdir -p '+self.outputDirectory+'/'+directoryToMake, shell=True).communicate()
 
 
     def copyCode(self):
+        print "Copying code..."
         codeDir = os.getcwd()+'/code'
+        sp.Popen('echo cp '+codeDir+'/*.py '+self.outputDirectory+'/code/', shell=True)
+        sp.Popen('echo cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputDirectory+'/code/', shell=True)
         sp.Popen('cp '+codeDir+'/*.py '+self.outputDirectory+'/code/', shell=True)
         sp.Popen('cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputDirectory+'/code/', shell=True)
 

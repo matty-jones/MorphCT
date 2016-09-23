@@ -14,6 +14,7 @@ def obtainCGMappings(inputDict, templateDict):
         print typeName+" ",
     print "\n"
     CGToTemplateAAIDs = {}
+    rigidBodySites = {}
     while True:
         atomQuantityList = []
         for CGSiteType in CGSiteTypes:
@@ -49,10 +50,24 @@ def obtainCGMappings(inputDict, templateDict):
             elif len(AAIDs) < atomQuantityList[CGSiteTypeIndex]:
                 print "The length of the AAIDs specified ("+str(len(AAIDs))+") is less than the quantity specified previously ("+str(atomQuantityList[CGSiteTypeIndex])+")."
             else:
-                print ""
                 CGToTemplateAAIDs[str(CGSiteType)] = AAIDs
                 break
-    return CGToTemplateAAIDs
+        while True:
+            rigidString = str(raw_input("Is this site a rigid body? Leave empty for no or enter the integer atom IDs for the atoms in this group that belong to the rigid body: "))
+            if len(rigidString) == 0:
+                break
+            try:
+                rigidIDs = map(int, rigidString.split(' '))
+            except ValueError:
+                print "Syntax error, please try again."
+            for atomID in rigidIDs:
+                if atomID not in CGToTemplateAAIDs[str(CGSiteType)]:
+                    print "Unexpected atom index found:", atomID
+                    continue
+            rigidBodySites[str(CGSiteType)] = rigidIDs
+            break
+        print ""
+    return CGToTemplateAAIDs, rigidBodySites
 
 
 def lookForFiles(inputDirectory, mode):
@@ -175,7 +190,7 @@ def checkBonds(inputDict, templateDict, CGToTemplateAAIDs):
                         break
                     except:
                         print "Please try again."
-                CGToAAIDBonds[CGBondTypes[0]] = interMonomerBond
+                #CGToAAIDBonds[CGBondTypes[0]] = interMonomerBond - Don't put this here, it will be in `additionalConstraints' instead for ease of implementation in the finegrainer.
                 CGBondTypes.pop(0)
                 break
             else:
@@ -184,12 +199,12 @@ def checkBonds(inputDict, templateDict, CGToTemplateAAIDs):
                 intraCGBonds.pop(bondSelection)
                 break
     # Add any new constraints required
+    additionalConstraints = []
     if 'interMonomerBond' in locals():
         print "\n The Inter-monomer bond", interMonomerBond, "will probably require additional constraints (angles, dihedrals, impropers)."
         print "Please define any additional constraints now."
-        additionalConstraints = []
+        additionalConstraints.append(interMonomerBond)
         while True:
-            print "Current Constraints:", additionalConstraints
             print "---=== Defining additional constraints for inter-monomer bond", interMonomerBond, "===---"
             print "0) New Angle Constraint"
             print "1) New Dihedral Constraint"
@@ -280,38 +295,52 @@ def checkBonds(inputDict, templateDict, CGToTemplateAAIDs):
                         print "Please try again."
             else:
                 break
-        additionalConstraints.append(interMonomerBond)
-        return CGToAAIDBonds, additionalConstraints
+    # Now ask about the terminating groups
+    print "NOTE: Currently the code only supports terminating molecules with H1 hydrogen atoms. If a termination group is required, please modify the code to incorporate additional termination template files."
+    moleculeTerminatingUnits = []
+    while True:
+        startAtom = str(raw_input("Please indicate the atom ID at the start of the molecule that the terminating hydrogen is attached to (leave blank for no terminating group, e.g. in small molecules): "))
+        if len(startAtom) == 0:
+            break
+        try:
+            moleculeTerminatingUnits.append([templateDict['type'][int(startAtom)]+'-H1', int(startAtom)])
+        except:
+            print "Please try again."
+            continue
+        endAtom = str(raw_input("Please indicate the atom ID at the end of the molecule that the terminating hydrogen is attached to: "))
+        if len(endAtom) == 0:
+            break
+        try:
+            moleculeTerminatingUnits.append([templateDict['type'][int(endAtom)]+'-H1', int(endAtom)])
+            break
+        except:
+            print "Please try again."
+            continue
+    return CGToAAIDBonds, additionalConstraints, moleculeTerminatingUnits
 
 
-def getForcefieldParameters(templateDict, additionalConstraints, manual=True):
-    forcefieldParameters = {'BONDCOEFFS':[], 'ANGLECOEFFS':[], 'DIHEDRALCOEFFS':[], 'IMPROPERCOEFFS':[], 'LJPAIRCOEFFS':[], 'DPDPAIRCOEFFS':[]}
-    sortedAdditionalConstraints = [[],[],[],[]] # [[]]*4 doesn't work because it just copies the memory address!
-    for constraint in additionalConstraints:
-        if constraint[0] != 'IMPROPER':
-            sortedAdditionalConstraints[len(constraint)-2].append(constraint)
-        else:
-            sortedAdditionalConstraints[3].append(constraint[1:])
+def getForcefieldParameters(templateDict, additionalConstraints, moleculeTerminatingUnits, manual=True):
+    forcefieldParameters = {'BONDCOEFFS':[], 'ANGLECOEFFS':[], 'DIHEDRALCOEFFS':[], 'IMPROPERCOEFFS':[], 'LJPAIRCOEFFS':[], 'DPDPAIRCOEFFS':[], 'ADDITIONALCOEFFS':[]}
     # Sort out bonds first
-    bondTypes = sorted(list(set(bond[0] for bond in templateDict['bond'])) + list(additionalBond[0] for additionalBond in sortedAdditionalConstraints[0]))
+    bondTypes = sorted(list(set(bond[0] for bond in templateDict['bond'])))
     for bondType in bondTypes:
         if manual == True:
             while True:
                 try:
-                    bondCoeffsRaw = raw_input("Please enter the (unscaled!) k and r0 values for the "+str(bondType)+" bond, separated by a space: ").split(" ") 
+                    bondCoeffsRaw = raw_input("Please enter the (unscaled!) k and r0 values for the "+str(bondType)+" bond, separated by a space: ").split(" ")
                     forcefieldParameters['BONDCOEFFS'].append([bondType] + list(map(float, bondCoeffsRaw)))
                     break
                 except:
                     print "Please try again."
         else:
             forcefieldParameters['BONDCOEFFS'].append([bondType, 1.0, 1.0])
-        # Sort out angles
-        angleTypes = sorted(list(set(angle[0] for angle in templateDict['angle'])) + list(additionalAngle[0] for additionalAngle in sortedAdditionalConstraints[1]))
+    # Sort out angles
+    angleTypes = sorted(list(set(angle[0] for angle in templateDict['angle'])))
     for angleType in angleTypes:
         if manual == True:
             while True:
                 try:
-                    angleCoeffsRaw = raw_input("Please enter the (unscaled!) k and theta0 values for the "+str(angleType)+" angle, separated by a space: ").split(" ") 
+                    angleCoeffsRaw = raw_input("Please enter the (unscaled!) k and theta0 values for the "+str(angleType)+" angle, separated by a space: ").split(" ")
                     forcefieldParameters['ANGLECOEFFS'].append([angleType] + list(map(float, angleCoeffsRaw)))
                     break
                 except:
@@ -319,7 +348,7 @@ def getForcefieldParameters(templateDict, additionalConstraints, manual=True):
         else:
             forcefieldParameters['ANGLECOEFFS'].append([angleType, 1.0, 1.0])
     # Sort out dihedrals
-    dihedralTypes = sorted(list(set(dihedral[0] for dihedral in templateDict['dihedral'])) + list(additionalDihedral[0] for additionalDihedral in sortedAdditionalConstraints[2]))
+    dihedralTypes = sorted(list(set(dihedral[0] for dihedral in templateDict['dihedral'])))
     for dihedralType in dihedralTypes:
         if manual == True:
             while True:
@@ -332,7 +361,7 @@ def getForcefieldParameters(templateDict, additionalConstraints, manual=True):
         else:
             forcefieldParameters['DIHEDRALCOEFFS'].append([dihedralType, 1.0, 1.0, 1.0, 1.0])
     # Sort out impropers
-    improperTypes = sorted(list(set(improper[0] for improper in templateDict['improper'])) + list(additionalImproper[0] for additionalImproper in sortedAdditionalConstraints[3]))
+    improperTypes = sorted(list(set(improper[0] for improper in templateDict['improper'])))
     for improperType in improperTypes:
         if manual == True:
             while True:
@@ -361,6 +390,17 @@ def getForcefieldParameters(templateDict, additionalConstraints, manual=True):
             else:
                 forcefieldParameters['LJPAIRCOEFFS'].append([pairType, 1.0, 1.0])
                 forcefieldParameters['DPDPAIRCOEFFS'].append([pairType, 1.0, 1.0])
+    # Sort out additional constraints
+    for constraint in (additionalConstraints + moleculeTerminatingUnits):
+        if len(constraint) == 3 or len(constraint) == 4:
+            # Bond or Angle
+            forcefieldParameters['ADDITIONALCOEFFS'].append([constraint[0], 1.0, 1.0])
+        elif len(constraint) == 5:
+            # Dihedral
+            forcefieldParameters['ADDITIONALCOEFFS'].append([constraint[0], 1.0, 1.0, 1.0, 1.0])
+        elif len(constraint) == 6:
+            # Improper
+            forcefieldParameters['ADDITIONALCOEFFS'].append([constraint[1], 1.0, 1.0, 1.0, 1.0])
     return forcefieldParameters
 
 
@@ -379,7 +419,7 @@ def getParFileName():
     return testFileName
 
 
-def writeParFile(fileName, INPUTDIR, INPUTMORPHOLOGY, INPUTSIGMA, OUTPUTDIR, TEMPLATEDIR, AATEMPLATEFILE, CGToIDDictionary, CGToBondDictionary, forcefieldParameters):
+def writeParFile(fileName, INPUTDIR, INPUTMORPHOLOGY, INPUTSIGMA, OUTPUTDIR, TEMPLATEDIR, AATEMPLATEFILE, CGToIDDictionary, CGToBondDictionary, forcefieldParameters, additionalInterMonomerConstraints, AAIDsInRigidBodies, moleculeTerminatingUnitConnections):
     with open(os.getcwd()+'/templates/parTemplate.py', 'r') as parTemplateFile:
         parTemplate = parTemplateFile.readlines()
     # Define these in the locals() before we iterate to prevent a dictionary chaning size error
@@ -396,11 +436,26 @@ def writeParFile(fileName, INPUTDIR, INPUTMORPHOLOGY, INPUTSIGMA, OUTPUTDIR, TEM
             for dictKey in sorted(CGToIDDictionary.keys()):
                 AAIDLines += repr(dictKey)+":"+str(CGToIDDictionary[dictKey])+",\\\n"
             parTemplate[lineNo] = AAIDLines
-        if 'CGTOTEMPLATEBONDS' in line:
+        elif 'CGTOTEMPLATEBONDS' in line:
             AABondLines = ""
             for dictKey in sorted(CGToBondDictionary.keys()):
                 AABondLines += repr(dictKey)+":"+str(CGToBondDictionary[dictKey])+",\\\n"
             parTemplate[lineNo] = AABondLines
+        elif 'ADDITIONALCONSTRAINTS' in line:
+            addConstLines = ""
+            for constraint in additionalInterMonomerConstraints:
+                addConstLines += str(constraint)+",\\\n"
+            parTemplate[lineNo] = addConstLines
+        elif 'RIGIDBODYSITES' in line:
+            rigidBodyLines = ""
+            for dictKey in sorted(AAIDsInRigidBodies.keys()):
+                rigidBodyLines += repr(dictKey)+":"+str(AAIDsInRigidBodies[dictKey])+",\\\n"
+            parTemplate[lineNo] = rigidBodyLines
+        elif 'TERMINATINGCONNECTIONS' in line:
+            terminationLines = ""
+            for constraint in moleculeTerminatingUnitConnections:
+                terminationLines += str(constraint)+",\\\n"
+            parTemplate[lineNo] = terminationLines
         # Change the forcefield lists
         for FFCoeffsName, FFCoeffsValue in forcefieldParameters.iteritems():
             if FFCoeffsName in line:
@@ -422,15 +477,15 @@ if __name__ == "__main__":
     templateDir, AATemplateFile = lookForFiles('templates', 'atomistic template')
     templateDict = helperFunctions.loadMorphologyXML(templateDir+'/'+AATemplateFile)
     # Then, work out the CG mappings
-    CGToTemplateAAIDs = obtainCGMappings(inputDict, templateDict)
+    CGToTemplateAAIDs, rigidBodySites = obtainCGMappings(inputDict, templateDict)
     # Now, check that the template contains all of the bonds that are specified in the CG morphology
-    CGToAAIDBonds, additionalConstraints = checkBonds(inputDict, templateDict, CGToTemplateAAIDs)
+    CGToAAIDBonds, additionalConstraints, moleculeTerminatingUnits = checkBonds(inputDict, templateDict, CGToTemplateAAIDs)
     # Next up are the force-field coefficients for all of the bonds, angles and dihedrals specified here
-    forcefieldParameters = getForcefieldParameters(templateDict, additionalConstraints, manual=False)
+    forcefieldParameters = getForcefieldParameters(templateDict, additionalConstraints, moleculeTerminatingUnits, manual=False)
     # Finally, create the parameter file.
     print "The majority of the input parameters are now set."
     fileName = getParFileName()
     print "These, along with some default parameters will be written to "+str(fileName)+"."
     print "You are encouraged to modify "+str(fileName)+" directly now to avoid this process, and also to check that the default variables are desirable."
-    writeParFile(fileName, inputDir, inputMorphology, inputSigma, outputDir, templateDir, AATemplateFile, CGToTemplateAAIDs, CGToAAIDBonds, forcefieldParameters)
+    writeParFile(fileName, inputDir, inputMorphology, inputSigma, outputDir, templateDir, AATemplateFile, CGToTemplateAAIDs, CGToAAIDBonds, forcefieldParameters, additionalConstraints, rigidBodySites, moleculeTerminatingUnits)
     print "Parameters written to "+str(fileName)+"."
