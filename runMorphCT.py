@@ -14,19 +14,23 @@ import executeOrca
 import transferIntegrals
 
 
-
 class simulation:
     def __init__(self, **kwargs):
         parameterDict = {}
         # Read in all of the keyword arguments from the par file
         for key, value in kwargs.iteritems():
             self.__dict__[key] = value
-            parameterDict[key] = value
         # Obtain the slurm job ID (if there is one)
         self.slurmJobID = self.getSlurmID()
+        # Parse the parameter file to get more useful file locations
         self.inputMorphologyFile = self.inputDir+'/'+self.morphology
         self.outputDirectory = self.outputDir+'/'+self.morphology[:-4]
         self.AATemplateFile = self.repeatUnitTemplateDirectory+'/'+self.repeatUnitTemplateFile
+        # Add all the parameters to the parameterDict, which will be used to send everything between classes
+        for key, value in self.__dict__.iteritems():
+            if key in ['os', 'sys']:
+                continue
+            parameterDict[key] = value
         # Make the correct directory tree
         self.makeDirTree()
         # Copy the current code and the parameter file for safekeeping

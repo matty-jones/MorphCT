@@ -285,10 +285,10 @@ def addTerminatingHydrogen(inputDictionary, terminatingConnection, terminatingUn
     position = copy.deepcopy(terminatingAtomPosn)
     for axis in range(len(image)):
         while position[axis] > simulationDimensions[axis]/2.0:
-            position[axis] -= inputDictionary[axis]
+            position[axis] -= simulationDimensions[axis]
             image[axis] += 1
-        while position[axis] < -simulationDimension/2.0:
-            position[axis] += inputDictionary[axis]
+        while position[axis] < -simulationDimensions[axis]/2.0:
+            position[axis] += simulationDimensions[axis]
             image[axis] -= 1
     inputDictionary['position'].append(position)
     inputDictionary['image'].append(image)
@@ -678,7 +678,9 @@ def createSlurmSubmissionScript(outputDir, runName, mode):
     return submissionScriptName
 
 
-def incrementAtomIDs(inputDictionary, ghostDictionary, increment):
+def incrementAtomIDs(originalInputDictionary, originalGhostDictionary, increment, modifyGhostDictionary = False):
+    inputDictionary = copy.deepcopy(originalInputDictionary)
+    ghostDictionary = copy.deepcopy(originalGhostDictionary)
     for bond in inputDictionary['bond']:
         bond[1] += increment
         bond[2] += increment
@@ -698,11 +700,12 @@ def incrementAtomIDs(inputDictionary, ghostDictionary, increment):
         improper[4] += increment
     # Note that some of the atom bonds in the ghost dictionary are going to need updating too!
     # These are distinguished by being strings that begin with an _
-    for bondNo, bond in enumerate(ghostDictionary['bond']):
-        if str(bond[1]) == '_':
-            ghostDictionary['bond'][bondNo][1] = int(bond[1][1:]) + increment
-        elif str(bond[2]) == '_':
-            ghostDictionary['bond'][bondNo][2] = int(bond[2][1:]) + increment
+    if modifyGhostDictionary == True:
+        for bondNo, bond in enumerate(ghostDictionary['bond']):
+            if str(bond[1])[0] == '_':
+                ghostDictionary['bond'][bondNo][1] = int(bond[1][1:]) + increment
+            if str(bond[2])[0] == '_':
+                ghostDictionary['bond'][bondNo][2] = int(bond[2][1:]) + increment
     return inputDictionary, ghostDictionary
 
 
