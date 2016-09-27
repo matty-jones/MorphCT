@@ -55,9 +55,6 @@ class morphology:
                     else:
                         AAMorphologyDict[key] += AAMoleculeDict[key]
             rollingAAIndex += len(AAMoleculeDict['type'])
-            # Just 2 molecules right now
-            if moleculeNumber == 1:
-                break
         # Now add the ghost dictionary to the end of the morphology file
         totalNumberOfAtoms = len(AAMorphologyDict['type'])  # Should be == rollingAAIndex, but don't want to take any chances
         # Add in the wrapped positions of the ghosts. Need to know sim dims for this
