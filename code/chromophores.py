@@ -16,7 +16,8 @@ except ImportError:
 
 
 class obtain:
-    def __init__(self, morphologyData, moleculeProperties, boxSize, outputDir, moleculeAAIDs):
+    def __init__(self, morphologyData, moleculeProperties, boxSize, outputDir, moleculeAAIDs, AAIDtoCGs):
+        self.AAIDtoCGs = AAIDtoCGs
         self.morphologyData = morphologyData
         self.interMonomerBonds, self.terminatingHydrogenBonds = self.getImportantMonomerBonds()
         self.terminatingHydrogenAtoms = []
@@ -34,6 +35,7 @@ class obtain:
             if self.chromophores[chromophore]['realChromoID'] not in chromoList:
                 chromoList.append(self.chromophores[chromophore]['realChromoID'])
         self.writePickle(outputDir)
+        exit()
 # for chromoNo in self.chromophores.keys():
         #     if self.chromophores[chromoNo]['realChromoID'] == 30:
         #         print "--=== CHROMO", self.chromophores[chromoNo]['realChromoID'], " ===---"
@@ -279,7 +281,7 @@ class obtain:
             for chromoNo, chromophore in enumerate(molecule['morphologyChromophores']):
                 # print "Molecule =", molNo, "ChromophoreNumber in mol =", chromoID, "Actual Chromo Number =", globalChromoNo
                 globalChromoNo += 1
-                chromoDict = {'molID': molNo, 'chromoID': globalChromoNo, 'periodic': False, 'realChromoID': globalChromoNo, 'unwrapped_position': [], 'position': [], 'image': [0, 0, 0], 'type': [], 'mass': [], 'COMPosn': 0, 'thioCOMs': [], 'neighbours': [], 'atomID':[]}
+                chromoDict = {'molID': molNo, 'chromoID': globalChromoNo, 'periodic': False, 'realChromoID': globalChromoNo, 'unwrapped_position': [], 'position': [], 'image': [0, 0, 0], 'type': [], 'mass': [], 'COMPosn': 0, 'thioCOMs': [], 'neighbours': [], 'atomID': [], 'CGIDs': []}
                 # For the positions, I need all of the chromophores to be intact, but in the original image (kinda like VMD displays)
                 # To do this, calculate the COM of the chromophore based on the unwrapped coordinates, and then wrap everything back into the box
                 for atomID in chromophore:
@@ -287,6 +289,9 @@ class obtain:
                     chromoDict['unwrapped_position'].append(self.morphologyData['unwrapped_position'][atomID])
                     chromoDict['type'].append(self.morphologyData['type'][atomID])
                     chromoDict['mass'].append(self.morphologyData['mass'][atomID])
+                    CGID = self.AAIDtoCGs[atomID]
+                    if CGID not in chromoDict['CGIDs']:
+                        chromoDict['CGIDs'].append(CGID)
                 # Need to find each end of the chromophore and add it to the dictionary for later
                 # (Will need it to add additional hydrogens in)
                 chromoDict = self.addChromophoreEnds(chromoDict)

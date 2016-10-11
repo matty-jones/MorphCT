@@ -61,85 +61,90 @@ def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
         plt.hist(yvals, 20)
         plt.ylabel('Frequency')
         plt.xlabel('HOMO Level (eV)')
-        fileName = 'HOMODoS.png'
+        fileName = 'HOMODoS.pdf'
     elif mode == 'Bandgap':
         plt.hist(yvals, 20)
         plt.ylabel('Frequency')
         plt.xlabel('Bandgap (eV)')
-        fileName = 'Bandgap.png'
+        fileName = 'Bandgap.pdf'
     elif mode == 'BandgapLength':
         plt.scatter(xvals, yvals)
         plt.ylabel('Bandgap (eV)')
         plt.xlabel('Chromo Length (monomers)')
-        fileName = 'BandgapLength.png'
+        fileName = 'BandgapLength.pdf'
     elif mode == 'Splitting':
         plt.hist(yvals, 20)
         plt.ylabel('Frequency')
         plt.xlabel('HOMO Splitting (ev)')
-        fileName = 'HOMOSplit.png'
+        fileName = 'HOMOSplit.pdf'
     elif mode == 'TI':
         plt.hist(yvals, 20)
         plt.ylabel('Frequency')
         plt.xlabel('Transfer Integral (eV)')
-        fileName = 'TI.png'
+        plt.xlim([0, 1.2])
+        fileName = 'TI.pdf'
     elif mode == 'Trimmed':
         plt.hist(yvals, 20)
         plt.ylabel('Frequency')
         plt.xlabel('Non-Zero Transfer Integral (eV)')
-        fileName = 'TITrimmed.png'
+        fileName = 'TITrimmed.pdf'
     elif mode == 'Length':
         plt.scatter(xvals, yvals)
         plt.xlabel('HOMO Level (eV)')
         plt.ylabel('Chromo Length (monomers)')
-        fileName = 'HOMOLength.png'
+        fileName = 'HOMOLength.pdf'
     elif mode == 'lambda':
         plt.scatter(xvals, yvals)
         plt.xlabel('Chromo Length (monomers)')
         plt.ylabel('Reorganisation energy (eV)')
-        fileName = 'LambdaIJ.png'
+        fileName = 'LambdaIJ.pdf'
     elif mode == 'deltaEij':
-        n, bins, patches = plt.hist(yvals, 20)
+        n, bins, patches = plt.hist(yvals, np.linspace(-1.0,1.0,30))
         gaussY = gaussian(gaussBins[:-1], *fitArgs)
         scaleFactor = max(n)/max(gaussY)
         plt.plot(gaussBins[:-1], gaussY*scaleFactor, 'ro:')
         plt.ylabel('Frequency')
         plt.xlabel('Delta Eij (eV)')
-        plt.xlim([-1.5, 1.5])
-        fileName = 'deltaEij.png'
+        plt.xlim([-0.5, 0.5])
+        fileName = 'deltaEij.pdf'
     elif mode == 'averageHOMO':
         plt.scatter(xvals, yvals)
         plt.xlabel('Chromo Length (monomers)')
         plt.ylabel('Average HOMO level (eV)')
-        fileName = 'averageHOMO.png'
+        fileName = 'averageHOMO.pdf'
     elif mode == 'intraChain':
         if len(yvals) > 0:
             plt.hist(yvals, 20)
         plt.ylabel('Frequency')
         plt.xlabel('Intra-Chain TI (eV)')
-        fileName = 'intraTij.png'
+        plt.xlim([0, 1.2])
+        fileName = 'intraTij.pdf'
     elif mode == 'interChain':
         if len(yvals) > 0:
             plt.hist(yvals, 20)
         plt.ylabel('Frequency')
         plt.xlabel('Inter-Chain TI (eV)')
-        fileName = 'interTij.png'
+        plt.xlim([0, 1.2])
+        fileName = 'interTij.pdf'
     elif mode == 'intraChainTrim':
         if len(yvals) > 0:
             plt.hist(yvals, 20)
         plt.ylabel('Frequency')
         plt.xlabel('Intra-Chain TI (eV)')
-        fileName = 'intraTijTrim.png'
+        plt.xlim([0, 1.2])
+        fileName = 'intraTijTrim.pdf'
     elif mode == 'interChainTrim':
         if len(yvals) > 0:
             plt.hist(yvals, 20)
         plt.ylabel('Frequency')
         plt.xlabel('Inter-Chain TI (eV)')
-        fileName = 'interTijTrim.png'
+        plt.xlim([0, 1.2])
+        fileName = 'interTijTrim.pdf'
     elif mode == 'wobbey':
         plt.scatter(xvals, yvals)
         plt.xlabel('Chromo Length (monomers)')
         plt.ylabel('A (eV)')
-        fileName = 'averageHOMO.png'
+        fileName = 'averageHOMO.pdf'
     plt.savefig(saveDir+'/'+fileName)
     plt.clf()
     print "Figure saved as", saveDir+"/"+fileName

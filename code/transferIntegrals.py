@@ -392,7 +392,7 @@ def execute(morphologyFile):
                     revertORCAFiles(fileName)
                     fixedFilesIndices.append(failIndex)
                     failedSinglesDict.pop(fileName)
-                    failedSinglesFiles.pop(failIndex)
+                    failedSingleFiles.pop(failIndex)
             if len(failedSingleFiles) == 0:
                 break
             jobsList = [failedSingleFiles[i:i+(int(np.ceil(len(failedSingleFiles)/len(procIDs))))+1] for i in xrange(0, len(failedSingleFiles), int(np.ceil(len(failedSingleFiles)/float(len(procIDs)))))]
@@ -426,6 +426,7 @@ def execute(morphologyFile):
             # At end of loop, pop all the fixed files
             if len(fixedFilesIndices) > 0:
                 for index in sorted(fixedFilesIndices, reverse=True):
+                    failedSingleNos.remove(chromoID[0])
                     failedSingleFiles.pop(index)
         except KeyboardInterrupt:
             print "Kill command recieved. Reverting ORCA files..."

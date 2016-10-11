@@ -799,12 +799,16 @@ def cellSearchBonds(moleculeDict):
 def getAAIDsByMolecule(CGtoAAIDs):
     '''This function extracts the molecule AAIDs given a dictionary CGtoAAIDs which describes the mapping of all atom particles to each CG site'''
     moleculeAAIDs = []
+    AAIDtoCGs = {}
     for moleculeID, CGtoAAIDDict in enumerate(CGtoAAIDs):
         moleculeAAIDs.append([])
         for dictionaryValue in CGtoAAIDs[moleculeID].values():
             moleculeAAIDs[-1] += dictionaryValue[1]
         moleculeAAIDs[-1].sort()
-    return moleculeAAIDs
+        for CGID, value in CGtoAAIDDict.iteritems():
+            for AAID in value[1]:
+                AAIDtoCGs[AAID] = CGID
+    return moleculeAAIDs, AAIDtoCGs
 
 
 def getsScale(outputDir, morphologyName):

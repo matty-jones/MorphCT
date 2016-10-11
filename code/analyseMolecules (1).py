@@ -105,7 +105,7 @@ def calculatePersistenceLength(molecule, molName, outputDir, moleculeBackbone, m
         distanceToPlot.append(monomerDistance)
         cosThetaToPlot.append(np.average(cosThetaDictionary[monomerDistance]))
         ybars.append(np.std(cosThetaDictionary[monomerDistance])/np.sqrt(len(cosThetaDictionary[monomerDistance])))
-    autoCorrelationArray = cme_utils.analyze.autocorr.autocorr1D(cosThetaToPlot)
+    #autoCorrelationArray = cme_utils.analyze.autocorr.autocorr1D(cosThetaToPlot)
     persistenceLength = helperFunctions.linearInterpDescendingY(0, distanceToPlot, autoCorrelationArray)
     if persistenceLength == None:
         print "All lengths within this molecule are correlated. Setting persistence length to maximum ("+str(np.max(distanceToPlot[:len(autoCorrelationArray)]))+")..."
@@ -296,7 +296,7 @@ def execute(morphologyFile, AAfileName, CGMoleculeDict, UnrelaxedAAMorphologyDic
         thioRings, alk1Groups, alk2Groups, moleculeEnds = getFunctionalGroups(molecule, CGtoAAIDs[0], CGBonds)
         moleculeBackbone = obtainBackboneData(molecule, thioRings)
         endToEndDistance = helperFunctions.calculateSeparation(moleculeBackbone[moleculeEnds[0]]['COM'], moleculeBackbone[moleculeEnds[1]]['COM'])
-        persistenceLength = 0  # calculatePersistenceLength(molecule, molNames[molNo], outputDir, moleculeBackbone, moleculeEnds)
+        persistenceLength = calculatePersistenceLength(molecule, molNames[molNo], outputDir, moleculeBackbone, moleculeEnds)
         bendingAngles, torsionAngles, chromophoreIDs, thiopheneCOMs, unwrappedThiopheneCOMs = calculateChromophores(molecule, molNames[molNo], outputDir, moleculeBackbone)
         morphologyChromophores = []
         thioCOMs = []

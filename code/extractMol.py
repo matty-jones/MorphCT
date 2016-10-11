@@ -27,7 +27,7 @@ def execute(morphologyFile, AAfileName, inputCGMorphologyDict, inputAAMorphology
         for moleculeFile in moleculeFiles:
             if ('.POSCAR' in moleculeFile) or ('.poscar' in moleculeFile):
                 moleculePOSCARS.append(moleculeFile)
-    moleculeAAIDs = helperFunctions.getAAIDsByMolecule(CGtoAAIDs)
+    moleculeAAIDs, AAIDtoCGs = helperFunctions.getAAIDsByMolecule(CGtoAAIDs)
     if len(moleculePOSCARS) != 0:
         if len(moleculePOSCARS) == len(moleculeAAIDs):
             print "All molecule files already treated. Please delete the .POSCAR files to run the set again."

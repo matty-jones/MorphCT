@@ -102,30 +102,36 @@ class chargeCarrier:
     def calculateHop(self):
         hopTimes = []
         lambdaij = self.calculateLambdaij()
-        for hopTarget in self.TIDict[self.currentChromophore]:
+        # Try to read the TIDict for hops. If the chromophore doesn't exist, then we are in a trap site
+        try:
+            test = self.TIDict[self.currentChromophore]
+            for hopTarget in self.TIDict[self.currentChromophore]:
+                #print "\n"
+                transferIntegral = hopTarget[1]*elementaryCharge
+                deltaEij = self.calculateEij(hopTarget[0])
+                hopRate = self.calculateHopRate(lambdaij, transferIntegral, deltaEij)
+                hopTime = self.determineHopTime(hopRate)
+                #print "For this hop target:", hopTarget
+                #print "TI =", transferIntegral
+                #print "deltaEij =", deltaEij
+                #print "hopRate =", hopRate
+                #print "hopTime =", hopTime
+                hopTimes.append([hopTarget[0], hopTime])
+            hopTimes.sort(key = lambda x:x[1]) # Sort by ascending hop time
+            deltaEij = self.calculateEij(hopTimes[0][0])
             #print "\n"
-            transferIntegral = hopTarget[1]*elementaryCharge
-            deltaEij = self.calculateEij(hopTarget[0])
-            hopRate = self.calculateHopRate(lambdaij, transferIntegral, deltaEij)
-            hopTime = self.determineHopTime(hopRate)
-            #print "For this hop target:", hopTarget
-            #print "TI =", transferIntegral
-            #print "deltaEij =", deltaEij
-            #print "hopRate =", hopRate
-            #print "hopTime =", hopTime
-            hopTimes.append([hopTarget[0], hopTime])
-        hopTimes.sort(key = lambda x:x[1]) # Sort by ascending hop time
-        deltaEij = self.calculateEij(hopTimes[0][0])
-        #print "\n"
-        #print hopTimes
-        # if deltaEij <= 0.0:
-        #     print "Downstream hop", deltaEij
-        # else:
-        #     print "Upstream hop", deltaEij
-        # print "HopTime =", hopTimes[0][1]
-        # raw_input('Post Hop Pause')
-        self.performHop(hopTimes[0][0], hopTimes[0][1])
-
+            #print hopTimes
+            # if deltaEij <= 0.0:
+            #     print "Downstream hop", deltaEij
+            # else:
+            #     print "Upstream hop", deltaEij
+            # print "HopTime =", hopTimes[0][1]
+            # raw_input('Post Hop Pause')
+            self.performHop(hopTimes[0][0], hopTimes[0][1])
+        except KeyError:
+            print "Carrier is located on a trap site. If this is not the first hop this carrier has performed then something is wrong (it must have hopped to get here!) otherwise, we've randomly picked a trap site."
+            # Hop to same chromophore with t = 1E20 to terminate simulation
+            self.performHop([self.currentChromophore, 1E20])
         
     def performHop(self, destinationChromophore, hopTime):
         initialPosition = np.array(self.singlesData[self.currentChromophore][0:3])
