@@ -35,7 +35,6 @@ class obtain:
             if self.chromophores[chromophore]['realChromoID'] not in chromoList:
                 chromoList.append(self.chromophores[chromophore]['realChromoID'])
         self.writePickle(outputDir)
-        exit()
 # for chromoNo in self.chromophores.keys():
         #     if self.chromophores[chromoNo]['realChromoID'] == 30:
         #         print "--=== CHROMO", self.chromophores[chromoNo]['realChromoID'], " ===---"

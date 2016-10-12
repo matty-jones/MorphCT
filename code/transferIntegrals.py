@@ -422,11 +422,11 @@ def execute(morphologyFile):
                 if chromo.error == 0:
                     fixedFilesIndices.append(failIndex)
                     failedSinglesDict.pop(fileName)
+                    failedSingleNos.remove(chromoID[0])
                     singleChromoDict[chromoID[0]] = chromo
             # At end of loop, pop all the fixed files
             if len(fixedFilesIndices) > 0:
                 for index in sorted(fixedFilesIndices, reverse=True):
-                    failedSingleNos.remove(chromoID[0])
                     failedSingleFiles.pop(index)
         except KeyboardInterrupt:
             print "Kill command recieved. Reverting ORCA files..."
