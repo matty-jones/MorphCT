@@ -131,7 +131,7 @@ class chargeCarrier:
         except KeyError:
             print "Carrier is located on a trap site. If this is not the first hop this carrier has performed then something is wrong (it must have hopped to get here!) otherwise, we've randomly picked a trap site."
             # Hop to same chromophore with t = 1E20 to terminate simulation
-            self.performHop([self.currentChromophore, 1E20])
+            self.performHop(self.currentChromophore, 1E20)
         
     def performHop(self, destinationChromophore, hopTime):
         initialPosition = np.array(self.singlesData[self.currentChromophore][0:3])
