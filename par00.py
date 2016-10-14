@@ -22,8 +22,12 @@ executeCalculateMobility = True
 
 # ---=== Fine Graining Parameters ===---
 
-repeatUnitTemplateDirectory = '/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/templates'
-repeatUnitTemplateFile = 'mid3HT.xml'
+templateDirectory = '/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/templates'
+CGToTemplateFiles = {\
+'A':'mid3HT.xml',\
+'B':'mid3HT.xml',\
+'C':'mid3HT.xml',\
+}
 CGToTemplateAAIDs = {\
 'A':[0, 1, 2, 3, 4, 24],\
 'B':[5, 6, 7, 18, 19, 20, 21, 22, 23],\

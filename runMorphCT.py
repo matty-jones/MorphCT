@@ -25,7 +25,6 @@ class simulation:
         # Parse the parameter file to get more useful file locations
         self.inputMorphologyFile = self.inputDir+'/'+self.morphology
         self.outputDirectory = self.outputDir+'/'+self.morphology[:-4]
-        self.AATemplateFile = self.repeatUnitTemplateDirectory+'/'+self.repeatUnitTemplateFile
         # Add all the parameters to the parameterDict, which will be used to send everything between classes
         for key, value in self.__dict__.iteritems():
             if key in ['os', 'sys']:
@@ -57,7 +56,6 @@ class simulation:
             if len(element) != 0:
                 # First element come across is the jobID
                 return int(element)
-
 
     def makeDirTree(self):
         print "Sorting out directory structure..."

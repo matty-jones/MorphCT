@@ -283,8 +283,11 @@ class atomistic:
         self.CGMonomerDictionary = self.getCGMonomerDict()
         for key, value in parameterDict.iteritems():
             self.__dict__[key] = value
-        AATemplateDictionary = helperFunctions.loadMorphologyXML(self.AATemplateFile)
-        self.AATemplateDictionary = helperFunctions.addUnwrappedPositions(AATemplateDictionary)
+        self.AATemplatesDictionary = {}
+        for CGAtomType in self.CGToTemplateFiles.keys():
+            templateDictionary = helperFunctions.loadMorphologyXML(self.templateDirectory+'/'+self.CGToTemplateFiles[CGAtomType])
+            templateDictionary = helperFunctions.addUnwrappedPositions(templateDictionary)
+            self.AATemplatesDictionary[CGAtomType] = templateDictionary
         # thioAA, alk1AA, alk2AA are now all unused. Instead, use the CGToTemplateAAIDs dictionary which can have arbitrary length
         self.AADictionary, self.atomIDLookupTable, self.ghostDictionary = self.runFineGrainer(ghostDictionary)
 
@@ -346,9 +349,21 @@ class atomistic:
         monomerList = self.sortIntoMonomers(CGTypeList)
         currentMonomerIndex = sum(self.moleculeLengths[:self.moleculeIndex])
         atomIDLookupTable = {}
-        totalPermittedAtoms = len(self.AATemplateDictionary['type']) * len(monomerList)
+        # Calculate the total number of permitted atoms
+        totalPermittedAtoms = self.totalPermittedAtoms(monomerList)
         for monomerNo, monomer in enumerate(monomerList):
-            thisMonomerDictionary = copy.deepcopy(self.AATemplateDictionary)
+            # This monomer should have the same template file for all CG sites in the monomer, if not we've made a mistake in splitting the monomers. So check this:
+            templateFiles = []
+            monomerCGTypes = []
+            for CGSite in monomer:
+                templateFiles.append(self.CGToTemplateFiles[self.CGDictionary['type'][CGSite]])
+                monomerCGTypes.append(self.CGDictionary['type'][CGSite])
+            if len(set(templateFiles)) != 1:
+                print monomer
+                print monomerCGTypes
+                print templateFiles
+                raise SystemError('NOT ALL MONOMER SITES ARE THE SAME TEMPLATE')
+            thisMonomerDictionary = copy.deepcopy(self.AATemplatesDictionary[self.CGDictionary['type'][monomer[0]]])
             for key in ['lx', 'ly', 'lz']:
                 thisMonomerDictionary[key] = self.CGDictionary[key]
             if len(thisMonomerDictionary['image']) == 0:
@@ -461,6 +476,14 @@ class atomistic:
         AADictionary, ghostDictionary = helperFunctions.incrementAtomIDs(AADictionary, ghostDictionary, self.noAtomsInMorphology, modifyGhostDictionary=True)
         return AADictionary, atomIDLookupTable, ghostDictionary
 
+    def totalPermittedAtoms(self, monomerList):
+        totalPermittedAtoms = 0
+        for monomer in monomerList:
+            for CGSiteID in monomer:
+                CGSiteType = self.CGDictionary['type'][CGSiteID]
+                totalPermittedAtoms += len(self.CGToTemplateAAIDs[CGSiteType])
+        return totalPermittedAtoms
+
     def sortIntoMonomers(self, typeListSequence):
         monomerList = []
         moleculeSiteIDs = copy.deepcopy(self.siteIDs)
@@ -468,7 +491,7 @@ class atomistic:
         while len(moleculeSiteIDs) > 0:
             # Add the first atom to the first monomer
             thisMonomer = []
-            monomerStartSiteType = typeListSequence[moleculeSiteIDs[0]]
+            monomerTypesAdded = [typeListSequence[moleculeSiteIDs[0]]]
             thisMonomer.append(moleculeSiteIDs[0])
             addedNewSite = True
             while addedNewSite is True:
@@ -476,11 +499,13 @@ class atomistic:
                 bondPopList = []
                 # Find bonded atoms that are not of the same type
                 for bondNo, bond in enumerate(bondList):
-                    if (bond[1] in thisMonomer) and (bond[2] not in thisMonomer) and (typeListSequence[bond[2]] != monomerStartSiteType):
+                    if (bond[1] in thisMonomer) and (bond[2] not in thisMonomer) and (typeListSequence[bond[2]] not in monomerTypesAdded):
                         thisMonomer.append(bond[2])
+                        monomerTypesAdded.append(typeListSequence[bond[2]])
                         addedNewSite = True
-                    elif (bond[2] in thisMonomer) and (bond[1] not in thisMonomer) and (typeListSequence[bond[1]] != monomerStartSiteType):
+                    elif (bond[2] in thisMonomer) and (bond[1] not in thisMonomer) and (typeListSequence[bond[1]] not in monomerTypesAdded):
                         thisMonomer.append(bond[1])
+                        monomerTypesAdded.append(typeListSequence[bond[1]])
                         addedNewSite = True
                     elif (bond[1] in thisMonomer) and (bond[2] in thisMonomer):
                         pass
@@ -514,11 +539,12 @@ class atomistic:
         CGCoMs = {}
         for siteName in CGToTemplateAAIDs.keys():
             atomIDs = CGToTemplateAAIDs[siteName]
+            AATemplate = self.AATemplatesDictionary[siteName]
             sitePositions = []
             siteTypes = []
             for atomID in atomIDs:
-                siteTypes.append(self.AATemplateDictionary['type'][atomID])
-                sitePositions.append(self.AATemplateDictionary['unwrapped_position'][atomID])
+                siteTypes.append(AATemplate['type'][atomID])
+                sitePositions.append(AATemplate['unwrapped_position'][atomID])
             # These output as numpy arrays because we can't do maths with lists
             CGCoMs[siteName] = helperFunctions.calcCOM(sitePositions, listOfAtomTypes=siteTypes)
         return CGCoMs

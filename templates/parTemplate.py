@@ -22,8 +22,10 @@ executeCalculateMobility = True
 
 # ---=== Fine Graining Parameters ===---
 
-repeatUnitTemplateDirectory = TEMPLATEDIR
-repeatUnitTemplateFile = AATEMPLATEFILE
+templateDirectory = TEMPLATEDIR
+CGToTemplateFiles = {\
+CGTOTEMPLATEFILES
+}
 CGToTemplateAAIDs = {\
 CGTOTEMPLATEAAIDS
 }

@@ -3,21 +3,125 @@ import sys
 sys.path.append('./code')
 import helperFunctions
 
-def obtainCGMappings(inputDict, templateDict):
+def loadMultipleTemplates():
+    while True:
+        numberOfTemplatesToLoadRaw = raw_input("How many template files would you like to load in order to completely describe the morphology in "+inputDir+"/"+inputMorphology+"? (integer, default = 1): ")
+        if len(numberOfTemplatesToLoadRaw) == 0:
+            numberOfTemplatesToLoad = 1
+            break
+        try:
+            numberOfTemplatesToLoad = int(numberOfTemplatesToLoadRaw)
+            break
+        except:
+            print "Please try again."
+    templateDirs = []
+    AATemplateFiles = []
+    templateDicts = []
+    for i in range(numberOfTemplatesToLoad):
+        templateDir, AATemplateFile = lookForFiles('templates', 'atomistic template')
+        templateDirs.append(templateDir)
+        AATemplateFiles.append(AATemplateFile)
+        templateDicts.append(helperFunctions.loadMorphologyXML(templateDir+'/'+AATemplateFile))
+    return templateDirs, AATemplateFiles, templateDicts
+
+
+def removeDuplicates(templateDicts):
+    allAtomTypes = []
+    for templateNo, templateDict in enumerate(templateDicts):
+        allAtomTypes.append([])
+        allAtomTypes[-1] = list(set(templateDict['type']))
+    print "BEFORE", allAtomTypes
+    newAtomTypeList = allAtomTypes[0]
+    for templateNo, atomTypesList in enumerate(allAtomTypes):
+        if templateNo == 0:
+            continue
+        for atomType in atomTypesList:
+            if atomType in newAtomTypeList:
+                # We have a duplicate so fix it
+                for i, j in enumerate(atomType):
+                    try:
+                        int(j)
+                        break
+                    except:
+                        continue
+                element = atomType[:i]
+                number = int(atomType[i:])
+                # Increment the number to find a new atomType that hasn't been used yet
+                while True:
+                    number += 1
+                    newAtomType = element+str(number)
+                    if newAtomType in newAtomTypeList:
+                        continue
+                    # Now we have an AtomType that hasn't been used yet, update the dictionary
+                    templateDicts = updateAtomType(templateDicts, templateNo, atomType, newAtomType)
+                    newAtomTypeList.append(newAtomType)
+                    break
+    afterAllAtomTypes = []
+    for templateNo, templateDict in enumerate(templateDicts):
+        afterAllAtomTypes.append([])
+        afterAllAtomTypes[-1] = list(set(templateDict['type']))
+    print "AFTER =", afterAllAtomTypes
+    exit()
+    return templateDicts
+
+
+def updateAtomType(templateDicts, templateNo, oldAtomType, newAtomType):
+    print "--==CONSIDERING TEMPLATE NUMBER", templateNo, "==--"
+    atomIDsThatNeedChanging = []
+    for atomID, atomType in enumerate(templateDicts[templateNo]['type']):
+        if atomType == oldAtomType:
+            templateDicts[templateNo]['type'][atomID] = newAtomType
+            atomIDsThatNeedChanging.append(atomID)
+    print "atomIDsThatNeedChanging =", atomIDsThatNeedChanging
+    for constraintType in ['bond', 'angle', 'dihedral', 'improper']:
+        for constraintNo, constraint in enumerate(templateDicts[templateNo][constraintType]):
+            for index, atomID in enumerate(constraint):
+                if atomID in atomIDsThatNeedChanging:
+                    print "Changing", oldAtomType, "to", newAtomType
+                    print "Old Constraint =", constraint
+                    print "Issue found with index =", index
+                    newConstraint0 = constraint[0].split('-')
+                    # Sanity check
+                    print "NewConstraint0[index-1] =", newConstraint0[index-1]
+                    if newConstraint0[index-1] != oldAtomType:
+                        raise SystemError('Failed sanity check (see code for details)')
+                    newConstraint0[index-1] = newAtomType
+                    templateDicts[templateNo][constraintType][constraintNo][0] = '-'.join(newConstraint0)
+    return templateDicts
+
+
+def obtainCGMappings(inputDict, templateDicts, AATemplateFiles):
     CGSiteTypes = sorted(set(inputDict['type']))
-    templateTypes = templateDict['type']
+    templateTypes = [templateDict['type'] for templateDict in templateDicts]
     print "\nThe coarse-grained morphology contains", len(CGSiteTypes), "different coarse-grained sites:"
     for typeName in CGSiteTypes:
         print typeName+" ",
-    print "\n\nThe corresponding template file contains", len(templateTypes), "different atoms:"
-    for typeName in templateTypes:
-        print typeName+" ",
+    totalAtomsInTemplates = sum([len(templateType) for templateType in templateTypes])
+    print "\n\nThe corresponding template files contain", totalAtomsInTemplates, "different atoms in total:"
+    print "--== Template Files ==--"
+    for templateIndex, templateTypesList in enumerate(templateTypes):
+        print str(templateIndex)+") "+AATemplateFiles[templateIndex]+" [",
+        for typeName in templateTypesList:
+            print typeName+" ",
+        print "]"
     print "\n"
     CGToTemplateAAIDs = {}
+    CGToTemplateFiles = {}
     rigidBodySites = {}
     while True:
         atomQuantityList = []
         for CGSiteType in CGSiteTypes:
+            if len(AATemplateFiles) > 1:
+                while True:
+                    try:
+                        templateFileIndex = int(raw_input("Which template file index should be used to represent the coarse-grained site, "+str(CGSiteType)+"? "))
+                        CGToTemplateFiles[CGSiteType] = AATemplateFiles[templateFileIndex]
+                        break
+                    except ValueError:
+                        print "Please only enter integers"
+                        continue
+            else:
+                CGToTemplateFiles[CGSiteType] = AATemplateFiles[0]
             while True:
                 try:
                     numberOfAtoms = int(raw_input("How many atoms in the template files are represented by the coarse-grained site, "+str(CGSiteType)+"? "))
@@ -30,10 +134,10 @@ def obtainCGMappings(inputDict, templateDict):
                     print ""
                     atomQuantityList.append(numberOfAtoms)
                     break
-        if sum(atomQuantityList) > len(templateDict['type']):
-            print "The sum of the atoms specified ("+str(sum(atomQuantityList))+") is greater than the number of atoms in the template file ("+str(len(templateDict['type']))+")."
-        elif sum(atomQuantityList) < len(templateDict['type']):
-            print "The sum of the atoms specified ("+str(sum(atomQuantityList))+") is less than the number of atoms in the template file ("+str(len(templateDict['type']))+")."
+        if sum(atomQuantityList) > totalAtomsInTemplates:
+            print "The sum of the atoms specified ("+str(sum(atomQuantityList))+") is greater than the number of atoms across all template files ("+str(totalAtomsInTemplates)+")."
+        elif sum(atomQuantityList) < totalAtomsInTemplates:
+            print "The sum of the atoms specified ("+str(sum(atomQuantityList))+") is less than the number of atoms across all template files ("+str(totalAtomsInTemplates)+")."
         else:
             print ""
             break
@@ -67,7 +171,7 @@ def obtainCGMappings(inputDict, templateDict):
             rigidBodySites[str(CGSiteType)] = rigidIDs
             break
         print ""
-    return CGToTemplateAAIDs, rigidBodySites
+    return CGToTemplateFiles, CGToTemplateAAIDs, rigidBodySites
 
 
 def lookForFiles(inputDirectory, mode):
@@ -147,19 +251,22 @@ def getSigmaVal(morphology):
             print "Please try again."
 
 
-def checkBonds(inputDict, templateDict, CGToTemplateAAIDs):
+def checkBonds(inputDict, templateDicts, CGToTemplateAAIDs, AATemplateFiles):
     CGToAAIDBonds = {}
     CGBondTypes = sorted(list(set(bond[0] for bond in inputDict['bond'])))
     intraCGBonds = []
-    for bond in templateDict['bond']:
-        for i, j in enumerate(CGToTemplateAAIDs.values()):
-            if bond[1] in j:
-                CGSiteAtom1 = i
-            if bond[2] in j:
-                CGSiteAtom2 = i
-        if CGSiteAtom1 != CGSiteAtom2:
-            intraCGBonds.append(bond)
-    intraCGBonds.sort(key = lambda x: x[1])
+    intraCGBondTemplates = []
+    for templateNo, templateDict in enumerate(templateDicts):
+        for bond in templateDict['bond']:
+            for i, j in enumerate(CGToTemplateAAIDs.values()):
+                if bond[1] in j:
+                    CGSiteAtom1 = i
+                if bond[2] in j:
+                    CGSiteAtom2 = i
+            if CGSiteAtom1 != CGSiteAtom2:
+                intraCGBonds.append(bond)
+                intraCGBondTemplates.append(AATemplateFiles[templateNo])
+    intraCGBonds.sort(key = lambda x: x[2])
     print len(CGBondTypes), "bonds have been detected in the input morphology."
     print len(intraCGBonds), "intra-CG site bonds have been detected in the template."
     print "For each bond in the CG morphology, please indicate the representative atomistic bond in the template:"
@@ -167,7 +274,7 @@ def checkBonds(inputDict, templateDict, CGToTemplateAAIDs):
         print "---=== Defining CG Bond", CGBondTypes[0], "===---"
         while True:
             for index, intraCGBond in enumerate(intraCGBonds):
-                print str(index)+"):", intraCGBond
+                print str(index)+"):", intraCGBond, "["+str(intraCGBondTemplates[index])+"]"
             print str(index+1)+"): New Inter-Monomer bond\n"
             bondSelection = raw_input("Please select an option (integer, default = 0): ")
             if len(bondSelection) == 0:
@@ -182,11 +289,24 @@ def checkBonds(inputDict, templateDict, CGToTemplateAAIDs):
                 print "Please enter an integer between 0 and", len(bondSelection)
                 continue
             elif bondSelection == len(intraCGBonds):
+                if len(AATemplateFiles) > 1:
+                    while True:
+                        print "--== Template Files ==--"
+                        for templateIndex, templateName in enumerate(AATemplateFiles):
+                            print str(templateIndex)+") "+templateName
+                        try:
+                            templateIndexToUse = int(raw_input("Which template file should be used? "))
+                            break
+                        except ValueError:
+                            print "Please only enter integers"
+                            continue
+                else:
+                    templateIndexToUse = 0
                 while True:
                     interMonomerBondRaw = raw_input("Please describe the inter-monomer bond in the form 'STR INT(ID of Atom on Monomer 1) INT(ID of Atom on Monomer 2)'. Note that the bond indices will be incremented automatically to reflect which monomer the atom belongs to: ").split(" ")
                     try:
                         # In the code, we want to increment the index of the atom on the second repeat unit so that we know it's a new bond
-                        interMonomerBond = [str(interMonomerBondRaw[0]), int(interMonomerBondRaw[1]), int(interMonomerBondRaw[2])+len(templateDict['type'])]
+                        interMonomerBond = [str(interMonomerBondRaw[0]), int(interMonomerBondRaw[1]), int(interMonomerBondRaw[2])+len(templateDicts[templateIndexToUse]['type'])]
                         break
                     except:
                         print "Please try again."
@@ -228,8 +348,8 @@ def checkBonds(inputDict, templateDict, CGToTemplateAAIDs):
                     try:
                         # Put a catch in in case the user starts doing the index incrementation manually
                         for i in range(1,4):
-                            while int(interMonomerAngleRaw[i]) > len(templateDict['type']):
-                                interMonomerAngleRaw[i] = int(interMonomerAngleRaw[i]) - templateDict['type']
+                            while int(interMonomerAngleRaw[i]) > len(templateDicts[templateIndexToUse]['type']):
+                                interMonomerAngleRaw[i] = int(interMonomerAngleRaw[i]) - templateDicts[templateIndexToUse]['type']
                         interMonomerAngle = [str(interMonomerAngleRaw[0]), int(interMonomerAngleRaw[1]), int(interMonomerAngleRaw[2]), int(interMonomerAngleRaw[3])]
                         print "Angle =", interMonomerAngle
                         # Work out which atoms belong to which monomer for the code
@@ -237,7 +357,7 @@ def checkBonds(inputDict, templateDict, CGToTemplateAAIDs):
                             while True:
                                 try:
                                     monomerID = raw_input("Does atom with index "+str(atomID)+" in the angle belong to monomer 1 or monomer 2?: ")
-                                    interMonomerAngle[index+1] += (int(monomerID)-1)*len(templateDict['type'])
+                                    interMonomerAngle[index+1] += (int(monomerID)-1)*len(templateDicts[templateIndexToUse]['type'])
                                     break
                                 except:
                                     print "Please try again."
@@ -252,8 +372,8 @@ def checkBonds(inputDict, templateDict, CGToTemplateAAIDs):
                     try:
                         # Put a catch in in case the user starts doing the index incrementation manually
                         for i in range(1,5):
-                            while int(interMonomerDihedralRaw[i]) > len(templateDict['type']):
-                                interMonomerDihedralRaw[i] = int(interMonomerDihedral[i]) - templateDict['type']
+                            while int(interMonomerDihedralRaw[i]) > len(templateDicts[templateIndexToUse]['type']):
+                                interMonomerDihedralRaw[i] = int(interMonomerDihedral[i]) - templateDicts[templateIndexToUse]['type']
                         interMonomerDihedral = [str(interMonomerDihedralRaw[0]), int(interMonomerDihedralRaw[1]), int(interMonomerDihedralRaw[2]), int(interMonomerDihedralRaw[3]), int(interMonomerDihedralRaw[4])]
                         print "Dihedral =", interMonomerDihedral
                         # Work out which atoms belong to which monomer for the code
@@ -261,7 +381,7 @@ def checkBonds(inputDict, templateDict, CGToTemplateAAIDs):
                             while True:
                                 try:
                                     monomerID = raw_input("Does atom with index "+str(atomID)+" in the dihedral belong to monomer 1 or monomer 2?: ")
-                                    interMonomerDihedral[index+1] += (int(monomerID)-1)*len(templateDict['type'])
+                                    interMonomerDihedral[index+1] += (int(monomerID)-1)*len(templateDicts[templateIndexToUse]['type'])
                                     break
                                 except:
                                     print "Please try again."
@@ -276,8 +396,8 @@ def checkBonds(inputDict, templateDict, CGToTemplateAAIDs):
                     try:
                         # Put a catch in in case the user starts doing the index incrementation manually
                         for i in range(1,5):
-                            while int(interMonomerImproperRaw[i]) > len(templateDict['type']):
-                                interMonomerImproperRaw[i] = int(interMonomerImproper[i]) - templateDict['type']
+                            while int(interMonomerImproperRaw[i]) > len(templateDicts[templateIndexToUse]['type']):
+                                interMonomerImproperRaw[i] = int(interMonomerImproper[i]) - templateDicts[templateIndexToUse]['type']
                         interMonomerImproper = [str(interMonomerImproperRaw[0]), int(interMonomerImproperRaw[1]), int(interMonomerImproperRaw[2]), int(interMonomerImproperRaw[3]), int(interMonomerImproperRaw[4])]
                         print "Improper =", interMonomerImproper
                         # Work out which atoms belong to which monomer for the code
@@ -285,7 +405,7 @@ def checkBonds(inputDict, templateDict, CGToTemplateAAIDs):
                             while True:
                                 try:
                                     monomerID = raw_input("Does atom with index "+str(atomID)+" in the improper belong to monomer 1 or monomer 2?: ")
-                                    interMonomerImproper[index+1] += (int(monomerID)-1)*len(templateDict['type'])
+                                    interMonomerImproper[index+1] += (int(monomerID)-1)*len(templateDicts[templateIndexToUse]['type'])
                                     break
                                 except:
                                     print "Please try again."
@@ -298,31 +418,47 @@ def checkBonds(inputDict, templateDict, CGToTemplateAAIDs):
     # Now ask about the terminating groups
     print "NOTE: Currently the code only supports terminating molecules with H1 hydrogen atoms. If a termination group is required, please modify the code to incorporate additional termination template files."
     moleculeTerminatingUnits = []
-    while True:
-        startAtom = str(raw_input("Please indicate the atom ID at the start of the molecule that the terminating hydrogen is attached to (leave blank for no terminating group, e.g. in small molecules): "))
-        if len(startAtom) == 0:
-            break
-        try:
-            moleculeTerminatingUnits.append([templateDict['type'][int(startAtom)]+'-H1', int(startAtom)])
-        except:
-            print "Please try again."
-            continue
-        endAtom = str(raw_input("Please indicate the atom ID at the end of the molecule that the terminating hydrogen is attached to: "))
-        if len(endAtom) == 0:
-            break
-        try:
-            moleculeTerminatingUnits.append([templateDict['type'][int(endAtom)]+'-H1', int(endAtom)])
-            break
-        except:
-            print "Please try again."
-            continue
+    if len(AATemplateFiles) > 1:
+        while True:
+            print "--== Template Files ==--"
+            for templateIndex, templateName in enumerate(AATemplateFiles):
+                print str(templateIndex)+") "+templateName
+            try:
+                templateIndexToUse = int(raw_input("Which template file should be used? "))
+                break
+            except ValueError:
+                print "Please only enter integers"
+                continue
+    else:
+        templateIndexToUse = 0
+    for templateIndex, templateName in enumerate(AATemplateFiles):
+        while True:
+            startAtom = str(raw_input("Please indicate the atom ID at the start of the molecule that the terminating hydrogen is attached to in the", templateName, "template file (leave blank for no terminating group, e.g. in small molecules): "))
+            if len(startAtom) == 0:
+                break
+            try:
+                moleculeTerminatingUnits.append([templateDict[templateIndex]['type'][int(startAtom)]+'-H1', int(startAtom)])
+            except:
+                print "Please try again."
+                continue
+            endAtom = str(raw_input("Please indicate the atom ID at the end of the molecule that the terminating hydrogen is attached to: "))
+            if len(endAtom) == 0:
+                break
+            try:
+                moleculeTerminatingUnits.append([templateDict[templateIndex]['type'][int(endAtom)]+'-H1', int(endAtom)])
+                break
+            except:
+                print "Please try again."
+                continue
     return CGToAAIDBonds, additionalConstraints, moleculeTerminatingUnits
 
 
-def getForcefieldParameters(templateDict, additionalConstraints, moleculeTerminatingUnits, manual=True):
+def getForcefieldParameters(templateDicts, additionalConstraints, moleculeTerminatingUnits, manual=True):
     forcefieldParameters = {'BONDCOEFFS':[], 'ANGLECOEFFS':[], 'DIHEDRALCOEFFS':[], 'IMPROPERCOEFFS':[], 'LJPAIRCOEFFS':[], 'DPDPAIRCOEFFS':[], 'ADDITIONALCOEFFS':[]}
     # Sort out bonds first
-    bondTypes = sorted(list(set(bond[0] for bond in templateDict['bond'])))
+    allBonds = []
+    allBonds += [templateDict['bond'] for templateDict in templateDicts]
+    bondTypes = sorted(list(set(bond[0] for bond in allBonds)))
     for bondType in bondTypes:
         if manual == True:
             while True:
@@ -335,7 +471,9 @@ def getForcefieldParameters(templateDict, additionalConstraints, moleculeTermina
         else:
             forcefieldParameters['BONDCOEFFS'].append([bondType, 1.0, 1.0])
     # Sort out angles
-    angleTypes = sorted(list(set(angle[0] for angle in templateDict['angle'])))
+    allAngles = []
+    allAngles += [templateDict['angle'] for templateDict in templateDicts]
+    angleTypes = sorted(list(set(angle[0] for angle in allAngles)))
     for angleType in angleTypes:
         if manual == True:
             while True:
@@ -348,7 +486,9 @@ def getForcefieldParameters(templateDict, additionalConstraints, moleculeTermina
         else:
             forcefieldParameters['ANGLECOEFFS'].append([angleType, 1.0, 1.0])
     # Sort out dihedrals
-    dihedralTypes = sorted(list(set(dihedral[0] for dihedral in templateDict['dihedral'])))
+    allDihedrals = []
+    allDihedrals += [templateDict['dihedral'] for templateDict in templateDicts]
+    dihedralTypes = sorted(list(set(dihedral[0] for dihedral in allDihedrals)))
     for dihedralType in dihedralTypes:
         if manual == True:
             while True:
@@ -361,7 +501,9 @@ def getForcefieldParameters(templateDict, additionalConstraints, moleculeTermina
         else:
             forcefieldParameters['DIHEDRALCOEFFS'].append([dihedralType, 1.0, 1.0, 1.0, 1.0])
     # Sort out impropers
-    improperTypes = sorted(list(set(improper[0] for improper in templateDict['improper'])))
+    allImpropers = []
+    allImpropers += [templateDict['improper'] for templateDict in templateDicts]
+    improperTypes = sorted(list(set(improper[0] for improper in allImpropers)))
     for improperType in improperTypes:
         if manual == True:
             while True:
@@ -374,7 +516,9 @@ def getForcefieldParameters(templateDict, additionalConstraints, moleculeTermina
         else:
             forcefieldParameters['IMPROPERCOEFFS'].append([improperType, 1.0, 1.0, 1.0, 1.0])
     # Sort out LJ nonbonded pairs (will also add default-valued DPD pair potentials)
-    atomTypes = sorted(list(set(templateDict['type'])))
+    allAtomTypes = []
+    allAtomTypes += [templateDict['type'] for templateDict in templateDicts]
+    atomTypes = sorted(list(set(allAtomTypes)))
     for atomType1 in atomTypes:
         for atomType2 in atomTypes:
             pairType = str(atomType1)+"-"+str(atomType2)
@@ -419,7 +563,7 @@ def getParFileName():
     return testFileName
 
 
-def writeParFile(fileName, INPUTDIR, INPUTMORPHOLOGY, INPUTSIGMA, OUTPUTDIR, TEMPLATEDIR, AATEMPLATEFILE, CGToIDDictionary, CGToBondDictionary, forcefieldParameters, additionalInterMonomerConstraints, AAIDsInRigidBodies, moleculeTerminatingUnitConnections):
+def writeParFile(fileName, INPUTDIR, INPUTMORPHOLOGY, INPUTSIGMA, OUTPUTDIR, TEMPLATEDIR, CGToTemplateFilesDictionary, CGToIDDictionary, CGToBondDictionary, forcefieldParameters, additionalInterMonomerConstraints, AAIDsInRigidBodies, moleculeTerminatingUnitConnections):
     with open(os.getcwd()+'/templates/parTemplate.py', 'r') as parTemplateFile:
         parTemplate = parTemplateFile.readlines()
     # Define these in the locals() before we iterate to prevent a dictionary chaning size error
@@ -431,6 +575,11 @@ def writeParFile(fileName, INPUTDIR, INPUTMORPHOLOGY, INPUTSIGMA, OUTPUTDIR, TEM
             if variableName in line:
                 parTemplate[lineNo] = line.replace(variableName, repr(variableValue))
         # Change the dictionaries
+        if 'CGTOTEMPLATEFILES' in line:
+            templateLines = ""
+            for dictKey in sorted(CGToTemplateFilesDictionary.keys()):
+                templateLines += repr(dictKey)+":"+str(CGToTemplateFilesDictionary[dictKey])+",\\\n"
+            parTemplate[lineNo] = templateLines
         if 'CGTOTEMPLATEAAIDS' in line:
             AAIDLines = ""
             for dictKey in sorted(CGToIDDictionary.keys()):
@@ -474,18 +623,20 @@ if __name__ == "__main__":
     inputSigma = getSigmaVal(inputMorphology)
     inputDict = helperFunctions.loadMorphologyXML(inputDir+'/'+inputMorphology, sigma=inputSigma)
     outputDir = lookForDirectory()
-    templateDir, AATemplateFile = lookForFiles('templates', 'atomistic template')
-    templateDict = helperFunctions.loadMorphologyXML(templateDir+'/'+AATemplateFile)
+    templateDirs, AATemplateFiles, templateDicts = loadMultipleTemplates()
+    # If we've loaded two (or more) different templates, we need to make sure there are no overlaps between atom types in the two. Otherwise we will get the wrong bond coefficients and forces etc.
+    if len(AATemplateFiles) > 1:
+        templateDicts = removeDuplicates(templateDicts)
     # Then, work out the CG mappings
-    CGToTemplateAAIDs, rigidBodySites = obtainCGMappings(inputDict, templateDict)
+    CGToTemplateFiles, CGToTemplateAAIDs, rigidBodySites = obtainCGMappings(inputDict, templateDicts, AATemplateFiles)
     # Now, check that the template contains all of the bonds that are specified in the CG morphology
-    CGToAAIDBonds, additionalConstraints, moleculeTerminatingUnits = checkBonds(inputDict, templateDict, CGToTemplateAAIDs)
+    CGToAAIDBonds, additionalConstraints, moleculeTerminatingUnits = checkBonds(inputDict, templateDicts, CGToTemplateAAIDs, AATemplateFiles)
     # Next up are the force-field coefficients for all of the bonds, angles and dihedrals specified here
-    forcefieldParameters = getForcefieldParameters(templateDict, additionalConstraints, moleculeTerminatingUnits, manual=False)
+    forcefieldParameters = getForcefieldParameters(templateDicts, additionalConstraints, moleculeTerminatingUnits, manual=False)
     # Finally, create the parameter file.
     print "The majority of the input parameters are now set."
     fileName = getParFileName()
     print "These, along with some default parameters will be written to "+str(fileName)+"."
     print "You are encouraged to modify "+str(fileName)+" directly now to avoid this process, and also to check that the default variables are desirable."
-    writeParFile(fileName, inputDir, inputMorphology, inputSigma, outputDir, templateDir, AATemplateFile, CGToTemplateAAIDs, CGToAAIDBonds, forcefieldParameters, additionalConstraints, rigidBodySites, moleculeTerminatingUnits)
+    writeParFile(fileName, inputDir, inputMorphology, inputSigma, outputDir, templateDir, CGToTemplateFiles, CGToTemplateAAIDs, CGToAAIDBonds, forcefieldParameters, additionalConstraints, rigidBodySites, moleculeTerminatingUnits)
     print "Parameters written to "+str(fileName)+"."
