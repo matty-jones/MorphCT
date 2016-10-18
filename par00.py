@@ -22,7 +22,11 @@ executeCalculateMobility = True
 
 # ---=== Fine Graining Parameters ===---
 
-templateDirectory = '/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/templates'
+CGToTemplateDirs = {\
+'A':'/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/templates',\
+'B':'/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/templates',\
+'C':'/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/templates',\
+}
 CGToTemplateFiles = {\
 'A':'mid3HT.xml',\
 'B':'mid3HT.xml',\
@@ -415,16 +419,16 @@ angleCoeffs = [\
 ]
 # --== Dihedral ==--
 dihedralCoeffs = [\
-['C1-S1-C10-C9', 1.0, 1.0, 1.0, 1.0],\
-['C10-C2-C9-C1', 1.0, 1.0, 1.0, 1.0],\
-['C10-C9-C2-C3', 1.0, 1.0, 1.0, 1.0],\
-['C10-S1-C1-C2', 1.0, 1.0, 1.0, 1.0],\
-['C2-C3-C4-C5', 1.0, 1.0, 1.0, 1.0],\
-['C2-C9-C10-S1', 1.0, 1.0, 1.0, 1.0],\
-['C3-C4-C5-C6', 1.0, 1.0, 1.0, 1.0],\
-['C4-C3-C2-C9', 1.0, 1.0, 1.0, 1.0],\
-['C4-C5-C6-C7', 1.0, 1.0, 1.0, 1.0],\
-['C5-C6-C7-C8', 1.0, 1.0, 1.0, 1.0],\
+['C1-S1-C10-C9', 1.0, 1.0, 1.0, 1.0, 1.0],\
+['C10-C2-C9-C1', 1.0, 1.0, 1.0, 1.0, 1.0],\
+['C10-C9-C2-C3', 1.0, 1.0, 1.0, 1.0, 1.0],\
+['C10-S1-C1-C2', 1.0, 1.0, 1.0, 1.0, 1.0],\
+['C2-C3-C4-C5', 1.0, 1.0, 1.0, 1.0, 1.0],\
+['C2-C9-C10-S1', 1.0, 1.0, 1.0, 1.0, 1.0],\
+['C3-C4-C5-C6', 1.0, 1.0, 1.0, 1.0, 1.0],\
+['C4-C3-C2-C9', 1.0, 1.0, 1.0, 1.0, 1.0],\
+['C4-C5-C6-C7', 1.0, 1.0, 1.0, 1.0, 1.0],\
+['C5-C6-C7-C8', 1.0, 1.0, 1.0, 1.0, 1.0],\
 ]
 # --== Improper ==--
 improperCoeffs = [\
@@ -432,16 +436,17 @@ improperCoeffs = [\
 
 # ---=== Molecular Dynamics Phase Parameters ===---
 numberOfPhases = 6
-temperatures = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-pairType = ['none', 'dpd', 'lj', 'lj', 'lj', 'lj']
-bondType = 'harmonic'
-angleType = 'harmonic'
-dihedralType = 'table'
-integrationTargets = ['all', 'sidechains', 'all', 'all', 'all', 'all']
+temperatures = [1.0]
+taus = [1.0]
+pairTypes = ['none', 'dpd', 'lj', 'lj', 'lj', 'lj']
+bondTypes = ['harmonic']
+angleTypes = ['harmonic']
+dihedralTypes = ['table']
+integrationTargets = ['all', 'B,C', 'all', 'all', 'all', 'all']
 timesteps = [1E-3, 1E-3, 1E-9, 1E-7, 1E-6, 1E-5]
-phaseDurations = [1E3, 1E4, 1E2, 1E2, 1E5, 1E5]
+durations = [1E3, 1E4, 1E2, 1E2, 1E5, 1E5]
 terminationConditions = ['KEmin', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt']
-groupAnchoring = ['all', 'all', 'all', 'all', 'all', 'none']
+groupAnchorings = ['all', 'all', 'all', 'all', 'all', 'none']
 
 
 # ---=== Begin run ===---

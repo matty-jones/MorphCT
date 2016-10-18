@@ -33,10 +33,14 @@ def loadCSVs(CSVDir):
         targetTimes[CSVName] = float(CSVFileName[underscoreLoc[0]+1:dotLoc[-1]])
         with open(CSVFileName, 'r') as CSVFile:
             CSVData = csv.reader(CSVFile, delimiter=',')
-            for row in CSVData:
-                completeCSVData[CSVName].append(map(float, row[:4]))
-                if len(row[4:]) > 0:
-                    completeCSVData[CSVName][-1].append(int(len(row[4:]))) # Number of chromophores considered
+            for rowNo, row in enumerate(CSVData):
+                try:
+                    completeCSVData[CSVName].append(map(float, row[:4]))
+                    if len(row[4:]) > 0:
+                        completeCSVData[CSVName][-1].append(int(len(row[4:]))) # Number of chromophores considered
+                except ValueError:
+                    print "Issue on line", rowNo, "of", CSVFileName+". Skipping..."
+                    continue
         # for temperature, data in completeCSVData.iteritems():
         #     print "TEMPERATURE =", temperature
         #     print "Displacement Average =", np.average([row[1] for row in data])
@@ -65,7 +69,7 @@ def plotHist(CSVFile, targetTime, CSVDir):
             # When we don't squeeze the HOMO distribution, some hops take an extraordinarily long time
             # which means that we end up with crazy long hop times. This check just makes sure that
             # we only take into account ones that we care about
-            # NOTE: There is a negligible number of these for M01TI0
+            # NOTE: There is a negligible number of these for M01TI0 f0.0
             # NOTE2: Apparently not for the dastardly T1.75 dataset which records crazy low mobilities if this if statement isn't included. The others seem unaffected though.
             totalDataPoints += 1
             continue
@@ -232,6 +236,9 @@ if __name__ == "__main__":
         print "Mobility =", mobility, "cm^{2} / Vs"
         print "Av. Number of New Chromophores Visited Per Unit Time By Each Carrier =", np.average(chromophoresPerTime)
         print "---=================================---"
+        if mobility < 0:
+            print "NEGATIVE MOBILITY, SKIPPING..."
+            continue
         MLoc = findIndex(tempDir, 'M')
         temps.append(tempDir[1:MLoc[0]])
         mobs.append(mobility)

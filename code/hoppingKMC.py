@@ -126,7 +126,7 @@ class chargeCarrier:
         # raw_input('Post Hop Pause')
         self.performHop(hopTimes[0][0], hopTimes[0][1])
 
-        
+
     def performHop(self, destinationChromophore, hopTime):
         initialPosition = np.array(self.singlesData[self.currentChromophore][0:3])
         destinationPosition = np.array(self.singlesData[destinationChromophore][0:3])

@@ -662,28 +662,12 @@ def createSlurmSubmissionScript(outputDir, runName, mode):
     return submissionScriptName
 
 
-def incrementAtomIDs(originalInputDictionary, originalGhostDictionary, increment, modifyGhostDictionary=False):
+def incrementAtomIDs(originalInputDictionary, ghostDictionary, increment, modifyGhostDictionary=False):
     inputDictionary = copy.deepcopy(originalInputDictionary)
-    ghostDictionary = copy.deepcopy(originalGhostDictionary)
-    for bond in inputDictionary['bond']:
-        bond[1] += increment
-        bond[2] += increment
-    for angle in inputDictionary['angle']:
-        angle[1] += increment
-        angle[2] += increment
-        angle[3] += increment
-    for dihedral in inputDictionary['dihedral']:
-        dihedral[1] += increment
-        dihedral[2] += increment
-        dihedral[3] += increment
-        dihedral[4] += increment
-    for improper in inputDictionary['improper']:
-        improper[1] += increment
-        improper[2] += increment
-        improper[3] += increment
-        improper[4] += increment
-    # Note that some of the atom bonds in the ghost dictionary are going to need updating too!
-    # These are distinguished by being strings that begin with an _
+    constraintTypes = ['bond', 'angle', 'dihedral', 'improper']
+    for constraintType in constraintTypes:
+        for constraintNo, constraint in enumerate(inputDictionary[constraintType]):
+            inputDictionary[constraintType][constraintNo][1:] = [x + increment for x in inputDictionary[constraintType][constraintNo][1:]]
     if modifyGhostDictionary is True:
         for bondNo, bond in enumerate(ghostDictionary['bond']):
             if str(bond[1])[0] == '_':

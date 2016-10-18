@@ -10,6 +10,190 @@ import sys
 
 DEBUGWriteDCDFiles = False
 
+class MDPhase:
+    def __init__(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, phaseNumber, inputFile, outputFile, sScale, eScale):
+        self.AAMorphologyDict = AAMorphologyDict
+        self.CGMorphologyDict = CGMorphologyDict
+        self.CGToAAIDMaster = CGToAAIDMaster
+        self.inputFile = inputFile
+        self.outputFile = outputFile
+        self.sScale = sScale
+        self.eScale = eScale
+        for key in ['temperatures', 'pairTypes', 'bondTypes', 'angleTypes', 'dihedralTypes', 'integrationTargets', 'timesteps', 'durations', 'terminationConditions', 'groupAnchorings']:
+            if phaseNumber + 1 > len(parameterDict[key]):
+                self.__dict__[key[:-1]] = parameterDict[key][0]
+            else:
+                self.__dict__[key[:-1]] = parameterDict[key][phaseNumber]
+        self.system = init.read_xml(fileName = inputFile)
+        self.rigidGroup, self.nonRigidGroup = self.getIntegrationGroup()
+        self.logQuantities = ['temperature', 'pressure', 'volume', 'potential_energy', 'kinetic_energy', 'bond_'+self.bondType+'_energy', 'angle_'+self.angleType+'_energy', 'dihedral_'+self.dihedralType+'_energy']
+        self.pair, self.bond, self.angle, self.dihedral, self.improper = self.getFFCoeffs()
+
+    def optimiseStructure(self):
+        if DEBUGWriteDCDFiles is True:
+            self.dumpDCD = dump.dcd(filename = self.outputFile.replace('xml', 'dcd'), period = self.timestep / 100.0, overwrite = True)
+        else:
+            self.dumpDCD = None
+        self.step = integrate.mode_standard(dt = self.timestep)
+        self.rigidInt = integrate.nvt_rigid(group = self.rigidGroup, T = self.temperature, tau = self.tau)
+        self.nonRigidInt = integrate.nvt(group = self.nonRigidGroup, T = self.temperature, tau = self.tau)
+        NOW DO TERMINATION CONDITIONS
+        ALSO NEED TO FIX GROUP ANCHORINGS BASED ON PAR
+
+    def getFFCoeffs(self):
+        # Set Pair Coeffs
+        self.pair = None
+        if self.pairType != 'none':
+            self.logQuantities.append('pair_'+self.pairType+'_energy')
+            if self.pairType == 'dpd':
+                self.pair = pair.dpd(r_cut = self.pairRCut*self.sScale, T = self.temperature)
+                for pair in self.dpdCoeffs:
+                    self.pair.pair_coeff.set(pair[0].split('-')[0], pair[0].split('-')[1], A = pair[1] * self.eScale, r_cut = pair[2] * self.sScale * 2**(1./6.), gamma = self.pairDPDGammaVal)
+            elif self.pairType == 'lj':
+                self.pair = pair.lj(rcut = self.pairRCut * self.sScale)
+                self.pair.set_params(mode = 'xplor')
+                for pair in self.ljCoeffs:
+                    self.pair.pair_coeff.set(pair[0].split('-')[0], pair[0].split('-')[1], epsilon = pair[1] * self.eScale, sigma = pair[2] * self.sScale)
+            else:
+                raise SystemError('Non-DPD/LJ pair potentials not yet hard-coded! Please describe how to interpret them on this line.')
+        # Set Bond Coeffs
+        # Real bonds
+        if self.bondType == 'harmonic':
+            self.bond = bond.harmonic()
+            for bond in self.bondCoeffs:
+                # [k] = kcal mol^{-1} \AA^{-2} * episilon/sigma^{2}, [r0] = \AA * sigma^{2}
+                self.bond.bond_coeff.set(bond[0], k = bond[1] * (self.eScale / (self.sScale**2)), r0 = bond[2] * self.sScale)
+        # Ghost bonds
+            ghostBondTypes = []
+            for bond in self.AAMorphology['bond']:
+                if 'X' in bond[0]:
+                    if bond[0] not in ghostBondTypes:
+                        ghostBondTypes.append(bond[0])
+            for bond in ghostBondTypes:
+                self.bond.bond_coeff.set(bond, k = 1E6, r0 = 0)
+        else:
+            raise SystemError('Non-harmonic bond potentials not yet hard-coded! Please describe how to interpret them on this line.')
+        # Set Angle Coeffs
+        if self.angleType == 'harmonic':
+            self.angle = angle.harmonic()
+            for angle in self.angleCoeffs:
+                # [k] = kcal mol^{-1} rad^{-2} * epsilon, [t] = rad
+                self.angle.set_coeff(angle[0], k = angle[1] * self.eScale, t0 = angle[2])
+        else:
+            raise SystemError('Non-harmonic angle potentials not yet hard-coded! Please describe how to interpret them on this line.')
+        # Set Dihedral Coeffs
+        if self.dihedralType == 'table':
+            self.dihedral = dihedral.table(width = 1000)
+            for dihedral in self.dihedralCoeffs:
+                self.dihedral.dihedral_coeff.set(dihedral[0], func = multiHarmonicTorsion, coeff = dict(V0 = dihedral[1] * self.eScale, V1 = dihedral[2] * self.eScale, V2 = dihedral[3] * self.eScale, V3 = dihedral[4] * self.eScale))
+        else:
+            raise SystemError('Non-tabulated dihedral potentials not yet hard-coded! Please describe how to interpret them on this line.')
+        # Set Improper Coeffs
+        self.improper = improper.harmonic()
+        for improper in self.improperCoeffs:
+            for improper in self.improperCoeffs:
+                self.improper.improper_coeff.set(improper[0], k = improper[1] * self.eScale, chi = improper[2])
+
+    def getIntegrationGroup(self):
+        # Based on input parameter, return all non-rigid and rigid atoms to be integrated over
+        if self.integrationTarget == 'all':
+            integrationTypes = self.CGToTemplateAAIDs.keys()
+        else:
+            integrationTypes = self.integrationTarget.split(',')
+        rigidIntegrationGroupIndices = []
+        nonRigidIntegrationGroupIndices = []
+        rigidGhostTypesToAdd = []
+        for molecule in self.CGToAAIDMaster:
+            for CGSiteID in molecule.keys():
+                if CGMorphologyDict['type'][CGSiteID] in integrationTypes:
+                    if CGMorphologyDict['type'][CGSiteID] in self.rigidBodySites:
+                        rigidIntegrationGroupIndices += molecule[CGSiteID]
+                        # Get the list of all rigid ghost particles to integrate over
+                        rigidGhostType = 'R'+CGMorphologyDict['type'][CGSiteID]
+                        if rigidGhostType not in rigidGhostTypesToAdd:
+                            rigidGhostTypesToAdd.append(rigidGhostType)
+                    else:
+                        nonRigidIntegrationGroupIndices += molecule[CGSiteID]
+        # Additionally need to add in the rigid ghosts
+        for atomID, atomType in enumerate(self.AAMorphology['type']):
+            if atomType in rigidGhostTypesToAdd:
+                rigidIntergrationGroupIndices.append(atomID)
+        rigidGroup = None
+        nonRigidGroup = None
+        if len(rigidIntegrationGroupIndices) > 0:
+            rigidGroup = group.tag_list(name = "rigidGroup", tags = rigidIntegrationGroupIndices)
+        if len(nonRigidIntegrationGroupIndices) > 0:
+            nonRigidGroup = group.tag_list(name = "nonRigidGroup", tags = nonRigidIntegrationGroupIndices)
+        return rigidGroup, nonRigidGroup
+
+
+def obtainScaleFactors(parameterDict):
+    # First determine the correct length scaling
+    largestSigma = max(map(float, np.array(parameterDict['ljCoeffs'])[:,2]))
+    largestEpsilon = max(map(float, np.array(parameterDict['ljCoeffs'])[:,1]))
+    initialMorphology = helperFunctions.loadMorphologyXML(parameterDict['outputDir']+'/morphology/'+parameterDict['morphology'])
+    if largestSigma != 1.0:
+        helperFunctions.scale(initialMorphology, 1/float(largestSigma))
+    helperFunctions.writeMorphologyXML(initialMorphology, parameterDict['outputDir']+'/morphology/phase0_'+parameterDict['morphology'])
+    return 1/float(largestSigma), 1/float(largestEpsilon)
+
+
+def execute(parameterDict):
+    currentFiles = os.listdir(parameterDict['outputDir']+'/morphology')
+    sScale, eScale = createScaledMorphology(parameterDict)
+    for phaseNo in range(parameterDict['numberOfPhases']):
+        inputFile = 'phase'+str(phaseNo)+'_'+parameterDict['morphology']
+        outputFile = 'phase'+str(phaseNo+1)+'_'+parameterDict['morphology']
+        if outputFile in currentFiles:
+            print outputFile, "already exists. Skipping..."
+            continue
+        MDPhase(parameterDict, phaseNo, parameterDict['outputDir']+'/morphology/'+inputFile, parameterDict['outputDir']+'/morphology/'+outputFile, sScale, eScale).optimiseStructure()
+
+
+def checkSaveDirectory(directory):
+    saveDirectoryFiles = os.listdir(directory+'/morphology')
+    runPhase1 = True
+    runPhase2 = True
+    runPhase3 = True
+    runPhase4 = True
+    runPhase5 = True
+    runPhase6 = True
+    runPhase7 = True
+    continuePhase7 = False
+    continueFile = None
+    for fileName in saveDirectoryFiles:
+        if ('relaxed' in fileName) and ('xml' in fileName):
+            print "Calculations already complete for this morphology."
+            return False, False, False, False, False
+        elif ('phase1' in fileName) and ('xml' in fileName):
+            runPhase1 = False
+        elif ('phase2' in fileName) and ('xml' in fileName):
+            runPhase2 = False
+        elif ('phase3' in fileName) and ('xml' in fileName):
+            runPhase3 = False
+        elif ('phase4' in fileName) and ('xml' in fileName):
+            runPhase4 = False
+        elif ('phase5' in fileName) and ('xml' in fileName):
+            runPhase5 = False
+        elif ('phase6' in fileName) and ('xml' in fileName):
+            runPhase6 = False
+        elif ('temp' in fileName) and ('xml' in fileName):
+            runPhase7 = False
+            continuePhase7 = True
+            continueFile = saveDirectory+'/'+fileName
+    return [runPhase1, runPhase2, runPhase3, runPhase4, runPhase5, runPhase6, runPhase7, continuePhase7, continueFile]
+
+
+
+
+
+
+
+
+------===========---------
+
+
+
 def multiHarmonicTorsion(theta, V0, V1, V2, V3, V4):
     V = V0 + V1*np.cos(theta) + V2*((np.cos(theta))**2) + V3*((np.cos(theta))**3) + V4*((np.cos(theta))**4)
     F = V1*np.sin(theta) + 2*V2*np.cos(theta)*np.sin(theta) + 3*V3*((np.cos(theta))**2)*np.sin(theta) + 4*V4*((np.cos(theta))**3)*np.sin(theta)
@@ -51,7 +235,7 @@ class hoomdRun:
 	self.dtPhase7 = 1e-4
         self.phase1RunLength = 1e5 # Maximum, this run is KE truncated
         self.phase2RunLength = 1e4
-        self.phase3RunLength = 1e2 
+        self.phase3RunLength = 1e2
         self.phase4RunLength = 1e2
         self.phase5RunLength = 1e5
         self.phase6RunLength = 1e5
@@ -713,7 +897,7 @@ def checkSaveDirectory(morphologyName, saveDirectory):
     return [runPhase1, runPhase2, runPhase3, runPhase4, runPhase5, runPhase6, runPhase7, continuePhase7, continueFile]
 
 
-def execute(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize):
+def executeOLD(morphologyFile, AAfileName, CGMoleculeDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize):
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
     outputDir = './outputFiles'
     morphologyList = os.listdir(outputDir)

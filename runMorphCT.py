@@ -36,7 +36,9 @@ class simulation:
         self.copyCode()
         # Now begin running the code
         if self.executeFinegraining == True:
-            fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict).analyseMorphology()
+            AAFileName, CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, EMPTYLIST, boxSize = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict).analyseMorphology()
+        if self.executeMolecularDynamics == True:
+            morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = runHoomd.execute(parameterDict)
         exit()
 
     def getSlurmID(self):

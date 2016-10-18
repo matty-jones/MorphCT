@@ -31,8 +31,6 @@ def makeDirectoryStructure(morphologyDir, kesDir):
                 os.system("mkdir "+morphologyDir+"/M15TI0/KMC")
 
 
-
-
 def scpFiles(morphologyDir, kesDir):
     slashList = findIndex(morphologyDir, '/')
     morphologyName = morphologyDir[slashList[-1]+1:]
@@ -47,7 +45,7 @@ def scpFiles(morphologyDir, kesDir):
         os.system("scp kestrel:"+kesDir+"/outputFiles/"+morphologyName+"/chromophores/*.csv "+morphologyDir+"/M15TI0")
         os.system("scp kestrel:"+kesDir+"/outputFiles/"+morphologyName+"/KMC/*.csv "+morphologyDir+"/M15TI0/KMC")
 
-        
+
 def findIndex(string, character):
     '''This function returns the locations of an inputted character in an inputted string'''
     index = 0
@@ -60,7 +58,6 @@ def findIndex(string, character):
         return None
     return locations
 
-            
 
 if __name__ == "__main__":
     kesDir = sys.argv[1]

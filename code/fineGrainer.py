@@ -2,6 +2,8 @@ import copy
 import numpy as np
 import helperFunctions
 import cPickle as pickle
+import sys
+import time as T
 
 
 class morphology:
@@ -41,6 +43,7 @@ class morphology:
         print "Adding molecules to the system..."
         for moleculeNumber in range(len(moleculeIDs)):
             print "Adding molecule number", moleculeNumber, "\r",
+            sys.stdout.flush()
             # print "Rolling AA Index =", rollingAAIndex
             CGMoleculeDict, AAMoleculeDict, CGtoAAIDs, ghostDictionary = atomistic(moleculeNumber, moleculeIDs[moleculeNumber], self.CGDictionary, moleculeLengths, rollingAAIndex, ghostDictionary, self.parameterDict).returnData()
             CGtoAAIDMaster.append(CGtoAAIDs)
@@ -139,42 +142,46 @@ class morphology:
         # print "Average Segment Length =", segmentLength/float(totalSegments)
 
     def splitMolecules(self):
-        moleculeList = []
+        moleculeAAIDs = []
         moleculeLengths = []
+        bondedAtoms = {}
         bondList = copy.deepcopy(self.CGDictionary['bond'])
-        while len(bondList) > 0:
-            # Add the first two CG sites of the molecule
-            thisMolecule = [bondList[0][1], bondList[0][2]]
-            addedNewSite = True
-            currentNumberOfSitesInMolecule = 2
-            while addedNewSite is True:
-                addedNewSite = False
-                bondPopList = []
-                for bondNo, bond in enumerate(bondList):
-                    if (bond[1] in thisMolecule) and (bond[2] not in thisMolecule):
-                        thisMolecule.append(bond[2])
-                        currentNumberOfSitesInMolecule += 1
-                        addedNewSite = True
-                    elif (bond[2] in thisMolecule) and (bond[1] not in thisMolecule):
-                        thisMolecule.append(bond[1])
-                        currentNumberOfSitesInMolecule += 1
-                        addedNewSite = True
-                    elif (bond[1] in thisMolecule) and (bond[2] in thisMolecule):
-                        pass
-                    else:
-                        continue
-                    bondPopList.append(bondNo)
-                bondPopList.sort(reverse=True)
-                for bondIndex in bondPopList:
-                    bondList.pop(bondIndex)
-            moleculeList.append(thisMolecule)
-            # Length of the molecule is the total number of CG sites / number of CG sites in each repeat unit
-            # Sanity check:
-            if currentNumberOfSitesInMolecule % len(self.CGToTemplateAAIDs.keys()) != 0:
-                raise SystemError("Issue with splitting the morphology into molecules - does the template file contain exactly one repeat unit (minus any terminating groups)?")
-            moleculeLength = np.round(currentNumberOfSitesInMolecule / len(self.CGToTemplateAAIDs.keys()))  # Just in case of floating point errors
-            moleculeLengths.append(moleculeLength)
-        return moleculeList, moleculeLengths
+        for bond in bondList:
+            if bond[1] not in bondedAtoms:
+                bondedAtoms[bond[1]] = [bond[2]]
+            else:
+                bondedAtoms[bond[1]].append(bond[2])
+            if bond[2] not in bondedAtoms:
+                bondedAtoms[bond[2]] = [bond[1]]
+            else:
+                bondedAtoms[bond[2]].append(bond[1])
+        moleculeList = [i for i in range(len(self.CGDictionary['type']))]
+        for molID in range(len(moleculeList)):
+            moleculeList = self.updateMolecule(molID, moleculeList, bondedAtoms)
+        moleculeData = {}
+        for atomID in range(len(self.CGDictionary['type'])):
+            if moleculeList[atomID] not in moleculeData:
+                moleculeData[moleculeList[atomID]] = [atomID]
+            else:
+                moleculeData[moleculeList[atomID]].append(atomID)
+        for moleculeID in moleculeData.keys():
+            moleculeAAIDs.append(sorted(moleculeData[moleculeID]))
+            moleculeLengths.append(len(moleculeData[moleculeID]))
+        return moleculeAAIDs, moleculeLengths
+
+    def updateMolecule(self, atomID, moleculeList, bondedAtoms):
+        try:
+            for bondedAtom in bondedAtoms[atomID]:
+                if moleculeList[bondedAtom] > moleculeList[atomID]:
+                    moleculeList[bondedAtom] = moleculeList[atomID]
+                    moleculeList = self.updateMolecule(bondedAtom, moleculeList, bondedAtoms)
+                elif moleculeList[bondedAtom] < moleculeList[atomID]:
+                    moleculeList[atomID] = moleculeList[bondedAtom]
+                    moleculeList = self.updateMolecule(atomID, moleculeList, bondedAtoms)
+        except KeyError:
+            # This means that there are no bonded CG sites (i.e. it's a single molecule)
+            pass
+        return moleculeList
 
 
 class molecule:
@@ -285,7 +292,7 @@ class atomistic:
             self.__dict__[key] = value
         self.AATemplatesDictionary = {}
         for CGAtomType in self.CGToTemplateFiles.keys():
-            templateDictionary = helperFunctions.loadMorphologyXML(self.templateDirectory+'/'+self.CGToTemplateFiles[CGAtomType])
+            templateDictionary = helperFunctions.loadMorphologyXML(self.CGToTemplateDirs[CGAtomType]+'/'+self.CGToTemplateFiles[CGAtomType])
             templateDictionary = helperFunctions.addUnwrappedPositions(templateDictionary)
             self.AATemplatesDictionary[CGAtomType] = templateDictionary
         # thioAA, alk1AA, alk2AA are now all unused. Instead, use the CGToTemplateAAIDs dictionary which can have arbitrary length
@@ -459,7 +466,8 @@ class atomistic:
             noAtomsInMolecule += len(thisMonomerDictionary['type'])
             currentMonomerIndex += 1
             AADictionary = self.updateMoleculeDictionary(thisMonomerDictionary, AADictionary)
-        # All Monomers sorted, now for the final bits
+            # All Monomers sorted, now for the final bits
+
         AADictionary['natoms'] = noAtomsInMolecule
         for key in ['lx', 'ly', 'lz']:
             AADictionary[key] = thisMonomerDictionary[key]
