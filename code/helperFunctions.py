@@ -1003,3 +1003,20 @@ def writeToFile(logFile, stringList, mode='logFile'):
     with open(logFile, openAs) as logWrite:
         for line in stringList:
             logWrite.writelines(line + '\n')
+
+
+def loadPickle(pickleLocation):
+    print "Loading Pickle from", str(pickleLocation) + "..."
+    with open(pickleLocation, 'r') as pickleFile:
+        (AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict) = pickle.load(pickleFile)
+    print "Pickle loaded successfully!"
+    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict
+
+
+def convertStringToInt(x):
+    for i in range(len(x)):
+        try:
+            return int(x[i:])
+        except:
+            continue
+    return 99999

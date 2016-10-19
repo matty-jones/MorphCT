@@ -474,7 +474,7 @@ def checkBonds(inputDict, templateDicts, CGToTemplateAAIDs, AATemplateFiles):
 
 
 def getForcefieldParameters(templateDicts, additionalConstraints, moleculeTerminatingUnits, manual=True):
-    forcefieldParameters = {'BONDCOEFFS':[], 'ANGLECOEFFS':[], 'DIHEDRALCOEFFS':[], 'IMPROPERCOEFFS':[], 'LJPAIRCOEFFS':[], 'DPDPAIRCOEFFS':[], 'ADDITIONALCOEFFS':[]}
+    forcefieldParameters = {'BONDCOEFFS':[], 'ANGLECOEFFS':[], 'DIHEDRALCOEFFS':[], 'IMPROPERCOEFFS':[], 'LJPAIRCOEFFS':[], 'DPDPAIRCOEFFS':[]}
     # Sort out bonds first
     allBonds = []
     allBonds += [templateDict['bond'] for templateDict in templateDicts]
@@ -540,22 +540,26 @@ def getForcefieldParameters(templateDicts, additionalConstraints, moleculeTermin
             if manual == True:
                 while True:
                     try:
-                        improperCoeffsRaw = raw_input("Please enter the (unscaled!) V0, V1, V2 and V3 values for the "+str(improperType)+" improper, separated by a space: ").split(" ")
+                        improperCoeffsRaw = raw_input("Please enter the (unscaled!) k and chi values for the "+str(improperType)+" improper, separated by a space: ").split(" ")
                         forcefieldParameters['IMPROPERCOEFFS'].append([improperType] + list(map(float, improperCoeffsRaw)))
                         break
                     except:
                         print "Please try again."
             else:
-                forcefieldParameters['IMPROPERCOEFFS'].append([improperType, 1.0, 1.0, 1.0, 1.0])
+                forcefieldParameters['IMPROPERCOEFFS'].append([improperType, 1.0, 1.0])
     # Sort out LJ nonbonded pairs (will also add default-valued DPD pair potentials)
     allAtomTypes = []
     allAtomTypes += [templateDict['type'] for templateDict in templateDicts]
     # Combine the templates into a single list for iterating
     allAtomTypes = [atomType for template in allAtomTypes for atomType in template]
-    atomTypes = sorted(list(set(allAtomTypes)))
+    atomTypes = sorted(list(set(allAtomTypes)), key=lambda x: helperFunctions.convertStringToInt(x))
+    pairTypesIncluded = []
     for atomType1 in atomTypes:
         for atomType2 in atomTypes:
             pairType = str(atomType1)+"-"+str(atomType2)
+            pairTypeReversed = str(atomType2)+"-"+str(atomType1)
+            if (pairType in pairTypesIncluded) or (pairTypeReversed in pairTypesIncluded):
+                continue
             if manual == True:
                 while True:
                     try:
@@ -568,17 +572,21 @@ def getForcefieldParameters(templateDicts, additionalConstraints, moleculeTermin
             else:
                 forcefieldParameters['LJPAIRCOEFFS'].append([pairType, 1.0, 1.0])
                 forcefieldParameters['DPDPAIRCOEFFS'].append([pairType, 1.0, 1.0])
+            pairTypesIncluded.append(pairType)
     # Sort out additional constraints
     for constraint in (additionalConstraints + moleculeTerminatingUnits):
-        if len(constraint) == 3 or len(constraint) == 4:
-            # Bond or Angle
-            forcefieldParameters['ADDITIONALCOEFFS'].append([constraint[0], 1.0, 1.0])
+        if len(constraint) == 3:
+            # Bond
+            forcefieldParameters['BONDCOEFFS'].append([constraint[0], 1.0, 1.0])
+        elif len(constraint) == 4:
+            # Angle
+            forcefieldParameters['ANGLECOEFFS'].append([constraint[0], 1.0, 1.0])
         elif len(constraint) == 5:
             # Dihedral
-            forcefieldParameters['ADDITIONALCOEFFS'].append([constraint[0], 1.0, 1.0, 1.0, 1.0])
+            forcefieldParameters['DIHEDRALCOEFFS'].append([constraint[0], 1.0, 1.0, 1.0, 1.0])
         elif len(constraint) == 6:
             # Improper
-            forcefieldParameters['ADDITIONALCOEFFS'].append([constraint[1], 1.0, 1.0, 1.0, 1.0])
+            forcefieldParameters['IMPROPERCOEFFS'].append([constraint[1], 1.0, 1.0])
     return forcefieldParameters
 
 

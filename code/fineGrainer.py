@@ -28,7 +28,7 @@ class morphology:
         for boxDimension in ['lx', 'ly', 'lz']:
             CGMorphologyDict[boxDimension] = self.CGDictionary[boxDimension]
             AAMorphologyDict[boxDimension] = self.CGDictionary[boxDimension]
-        CGtoAAIDMaster = []  # This is a list of dictionaries. Elements in the list correspond to molecules
+        CGToAAIDMaster = []  # This is a list of dictionaries. Elements in the list correspond to molecules
         # (useful for splitting out individual molecules for the xyz conversion) within the element, the
         # dictionary key is the CG site, the value is a list containing the CG type (e.g. 'thio') as the
         # first element and then another list of all the AAIDs corresponding to that CG site as the second
@@ -46,7 +46,7 @@ class morphology:
             sys.stdout.flush()
             # print "Rolling AA Index =", rollingAAIndex
             CGMoleculeDict, AAMoleculeDict, CGtoAAIDs, ghostDictionary = atomistic(moleculeNumber, moleculeIDs[moleculeNumber], self.CGDictionary, moleculeLengths, rollingAAIndex, ghostDictionary, self.parameterDict).returnData()
-            CGtoAAIDMaster.append(CGtoAAIDs)
+            CGToAAIDMaster.append(CGtoAAIDs)
             for key in CGMoleculeDict.keys():
                 if key not in ['lx', 'ly', 'lz']:
                     if key not in CGMorphologyDict.keys():
@@ -83,13 +83,13 @@ class morphology:
         print "Writing XML file..."
         AAFileName = './outputFiles/' + self.morphologyName + '/morphology/' + self.morphologyName + '.xml'
         writeXML(AAMorphologyDict, './templates/template.xml', AAFileName)
-        toPickle = (AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDMaster, [], boxSize)
+        toPickle = (AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict)
         print "Writing pickle file..."
         pickleFileName = './outputFiles/' + self.morphologyName + '/morphology/' + self.morphologyName + '.pickle'
         with open(pickleFileName, 'w+') as pickleFile:
             pickle.dump(toPickle, pickleFile)
         print "Pickle file written to", pickleFileName
-        return AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDMaster, [], boxSize
+        return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict
         # ### Before we split into segments, let's fine grain the molecules (and write an xml so that we can see the output in VMD)
         # rollingMoleculeNumber = 0
         # for moleculeAtoms in moleculeIDs:
@@ -476,8 +476,8 @@ class atomistic:
         if len(self.moleculeTerminatingConnections) != 0:
             AADictionary, startTerminatingHydrogen = helperFunctions.addTerminatingHydrogen(AADictionary, startAtomIndex)
             AADictionary, endTerminatingHydrogen = helperFunctions.addTerminatingHydrogen(AADictionary, endAtomIndex)
-            atomIDLookupTable[monomerList[0][0]].append(startTerminatingHydrogen + self.noAtomsInMorphology)
-            atomIDLookupTable[monomerList[-1][0]].append(endTerminatingHydrogen + self.noAtomsInMorphology)
+            atomIDLookupTable[monomerList[0][0]][1].append(startTerminatingHydrogen + self.noAtomsInMorphology)
+            atomIDLookupTable[monomerList[-1][0]][1].append(endTerminatingHydrogen + self.noAtomsInMorphology)
         # Now the molecule is done, we need to add on the correct identifying numbers for all the bonds, angles and dihedrals
         # (just as we did between monomers) for the other molecules in the system, so that they all connect to the right atoms
         # Note that here we need to increment the '_'+ATOMIDs in the ghost dictionary to take into account the number of molecules.
