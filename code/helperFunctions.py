@@ -4,6 +4,7 @@ import os
 import cPickle as pickle
 import multiprocessing as mp
 import csv
+import xml.etree.ElementTree as ET
 
 
 def findMagnitude(vector):
@@ -453,6 +454,17 @@ def removeRigidBodies(inputDictionary):
     print len(atomsToRemove), "atoms and", len(bondsToRemove), "bonds removed."
     return inputDictionary
 
+def writeMorphologyXMLETree(inputDictionary, outputFile):
+    systemProps = ['box']
+    atomProps = ['position', 'image', 'mass', 'diameter', 'type', 'body', 'charge']
+    constraintProps = ['bond', 'angle', 'dihedral', 'improper']
+    root = ET.element('hoomd_xml',version=1.5)
+    root.text = '\n'
+    config = ET.element('configuration', time_step = "0", dimensions = "3", natoms = inputDictionary['natoms'])
+    config.text = '\n'
+    config.tail = '\n'
+    for element in config:
+        pass
 
 def writeMorphologyXML(inputDictionary, outputFile):
     # First, need to check the positions of the atoms to ensure that everything is correctly contained inside the box
@@ -522,6 +534,7 @@ def writeMorphologyXML(inputDictionary, outputFile):
     linesToWrite.append('</hoomd_xml>\n')
     with open(outputFile, 'w+') as xmlFile:
         xmlFile.writelines(linesToWrite)
+    print "XML file written to", str(outputFile)+"!"
 
 
 def writePOSCARFile(inputDict, outputFile):
