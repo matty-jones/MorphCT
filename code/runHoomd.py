@@ -8,13 +8,11 @@ import cPickle as pickle
 import helperFunctions
 import sys
 
-DEBUGWriteDCDFiles = False
-
+DEBUGWriteDCDFiles = True
 
 class ExitHoomd(Exception):
-    def __init__(self, string, moleculeName):
-        self.string = string + " At Timestep = " + str(get_step()) + " For Molecule = " + moleculeName
-
+    def __init__(self, string):
+        self.string = string + " At Timestep = " + str(get_step())
     def __str__(self):
         return self.string
 
@@ -28,10 +26,11 @@ class MDPhase:
         self.outputFile = outputFile
         self.sScale = sScale
         self.eScale = eScale
+        self.phaseNumber = phaseNumber
         for key in parameterDict.keys():
             self.__dict__[key] = parameterDict[key]
         for key in ['temperatures', 'taus', 'pairTypes', 'bondTypes', 'angleTypes', 'dihedralTypes', 'integrationTargets', 'timesteps', 'durations', 'terminationConditions', 'groupAnchorings']:
-            if phaseNumber + 1 > len(parameterDict[key]):
+            if self.phaseNumber + 1 > len(parameterDict[key]):
                 self.__dict__[key[:-1]] = parameterDict[key][0]
             else:
                 self.__dict__[key[:-1]] = parameterDict[key][phaseNumber]
@@ -43,20 +42,25 @@ class MDPhase:
 
     def optimiseStructure(self):
         if DEBUGWriteDCDFiles is True:
-            self.dumpDCD = dump.dcd(filename = self.outputFile.replace('xml', 'dcd'), period = self.timestep / 100.0, overwrite = True)
+            self.dumpDCD = dump.dcd(filename = self.outputFile.replace('xml', 'dcd'), period = self.duration / 100.0, overwrite = True)
         else:
             self.dumpDCD = None
         self.step = integrate.mode_standard(dt = self.timestep)
         self.rigidInt = integrate.nvt_rigid(group = self.rigidGroup, T = self.temperature, tau = self.tau)
         self.nonRigidInt = integrate.nvt(group = self.nonRigidGroup, T = self.temperature, tau = self.tau)
-        self.energyLog = analyze.log(filename = self.outputLogFileName, quantities = self.logQuantities, period = self.timestep / 1000.0, overwrite = False)
+        if self.phaseNumber == 0:
+            logOverwrite = True
+        else:
+            logOverwrite = False
+        self.energyLog = analyze.log(filename = self.outputLogFileName, quantities = self.logQuantities, period = self.duration / 1000.0, overwrite = logOverwrite)
         callback = None
         if self.terminationCondition == 'KEmin':
             self.loadFromSnapshot = False
             self.lowestKE = 9e999
             self.KEIncreased = 0
             self.firstKEValue = True
-            callback = analyze.callback(callback = self.checkKE, period = self.timestep / 1000.0)
+            callback = analyze.callback(callback = self.checkKE, period = self.duration / 1000.0)
+        print "---=== BEGINNING MOLECULAR DYNAMICS PHASE", self.phaseNumber+1, "===---"
         try:
             run(self.duration)
         except ExitHoomd as exitMessage:
@@ -79,7 +83,7 @@ class MDPhase:
                 if self.KEIncreased == 5:
                     # Found the lowest KE point for at least 5 timesteps
                     del self.firstKEValue, self.lowestKE, self.KEIncreased
-                    raise ExitHoomd("Lowest Energy Condition Met", self.morphologyName)
+                    raise ExitHoomd("Lowest Energy Condition Met")
                 self.KEIncreased += 1
             else:
                 # Maybe at the lowest KE point so store snapshot
@@ -117,8 +121,8 @@ class MDPhase:
                 for pairType in allPairTypes:
                     self.pairClass.pair_coeff.set(pairType.split('-')[0], pairType.split('-')[1], A = 0.0, r_cut = 0.0, gamma = 0.0)
             elif self.pairType == 'lj':
-                self.pairClass = pair.lj(rcut = self.pairRCut * self.sScale)
-                self.pair.set_params(mode = 'xplor')
+                self.pairClass = pair.lj(r_cut = self.pairRCut * self.sScale)
+                self.pairClass.set_params(mode = 'xplor')
                 for pairCoeff in self.ljCoeffs:
                     self.pairClass.pair_coeff.set(pairCoeff[0].split('-')[0], pairCoeff[0].split('-')[1], epsilon = pairCoeff[1] * self.eScale, sigma = pairCoeff[2] * self.sScale)
                     try:
@@ -138,19 +142,29 @@ class MDPhase:
                 # [k] = kcal mol^{-1} \AA^{-2} * episilon/sigma^{2}, [r0] = \AA * sigma^{2}
                 self.bondClass.bond_coeff.set(bondCoeff[0], k = bondCoeff[1] * (self.eScale / (self.sScale**2)), r0 = bondCoeff[2] * self.sScale)
         # Ghost bonds
-            if self.groupAnchoring != 'none':
-                if self.groupAnchoring == 'all':
-                    groupAnchoringTypes = ['X'+CGType for CGType in self.CGToTemplateAAIDs.keys()]
-                else:
-                    groupAnchoringTypes = ['X'+CGType for CGType in self.groupAnchoring.split(',')]
-                ghostBondTypes = []
-                for bondType in self.AAMorphologyDict['bond']:
-                    if 'X' in bondType[0]:
-                        for anchorType in groupAnchoringTypes:
-                            if (anchorType in bondType[0]) and (bondType[0] not in ghostBondTypes):
-                                ghostBondTypes.append(bondType[0])
-                for bondType in ghostBondTypes:
-                    self.bondClass.bond_coeff.set(bondType, k = 1E6, r0 = 0)
+        # If there is no anchoring, rather than change the XML, just set the bond k values to 0.
+            if self.groupAnchoring == 'all':
+                groupAnchoringTypes = ['X'+CGType for CGType in self.CGToTemplateAAIDs.keys()]
+            elif self.groupAnchoring == 'none':
+                groupAnchoringTypes = []
+            else:
+                groupAnchoringTypes = ['X'+CGType for CGType in self.groupAnchoring.split(',')]
+            anchorBondTypes = []
+            noAnchorBondTypes = []
+            for bondType in self.AAMorphologyDict['bond']:
+                if 'X' in bondType[0]:
+                    atomType1 = bondType[0].split('-')[0]
+                    atomType2 = bondType[0].split('-')[1]
+                    if (atomType1 in groupAnchoringTypes) or (atomType2 in groupAnchoringTypes):
+                        if bondType[0] not in anchorBondTypes:
+                            anchorBondTypes.append(bondType[0])
+                    else:
+                        if bondType[0] not in noAnchorBondTypes:
+                            noAnchorBondTypes.append(bondType[0])
+            for bondType in anchorBondTypes:
+                self.bondClass.bond_coeff.set(bondType, k = 1E6, r0 = 0)
+            for bondType in noAnchorBondTypes:
+                self.bondClass.bond_coeff.set(bondType, k = 0, r0 = 0)
         else:
             raise SystemError('Non-harmonic bond potentials not yet hard-coded! Please describe how to interpret them on this line.')
         # Set Angle Coeffs
@@ -241,17 +255,23 @@ def obtainScaleFactors(parameterDict):
     largestSigma = max(map(float, np.array(parameterDict['ljCoeffs'])[:,2]))
     largestEpsilon = max(map(float, np.array(parameterDict['ljCoeffs'])[:,1]))
     initialMorphology = helperFunctions.loadMorphologyXML(parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/'+parameterDict['morphology'])
-    print "Scaling morphology by sigma =", str(largestSigma)+"..."
-    if largestSigma != 1.0:
-        helperFunctions.scale(initialMorphology, 1/float(largestSigma))
+    return 1/float(largestSigma), 1/float(largestEpsilon)
+    
+def scaleMorphology(parameterDict, sScale, eScale):
+    print "Scaling morphology by sigma =", str(1/sScale)+"..."
+    if sScale != 1.0:
+        helperFunctions.scale(initialMorphology, sScale)
     helperFunctions.writeMorphologyXML(initialMorphology, parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/phase0_'+parameterDict['morphology'])
     print "XML written as", str(parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/phase0_'+parameterDict['morphology'])+"!"
-    return 1/float(largestSigma), 1/float(largestEpsilon)
 
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict):
     currentFiles = os.listdir(parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology')
     sScale, eScale = obtainScaleFactors(parameterDict)
+    if (parameterDict['overwriteCurrentData'] is False) and ('phase0_'+parameterDict['morphology'] in currentFiles):
+        pass
+    else:
+        scaleMorphology(parameterDict, sScale, eScale)
     # Reset logfile
     try:
         os.remove(parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/energies_'+parameterDict['morphology'][:-4]+'.log')
@@ -261,12 +281,12 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict):
         inputFile = 'phase'+str(phaseNo)+'_'+parameterDict['morphology']
         outputFile = 'phase'+str(phaseNo+1)+'_'+parameterDict['morphology']
         if outputFile in currentFiles:
-            if parameterDict['overwriteCurrentData'] == False:
+            if parameterDict['overwriteCurrentData'] is False:
                 print outputFile, "already exists. Skipping..."
                 continue
-        print "---=== BEGINNING MOLECULAR DYNAMICS PHASE", phaseNo+1, "===---"
         MDPhase(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, phaseNo, parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/'+inputFile, parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/'+outputFile, sScale, eScale).optimiseStructure()
     # Now all phases are complete, we need to remove the ghost particles from the system
+    print "Removing ghost particles to create final output..."
     removeGhostParticles(parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/'+outputFile, parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/final_'+parameterDict['morphology'])
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict
 
@@ -274,7 +294,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict):
 def removeGhostParticles(lastPhaseXML, outputFileName):
     finalMorphology = helperFunctions.loadMorphologyXML(lastPhaseXML)
     atomIDsToRemove = []
-    for atomID, atomType in finalMorphology['type']:
+    for atomID, atomType in enumerate(finalMorphology['type']):
         if (atomType[0] == 'X') or (atomType[0] == 'R'):
             # This is a ghost particle
             atomIDsToRemove.append(atomID)
@@ -283,12 +303,13 @@ def removeGhostParticles(lastPhaseXML, outputFileName):
     for atomID in atomIDsToRemove:
         for key in atomAttribs:
             finalMorphology[key].pop(atomID)
+    finalMorphology['natoms'] -= len(atomIDsToRemove)
     atomConstraints = ['bond', 'angle', 'dihedral', 'improper']
     for key in atomConstraints:
         constraintsToRemove = []
-        for constraintNo, constraint in finalMorphology[key]:
+        for constraintNo, constraint in enumerate(finalMorphology[key]):
             for atomID in constraint[1:]:
-                if atomID in atomIDsToRemove:
+                if (atomID in atomIDsToRemove) and (constraintNo not in constraintsToRemove):
                     constraintsToRemove.append(constraintNo)
         constraintsToRemove.sort(reverse = True)
         for constraintNo in constraintsToRemove:
