@@ -295,6 +295,8 @@ def checkBonds(inputDict, templateDicts, CGToTemplateAAIDs, AATemplateFiles):
         while True:
             for index, intraCGBond in enumerate(intraCGBonds):
                 print str(index)+"):", intraCGBond, "["+str(intraCGBondTemplates[index])+"]"
+            if len(intraCGBonds) == 0:
+                index -= 1
             print str(index+1)+"): New Inter-Monomer bond\n"
             bondSelection = raw_input("Please select an option (integer, default = 0): ")
             if len(bondSelection) == 0:
@@ -453,11 +455,11 @@ def checkBonds(inputDict, templateDicts, CGToTemplateAAIDs, AATemplateFiles):
 #                continue
         for templateIndex, templateName in enumerate(AATemplateFiles):
             while True:
-                startAtom = str(raw_input("Please indicate the atom ID at the start of the molecule that the terminating hydrogen is attached to in the", templateName, "template file (leave blank for no terminating group, e.g. in small molecules): "))
+                startAtom = str(raw_input("Please indicate the atom ID at the start of the molecule that the terminating hydrogen is attached to in the " + templateName + " template file (leave blank for no terminating group, e.g. in small molecules): "))
                 if len(startAtom) == 0:
                     break
                 try:
-                    moleculeTerminatingUnits.append([templateDict[templateIndex]['type'][int(startAtom)]+'-H1', int(startAtom)])
+                    moleculeTerminatingUnits.append([templateDicts[templateIndex]['type'][int(startAtom)]+'-H1', int(startAtom)])
                 except:
                     print "Please try again."
                     continue
@@ -465,7 +467,7 @@ def checkBonds(inputDict, templateDicts, CGToTemplateAAIDs, AATemplateFiles):
                 if len(endAtom) == 0:
                     break
                 try:
-                    moleculeTerminatingUnits.append([templateDict[templateIndex]['type'][int(endAtom)]+'-H1', int(endAtom)])
+                    moleculeTerminatingUnits.append([templateDicts[templateIndex]['type'][int(endAtom)]+'-H1', int(endAtom)])
                     break
                 except:
                     print "Please try again."

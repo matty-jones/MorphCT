@@ -1,5 +1,3 @@
-import runMorphCT
-
 # ---=== Directory and File Structure ===---
 inputDir = INPUTDIR
 outputDir = OUTPUTDIR
@@ -78,23 +76,25 @@ IMPROPERCOEFFS
 ]
 
 # ---=== Molecular Dynamics Phase Parameters ===---
-numberOfPhases = 6
-temperatures = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-pairType = ['none', 'dpd', 'lj', 'lj', 'lj', 'lj']
-bondType = 'harmonic'
-angleType = 'harmonic'
-dihedralType = 'table'
-integrationTargets = ['all', 'sidechains', 'all', 'all', 'all', 'all']
-timesteps = [1E-3, 1E-3, 1E-9, 1E-7, 1E-6, 1E-5]
-phaseDurations = [1E3, 1E4, 1E2, 1E2, 1E5, 1E5]
-terminationConditions = ['KEmin', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt']
-groupAnchoring = ['all', 'all', 'all', 'all', 'all', 'none']
+numberOfPhases = 8
+temperatures = [1.0]
+pairType = ['none', 'dpd', 'lj', 'lj', 'lj', 'lj', 'lj', 'lj']
+bondType = ['harmonic']
+angleType = ['harmonic']
+dihedralType = ['table']
+integrationTargets = ['all']
+timesteps = [1E-3, 1E-3, 1E-9, 5E-9, 1E-8, 1E-7, 1E-6, 1E-5]
+phaseDurations = [1E5, 1E4, 1E3, 1E3, 1E3, 1E4, 1E5, 1E5]
+terminationConditions = ['KEmin', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt']
+groupAnchoring = ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'none']
 
 
 # ---=== Begin run ===---
 parameterFile = __file__
 
 if __name__ == "__main__":
+    import runMorphCT
+
     parameterNames = [i for i in dir() if (not i.startswith('__')) and (i not in ['runMorphCT', 'os', 'sys'])]
     parameters = {}
     for name in parameterNames:

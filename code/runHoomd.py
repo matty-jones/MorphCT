@@ -256,13 +256,13 @@ def obtainScaleFactors(parameterDict):
     largestEpsilon = max(map(float, np.array(parameterDict['ljCoeffs'])[:,1]))
     initialMorphology = helperFunctions.loadMorphologyXML(parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/'+parameterDict['morphology'])
     return 1/float(largestSigma), 1/float(largestEpsilon)
-    
-def scaleMorphology(parameterDict, sScale, eScale):
+
+
+def scaleMorphology(initialMorphology, parameterDict, sScale, eScale):
     print "Scaling morphology by sigma =", str(1/sScale)+"..."
     if sScale != 1.0:
         helperFunctions.scale(initialMorphology, sScale)
     helperFunctions.writeMorphologyXML(initialMorphology, parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/phase0_'+parameterDict['morphology'])
-    print "XML written as", str(parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/phase0_'+parameterDict['morphology'])+"!"
 
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict):
@@ -271,7 +271,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict):
     if (parameterDict['overwriteCurrentData'] is False) and ('phase0_'+parameterDict['morphology'] in currentFiles):
         pass
     else:
-        scaleMorphology(parameterDict, sScale, eScale)
+        scaleMorphology(AAMorphologyDict, parameterDict, sScale, eScale)
     # Reset logfile
     try:
         os.remove(parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/energies_'+parameterDict['morphology'][:-4]+'.log')
