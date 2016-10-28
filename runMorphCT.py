@@ -34,12 +34,25 @@ class simulation:
         self.makeDirTree()
         # Copy the current code and the parameter file for safekeeping
         self.copyCode()
+        # Load any previous data to allow us to run individual phases
+        try:
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict = helperFunctions.loadPickle(self.outputDirectory+'/code/'+self.morphology[:-4]+'.pickle')
+        except:
+            if self.executeFinegraining == True:
+                pass
+            else:
+                print "PICKLE NOT FOUND, EXECUTING FINEGRAINING TO OBTAIN REQUIRED PARAMETERS..."
+                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict).analyseMorphology()
         # Now begin running the code
         if self.executeFinegraining == True:
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict).analyseMorphology()
         if self.executeMolecularDynamics == True:
+            #AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict = self.findPreviousCalculations()
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict = runHoomd.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict)
         exit()
+
+    #def findPreviousCalculations(self):
+
 
     def getSlurmID(self):
         # Use Squeue to determine the current slurm job number

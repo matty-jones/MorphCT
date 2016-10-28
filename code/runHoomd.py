@@ -180,6 +180,10 @@ class MDPhase:
             self.dihedralClass = dihedral.table(width = 1000)
             for dihedralCoeff in self.dihedralCoeffs:
                 self.dihedralClass.dihedral_coeff.set(dihedralCoeff[0], func = multiHarmonicTorsion, coeff = dict(V0 = dihedralCoeff[1] * self.eScale, V1 = dihedralCoeff[2] * self.eScale, V2 = dihedralCoeff[3] * self.eScale, V3 = dihedralCoeff[4] * self.eScale, V4 = dihedralCoeff[5] * self.eScale))
+        elif self.dihedralType == 'opls':
+            self.dihedralClass = dihedral.opls()
+            for dihedralCoeff in self.dihedralCoeffs:
+                self.dihedralClass.set_coeff(dihedralCoeff[0], k1 = dihedralCoeff[1] * self.eScale, k2 = dihedralCoeff[2] * self.eScale, k3 = dihedralCoeff[3] * self.eScale, k4 = dihedralCoeff[4] * self.eScale)
         else:
             raise SystemError('Non-tabulated dihedral potentials not yet hard-coded! Please describe how to interpret them on this line.')
         # Set Improper Coeffs
@@ -349,7 +353,6 @@ def checkSaveDirectory(directory):
             continuePhase7 = True
             continueFile = saveDirectory+'/'+fileName
     return [runPhase1, runPhase2, runPhase3, runPhase4, runPhase5, runPhase6, runPhase7, continuePhase7, continueFile]
-
 
 if __name__ == "__main__":
     try:

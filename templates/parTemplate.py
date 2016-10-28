@@ -78,15 +78,16 @@ IMPROPERCOEFFS
 # ---=== Molecular Dynamics Phase Parameters ===---
 numberOfPhases = 8
 temperatures = [1.0]
-pairType = ['none', 'dpd', 'lj', 'lj', 'lj', 'lj', 'lj', 'lj']
-bondType = ['harmonic']
-angleType = ['harmonic']
-dihedralType = ['table']
+taus = [1.0]
+pairTypes = ['none', 'dpd', 'lj', 'lj', 'lj', 'lj', 'lj', 'lj']
+bondTypes = ['harmonic']
+angleTypes = ['harmonic']
+dihedralTypes = ['table']
 integrationTargets = ['all']
 timesteps = [1E-3, 1E-3, 1E-9, 5E-9, 1E-8, 1E-7, 1E-6, 1E-5]
-phaseDurations = [1E5, 1E4, 1E3, 1E3, 1E3, 1E4, 1E5, 1E5]
+durations = [1E5, 1E4, 1E3, 1E3, 1E3, 1E4, 1E5, 1E5]
 terminationConditions = ['KEmin', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt']
-groupAnchoring = ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'none']
+groupAnchorings = ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'none']
 
 
 # ---=== Begin run ===---

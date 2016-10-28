@@ -85,7 +85,7 @@ class morphology:
         writeXML(AAMorphologyDict, './templates/template.xml', AAFileName)
         toPickle = (AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict)
         print "Writing pickle file..."
-        pickleFileName = './outputFiles/' + self.morphologyName + '/morphology/' + self.morphologyName + '.pickle'
+        pickleFileName = './outputFiles/' + self.morphologyName + '/code/' + self.morphologyName + '.pickle'
         with open(pickleFileName, 'w+') as pickleFile:
             pickle.dump(toPickle, pickleFile)
         print "Pickle file written to", pickleFileName

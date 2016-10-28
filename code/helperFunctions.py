@@ -4,7 +4,7 @@ import os
 import cPickle as pickle
 import multiprocessing as mp
 import csv
-import xml.etree.ElementTree as ET
+import xml.etree.cElementTree as ET
 
 
 def findMagnitude(vector):
@@ -455,16 +455,43 @@ def removeRigidBodies(inputDictionary):
     return inputDictionary
 
 def writeMorphologyXMLETree(inputDictionary, outputFile):
+    print "Checking wrapped positions before writing XML..."
+    inputDictionary = checkWrappedPositions(inputDictionary)
     systemProps = ['box']
-    atomProps = ['position', 'image', 'mass', 'diameter', 'type', 'body', 'charge']
+    atomProps3D = ['position', 'image']
+    atomProps = ['mass', 'diameter', 'type', 'body', 'charge']
     constraintProps = ['bond', 'angle', 'dihedral', 'improper']
-    root = ET.element('hoomd_xml',version=1.5)
+    root = ET.Element('hoomd_xml',version = "1.5")
     root.text = '\n'
-    config = ET.element('configuration', time_step = "0", dimensions = "3", natoms = inputDictionary['natoms'])
+    config = ET.Element('configuration', time_step = str(inputDictionary['time_step']), dimensions = "3", natoms = str(inputDictionary['natoms']))
     config.text = '\n'
     config.tail = '\n'
-    for element in config:
-        pass
+    for element in systemProps + atomProps3D + atomProps + constraintProps:
+        ET.SubElement(config, element)
+        config[-1].text = '\n'
+        config[-1].tail = '\n'
+    for axis in ['lx', 'ly', 'lz']:
+        config.find('box').attrib[axis] = str(inputDictionary[axis])
+    for axis in ['xy', 'xz', 'yz']:
+        config.find('box').attrib[axis] = str(0)
+    config.find('box').text = ""
+    config.attrib['natoms'] = str(inputDictionary['natoms'])
+    for atomID, atomType in enumerate(inputDictionary['type']):
+        for atomProp3D in atomProps3D:
+            config.find(atomProp3D).text += ' '.join([str(x) for x in inputDictionary[atomProp3D][atomID]])+'\n'
+            config.find(atomProp3D).attrib['num'] = str(len(inputDictionary[atomProp3D]))
+        for atomProp in atomProps:
+            config.find(atomProp).text += str(inputDictionary[atomProp][atomID])+'\n'
+            config.find(atomProp).attrib['num'] = str(len(inputDictionary[atomProp]))
+    for constraintType in constraintProps:
+        for constraintID, constraint in enumerate(inputDictionary[constraintType]):
+            config.find(constraintType).text += ' '.join([str(x) for x in inputDictionary[constraintType][constraintID]])+'\n'
+        config.find(constraintType).attrib['num'] = str(len(inputDictionary[constraintType]))
+    root.insert(0, config)
+    tree = ET.ElementTree(root)
+    tree.write(outputFile, xml_declaration = True, encoding = 'UTF-8')
+    print "XML file written to", str(outputFile)+"!"
+
 
 def writeMorphologyXML(inputDictionary, outputFile):
     # First, need to check the positions of the atoms to ensure that everything is correctly contained inside the box
