@@ -290,6 +290,34 @@ def addTerminatingHydrogen(inputDictionary, terminatingConnection, terminatingUn
     return inputDictionary, inputDictionary['natoms'] - 1
 
 
+def loadMorphologyXMLETree(xmlPath, sigma = 1.0):
+    atomProps3DFloat = ['position']
+    atomProps3DInt = ['image']
+    atomPropsInt = ['body']
+    atomPropsFloat = ['mass', 'diameter', 'charge']
+    atomPropsStr = ['type']
+    constraintProps = ['bond', 'angle', 'dihedral', 'improper']
+    atomDictionary = {}
+    with open(xmlPath, 'r') as xmlFileName:
+        xmlFile = ET.parse(xmlFileName)
+    morphologyConfig = xmlFile.getroot()[-1]
+    for axis, systemDim in morphologyConfig.find('box').attrib.iteritems():
+        atomDictionary[axis] = float(systemDim)
+    for key in atomPropsInt:
+        atomDictionary[key] = map(int, morphologyConfig.find(key).text.split('\n')[1:-1])
+    for key in atomPropsFloat:
+        atomDictionary[key] = map(float, morphologyConfig.find(key).text.split('\n')[1:-1])
+    for key in atomPropsStr:
+        atomDictionary[key] = morphologyConfig.find(key).text.split('\n')[1:-1]
+    for key in atomProps3DInt:
+        atomDictionary[key] = [map(int, x.split(' ')) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
+    for key in atomProps3DFloat:
+        atomDictionary[key] = [list(np.array(map(float, x.split(' '))) * sigma) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
+    for key in constraintProps:
+        atomDictionary[key] = [[x.split(' ')[0]] + map(int, x.split(' ')[1:]) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
+    return atomDictionary
+
+
 def loadMorphologyXML(xmlPath, sigma=1.0):
     # XML has SimDims as <box
     # Positions as <position and <image
