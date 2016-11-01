@@ -8,12 +8,12 @@ outputDir = '/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/outputFiles'
 # ---=== Input Morphology Details ===---
 morphology = 'p1-L15-f0.0-P0.1-T1.5-e0.5.xml'
 inputSigma = 3.0
-overwriteCurrentData = True
+overwriteCurrentData = False
 
 # ---=== Execution Modules ===---
 
-executeFinegraining = True
-executeMolecularDynamics = True
+executeFinegraining = False
+executeMolecularDynamics = False
 executeExtractMolecules = True
 executeObtainChromophores = True
 executeZINDOS = True

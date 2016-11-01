@@ -43,15 +43,14 @@ class simulation:
             else:
                 print "PICKLE NOT FOUND, EXECUTING FINEGRAINING TO OBTAIN REQUIRED PARAMETERS..."
                 AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict).analyseMorphology()
-        # Now begin running the code
-        if self.executeFinegraining == True:
+        # Now begin running the code based on user's flags
+        if self.executeFinegraining is True:
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict).analyseMorphology()
-        if self.executeMolecularDynamics == True:
-            #AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict = self.findPreviousCalculations()
+        if self.executeMolecularDynamics is True:
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict = runHoomd.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict)
+        if self.executeExtractMolecules is True:
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict = extractMol.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict)
         exit()
-
-    #def findPreviousCalculations(self):
 
 
     def getSlurmID(self):

@@ -183,16 +183,16 @@ def addUnwrappedPositions(inputDictionary):
         unwrappedPosition = []
         for axis in range(len(image)):
             unwrappedPosition.append((image[axis] * simulationDimensions[axis]) + position[axis])
-        # print "Original, Wrapped Position =", position, image
-        # print "New, Unwrapped Position =", unwrappedPosition
-        # raw_input("Press Return to continue...")
         inputDictionary['unwrapped_position'][i] = unwrappedPosition
     return inputDictionary
 
 
-# def addWrappedPositions(inputDictionary):
-#     inputDictionary['position'] = inputDictionary['unwrapped_position']
-#     return inputDictionary
+def replaceWrappedPositions(inputDictionary):
+    '''This function takes a morphCT input dictionary and replaces the 'position' and 'image' keys with the 'unwrapped_position' key and '[0, 0, 0]' respectively.'''
+    for atomID, unwrapped_position in enumerate(inputDictionary['unwrapped_position']):
+        inputDictionary['position'][atomID] = unwrapped_position
+        inputDictionary['image'][atomID] = [0, 0, 0]
+    return inputDictionary
 
 
 def addWrappedPositions(inputDictionary):
@@ -760,10 +760,8 @@ def scale(inputDictionary, scaleFactor):
 
 def centre(inputDictionary, centreOfMass):
     COM = np.array(centreOfMass)
-    numberOfAtomsMoved = 0
     for index, position in enumerate(inputDictionary['position']):
         inputDictionary['position'][index] = list(position - COM)
-        numberOfAtomsMoved += 1
     return inputDictionary
 
 
@@ -1079,6 +1077,13 @@ def loadPickle(pickleLocation):
         (AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict) = pickle.load(pickleFile)
     print "Pickle loaded successfully!"
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict
+
+
+def writePickle(toPickle, pickleFileName):
+    print "Writing pickle file..."
+    with open(pickleFileName, 'w+') as pickleFile:
+	pickle.dump(toPickle, pickleFile)
+    print "Pickle file written to", pickleFileName
 
 
 def convertStringToInt(x):

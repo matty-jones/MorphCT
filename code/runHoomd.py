@@ -11,6 +11,7 @@ import sys
 DEBUGWriteDCDFiles = True
 
 class ExitHoomd(Exception):
+    '''This class is raised to terminate a HOOMD simulation mid-run for a particular reason (e.g. minimum KE found)'''
     def __init__(self, string):
         self.string = string + " At Timestep = " + str(get_step())
     def __str__(self):
@@ -19,6 +20,7 @@ class ExitHoomd(Exception):
 
 class MDPhase:
     def __init__(self, AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, phaseNumber, inputFile, outputFile, sScale, eScale):
+        '''The MDPhase class respresents a single MD simulation using the given parameters'''
         self.AAMorphologyDict = AAMorphologyDict
         self.CGMorphologyDict = CGMorphologyDict
         self.CGToAAIDMaster = CGToAAIDMaster
@@ -26,19 +28,26 @@ class MDPhase:
         self.outputFile = outputFile
         self.sScale = sScale
         self.eScale = eScale
-        print "Note: self.sScale =", self.sScale, "self.eScale =", self.eScale
         self.phaseNumber = phaseNumber
+        # Obtain the parXX.py parameters
         for key in parameterDict.keys():
             self.__dict__[key] = parameterDict[key]
+        # Get the phase-specific simulation parameters
         for key in ['temperatures', 'taus', 'pairTypes', 'bondTypes', 'angleTypes', 'dihedralTypes', 'integrationTargets', 'timesteps', 'durations', 'terminationConditions', 'groupAnchorings']:
+            # If the phase-specific parameter is not defined for this phase number then use the first one.
             if self.phaseNumber + 1 > len(parameterDict[key]):
                 self.__dict__[key[:-1]] = parameterDict[key][0]
+            # If the phase-specific parameter is specified for this phase then use this parameter
             else:
                 self.__dict__[key[:-1]] = parameterDict[key][phaseNumber]
+        # Load the previous phases' xml for continuation
         self.system = init.read_xml(filename = inputFile)
+        # Determine the required groups so we can use the correct integrator each time
         self.rigidGroup, self.nonRigidGroup = self.getIntegrationGroups()
         self.outputLogFileName = self.outputDir+'/'+self.morphology[:-4]+'/morphology/energies_'+self.morphology[:-4]+'.log'
+        # Determine which quantities should be logged during the simulation phase
         self.logQuantities = ['temperature', 'pressure', 'volume', 'potential_energy', 'kinetic_energy', 'bond_'+self.bondType+'_energy', 'angle_'+self.angleType+'_energy', 'dihedral_'+self.dihedralType+'_energy']
+        # Set the bond coefficients
         self.getFFCoeffs()
 
     def optimiseStructure(self):
@@ -259,8 +268,13 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict):
                 continue
         MDPhase(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, phaseNo, parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/'+inputFile, parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/'+outputFile, sScale, eScale).optimiseStructure()
     # Now all phases are complete, we need to remove the ghost particles from the system
+    finalXMLName = parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/final_'+parameterDict['morphology']
     print "Removing ghost particles to create final output..."
-    removeGhostParticles(parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/'+outputFile, parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/final_'+parameterDict['morphology'])
+    removeGhostParticles(parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/'+outputFile, finalXMLName)
+    # Finally, we need to update AAMorphologyDict with the most recent, realistic one 
+    # in the pickle filefor when we load it in again further along the pipeline
+    AAMorphologyDict = helperFunctions.loadMorphologyXML(finalXMLName)
+    helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict), parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/'+parameterDict['morphology'][:-4]+'.pickle')
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict
 
 
@@ -322,6 +336,7 @@ def checkSaveDirectory(directory):
             continuePhase7 = True
             continueFile = saveDirectory+'/'+fileName
     return [runPhase1, runPhase2, runPhase3, runPhase4, runPhase5, runPhase6, runPhase7, continuePhase7, continueFile]
+
 
 if __name__ == "__main__":
     try:

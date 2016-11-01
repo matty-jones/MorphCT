@@ -8,6 +8,7 @@ import time as T
 
 class morphology:
     def __init__(self, morphologyXML, morphologyName, parameterDict):
+        # Import parameters from the parXX.py
         self.parameterDict = parameterDict
         for key, value in parameterDict.iteritems():
             self.__dict__[key] = value
@@ -19,12 +20,14 @@ class morphology:
         self.CGDictionary = helperFunctions.addUnwrappedPositions(self.CGDictionary)
 
     def analyseMorphology(self):
+        # Split the morphology into individual molecules
         print "Finding molecules..."
         moleculeIDs, moleculeLengths = self.splitMolecules()
         rollingAAIndex = 0
         boxSize = [self.CGDictionary['lx'], self.CGDictionary['ly'], self.CGDictionary['lz']]
         CGMorphologyDict = {}
         AAMorphologyDict = {}
+        # Set the AAMorphology and CGMorphology system sizes to the same as the input file system size
         for boxDimension in ['lx', 'ly', 'lz']:
             CGMorphologyDict[boxDimension] = self.CGDictionary[boxDimension]
             AAMorphologyDict[boxDimension] = self.CGDictionary[boxDimension]
@@ -44,9 +47,10 @@ class morphology:
         for moleculeNumber in range(len(moleculeIDs)):
             print "Adding molecule number", moleculeNumber, "\r",
             sys.stdout.flush()
-            # print "Rolling AA Index =", rollingAAIndex
+            # Obtain the AA dictionary for each molecule using the fine-grainining procedure
             CGMoleculeDict, AAMoleculeDict, CGtoAAIDs, ghostDictionary = atomistic(moleculeNumber, moleculeIDs[moleculeNumber], self.CGDictionary, moleculeLengths, rollingAAIndex, ghostDictionary, self.parameterDict).returnData()
             CGToAAIDMaster.append(CGtoAAIDs)
+            # Update the morphology dictionaries with this new molecule
             for key in CGMoleculeDict.keys():
                 if key not in ['lx', 'ly', 'lz']:
                     if key not in CGMorphologyDict.keys():
@@ -80,70 +84,23 @@ class morphology:
         # Finally, update the number of atoms
         AAMorphologyDict['natoms'] += len(ghostDictionary['type'])
         print "\n"
+        # Now write the XML file and create the pickle
         print "Writing XML file..."
         AAFileName = './outputFiles/' + self.morphologyName + '/morphology/' + self.morphologyName + '.xml'
-        writeXML(AAMorphologyDict, './templates/template.xml', AAFileName)
-        toPickle = (AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict)
-        print "Writing pickle file..."
-        pickleFileName = './outputFiles/' + self.morphologyName + '/code/' + self.morphologyName + '.pickle'
-        with open(pickleFileName, 'w+') as pickleFile:
-            pickle.dump(toPickle, pickleFile)
-        print "Pickle file written to", pickleFileName
+        # Replace the `positions' with the `unwrapped_positions' ready for writing
+        AAMorphologyDict = helperFunctions.replaceWrappedPositions(AAMorphologyDict)
+        # Now write the morphology XML
+        helperFunctions.writeMorphologyXML(AAMorphologyDict, AAFileName)
+        # And finally write the pickle
+        pickleLocation = './outputFiles/' + self.morphologyName + '/code/' + self.morphologyName + '.pickle'
+        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict), pickleLocation)
         return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict
-        # ### Before we split into segments, let's fine grain the molecules (and write an xml so that we can see the output in VMD)
-        # rollingMoleculeNumber = 0
-        # for moleculeAtoms in moleculeIDs:
-        #     moleculeNumber = str(rollingMoleculeNumber)
-        #     while len(moleculeNumber) < 4:
-        #         moleculeNumber = '0'+moleculeNumber
-        #     # Check to see if pickle file is already present, skip if it is
-        #     pickleFound = False
-        #     try:
-        #         currentMolDirContents = os.listdir('./outputChains/'+morphologyName+'/mol'+moleculeNumber)
-        #         for fileName in currentMolDirContents:
-        #             if '.pickle' in fileName:
-        #                 # Pickle present so skip
-        #                 pickleFound = True
-        #                 break
-        #         if pickleFound == True:
-        #             rollingMoleculeNumber += 1
-        #             # GET ONE MOLECULE WORKING COMPLETELY FIRST
-        #             # CONTINUE TO NEXT MOLECULE
-        #             continue
-        #     except OSError:
-        #         # Directory doesn't exist
-        #         pass
-        #     AAfileName, CGMoleculeDict, AAMoleculeDict, CGtoAAIDs, boxSize = atomistic(moleculeAtoms, self.CGDictionary, morphologyName, moleculeNumber).returnData()
-        #     toPickle = (AAfileName, CGMoleculeDict, CGtoAAIDs, boxSize)
-        #     pickleFileName = './outputChains/'+morphologyName+'/mol'+moleculeNumber+'/mol'+moleculeNumber+'.pickle'
-        #     with open(pickleFileName, 'w+') as pickleFile:
-        #         pickle.dump(toPickle, pickleFile)
-        #     # print "~~~ THIS WILL EVENTUALLY LOOP OVER ALL MOLECULES IN THE MORPHOLOGY, GENERATING THE REQUIRED XML AND PICKLE FILES ~~~"
-        #     # print "~~~ FOR NOW JUST GET ONE MOLECULE WORKING IN THE PIPELINE FIRST ~~~"
-        #     # runHoomd.execute(AAfileName, CGMoleculeDict, CGtoAAIDs, boxSize)
-        #     rollingMoleculeNumber += 1
-        #     # JUST RUN THE FIRST 10 MOLECULES TO CHECK EVERYTHING IS OK
-        #     # if rollingMoleculeNumber == 9:
-        #     #     return 0
-        #     # raise SystemError('GET ONE MOLECULE WORKING COMPLETELY FIRST')
-
-        #####
-        # morphologySegments = []
-        # for moleculeAtoms in moleculeIDs:
-        #    print "WHEN CALLING MOLECULE CLASS, INPUT THE MOLECULE ENDS FROM THE CALCULATION IN THE ATOMISTIC CLASS TO SAVE ON CODE LINES"
-        #    morphologySegments.append(molecule(moleculeAtoms, self.CGDictionary).returnSegments())
-        # CALCULATE AVERAGE SEGMENT LENGTH FOR THE MORPHOLOGY
-        # totalSegments = 0
-        # segmentLength = 0
-        # for moleculeSegments in morphologySegments:
-        #     for segment in moleculeSegments:
-        #         totalSegments += 1
-        #         segmentLength += len(segment)
-        # print "Average Segment Length =", segmentLength/float(totalSegments)
 
     def splitMolecules(self):
+        # Split the full morphology into individual molecules
         moleculeAAIDs = []
         moleculeLengths = []
+        # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
         bondedAtoms = {}
         bondList = copy.deepcopy(self.CGDictionary['bond'])
         for bond in bondList:
@@ -156,127 +113,44 @@ class morphology:
             else:
                 bondedAtoms[bond[2]].append(bond[1])
         moleculeList = [i for i in range(len(self.CGDictionary['type']))]
+        # Recursively add all atoms in the neighbour list to this molecule
         for molID in range(len(moleculeList)):
             moleculeList = self.updateMolecule(molID, moleculeList, bondedAtoms)
+        # Create a dictionary of the molecule data
         moleculeData = {}
         for atomID in range(len(self.CGDictionary['type'])):
             if moleculeList[atomID] not in moleculeData:
                 moleculeData[moleculeList[atomID]] = [atomID]
             else:
                 moleculeData[moleculeList[atomID]].append(atomID)
+        # Return the list of AAIDs and the lengths of the molecules
         for moleculeID in moleculeData.keys():
             moleculeAAIDs.append(sorted(moleculeData[moleculeID]))
             moleculeLengths.append(len(moleculeData[moleculeID]))
         return moleculeAAIDs, moleculeLengths
 
     def updateMolecule(self, atomID, moleculeList, bondedAtoms):
+        # Recursively add all neighbours of atom number atomID to this molecule
         try:
             for bondedAtom in bondedAtoms[atomID]:
+                # If the moleculeID of the bonded atom is larger than that of the current one,
+                # update the bonded atom's ID to the current one's to put it in this molecule,
+                # then iterate through all of the bonded atom's neighbours
                 if moleculeList[bondedAtom] > moleculeList[atomID]:
                     moleculeList[bondedAtom] = moleculeList[atomID]
                     moleculeList = self.updateMolecule(bondedAtom, moleculeList, bondedAtoms)
+                # If the moleculeID of the current atom is larger than that of the bonded one,
+                # update the current atom's ID to the bonded one's to put it in this molecule,
+                # then iterate through all of the current atom's neighbours
                 elif moleculeList[bondedAtom] < moleculeList[atomID]:
                     moleculeList[atomID] = moleculeList[bondedAtom]
                     moleculeList = self.updateMolecule(atomID, moleculeList, bondedAtoms)
+                # Else: both the current and the bonded atom are already known to be in this 
+                # molecule, so we don't have to do anything else.
         except KeyError:
             # This means that there are no bonded CG sites (i.e. it's a single molecule)
             pass
         return moleculeList
-
-
-class molecule:
-    def __init__(self, moleculeIDs, CGDictionary):
-        # TOLERANCE SHOULD BE IN A PARAMETER FILE #
-        self.tolerance = np.pi / 6.
-        #################################################
-        self.atomIDs = moleculeIDs
-        self.CGDictionary = CGDictionary
-        print "Identifying Segments..."
-        self.segments = self.findSegments()
-
-    def returnSegments(self):
-        return self.segments
-
-    def findSegments(self):
-        segmentMaster = [[]]
-        polymerBackboneIDs, moleculeEnds = self.obtainBackboneAtoms()
-        atomUnderConsideration = moleculeEnds[0]
-        segmentMaster[-1].append(atomUnderConsideration)
-        firstAtomInSegment = True
-        while True:
-            print "\nCurrent atom under consideration =", atomUnderConsideration, "Molecule ends =", moleculeEnds, "New Segment =", firstAtomInSegment
-            if atomUnderConsideration == moleculeEnds[1]:
-                # Continue until the end of the current molecule
-                break
-            atomUnderConsiderationCoords = self.CGDictionary['unwrapped_position'][atomUnderConsideration]
-            neighbouringBackboneAtoms = self.findBondedNeighbours(atomUnderConsideration, polymerBackboneIDs)
-            for atom in neighbouringBackboneAtoms:
-                # Should give next atom along in the chain
-                if atom in segmentMaster[-1]:
-                    # Atom already in current segment
-                    continue
-                neighbouringBackboneAtom = atom
-            neighbouringBackboneAtomCoords = self.CGDictionary['unwrapped_position'][neighbouringBackboneAtom]
-            print "Current Atom Posn =", self.CGDictionary['position'][atomUnderConsideration], self.CGDictionary['image'][atomUnderConsideration]
-            print "Neighbour Atom Posn =", self.CGDictionary['position'][atomUnderConsideration], self.CGDictionary['image'][atomUnderConsideration]
-            if firstAtomInSegment is True:
-                axisVector = helperFunctions.findAxis(atomUnderConsiderationCoords, neighbouringBackboneAtomCoords)
-                firstAtomInSegment = False
-                print "No longer first atom in segment"
-            separationVector = helperFunctions.findAxis(atomUnderConsiderationCoords, neighbouringBackboneAtomCoords)
-            dotProduct = np.dot(axisVector, separationVector)
-            print dotProduct
-            # print "Axis Vector for this atom =", axisVector, "Separation Vector for this atom =", separationVector, "Dot Product for this atom =", dotProduct
-            if abs(dotProduct - 1.0) <= 1E-8:
-                # Floating point inaccuracy check
-                dotProduct = 1.0
-            separationAngle = np.arccos(dotProduct)
-            print "Pos 1", atomUnderConsiderationCoords, "Pos 2", neighbouringBackboneAtomCoords
-            if abs(separationAngle) <= self.tolerance:
-                # Atom belongs in this segment and coherence hasn't been disrupted
-                pass
-            else:
-                # Orbital conjugation has been disrupted, end segment and create a new one
-                print "Separation Angle =", separationAngle, ">", self.tolerance, "therefore time for a new segment."
-                segmentMaster.append([])
-                firstAtomInSegment = True
-            segmentMaster[-1].append(neighbouringBackboneAtom)
-            atomUnderConsideration = neighbouringBackboneAtom
-            # The new axis Vector becomes the previous backbone vector to be used in the next loop iteration
-            axisVector = helperFunctions.findAxis(atomUnderConsiderationCoords, neighbouringBackboneAtomCoords)
-        return segmentMaster
-
-    def findBondedNeighbours(self, atomUnderConsideration, backboneAtoms):
-        bondedNeighbours = []
-        for bond in self.CGDictionary['bond']:
-            if bond[1] == atomUnderConsideration:
-                if bond[2] in backboneAtoms:
-                    bondedNeighbours.append(bond[2])
-            elif bond[2] == atomUnderConsideration:
-                if bond[1] in backboneAtoms:
-                    bondedNeighbours.append(bond[1])
-        return bondedNeighbours
-
-    def obtainBackboneAtoms(self):
-        polymerBackboneIDs = []
-        for atomID in self.atomIDs:
-            if self.CGDictionary['type'][atomID] == 'A':
-                polymerBackboneIDs.append(atomID)
-        # Find the ends:
-        moleculeEnds = []
-        numberOfBonds = {}
-        for atom in polymerBackboneIDs:
-            numberOfBonds[atom] = 0
-        for bond in self.CGDictionary['bond']:
-            if bond[0] == 'bondA':
-                if (bond[1] in numberOfBonds) and (bond[2] in numberOfBonds):
-                    numberOfBonds[bond[1]] += 1
-                    numberOfBonds[bond[2]] += 1
-        for atomID, bondQuantity in numberOfBonds.iteritems():
-            if bondQuantity == 1:
-                moleculeEnds.append(atomID)
-        moleculeEnds.sort()
-        return polymerBackboneIDs, moleculeEnds
 
 
 class atomistic:
@@ -287,10 +161,13 @@ class atomistic:
         self.moleculeLengths = moleculeLengths
         self.siteIDs = siteIDs
         self.CGDictionary = CGDictionary
+        # Get the dictionary of all the CG sites in this molecule
         self.CGMonomerDictionary = self.getCGMonomerDict()
+        # Import the parXX.py parameters
         for key, value in parameterDict.iteritems():
             self.__dict__[key] = value
         self.AATemplatesDictionary = {}
+        # Load the template file for each CG atom
         for CGAtomType in self.CGToTemplateFiles.keys():
             templateDictionary = helperFunctions.loadMorphologyXML(self.CGToTemplateDirs[CGAtomType]+'/'+self.CGToTemplateFiles[CGAtomType])
             templateDictionary = helperFunctions.addUnwrappedPositions(templateDictionary)
@@ -299,28 +176,8 @@ class atomistic:
         self.AADictionary, self.atomIDLookupTable, self.ghostDictionary = self.runFineGrainer(ghostDictionary)
 
     def returnData(self):
+        # Return the important fine-grained results from this class
         return self.CGMonomerDictionary, self.AADictionary, self.atomIDLookupTable, self.ghostDictionary
-
-    def obtainBackboneAtoms(self):
-        polymerBackboneIDs = []
-        for atomID in self.atomIDs:
-            if self.CGDictionary['type'][atomID] == 'A':
-                polymerBackboneIDs.append(atomID)
-        # Find the ends:
-        moleculeEnds = []
-        numberOfBonds = {}
-        for atom in polymerBackboneIDs:
-            numberOfBonds[atom] = 0
-        for bond in self.CGDictionary['bond']:
-            if bond[0] == 'bondA':
-                if (bond[1] in numberOfBonds) and (bond[2] in numberOfBonds):
-                    numberOfBonds[bond[1]] += 1
-                    numberOfBonds[bond[2]] += 1
-        for atomID, bondQuantity in numberOfBonds.iteritems():
-            if bondQuantity == 1:
-                moleculeEnds.append(atomID)
-        moleculeEnds.sort()
-        return polymerBackboneIDs, moleculeEnds
 
     def getCGMonomerDict(self):
         CGMonomerDictionary = {'position': [], 'image': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': [], 'lx': 0, 'ly': 0, 'lz': 0}
@@ -347,12 +204,14 @@ class atomistic:
 
     def runFineGrainer(self, ghostDictionary):
         AADictionary = {'position': [], 'image': [], 'unwrapped_position': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': [], 'lx': 0, 'ly': 0, 'lz': 0}
+        # Find the COMs of each CG site in the system, so that we know where to move the template to
         CGCoMs = self.getAATemplatePosition(self.CGToTemplateAAIDs)
         # Need to keep track of the atom ID numbers globally - runFineGrainer sees individual monomers, atomistic sees molecules and the XML needs to contain the entire morphology.
         noAtomsInMolecule = 0
         CGTypeList = {}
         for siteID in self.siteIDs:
             CGTypeList[siteID] = self.CGDictionary['type'][siteID]
+        # Sort the CG sites into monomers so we can iterate over each monomer in order to perform the fine-graining
         monomerList = self.sortIntoMonomers(CGTypeList)
         currentMonomerIndex = sum(self.moleculeLengths[:self.moleculeIndex])
         atomIDLookupTable = {}
@@ -370,9 +229,11 @@ class atomistic:
                 print monomerCGTypes
                 print templateFiles
                 raise SystemError('NOT ALL MONOMER SITES ARE THE SAME TEMPLATE')
+            # Copy the template dictionary for editing for this monomer
             thisMonomerDictionary = copy.deepcopy(self.AATemplatesDictionary[self.CGDictionary['type'][monomer[0]]])
             for key in ['lx', 'ly', 'lz']:
                 thisMonomerDictionary[key] = self.CGDictionary[key]
+            # Include the image tag in case it's not present in the template
             if len(thisMonomerDictionary['image']) == 0:
                 thisMonomerDictionary['image'] = [[0, 0, 0]] * len(thisMonomerDictionary['position'])
             for siteID in monomer:
@@ -465,6 +326,7 @@ class atomistic:
                     endAtomIndex = noAtomsInMolecule + self.moleculeTerminatingConnections[1][1]
             noAtomsInMolecule += len(thisMonomerDictionary['type'])
             currentMonomerIndex += 1
+            # Update the current AA dictionary with this monomer
             AADictionary = self.updateMoleculeDictionary(thisMonomerDictionary, AADictionary)
             # All Monomers sorted, now for the final bits
 
@@ -485,6 +347,8 @@ class atomistic:
         return AADictionary, atomIDLookupTable, ghostDictionary
 
     def totalPermittedAtoms(self, monomerList):
+        # Work out how many atoms we have in the molecule so that we don't create
+        # any constraints including atoms outside this molecule
         totalPermittedAtoms = 0
         for monomer in monomerList:
             for CGSiteID in monomer:
@@ -495,6 +359,7 @@ class atomistic:
     def sortIntoMonomers(self, typeListSequence):
         monomerList = []
         moleculeSiteIDs = copy.deepcopy(self.siteIDs)
+        # Iterate over the entire bondlist until it's done
         bondList = copy.deepcopy(self.CGDictionary['bond'])
         while len(moleculeSiteIDs) > 0:
             # Add the first atom to the first monomer
@@ -503,6 +368,7 @@ class atomistic:
             thisMonomer.append(moleculeSiteIDs[0])
             addedNewSite = True
             while addedNewSite is True:
+                # Keep adding new, connected atoms until we can't add any more
                 addedNewSite = False
                 bondPopList = []
                 # Find bonded atoms that are not of the same type
@@ -520,6 +386,7 @@ class atomistic:
                     else:
                         continue
                     bondPopList.append(bondNo)
+                # Remove the bonds we've already considered
                 bondPopList.sort(reverse=True)
                 for bondIndex in bondPopList:
                     bondList.pop(bondIndex)
@@ -534,6 +401,8 @@ class atomistic:
         return monomerList
 
     def updateMoleculeDictionary(self, currentMonomerDictionary, AADictionary):
+        # Update AADictionary with all of the values in currentMonomerDictionary, 
+        # except ths system dimensions which will be sorted later
         keyList = AADictionary.keys()
         keyList.remove('lx')
         keyList.remove('ly')
@@ -545,6 +414,7 @@ class atomistic:
 
     def getAATemplatePosition(self, CGToTemplateAAIDs):
         CGCoMs = {}
+        # For each CG site, determine the types and positions so we can calculate the COM
         for siteName in CGToTemplateAAIDs.keys():
             atomIDs = CGToTemplateAAIDs[siteName]
             AATemplate = self.AATemplatesDictionary[siteName]
@@ -556,117 +426,3 @@ class atomistic:
             # These output as numpy arrays because we can't do maths with lists
             CGCoMs[siteName] = helperFunctions.calcCOM(sitePositions, listOfAtomTypes=siteTypes)
         return CGCoMs
-
-
-class writeXML:
-    def __init__(self, dataDictionary, templateFile, outputFile):
-        self.writeUnwrappedPositionsOnly = True
-        self.dataDictionary = dataDictionary
-        self.templateFile = templateFile
-        self.outputFile = outputFile
-        xmlTemplateData = self.loadTemplate()
-        newTemplateData = self.updateTemplate(xmlTemplateData)
-        self.writeData(newTemplateData)
-
-    def loadTemplate(self):
-        with open(self.templateFile, 'r') as xmlFile:
-            xmlTemplateData = xmlFile.readlines()
-        return xmlTemplateData
-
-    def updateTemplate(self, templateData):
-        nAtoms = self.dataDictionary['natoms']
-        lineNo = 0
-        while True:
-            if lineNo == len(templateData):
-                break
-            if "LX" in templateData[lineNo]:
-                templateData[lineNo] = templateData[lineNo].replace("LX", str(self.dataDictionary['lx']))
-                templateData[lineNo] = templateData[lineNo].replace("LY", str(self.dataDictionary['ly']))
-                templateData[lineNo] = templateData[lineNo].replace("LZ", str(self.dataDictionary['lz']))
-            if "NATOMS" in templateData[lineNo]:
-                templateData[lineNo] = templateData[lineNo].replace("NATOMS", str(nAtoms))
-            if "NBONDS" in templateData[lineNo]:
-                templateData[lineNo] = templateData[lineNo].replace("NBONDS", str(len(self.dataDictionary['bond'])))
-            if "NANGLES" in templateData[lineNo]:
-                templateData[lineNo] = templateData[lineNo].replace("NANGLES", str(len(self.dataDictionary['angle'])))
-            if "NDIHEDRALS" in templateData[lineNo]:
-                templateData[lineNo] = templateData[lineNo].replace("NDIHEDRALS", str(len(self.dataDictionary['dihedral'])))
-            if "NIMPROPERS" in templateData[lineNo]:
-                templateData[lineNo] = templateData[lineNo].replace("NIMPROPERS", str(len(self.dataDictionary['improper'])))
-            if "<position" in templateData[lineNo]:
-                if self.writeUnwrappedPositionsOnly is True:
-                    for dataToWrite in list(reversed(self.dataDictionary['unwrapped_position'])):
-                        stringToWrite = ''
-                        for coordinate in dataToWrite:
-                            stringToWrite += str(coordinate) + ' '
-                        stringToWrite = stringToWrite[:-1]
-                        templateData.insert(lineNo + 1, str(stringToWrite) + '\n')
-                else:
-                    for dataToWrite in list(reversed(self.dataDictionary['position'])):
-                        stringToWrite = ''
-                        for coordinate in dataToWrite:
-                            stringToWrite += str(coordinate) + ' '
-                        stringToWrite = stringToWrite[:-1]
-                        templateData.insert(lineNo + 1, str(stringToWrite) + '\n')
-            elif "<image" in templateData[lineNo]:
-                if (len(self.dataDictionary['image']) != 0):
-                    if self.writeUnwrappedPositionsOnly is True:
-                        for atom in range(len(self.dataDictionary['image'])):
-                            templateData.insert(lineNo + 1, '0 0 0\n')
-                    else:
-                        for dataToWrite in list(reversed(self.dataDictionary['image'])):
-                            stringToWrite = ''
-                            for coordinate in dataToWrite:
-                                stringToWrite += str(coordinate) + ' '
-                            stringToWrite = stringToWrite[:-1]
-                            templateData.insert(lineNo + 1, str(stringToWrite) + '\n')
-            elif "<mass" in templateData[lineNo]:
-                for dataToWrite in list(reversed(self.dataDictionary['mass'])):
-                    templateData.insert(lineNo + 1, str(dataToWrite) + '\n')
-            elif "<diameter" in templateData[lineNo]:
-                for dataToWrite in list(reversed(self.dataDictionary['diameter'])):
-                    templateData.insert(lineNo + 1, str(dataToWrite) + '\n')
-            elif "<type" in templateData[lineNo]:
-                for dataToWrite in list(reversed(self.dataDictionary['type'])):
-                    templateData.insert(lineNo + 1, str(dataToWrite) + '\n')
-            elif "<body" in templateData[lineNo]:
-                for dataToWrite in list(reversed(self.dataDictionary['body'])):
-                    templateData.insert(lineNo + 1, str(dataToWrite) + '\n')
-            elif "<bond" in templateData[lineNo]:
-                for dataToWrite in list(reversed(self.dataDictionary['bond'])):
-                    stringToWrite = ''
-                    for bondInfo in dataToWrite:
-                        stringToWrite += str(bondInfo) + ' '
-                    stringToWrite = stringToWrite[:-1]
-                    templateData.insert(lineNo + 1, str(stringToWrite) + '\n')
-            elif "<angle" in templateData[lineNo]:
-                for dataToWrite in list(reversed(self.dataDictionary['angle'])):
-                    stringToWrite = ''
-                    for angleInfo in dataToWrite:
-                        stringToWrite += str(angleInfo) + ' '
-                    stringToWrite = stringToWrite[:-1]
-                    templateData.insert(lineNo + 1, str(stringToWrite) + '\n')
-            elif "<dihedral" in templateData[lineNo]:
-                for dataToWrite in list(reversed(self.dataDictionary['dihedral'])):
-                    stringToWrite = ''
-                    for dihedralInfo in dataToWrite:
-                        stringToWrite += str(dihedralInfo) + ' '
-                    stringToWrite = stringToWrite[:-1]
-                    templateData.insert(lineNo + 1, str(stringToWrite) + '\n')
-            elif "<improper" in templateData[lineNo]:
-                for dataToWrite in list(reversed(self.dataDictionary['improper'])):
-                    stringToWrite = ''
-                    for improperInfo in dataToWrite:
-                        stringToWrite += str(improperInfo) + ' '
-                    stringToWrite = stringToWrite[:-1]
-                    templateData.insert(lineNo + 1, str(stringToWrite) + '\n')
-            elif "<charge" in templateData[lineNo]:
-                for dataToWrite in list(reversed(self.dataDictionary['charge'])):
-                    templateData.insert(lineNo + 1, str(dataToWrite) + '\n')
-            lineNo += 1
-        return templateData
-
-    def writeData(self, newTemplateData):
-        with open(self.outputFile, 'w+') as xmlFile:
-            xmlFile.writelines(newTemplateData)
-        print "XML file written to", self.outputFile
