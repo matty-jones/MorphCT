@@ -51,19 +51,23 @@ class MDPhase:
         self.getFFCoeffs()
 
     def optimiseStructure(self):
+        # Activate the dumping of the trajectory dcd file
         if DEBUGWriteDCDFiles is True:
             self.dumpDCD = dump.dcd(filename = self.outputFile.replace('xml', 'dcd'), period = self.duration / 100.0, overwrite = True)
         else:
             self.dumpDCD = None
+        # Set the integrators, groups and timestep
         self.step = integrate.mode_standard(dt = self.timestep)
         self.rigidInt = integrate.nvt_rigid(group = self.rigidGroup, T = self.temperature, tau = self.tau)
         self.nonRigidInt = integrate.nvt(group = self.nonRigidGroup, T = self.temperature, tau = self.tau)
+        # Overwrite the log file if this is the first phase, otherwise append to the previous log
         if self.phaseNumber == 0:
             logOverwrite = True
         else:
             logOverwrite = False
         self.energyLog = analyze.log(filename = self.outputLogFileName, quantities = self.logQuantities, period = self.duration / 1000.0, overwrite = logOverwrite)
         callback = None
+        # Set up the callback function if the termination condition is not maxt
         if self.terminationCondition == 'KEmin':
             self.loadFromSnapshot = False
             self.lowestKE = 9e999
@@ -71,37 +75,46 @@ class MDPhase:
             self.firstKEValue = True
             callback = analyze.callback(callback = self.checkKE, period = self.duration / 1000.0)
         print "---=== BEGINNING MOLECULAR DYNAMICS PHASE", self.phaseNumber+1, "===---"
+        # Run the MD simulation
         try:
             run(self.duration)
         except ExitHoomd as exitMessage:
             print exitMessage
+        # Load the snapshot if required
         if self.terminationCondition == 'KEmin':
             if self.loadFromSnapshot is True:
                 print "Loading from snapshot..."
                 self.system.restore_snapshot(self.snapshotToLoad)
                 del self.snapshotToLoad
+        # Create the output XML file
         self.dumpXML = dump.xml(filename = self.outputFile, position = True, image = True, type = True, mass = True, diameter = True, body = True, charge = True, bond = True, angle = True, dihedral = True, improper = True)
+        # Clean up all references to this simulation
         self.rigidInt.disable()
         self.nonRigidInt.disable()
         del self.system, self.dumpDCD, self.step, self.rigidInt, self.nonRigidInt, self.rigidGroup, self.nonRigidGroup, callback, self.dumpXML, self.pairClass, self.bondClass, self.angleClass, self.dihedralClass, self.improperClass, self.energyLog
         init.reset()
 
     def checkKE(self, timestepNumber):
+        # Query the current kinetic energy of the system through the energyLog
         currentKE = self.energyLog.query('kinetic_energy')
+        # For second and subsequent steps
         if self.firstKEValue == False:
+            # Check if the current KE is greater than the minimum so far
             if currentKE >= self.lowestKE:
                 if self.KEIncreased == 5:
-                    # Found the lowest KE point for at least 5 timesteps
+                    # Found the lowest KE point for at least 5 dumpsteps
                     del self.firstKEValue, self.lowestKE, self.KEIncreased
                     raise ExitHoomd("Lowest Energy Condition Met")
+                # Increment a counter that indicates how many times the KE has increased since the minimum
                 self.KEIncreased += 1
             else:
-                # Maybe at the lowest KE point so store snapshot
+                # At at least local KE minimum, so store snapshot
                 self.KEIncreased = 0
                 self.loadFromSnapshot = True
                 self.snapshotToLoad = self.system.take_snapshot(all=True)
                 self.lowestKE = currentKE
         else:
+            # Skip the first check because the KE fluctuates wildly within the first dump step
             self.firstKEValue = False
         return 0
 
@@ -109,16 +122,19 @@ class MDPhase:
         # Set Pair Coeffs
         self.pairClass = None
         if self.pairType != 'none':
+            # Log the correct pairType energy
             self.logQuantities.append('pair_'+self.pairType+'_energy')
-            # Hoomd crashes if you don't specify all pair combinations, so need to make sure we do this.
+            # HOOMD crashes if you don't specify all pair combinations, so need to make sure we do this.
             atomTypes = sorted(list(set(self.AAMorphologyDict['type'])), key = lambda x: helperFunctions.convertStringToInt(x))
             allPairTypes = []
+            # Create a list of all of the pairTypes to ensure that the required coefficients are set
             for atomType1 in atomTypes:
                 for atomType2 in atomTypes:
                     pairType = str(atomType1)+'-'+str(atomType2)
                     reversePairType = str(atomType2)+'-'+str(atomType1)
                     if (pairType not in allPairTypes) and (reversePairType not in allPairTypes):
                         allPairTypes.append(pairType)
+            # Read in the pairTypes, parameters and coefficients and set them for HOOMD
             if self.pairType == 'dpd':
                 self.pairClass = pair.dpd(r_cut = self.pairRCut*self.sScale, T = self.temperature)
                 for pairCoeff in self.dpdCoeffs:
@@ -127,7 +143,9 @@ class MDPhase:
                         allPairTypes.remove(pairCoeff[0])
                     except:
                         allPairTypes.remove('-'.join(pairCoeff[0].split('-')[::-1]))  # The reverse way round
-                # Now allPairTypes is just the unspecified pair potentials, so set these interactions to zero
+                # Because we've been removing each pair from allPairTypes, all that are left
+                # are the pair potentials that are unspecified in the parXX.py (e.g. ghost 
+                # particle interactions), so set these interactions to zero
                 for pairType in allPairTypes:
                     self.pairClass.pair_coeff.set(pairType.split('-')[0], pairType.split('-')[1], A = 0.0, r_cut = 0.0, gamma = 0.0)
             elif self.pairType == 'lj':
@@ -139,7 +157,9 @@ class MDPhase:
                         allPairTypes.remove(pairCoeff[0])
                     except:
                         allPairTypes.remove('-'.join(pairCoeff[0].split('-')[::-1]))
-                # Now allPairTypes is just the unspecified pair potentials, so set these interactions to zero
+                # Because we've been removing each pair from allPairTypes, all that are left
+                # are the pair potentials that are unspecified in the parXX.py (e.g. ghost 
+                # particle interactions), so set these interactions to zero
                 for pairType in allPairTypes:
                     self.pairClass.pair_coeff.set(pairType.split('-')[0], pairType.split('-')[1], epsilon = 0.0, sigma = 0.0)
             else:
