@@ -9,7 +9,7 @@ import fineGrainer
 import helperFunctions
 import runHoomd
 import extractMol
-import analyseMolecules
+import obtainChromophores
 import executeOrca
 import transferIntegrals
 
@@ -36,20 +36,23 @@ class simulation:
         self.copyCode()
         # Load any previous data to allow us to run individual phases
         try:
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict = helperFunctions.loadPickle(self.outputDirectory+'/code/'+self.morphology[:-4]+'.pickle')
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(self.outputDirectory+'/code/'+self.morphology[:-4]+'.pickle')
         except:
             if self.executeFinegraining == True:
                 pass
             else:
                 print "PICKLE NOT FOUND, EXECUTING FINEGRAINING TO OBTAIN REQUIRED PARAMETERS..."
-                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict).analyseMorphology()
+                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict).analyseMorphology()
         # Now begin running the code based on user's flags
         if self.executeFinegraining is True:
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict).analyseMorphology()
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, chromophoreList, carrierList).analyseMorphology()
         if self.executeMolecularDynamics is True:
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict = runHoomd.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict)
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = runHoomd.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
         if self.executeExtractMolecules is True:
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict = extractMol.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict)
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = extractMol.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+        if self.executeObtainChromophores is True:
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = obtainChromophores.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+
         exit()
 
 

@@ -239,6 +239,9 @@ class MDPhase:
         for atomID, atomType in enumerate(self.AAMorphologyDict['type']):
             if atomType in ghostIntegrationTypes:
                 atomIDsToIntegrate.append(atomID)
+        # Create the integrateGroup which contains all of the atoms to be integrated.
+        # The rigidGroup constains the intersection of integrateGroup and group.rigid()
+        # The nonRigidGroup contains the remainder of atoms in integrateGroup
         integrateGroup = group.tag_list(name = "integrateGroup", tags = atomIDsToIntegrate)
         rigidGroup = group.intersection(name = "rigidGroup", a = group.rigid(), b = integrateGroup)
         nonRigidGroup = group.difference(name = "nonRigidGroup", a = integrateGroup, b = rigidGroup)
@@ -246,6 +249,7 @@ class MDPhase:
 
 
 def multiHarmonicTorsion(theta, V0, V1, V2, V3, V4):
+    # Definition of multiharmonic dihedral equation based on 5 input parameters to be used by HOOMD
     V = V0 + V1*np.cos(theta) + V2*((np.cos(theta))**2) + V3*((np.cos(theta))**3) + V4*((np.cos(theta))**4)
     F = V1*np.sin(theta) + 2*V2*np.cos(theta)*np.sin(theta) + 3*V3*((np.cos(theta))**2)*np.sin(theta) + 4*V4*((np.cos(theta))**3)*np.sin(theta)
     return (V, F)
@@ -253,7 +257,7 @@ def multiHarmonicTorsion(theta, V0, V1, V2, V3, V4):
 
 def obtainScaleFactors(parameterDict):
     print "Obtaining correct scaling for epsilon and sigma..."
-    # First determine the correct length scaling
+    # The scaling factors are 1/largestSigma in the LJ coeffs, and 1/largestEpsilon
     largestSigma = max(map(float, np.array(parameterDict['ljCoeffs'])[:,2]))
     largestEpsilon = max(map(float, np.array(parameterDict['ljCoeffs'])[:,1]))
     initialMorphology = helperFunctions.loadMorphologyXML(parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/'+parameterDict['morphology'])
@@ -261,15 +265,22 @@ def obtainScaleFactors(parameterDict):
 
 
 def scaleMorphology(initialMorphology, parameterDict, sScale, eScale):
+    # If sScale != 1.0, then scale the morphology and rewrite the phase0 xml
     print "Scaling morphology by sigma =", str(1/sScale)+"..."
     if sScale != 1.0:
         helperFunctions.scale(initialMorphology, sScale)
     helperFunctions.writeMorphologyXML(initialMorphology, parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/phase0_'+parameterDict['morphology'])
 
 
-def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict):
+def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList):
+    # Main execution function for runHoomd that performs the required MD phases
+    # First, scale the input morphology based on the pair potentials such that 
+    # the distances and energies are normalised to the strongest pair interaction
+    # and the diameter of the largest atom (makes it easier on HOOMDs calculations
+    # and ensures that T = 1.0 is an interesting temperature threshold)
     currentFiles = os.listdir(parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology')
     sScale, eScale = obtainScaleFactors(parameterDict)
+    # Only scale the morphology if it hasn't been already
     if (parameterDict['overwriteCurrentData'] is False) and ('phase0_'+parameterDict['morphology'] in currentFiles):
         pass
     else:
@@ -279,6 +290,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict):
         os.remove(parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/energies_'+parameterDict['morphology'][:-4]+'.log')
     except OSError:
         pass
+    # Perform each molecular dynamics phase as specified in the parXX.py
     for phaseNo in range(parameterDict['numberOfPhases']):
         inputFile = 'phase'+str(phaseNo)+'_'+parameterDict['morphology']
         outputFile = 'phase'+str(phaseNo+1)+'_'+parameterDict['morphology']
@@ -287,30 +299,37 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict):
                 print outputFile, "already exists. Skipping..."
                 continue
         MDPhase(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, phaseNo, parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/'+inputFile, parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/'+outputFile, sScale, eScale).optimiseStructure()
-    # Now all phases are complete, we need to remove the ghost particles from the system
+    # Now all phases are complete, remove the ghost particles from the system
     finalXMLName = parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/final_'+parameterDict['morphology']
     print "Removing ghost particles to create final output..."
     removeGhostParticles(parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/'+outputFile, finalXMLName)
-    # Finally, we need to update AAMorphologyDict with the most recent, realistic one 
-    # in the pickle filefor when we load it in again further along the pipeline
+    # Finally, update the pickle file with the most recent and realistic 
+    # AAMorphologyDict so that we can load it again further along the pipeline
     AAMorphologyDict = helperFunctions.loadMorphologyXML(finalXMLName)
     helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict), parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/'+parameterDict['morphology'][:-4]+'.pickle')
-    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict
+    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList
 
 
 def removeGhostParticles(lastPhaseXML, outputFileName):
+    # Remove all the ghost particles from the morphology for the final output
     finalMorphology = helperFunctions.loadMorphologyXML(lastPhaseXML)
+    # Determine the atomIDs for each particle beginning with the letters 'X'
+    # or 'R' - these are the ghost particles
     atomIDsToRemove = []
     for atomID, atomType in enumerate(finalMorphology['type']):
         if (atomType[0] == 'X') or (atomType[0] == 'R'):
             # This is a ghost particle
             atomIDsToRemove.append(atomID)
+    # Reverse sorting trick so that the location indices don't change as we
+    # delete particles from the system
     atomIDsToRemove.sort(reverse = True)
+    # Now delete the atoms from the morphology
     atomAttribs = ['position', 'image', 'type', 'mass', 'diameter', 'body', 'charge']
     for atomID in atomIDsToRemove:
         for key in atomAttribs:
             finalMorphology[key].pop(atomID)
     finalMorphology['natoms'] -= len(atomIDsToRemove)
+    # Delete any constraints associated with those atoms that have been removed
     atomConstraints = ['bond', 'angle', 'dihedral', 'improper']
     for key in atomConstraints:
         constraintsToRemove = []
@@ -321,41 +340,8 @@ def removeGhostParticles(lastPhaseXML, outputFileName):
         constraintsToRemove.sort(reverse = True)
         for constraintNo in constraintsToRemove:
             finalMorphology[key].pop(constraintNo)
+    # Output the final morphology
     helperFunctions.writeMorphologyXML(finalMorphology, outputFileName)
-
-
-def checkSaveDirectory(directory):
-    saveDirectoryFiles = os.listdir(directory+'/morphology')
-    runPhase1 = True
-    runPhase2 = True
-    runPhase3 = True
-    runPhase4 = True
-    runPhase5 = True
-    runPhase6 = True
-    runPhase7 = True
-    continuePhase7 = False
-    continueFile = None
-    for fileName in saveDirectoryFiles:
-        if ('relaxed' in fileName) and ('xml' in fileName):
-            print "Calculations already complete for this morphology."
-            return False, False, False, False, False
-        elif ('phase1' in fileName) and ('xml' in fileName):
-            runPhase1 = False
-        elif ('phase2' in fileName) and ('xml' in fileName):
-            runPhase2 = False
-        elif ('phase3' in fileName) and ('xml' in fileName):
-            runPhase3 = False
-        elif ('phase4' in fileName) and ('xml' in fileName):
-            runPhase4 = False
-        elif ('phase5' in fileName) and ('xml' in fileName):
-            runPhase5 = False
-        elif ('phase6' in fileName) and ('xml' in fileName):
-            runPhase6 = False
-        elif ('temp' in fileName) and ('xml' in fileName):
-            runPhase7 = False
-            continuePhase7 = True
-            continueFile = saveDirectory+'/'+fileName
-    return [runPhase1, runPhase2, runPhase3, runPhase4, runPhase5, runPhase6, runPhase7, continuePhase7, continueFile]
 
 
 if __name__ == "__main__":
@@ -363,5 +349,5 @@ if __name__ == "__main__":
         pickleFile = sys.argv[1]
     except:
         print "Please specify the pickle file to load to continue the pipeline from this point."
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict = helperFunctions.loadPickle(pickleFile)
-    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(pickleFile)
+    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)

@@ -14,7 +14,7 @@ overwriteCurrentData = False
 
 executeFinegraining = False
 executeMolecularDynamics = False
-executeExtractMolecules = True
+executeExtractMolecules = False
 executeObtainChromophores = True
 executeZINDOS = True
 executeCalculateTransferIntegrals = True
@@ -65,8 +65,18 @@ moleculeTerminatingConnections = [\
 ['C1-H1', 3],\
 ]
 
+# ---=== Chromophore Parameters ===---
+
+CGSiteSpecies = {\
+'A':'Donor',\
+'B':'None',\
+'C':'None',\
+}
+maximumHopDistance = 10.0
+
 # ---=== Forcefield Parameters ===---
-pairRCut = 10
+
+pairRCut = 10.0
 pairDPDGammaVal = 0.0
 # --== Lennard-Jones Pair ==--
 ljCoeffs = [\

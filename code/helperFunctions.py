@@ -1074,9 +1074,9 @@ def writeToFile(logFile, stringList, mode='logFile'):
 def loadPickle(pickleLocation):
     print "Loading Pickle from", str(pickleLocation) + "..."
     with open(pickleLocation, 'r') as pickleFile:
-        (AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict) = pickle.load(pickleFile)
+        (AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList) = pickle.load(pickleFile)
     print "Pickle loaded successfully!"
-    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict
+    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList
 
 
 def writePickle(toPickle, pickleFileName):
@@ -1084,6 +1084,21 @@ def writePickle(toPickle, pickleFileName):
     with open(pickleFileName, 'w+') as pickleFile:
 	pickle.dump(toPickle, pickleFile)
     print "Pickle file written to", pickleFileName
+
+
+def obtainBondedList(bondList):
+    # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
+    bondedAtoms = {}
+    for bond in bondList:
+        if bond[1] not in bondedAtoms:
+            bondedAtoms[bond[1]] = [bond[2]]
+        else:
+            bondedAtoms[bond[1]].append(bond[2])
+        if bond[2] not in bondedAtoms:
+            bondedAtoms[bond[2]] = [bond[1]]
+        else:
+            bondedAtoms[bond[2]].append(bond[1])
+    return bondedAtoms
 
 
 def convertStringToInt(x):

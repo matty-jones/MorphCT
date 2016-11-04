@@ -7,7 +7,7 @@ import time as T
 
 
 class morphology:
-    def __init__(self, morphologyXML, morphologyName, parameterDict):
+    def __init__(self, morphologyXML, morphologyName, parameterDict, chromophoreList, carrierList):
         # Import parameters from the parXX.py
         self.parameterDict = parameterDict
         for key, value in parameterDict.iteritems():
@@ -18,6 +18,8 @@ class morphology:
         # E.G. the P3HT template uses sigma = 1, but the Marsh morphologies use sigma = 3.
         self.CGDictionary = helperFunctions.loadMorphologyXML(self.xmlPath, sigma=self.inputSigma)
         self.CGDictionary = helperFunctions.addUnwrappedPositions(self.CGDictionary)
+        self.chromophoreList = chromophoreList
+        self.carrierList = carrierList
 
     def analyseMorphology(self):
         # Split the morphology into individual molecules
@@ -94,24 +96,14 @@ class morphology:
         # And finally write the pickle
         pickleLocation = './outputFiles/' + self.morphologyName + '/code/' + self.morphologyName + '.pickle'
         helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict), pickleLocation)
-        return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict
+        return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict, self.chromophoreList, self.carrierList
 
     def splitMolecules(self):
         # Split the full morphology into individual molecules
         moleculeAAIDs = []
         moleculeLengths = []
         # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
-        bondedAtoms = {}
-        bondList = copy.deepcopy(self.CGDictionary['bond'])
-        for bond in bondList:
-            if bond[1] not in bondedAtoms:
-                bondedAtoms[bond[1]] = [bond[2]]
-            else:
-                bondedAtoms[bond[1]].append(bond[2])
-            if bond[2] not in bondedAtoms:
-                bondedAtoms[bond[2]] = [bond[1]]
-            else:
-                bondedAtoms[bond[2]].append(bond[1])
+        bondedAtoms = helperFunctions.obtainBondedList(self.CGDictionary['bond'])
         moleculeList = [i for i in range(len(self.CGDictionary['type']))]
         # Recursively add all atoms in the neighbour list to this molecule
         for molID in range(len(moleculeList)):
@@ -172,7 +164,6 @@ class atomistic:
             templateDictionary = helperFunctions.loadMorphologyXML(self.CGToTemplateDirs[CGAtomType]+'/'+self.CGToTemplateFiles[CGAtomType])
             templateDictionary = helperFunctions.addUnwrappedPositions(templateDictionary)
             self.AATemplatesDictionary[CGAtomType] = templateDictionary
-        # thioAA, alk1AA, alk2AA are now all unused. Instead, use the CGToTemplateAAIDs dictionary which can have arbitrary length
         self.AADictionary, self.atomIDLookupTable, self.ghostDictionary = self.runFineGrainer(ghostDictionary)
 
     def returnData(self):
