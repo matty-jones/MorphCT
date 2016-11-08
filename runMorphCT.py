@@ -10,7 +10,7 @@ import helperFunctions
 import runHoomd
 import extractMol
 import obtainChromophores
-import executeOrca
+import executeZINDO
 import transferIntegrals
 
 
@@ -38,11 +38,9 @@ class simulation:
         try:
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(self.outputDirectory+'/code/'+self.morphology[:-4]+'.pickle')
         except:
-            if self.executeFinegraining == True:
-                pass
-            else:
-                print "PICKLE NOT FOUND, EXECUTING FINEGRAINING TO OBTAIN REQUIRED PARAMETERS..."
-                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict).analyseMorphology()
+            print "PICKLE NOT FOUND, EXECUTING FINEGRAINING TO OBTAIN REQUIRED PARAMETERS..."
+            self.executeFinegraining = False
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, [], []).analyseMorphology()
         # Now begin running the code based on user's flags
         if self.executeFinegraining is True:
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, chromophoreList, carrierList).analyseMorphology()
@@ -52,6 +50,8 @@ class simulation:
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = extractMol.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
         if self.executeObtainChromophores is True:
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = obtainChromophores.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+        if self.executeZINDO is True:
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = executeZINDO.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
 
         exit()
 

@@ -306,7 +306,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     # Finally, update the pickle file with the most recent and realistic 
     # AAMorphologyDict so that we can load it again further along the pipeline
     AAMorphologyDict = helperFunctions.loadMorphologyXML(finalXMLName)
-    helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict), parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/morphology/'+parameterDict['morphology'][:-4]+'.pickle')
+    helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList), parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/code/'+parameterDict['morphology'][:-4]+'.pickle')
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList
 
 

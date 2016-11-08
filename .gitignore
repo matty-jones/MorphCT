@@ -13,11 +13,12 @@ temp/
 *.log
 *.sh
 *.tcl
+*.xyz
+*.POSCAR
 *.xml
 *#*
 *~
 *.pickle
 relaxedP3HT.xml
 *.DS_Store
-outputChains/*
-extraAnalysis/plotter/*.xml
+outputFiles/*

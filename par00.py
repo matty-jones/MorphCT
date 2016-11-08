@@ -15,8 +15,8 @@ overwriteCurrentData = False
 executeFinegraining = False
 executeMolecularDynamics = False
 executeExtractMolecules = False
-executeObtainChromophores = True
-executeZINDOS = True
+executeObtainChromophores = False
+executeZINDO = True
 executeCalculateTransferIntegrals = True
 executeCalculateMobility = True
 

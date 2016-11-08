@@ -95,7 +95,7 @@ class morphology:
         helperFunctions.writeMorphologyXML(AAMorphologyDict, AAFileName)
         # And finally write the pickle
         pickleLocation = './outputFiles/' + self.morphologyName + '/code/' + self.morphologyName + '.pickle'
-        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict), pickleLocation)
+        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict, self.chromophoreList, self.carrierList), pickleLocation)
         return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict, self.chromophoreList, self.carrierList
 
     def splitMolecules(self):
