@@ -68,6 +68,17 @@ moleculeTerminatingConnections = [\
 ['C1-H2', 27],\
 ]
 
+# ---=== Chromophore Parameters ===---
+
+CGSiteSpecies = {\
+'A':'Donor',\
+'B':'None',\
+'C1':'None',\
+'C2':'None',\
+'D':'None',\
+}
+maximumHopDistance = 10.0
+
 # ---=== Forcefield Parameters ===---
 pairRCut = 3
 pairDPDGammaVal = 0.0

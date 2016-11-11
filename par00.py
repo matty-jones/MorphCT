@@ -1,5 +1,3 @@
-import runMorphCT
-
 # ---=== Directory and File Structure ===---
 inputDir = '/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/inputCGMorphs'
 outputDir = '/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/outputFiles'
@@ -342,6 +340,8 @@ groupAnchorings = ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'none']
 parameterFile = __file__
 
 if __name__ == "__main__":
+    import runMorphCT
+
     parameterNames = [i for i in dir() if (not i.startswith('__')) and (i not in ['runMorphCT'])]
     parameters = {}
     for name in parameterNames:

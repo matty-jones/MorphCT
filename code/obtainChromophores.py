@@ -1,13 +1,10 @@
 import numpy as np
 import sys
-import os
-#import matplotlib
-#matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import cPickle as pickle
-import cme_utils
 import helperFunctions
-import chromophores
+import copy
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 try:
     import mpl_toolkits.mplot3d.axes3d as p3
 except ImportError:
@@ -15,13 +12,11 @@ except ImportError:
     pass
 
 
-
-
 class chromophore:
-    def __init__(self, chromoID, chromophoreCGSites, CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict):
+    def __init__(self, chromoID, chromophoreCGSites, CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims):
         self.ID = chromoID
-        self.orcaInput = parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/chromophores/inputORCA/single/%04d.inp' % (self.ID)
-        self.orcaOutput = parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/chromophores/outputORCA/single/%04d.out' % (self.ID)
+        self.orcaInput = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/inputORCA/single/%04d.inp' % (self.ID)
+        self.orcaOutput = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/outputORCA/single/%04d.out' % (self.ID)
         self.CGIDs = chromophoreCGSites
         # Determine whether this chromophore is a donor or an acceptor, as well as the site types that have been
         # defined as the electronically active in the chromophore
@@ -32,8 +27,8 @@ class chromophore:
         # Now, using chromophoreCGSites as the keys, build up a list of all of the AAIDs in the chromophore,
         # where each element corresponds to each CG site, and then flatten it.
         self.AAIDs = [AAID for AAIDs in [flattenedCGToAAIDMaster[CGID] for CGID in chromophoreCGSites] for AAID in AAIDs]
-        # The position of the chromophore can be calculated easily
-        self.posn = self.obtainChromophoreCoM(electronicallyActiveCGSites, flattenedCGToAAIDMaster, AAMorphologyDict)
+        # The position of the chromophore can be calculated easily. Note that here, the `self.image' is the periodic image that the unwrapped_position of the chromophore is located in, relative to the original simulation volume.
+        self.unwrappedPosn, self.posn, self.image = self.obtainChromophoreCoM(electronicallyActiveCGSites, flattenedCGToAAIDMaster, AAMorphologyDict, simDims)
         # A list of the important bonds for this chromophore from the morphology would be useful when determining
         # if a terminating group is already present on this monomer
         self.bonds = self.getImportantBonds(AAMorphologyDict['bond'])
@@ -51,10 +46,6 @@ class chromophore:
         # in self.neighbours for coherence.
         self.neighboursDeltaE = []
         self.neighboursTI = []
-        # Placeholder parameters to be updated in the pickle later?:
-            # HOMO, HOMO+1, LUMO, LUMO-1
-            # Transfer Integral List to each neighbour
-            # Number of times particular pathways have been hopped along? So like chromoID1-chromoID2 = 27 which increments each time a carrier hops from chromoID1 to chromoID2 
         pass
 
     def getImportantBonds(self, bondList):
@@ -64,15 +55,27 @@ class chromophore:
                 importantBonds.append(bond)
         return importantBonds
 
-    def obtainChromophoreCoM(self, electronicallyActiveCGSites, flattenedCGToAAIDMaster, AAMorphologyDict):
+    def obtainChromophoreCoM(self, electronicallyActiveCGSites, flattenedCGToAAIDMaster, AAMorphologyDict, simDims):
         # By using electronicallyActiveCGSites, determine the AAIDs for the electrically active proportion of the
         # chromophore, so that we can calculate its proper position. Again each element corresponds to each CG site
         # so the list needs to be flattened afterwards.
         electronicallyActiveAAIDs = [AAID for AAIDs in [flattenedCGToAAIDMaster[CGID] for CGID in electronicallyActiveCGSites] for AAID in AAIDs]
-        electronicallyActivePosns = [AAMorphologyDict['unwrapped_position'][AAID] for AAID in electronicallyActiveAAIDs]
+        electronicallyActiveUnwrappedPosns = [AAMorphologyDict['unwrapped_position'][AAID] for AAID in electronicallyActiveAAIDs]
         electronicallyActiveTypes = [AAMorphologyDict['type'][AAID] for AAID in electronicallyActiveAAIDs]
         # Calculate the chromophore's position in the morphology (CoM of all atoms in self.AAIDs from AAMorphologyDict)
-        return helperFunctions.calcCOM(electronicallyActivePosns, listOfAtomTypes = electronicallyActiveTypes)
+        chromoUnwrappedPosn = helperFunctions.calcCOM(electronicallyActiveUnwrappedPosns, listOfAtomTypes=electronicallyActiveTypes)
+        chromoWrappedPosn = copy.deepcopy(chromoUnwrappedPosn)
+        chromoWrappedImage = [0, 0, 0]
+        # Now calculate the wrapped position of the chromophore and its image
+        for axis in range(3):
+            simExtent = simDims[axis][1] - simDims[axis][0]
+            while chromoWrappedPosn[axis] < simDims[axis][0]:
+                chromoWrappedPosn[axis] += simExtent
+                chromoWrappedImage[axis] -= 1
+            while chromoWrappedPosn[axis] > simDims[axis][1]:
+                chromoWrappedPosn[axis] -= simExtent
+                chromoWrappedImage[axis] += 1
+        return chromoUnwrappedPosn, chromoWrappedPosn, chromoWrappedImage
 
     def obtainElectronicSpecies(self, chromophoreCGSites, CGSiteTypes, CGToSpecies):
         electronicallyActiveSites = []
@@ -81,7 +84,7 @@ class chromophore:
             siteType = CGSiteTypes[CGSiteID]
             siteSpecies = CGToSpecies[siteType]
             if (siteSpecies != 'None'):
-                if (currentChromophoreSpecies != None) and (currentChromophoreSpecies != siteSpecies):
+                if (currentChromophoreSpecies is not None) and (currentChromophoreSpecies != siteSpecies):
                     raise SystemError("PROBLEM - Multiple electronic species defined in the same chromophore. Please modify the chromophore generation code to fix this issue for your molecule!")
                 else:
                     currentChromophoreSpecies = siteSpecies
@@ -89,12 +92,12 @@ class chromophore:
         return electronicallyActiveSites, currentChromophoreSpecies
 
 
-def calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict):
+def calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims):
     # We make the assumption that a chromophore consists of one of each of the CG site types
     # described by the same template file. For instance, if we have 3 sites 'A', 'B' and 'C'
-    # described in one file and one site 'D' described in another file then there are two 
-    # chromophores species described by A-B-C and D. This will be treated automatically 
-    # because the D's shouldn't be bonded to anything in the CGMorphologyDict if they are 
+    # described in one file and one site 'D' described in another file then there are two
+    # chromophores species described by A-B-C and D. This will be treated automatically
+    # because the D's shouldn't be bonded to anything in the CGMorphologyDict if they are
     # small molecules.
     # Therefore, we need to assign each CG site in the morphology to a particular chromophore,
     # so first, it's important to generate a `neighbourlist' of all bonded atoms
@@ -111,19 +114,19 @@ def calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, pa
             chromophoreData[chromoID] = [atomID]
         else:
             chromophoreData[chromoID].append(atomID)
-    # Now rename the chromophore IDs so that they increment sensibly (they will be used later 
+    # Now rename the chromophore IDs so that they increment sensibly (they will be used later
     # for the ORCA files)
     oldKeys = sorted(chromophoreData.keys())
     for newKey, oldKey in enumerate(oldKeys):
         chromophoreData[newKey] = chromophoreData.pop(oldKey)
-    print str(len(chromophoreData.keys()))+" chromophores successfully identified!"
-    # Now let's create a list of all the chromophore instances which contain all of the 
+    print str(len(chromophoreData.keys())) + " chromophores successfully identified!"
+    # Now let's create a list of all the chromophore instances which contain all of the
     # information we could ever want about them.
     chromophoreInstances = []
     for chromoID, chromophoreCGSites in chromophoreData.iteritems():
-        print "\rCalculating properties of chromophore %04d of %04d..." % (chromoID, len(chromophoreData.keys())-1),
+        print "\rCalculating properties of chromophore %04d of %04d..." % (chromoID, len(chromophoreData.keys()) - 1),
         sys.stdout.flush()
-        chromophoreInstances.append(chromophore(chromoID, chromophoreCGSites, CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict))
+        chromophoreInstances.append(chromophore(chromoID, chromophoreCGSites, CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims))
     print ""
     return chromophoreInstances
 
@@ -150,7 +153,7 @@ def updateChromophores(atomID, chromophoreList, bondedAtoms, CGTypeList, typesIn
                     chromophoreList[atomID] = chromophoreList[bondedAtom]
                     typesInThisChromophore.append(CGTypeList[atomID])
                     chromophoreList, typesInThisChromophore = updateChromophores(atomID, chromophoreList, bondedAtoms, CGTypeList, typesInThisChromophore, parameterDict)
-                # Else: both the current and the bonded atom are already known to be in this 
+                # Else: both the current and the bonded atom are already known to be in this
                 # chromophore, so we don't have to do anything else.
     except KeyError:
         # This means that there are no bonded CG sites (i.e. it's a single chromophore)
@@ -160,7 +163,7 @@ def updateChromophores(atomID, chromophoreList, bondedAtoms, CGTypeList, typesIn
 
 def determineNeighbours(chromophoreList, parameterDict, simDims):
     for chromophore1 in chromophoreList:
-        print "\rIdentifying neighbours of chromophore %04d of %04d..." % (chromophore1.ID, len(chromophoreList)-1),
+        print "\rIdentifying neighbours of chromophore %04d of %04d..." % (chromophore1.ID, len(chromophoreList) - 1),
         sys.stdout.flush()
         for chromophore2 in chromophoreList:
             if chromophore1.ID == chromophore2.ID:
@@ -169,18 +172,26 @@ def determineNeighbours(chromophoreList, parameterDict, simDims):
             relativeImageOfChromo2 = [0, 0, 0]
             # Consider periodic boundary conditions
             for axis in range(3):
-                while deltaPosn[axis] > simDims[axis][1]:
-                    deltaPosn[axis] -= simDims[axis][1]-simDims[axis][0]
+                halfBoxLength = (simDims[axis][1] - simDims[axis][0]) / 2.0
+                while deltaPosn[axis] > halfBoxLength:
+                    deltaPosn[axis] -= simDims[axis][1] - simDims[axis][0]
                     relativeImageOfChromo2[axis] += 1
-                while deltaPosn[axis] < simDims[axis][0]:
-                    deltaPosn[axis] += simDims[axis][1]-simDims[axis][0]
+                while deltaPosn[axis] < - halfBoxLength:
+                    deltaPosn[axis] += simDims[axis][1] - simDims[axis][0]
                     relativeImageOfChromo2[axis] -= 1
             separation = np.linalg.norm(deltaPosn)
             # If proximity is within tolerance, add these chromophores as neighbours
             if separation <= parameterDict['maximumHopDistance']:
                 chromophore1.neighbours.append([chromophore2.ID, relativeImageOfChromo2])
                 chromophore2.neighbours.append([chromophore1.ID, list(-np.array(relativeImageOfChromo2))])
-        # plotChromoNeighbours(chromophore1, chromophoreList, simDims)
+        # DEBUG TESTING
+        # if chromophore1.ID == 1961:
+        #     print ""
+        #     print chromophore1.posn
+        #     print chromophore1.AAIDs
+        #     for neighbour in chromophore1.neighbours:
+        #         print neighbour[0], neighbour[1], chromophoreList[neighbour[0]].posn
+        #     plotChromoNeighbours(chromophore1, chromophoreList, simDims)
     print ""
     return chromophoreList
 
@@ -188,35 +199,45 @@ def determineNeighbours(chromophoreList, parameterDict, simDims):
 def plotChromoNeighbours(chromophore, chromophoreList, simDims):
     fig = plt.figure()
     ax = p3.Axes3D(fig)
-    ax.scatter(chromophore.posn[0], chromophore.posn[1], chromophore.posn[2], s = 50, c = 'r')
+    ax.scatter(chromophore.posn[0], chromophore.posn[1], chromophore.posn[2], s=50, c='r')
+#    for chromophore in chromophoreList:
+#        position = chromophore.posn
+#        for axis in range(3):
+#            while position[axis] >= simDims[axis][1]:
+#                position[axis] -= simDims[axis][1] - simDims[axis][0]
+#            while position[axis] <= simDims[axis][0]:
+#                position[axis] += simDims[axis][1] - simDims[axis][0]
+#        ax.scatter(position[0], position[1], position[2], s = 5, c = 'k')
+    print "PLOTTING"
+    print simDims
     for neighbour in chromophore.neighbours:
         neighbourID = neighbour[0]
         neighbourImage = neighbour[1]
         neighbourChromo = chromophoreList[neighbourID]
         if neighbourChromo.ID != neighbourID:
             raise SystemError("WRONG CHROMO")
-        neighbourPosn = neighbourChromo.posn
+        neighbourPosn = copy.deepcopy(neighbourChromo.posn)
         for axis in range(3):
             simLength = simDims[axis][1] - simDims[axis][0]
-            while neighbourImage[axis] > 0:
-                neighbourImage[axis] -= 1
-                neighbourPosn[axis] -= simLength
-            while neighbourImage[axis] < 0:
-                neighbourImage[axis] += 1
-                neighbourPosn[axis] += simLength
-        ax.scatter(neighbourPosn[0], neighbourPosn[1], neighbourPosn[2], s = 50, c = 'b')
-    print "Showing..."
+            neighbourPosn[axis] += neighbourImage[axis] * simLength
+        print neighbourID, neighbourChromo.posn, neighbourImage, neighbourPosn
+        ax.scatter(neighbourPosn[0], neighbourPosn[1], neighbourPosn[2], s=50, c='b')
+        ax.scatter(neighbourChromo.posn[0], neighbourChromo.posn[1], neighbourChromo.posn[2], s=50, c='g')
+    # Finally, draw box
+    ax.set_xlim(1.1 * np.array(simDims[0]))
+    ax.set_ylim(1.1 * np.array(simDims[1]))
+    ax.set_zlim(1.1 * np.array(simDims[2]))
     plt.savefig('./test.pdf')
+    plt.show()
+    exit()
 
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList):
-    chromophoreList = calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict)
-    chromophoresToPlot = range(15)
-    #plotMolecule3D(chromophoresToPlot, chromophoreList, [[-AAMorphologyDict['lx']/2.0, AAMorphologyDict['lx']/2.0], [-AAMorphologyDict['ly']/2.0, AAMorphologyDict['ly']/2.0], [-AAMorphologyDict['lz']/2.0, AAMorphologyDict['lz']/2.0]])
-    simDims = [[-AAMorphologyDict['lx']/2.0, AAMorphologyDict['lx']/2.0], [-AAMorphologyDict['ly']/2.0, AAMorphologyDict['ly']/2.0], [-AAMorphologyDict['lz']/2.0, AAMorphologyDict['lz']/2.0]]
+    simDims = [[-AAMorphologyDict['lx'] / 2.0, AAMorphologyDict['lx'] / 2.0], [-AAMorphologyDict['ly'] / 2.0, AAMorphologyDict['ly'] / 2.0], [-AAMorphologyDict['lz'] / 2.0, AAMorphologyDict['lz'] / 2.0]]
+    chromophoreList = calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims)
     chromophoreList = determineNeighbours(chromophoreList, parameterDict, simDims)
     # Now we have updated the chromophoreList, rewrite the pickle with this new information.
-    pickleName = parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/code/'+parameterDict['morphology'][:-4]+'.pickle'
+    pickleName = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle'
     helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList), pickleName)
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList
 

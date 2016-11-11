@@ -1,9 +1,7 @@
 import copy
 import numpy as np
 import helperFunctions
-import cPickle as pickle
 import sys
-import time as T
 
 
 class morphology:
@@ -26,7 +24,6 @@ class morphology:
         print "Finding molecules..."
         moleculeIDs, moleculeLengths = self.splitMolecules()
         rollingAAIndex = 0
-        boxSize = [self.CGDictionary['lx'], self.CGDictionary['ly'], self.CGDictionary['lz']]
         CGMorphologyDict = {}
         AAMorphologyDict = {}
         # Set the AAMorphology and CGMorphology system sizes to the same as the input file system size
@@ -137,7 +134,7 @@ class morphology:
                 elif moleculeList[bondedAtom] < moleculeList[atomID]:
                     moleculeList[atomID] = moleculeList[bondedAtom]
                     moleculeList = self.updateMolecule(atomID, moleculeList, bondedAtoms)
-                # Else: both the current and the bonded atom are already known to be in this 
+                # Else: both the current and the bonded atom are already known to be in this
                 # molecule, so we don't have to do anything else.
         except KeyError:
             # This means that there are no bonded CG sites (i.e. it's a single molecule)
@@ -161,7 +158,7 @@ class atomistic:
         self.AATemplatesDictionary = {}
         # Load the template file for each CG atom
         for CGAtomType in self.CGToTemplateFiles.keys():
-            templateDictionary = helperFunctions.loadMorphologyXML(self.CGToTemplateDirs[CGAtomType]+'/'+self.CGToTemplateFiles[CGAtomType])
+            templateDictionary = helperFunctions.loadMorphologyXML(self.CGToTemplateDirs[CGAtomType] + '/' + self.CGToTemplateFiles[CGAtomType])
             templateDictionary = helperFunctions.addUnwrappedPositions(templateDictionary)
             self.AATemplatesDictionary[CGAtomType] = templateDictionary
         self.AADictionary, self.atomIDLookupTable, self.ghostDictionary = self.runFineGrainer(ghostDictionary)
@@ -392,7 +389,7 @@ class atomistic:
         return monomerList
 
     def updateMoleculeDictionary(self, currentMonomerDictionary, AADictionary):
-        # Update AADictionary with all of the values in currentMonomerDictionary, 
+        # Update AADictionary with all of the values in currentMonomerDictionary,
         # except ths system dimensions which will be sorted later
         keyList = AADictionary.keys()
         keyList.remove('lx')

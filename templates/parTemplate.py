@@ -47,7 +47,15 @@ moleculeTerminatingConnections = [\
 TERMINATINGCONNECTIONS
 ]
 
+# ---=== Chromophore Parameters ===---
+
+CGSiteSpecies = {\
+CGELECTRONICSPECIES
+}
+maximumHopDistance = 10.0
+
 # ---=== Forcefield Parameters ===---
+
 pairRCut = 10
 pairDPDGammaVal = 0.0
 # --== Lennard-Jones Pair ==--

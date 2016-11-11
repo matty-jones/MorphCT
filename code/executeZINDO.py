@@ -1,10 +1,10 @@
 import os
 import sys
 import numpy as np
-import time as T
 import helperFunctions
 import subprocess as sp
-
+import multiprocessing as mp
+import cPickle as pickle
 
 
 def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
@@ -12,28 +12,55 @@ def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
     for chromophore in chromophoreList:
         # Include the molecule terminating units on the required atoms of the chromophore
         terminatingGroupPositions = terminateMonomers(chromophore, parameterDict, AAMorphologyDict)
-        writeOrcaInp(AAMorphologyDict, chromophore.AAIDs, [[0, 0, 0]] * len(chromophore.AAIDs), terminatingGroupPositions, [[0, 0, 0]] * len(terminatingGroupPositions), chromophore.orcaInput)
-    # Then pairs of all neighbours
+        writeOrcaInp(AAMorphologyDict, chromophore.AAIDs, [chromophore.image] * len(chromophore.AAIDs), terminatingGroupPositions, [chromophore.image] * len(terminatingGroupPositions), chromophore.orcaInput)
+    # Determine how many pairs there are first:
+    numberOfPairs = 0
+    for chromo in chromophoreList:
+        for neighbour in chromo.neighbours:
+            if int(neighbour[0]) > chromo.ID:
+                numberOfPairs += 1
+    numberOfPairs = np.sum([len(chromo.neighbours) for chromo in chromophoreList])
+    print "There are", numberOfPairs, "total neighbour pairs to consider."
+    # Then consider each chromophore against every other chromophore
     for chromophore1 in chromophoreList:
         neighboursID = [neighbour[0] for neighbour in chromophore1.neighbours]
         neighboursImage = [neighbour[1] for neighbour in chromophore1.neighbours]
         for chromophore2 in chromophoreList:
-            if chromophore2.ID not in neighboursID:
+            # Skip if chromophore2 is not one of chromophore1's neighbours
+            # Also skip if chromophore2's ID is < chromophore1's ID to prevent duplicates
+            if (chromophore2.ID not in neighboursID) or (chromophore2.ID < chromophore1.ID):
                 continue
             # Find the correct relative image for the neighbour chromophore
-            chromophore2Image = neighboursImage[neighboursID.index(chromophore2.ID)]
+            chromophore2RelativeImage = neighboursImage[neighboursID.index(chromophore2.ID)]
+            chromophore2Transformation = list(np.array(chromophore1.image) - np.array(chromophore2.image) + np.array(chromophore2RelativeImage))
             # Find the dimer AAIDs and relative images for each atom
             AAIDs = chromophore1.AAIDs + chromophore2.AAIDs
-            images = [[0, 0, 0] for i in range(len(chromophore1.AAIDs))] + [chromophore2Image for i in range(len(chromophore2.AAIDs))]
+            images = [[0, 0, 0] for i in range(len(chromophore1.AAIDs))] + [chromophore2Transformation for i in range(len(chromophore2.AAIDs))]
             # Now add the terminating groups to both chromophores
             terminatingGroupPositions1 = terminateMonomers(chromophore1, parameterDict, AAMorphologyDict)
-            terminatingGroupImages1 = [[0, 0, 0] for i in range(len(terminatingGroupPositions1))]
             terminatingGroupPositions2 = terminateMonomers(chromophore2, parameterDict, AAMorphologyDict)
-            terminatingGroupImages2 = [chromophore2Image for i in range(len(terminatingGroupPositions2))]
+            # We don't want to add the terminating hydrogens for adjacent monomers, so remove the ones that are within a particular distance
+            terminatingGroupPositions1, terminatingGroupPositions2 = removeAdjacentTerminators(terminatingGroupPositions1, terminatingGroupPositions2)
+            terminatingGroupImages1 = [[0, 0, 0] for i in range(len(terminatingGroupPositions1))]
+            terminatingGroupImages2 = [chromophore2Transformation for i in range(len(terminatingGroupPositions2))]
             # Update the ORCA input name
-            inputName = chromophore1.orcaInput.replace('.inp', '-%04d.inp' % (chromophore2.ID))
+            inputName = chromophore1.orcaInput.replace('.inp', '-%04d.inp' % (chromophore2.ID)).replace('single', 'pair')
             # Write the dimer input file
             writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPositions1 + terminatingGroupPositions2, terminatingGroupImages1 + terminatingGroupImages2, inputName)
+
+
+def removeAdjacentTerminators(group1, group2):
+    popList = [[], []]
+    for index1, terminatingHydrogen1 in enumerate(group1):
+        for index2, terminatingHydrogen2 in enumerate(group2):
+            separation = np.linalg.norm(terminatingHydrogen2 - terminatingHydrogen1)
+            if separation < 1.2:
+                popList[0].append(index1)
+                popList[1].append(index2)
+    for groupNo, group in enumerate(popList):
+        for index in sorted(group, reverse=True):
+            [group1, group2][groupNo].pop(index)
+    return group1, group2
 
 
 def writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPosns, terminatingGroupImages, inputName):
@@ -53,7 +80,7 @@ def writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPosns, termina
         # Add in the correct periodic images to the position
         allPositions.append(position + np.array([(terminatingGroupImages[index][i] * [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']][i]) for i in range(3)]))
     # Now geometrically centralize all of the atoms that are to be included in this input file to make it easier on ORCA
-    centralPosition = np.array([np.average(np.array(allPositions)[:,0]), np.average(np.array(allPositions)[:,1]), np.average(np.array(allPositions)[:,2])])
+    centralPosition = np.array([np.average(np.array(allPositions)[:, 0]), np.average(np.array(allPositions)[:, 1]), np.average(np.array(allPositions)[:, 2])])
     # Create the lines to be written in the input file
     for index, position in enumerate(allPositions):
         linesToWrite.append(" %s  %.5f  %.5f  %.5f\n" % (allAtomTypes[index], position[0] - centralPosition[0], position[1] - centralPosition[1], position[2] - centralPosition[2]))
@@ -65,8 +92,7 @@ def writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPosns, termina
     # Write the ORCA input file
     with open(inputName, 'w+') as orcaFile:
         orcaFile.writelines(inpFileLines)
-    print "\rOrca Input File written as", inputName[helperFunctions.findIndex(inputName, '/')[-1]+1:],
-
+    print "\rOrca Input File written as", inputName[helperFunctions.findIndex(inputName, '/')[-1] + 1:],
 
 
 def terminateMonomers(chromophore, parameterDict, AAMorphologyDict):
@@ -75,20 +101,13 @@ def terminateMonomers(chromophore, parameterDict, AAMorphologyDict):
     # Remove any termination connections that already exist (i.e. terminating unit at the end of the molecule)
     popList = []
     for bondNo, bond in enumerate(terminatingBonds):
-        if bond[0] in np.array(np.array(chromophore.bonds)[:,0]):
+        if bond[0] in np.array(np.array(chromophore.bonds)[:, 0]):
             popList.append(bondNo)
-    for index in sorted(popList, reverse = True):
+    for index in sorted(popList, reverse=True):
         terminatingBonds.pop(index)
     # Because we didn't reorder the AAID list at any point, the integer in terminatingBond[1] should correspond
     # to the correct AAID in chromo.AAIDs
-    AAIDsToAttachTo = [chromophore.AAIDs[index] for index in map(int, list(np.array(terminatingBonds)[:,1]))]
-
-    #print chromophore.bonds
-    #print AAIDsToAttachTo
-    #print terminatingBonds
-    #for i in AAIDsToAttachTo:
-    #    print AAMorphologyDict['type'][i]
-
+    AAIDsToAttachTo = [chromophore.AAIDs[index] for index in map(int, list(np.array(terminatingBonds)[:, 1]))]
     # Now work out the positions of any bonded atoms for each of these terminating atoms to work out where we
     # should put the hydrogen
     newHydrogenPositions = []
@@ -107,8 +126,71 @@ def terminateMonomers(chromophore, parameterDict, AAMorphologyDict):
     return newHydrogenPositions
 
 
+def getORCAJobs(inputDir):
+    # First delete any previous log files as we're about to start again with the ZINDO/S calculations
+    try:
+        os.unlink(inputDir.replace('/inputORCA', '/*.log'))
+    except OSError:
+        pass
+    # Obtain a list of files to run
+    singleORCAFileList = os.listdir(inputDir + '/single')
+    pairORCAFileList = os.listdir(inputDir + '/pair')
+    ORCAFilesToRun = []
+    for fileName in singleORCAFileList:
+        if fileName[-4:] == '.inp':
+            ORCAFilesToRun.append(inputDir + '/single/' + fileName)
+    for fileName in pairORCAFileList:
+        if fileName[-4:] == '.inp':
+            ORCAFilesToRun.append(inputDir + '/pair/' + fileName)
+    ORCAFilesToRun.sort()
+    # Do not run any jobs that have already have an output file (and so have at least started to run if not finished)
+    popList = []
+    for jobNo, job in enumerate(ORCAFilesToRun):
+        try:
+            with open(job.replace('inputORCA', 'outputORCA').replace('.inp', '.out'), 'r'):
+                popList.append(jobNo)
+        except IOError:
+            pass
+    popList.sort(reverse=True)
+    for popIndex in popList:
+        ORCAFilesToRun.pop(popIndex)
+    # Now split the list of remaining jobs based on the number of processors
+    try:
+        procIDs = list(np.arange(int(os.environ.get('SLURM_NPROCS'))))
+    except (AttributeError, TypeError):
+        # Was not loaded using SLURM, so use all physical processors
+        procIDs = list(np.arange(mp.cpu_count()))
+    if len(ORCAFilesToRun) == 0:
+        return procIDs, []
+    # Create a jobslist for each procID
+    jobsList = [ORCAFilesToRun[i:i + (int(np.ceil(len(ORCAFilesToRun) / len(procIDs)))) + 1] for i in xrange(0, len(ORCAFilesToRun), int(np.ceil(len(ORCAFilesToRun) / float(len(procIDs)))))]
+    return procIDs, jobsList
+
+
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList):
     createInputFiles(chromophoreList, AAMorphologyDict, parameterDict)
+    inputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/inputORCA'
+    procIDs, jobsList = getORCAJobs(inputDir)
+    numberOfInputs = sum([len(ORCAFilesToRun) for ORCAFilesToRun in jobsList])
+    print "Found", numberOfInputs, "ORCA files to run."
+    if numberOfInputs > 0:
+        # Create pickle file containing the jobs sorted by ProcID to be picked up by singleCoreRunORCA.py
+        pickleName = inputDir.replace('inputORCA', 'ORCAJobs.pickle')
+        with open(pickleName, 'w+') as pickleFile:
+            pickle.dump(jobsList, pickleFile)
+        print "ORCA jobs list written to", pickleName
+        if len(jobsList) <= len(procIDs):
+            procIDs = procIDs[:len(jobsList)]
+        runningJobs = []
+        # Open the required processes to execute the ORCA jobs
+        for CPURank in procIDs:
+            print 'python ' + os.getcwd() + '/code/singleCoreRunORCA.py ' + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + ' ' + str(CPURank) + ' &'
+            runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunORCA.py', parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + ' ' + str(CPURank)]))
+        # Wait for all jobs to complete
+        [p.wait() for p in runningJobs]
+        # Delete the job pickle
+        os.system('rm ' + inputDir.replace('inputORCA', 'ORCAJobs.pickle'))
+    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList
 
 
 if __name__ == "__main__":
@@ -118,86 +200,3 @@ if __name__ == "__main__":
         print "Please specify the pickle file to load to continue the pipeline from this point."
     AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(pickleFile)
     execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#
-#
-#def countOutputFiles(directory):
-#    singleOutputs = os.listdir(directory+'/single/')
-#    pairOutputs = os.listdir(directory+'/pair/')
-#    orcaOutputs = 0
-#    for fileName in singleOutputs:
-#        if fileName[-4:] == '.out':
-#            orcaOutputs += 1
-#    for fileName in pairOutputs:
-#        if fileName[-4:] == '.out':
-#            orcaOutputs += 1
-#    return orcaOutputs
-#
-#
-#def execute(morphologyFile, slurmJobNumber):
-#    morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
-#    inputDir = os.getcwd()+'/outputFiles/'+morphologyName+'/chromophores/inputORCA'
-#    # Clear input files
-#    try:
-#        os.unlink(inputDir.replace('/inputORCA', '/*.log'))
-#    except OSError:
-#        pass
-#    procIDs, jobsList = helperFunctions.getORCAJobs(inputDir)
-#    numberOfInputs = sum([len(ORCAFilesToRun) for ORCAFilesToRun in jobsList])
-#    print "Found", numberOfInputs, "ORCA files to run."
-#    if numberOfInputs > 0:
-#        # Create pickle file containing the jobs sorted by ProcID
-#        pickleName = inputDir.replace('inputORCA', 'ORCAJobs.pickle')
-#        with open(pickleName, 'w+') as pickleFile:
-#            pickle.dump(jobsList, pickleFile)
-#        print "ORCA job pickle written to", pickleName
-#        if len(jobsList) <= len(procIDs):
-#            procIDs = procIDs[:len(jobsList)]
-#        runningJobs = []
-#        for CPURank in procIDs:
-#            print 'python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &'
-#            # os.system('python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &')
-#            runningJobs.append(sp.Popen(['python', str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank)]))
-#        # Wait for all jobs to complete
-#        exitCodes = [p.wait() for p in runningJobs]
-#        os.system('rm '+inputDir.replace('inputORCA', 'ORCAJobs.pickle'))
-#
-#    # print "Checking for completed output files..."
-#    # previousNumberOfOutputs = -1
-#    # slurmCancel = False
-#    # while True:
-#    #     if slurmCancel == True:
-#    #         print "Terminating program..."
-#    #         os.system('rm '+inputDir.replace('inputORCA', 'ORCAJobs.pickle'))
-#    #         os.system('scancel '+str(slurmJobNumber))
-#    #         exit()
-#    #     numberOfOutputs = countOutputFiles(os.getcwd()+'/outputFiles/'+morphologyName+'/chromophores/outputORCA')
-#    #     if numberOfOutputs == numberOfInputs:
-#    #         print "All", numberOfInputs, "output files present. Waiting one more iteration for current jobs to complete..."
-#    #         slurmCancel = True
-#    #     if numberOfOutputs == previousNumberOfOutputs:
-#    #         print "No additional output files found this iteration - there are still", numberOfOutputs, "output files present. Is everything still working?"
-#    #     previousNumberOfOutputs = numberOfOutputs
-#    #     # Sleep for 20 minutes
-#    #     T.sleep(1200)
-#
-#if __name__ == '__main__':
-#    morphologyFile = sys.argv[1]
-#    slurmJobNumber = sys.argv[2]
-#    execute(morphologyFile, slurmJobNumber)

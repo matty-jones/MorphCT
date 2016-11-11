@@ -1,11 +1,8 @@
 from hoomd_script import *
 import numpy as np
 import copy
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import helperFunctions
 import sys
+import helperFunctions
 
 
 def obtainMoleculeDict(AAMorphologyDict, moleculeAAIDs):
@@ -31,7 +28,7 @@ def obtainMoleculeDict(AAMorphologyDict, moleculeAAIDs):
         for constraint in AAMorphologyDict[constraintType]:
             # Check that all of the constraint IDs belong to this molecule
             # (Have to check all because ghost constraints are present in the AAMorphologyDict)
-            if sum([x in constraint[1:] for x in moleculeAAIDs]) == len(constraint)-1:
+            if sum([x in constraint[1:] for x in moleculeAAIDs]) == len(constraint) - 1:
                 newConstraint = copy.deepcopy(constraint)
                 # Update all of the AAIDs to their new IDs within this molecule
                 for location, atomID in enumerate(newConstraint):
@@ -44,9 +41,9 @@ def obtainMoleculeDict(AAMorphologyDict, moleculeAAIDs):
     thisMoleculeDict = helperFunctions.addUnwrappedPositions(thisMoleculeDict)
     # Find the (geometric, in case masses aren't specified) centre of the molecule
     positionArray = np.array(thisMoleculeDict['unwrapped_position'])
-    centre = [np.average(positionArray[0,:]), np.average(positionArray[1,:]), np.average(positionArray[2,:])]
+    centre = [np.average(positionArray[0, :]), np.average(positionArray[1, :]), np.average(positionArray[2, :])]
     # Also find the extent of the molecule so we can change lx, ly and lz
-    boxDims = [np.max(positionArray[0,:]) - np.min(positionArray[0,:]), np.max(positionArray[1,:]) - np.min(positionArray[1,:]), np.max(positionArray[2,:]) - np.min(positionArray[2,:])]
+    boxDims = [np.max(positionArray[0, :]) - np.min(positionArray[0, :]), np.max(positionArray[1, :]) - np.min(positionArray[1, :]), np.max(positionArray[2, :]) - np.min(positionArray[2, :])]
     # Change lx, ly and lz in the dictionary
     for axis, key in enumerate(systemProps):
         thisMoleculeDict[key] = boxDims[axis]
@@ -78,7 +75,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         # Use the moleculeAAIDs for each molecule to create a writeable molecule dictionary
         moleculeDict = obtainMoleculeDict(AAMorphologyDict, moleculeAAIDs)
         # Write the molecule dictionary
-        helperFunctions.writeMorphologyXML(moleculeDict, parameterDict['outputDir']+'/'+parameterDict['morphology'][:-4]+'/molecules/mol_%04d.xml' % (moleculeNo))
+        helperFunctions.writeMorphologyXML(moleculeDict, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/molecules/mol_%04d.xml' % (moleculeNo))
 
 
 if __name__ == "__main__":

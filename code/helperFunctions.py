@@ -290,7 +290,7 @@ def addTerminatingHydrogen(inputDictionary, terminatingConnection, terminatingUn
     return inputDictionary, inputDictionary['natoms'] - 1
 
 
-def loadMorphologyXMLETree(xmlPath, sigma = 1.0):
+def loadMorphologyXMLETree(xmlPath, sigma=1.0):
     atomProps3DFloat = ['position']
     atomProps3DInt = ['image']
     atomPropsInt = ['body']
@@ -482,6 +482,7 @@ def removeRigidBodies(inputDictionary):
     print len(atomsToRemove), "atoms and", len(bondsToRemove), "bonds removed."
     return inputDictionary
 
+
 def writeMorphologyXMLETree(inputDictionary, outputFile):
     print "Checking wrapped positions before writing XML..."
     inputDictionary = checkWrappedPositions(inputDictionary)
@@ -489,9 +490,9 @@ def writeMorphologyXMLETree(inputDictionary, outputFile):
     atomProps3D = ['position', 'image']
     atomProps = ['mass', 'diameter', 'type', 'body', 'charge']
     constraintProps = ['bond', 'angle', 'dihedral', 'improper']
-    root = ET.Element('hoomd_xml',version = "1.5")
+    root = ET.Element('hoomd_xml', version="1.5")
     root.text = '\n'
-    config = ET.Element('configuration', time_step = str(inputDictionary['time_step']), dimensions = "3", natoms = str(inputDictionary['natoms']))
+    config = ET.Element('configuration', time_step=str(inputDictionary['time_step']), dimensions="3", natoms=str(inputDictionary['natoms']))
     config.text = '\n'
     config.tail = '\n'
     for element in systemProps + atomProps3D + atomProps + constraintProps:
@@ -506,19 +507,19 @@ def writeMorphologyXMLETree(inputDictionary, outputFile):
     config.attrib['natoms'] = str(inputDictionary['natoms'])
     for atomID, atomType in enumerate(inputDictionary['type']):
         for atomProp3D in atomProps3D:
-            config.find(atomProp3D).text += ' '.join([str(x) for x in inputDictionary[atomProp3D][atomID]])+'\n'
+            config.find(atomProp3D).text += ' '.join([str(x) for x in inputDictionary[atomProp3D][atomID]]) + '\n'
             config.find(atomProp3D).attrib['num'] = str(len(inputDictionary[atomProp3D]))
         for atomProp in atomProps:
-            config.find(atomProp).text += str(inputDictionary[atomProp][atomID])+'\n'
+            config.find(atomProp).text += str(inputDictionary[atomProp][atomID]) + '\n'
             config.find(atomProp).attrib['num'] = str(len(inputDictionary[atomProp]))
     for constraintType in constraintProps:
         for constraintID, constraint in enumerate(inputDictionary[constraintType]):
-            config.find(constraintType).text += ' '.join([str(x) for x in inputDictionary[constraintType][constraintID]])+'\n'
+            config.find(constraintType).text += ' '.join([str(x) for x in inputDictionary[constraintType][constraintID]]) + '\n'
         config.find(constraintType).attrib['num'] = str(len(inputDictionary[constraintType]))
     root.insert(0, config)
     tree = ET.ElementTree(root)
-    tree.write(outputFile, xml_declaration = True, encoding = 'UTF-8')
-    print "XML file written to", str(outputFile)+"!"
+    tree.write(outputFile, xml_declaration=True, encoding='UTF-8')
+    print "XML file written to", str(outputFile) + "!"
 
 
 def writeMorphologyXML(inputDictionary, outputFile):
@@ -589,7 +590,7 @@ def writeMorphologyXML(inputDictionary, outputFile):
     linesToWrite.append('</hoomd_xml>\n')
     with open(outputFile, 'w+') as xmlFile:
         xmlFile.writelines(linesToWrite)
-    print "XML file written to", str(outputFile)+"!"
+    print "XML file written to", str(outputFile) + "!"
 
 
 def writePOSCARFile(inputDict, outputFile):
@@ -1082,7 +1083,7 @@ def loadPickle(pickleLocation):
 def writePickle(toPickle, pickleFileName):
     print "Writing pickle file..."
     with open(pickleFileName, 'w+') as pickleFile:
-	pickle.dump(toPickle, pickleFile)
+        pickle.dump(toPickle, pickleFile)
     print "Pickle file written to", pickleFileName
 
 
