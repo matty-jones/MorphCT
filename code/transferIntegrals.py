@@ -14,7 +14,168 @@ class ORCAError(Exception):
         self.string = "No molecular orbital data present for "+str(fileName)
     def __str__(self):
         return self.string
-        
+
+
+def loadORCAOutput(fileName):
+    with open(fileName, 'r') as orcaFile:
+        dataFile = orcaFile.readlines()
+    recordMOData = False
+    orbitalData = []
+    for line in dataFile:
+        if 'ORBITAL ENERGIES' in line:
+            # Next line begins the MO data
+            recordMOData = True
+            continue
+        if recordMOData == True:
+            if 'MOLECULAR ORBITALS' in line:
+                # Don't need anything else from the output file
+                break
+            dataInLine = []
+            for element in line.split(' '):
+                try:
+                    dataInLine.append(float(element))
+                except:
+                    pass
+            if len(dataInLine) == 4:
+                orbitalData.append(dataInLine)
+    for i in range(len(orbitalData)):
+        if orbitalData[i][1] == 0:
+            # This line is the first unoccupied orbital - i.e. LUMO
+            LUMO = orbitalData[i][3]
+            HOMO = orbitalData[i-1][3]
+            HOMO_1 = orbitalData[i-2][3]
+            LUMO_1 = orbitalData[i+1][3]
+            # Don't need any other orbitals
+            break
+    if recordMOData == False:
+        # Molecular orbital data not present in this file
+        raise ORCAError(self.inputFile)
+    return HOMO_1, HOMO, LUMO, LUMO_1
+
+
+def rerunFails(failedChromoFiles):
+    # Need a clever function that works out which ones have failed and updates the ones that have been fixed
+    pass
+
+
+
+def updateChromophoreList(chromophoreList, parameterDict):
+    orcaOutputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/outputORCA'
+    # NOTE: This can possibly be done by recursively iterating through the neighbourlist of each chromophore, but I
+    # imagine Python will whinge about the levels of recursion, so for now I'll just go through every chromophore twice.
+    # Firstly, set the energy levels for each single chromophore, rerunning them if they fail.
+    failedSingleChromos = {}
+    for chromophore in chromophoreList:
+        fileName = '/single/%04d.out' % (chromophore.ID)
+        # Update the chromophores in the chromophoreList with their energyLevels
+        try:
+            chromophore.HOMO_1, chromophore.HOMO, chromophore.LUMO, chromophore.LUMO_1 = loadORCAOutput(fileName)
+        except ORCAError:
+            failedSingleChromos[fileName] = 1
+    # Rerun any failed ORCA jobs
+    while len(failedSingleChromos) > 0:
+        failedSingleChromos = rerunFails(failedSingleChromos)
+
+    # Now that all the single chromophore energy levels are done, iterate through again and check the neighbours,
+    # rerunning the pair file if it failed (which it won't have done because all my chromophores are delicious now).
+
+
+    # Delete the orca output files when they're done based on the parameterDict variable (MAKE THIS)
+
+
+
+
+def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+    updateChromophoreList(chromophoreList, parameterDict)
+
+
+    
+    # Now write the CSV outputs for the KMC code
+    # singleChromoCSVData, pairChromoCSVData = prepareCSVData(singleChromoDict, pairChromos)
+    # helperFunctions.writeCSV(CSVDir+'/singles.csv', singleChromoCSVData)
+    # helperFunctions.writeCSV(CSVDir+'/pairs.csv', pairChromoCSVData)
+
+if __name__ == "__main__":
+    try:
+        pickleFile = sys.argv[1]
+    except:
+        print "Please specify the pickle file to load to continue the pipeline from this point."
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(pickleFile)
+    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class chromophore:
     def __init__(self, inputFile, chromoID, singleChromos = None, chromoData = None):
         if chromoData != None:
@@ -47,7 +208,7 @@ class chromophore:
         if len(chromoID) == 1:
             self.ORCAType = 'single'
         else:
-            self.ORCAType = 'pair'            
+            self.ORCAType = 'pair'
         try:
             self.loadORCAOutput(inputFile)
         except ORCAError as errorMessage:
@@ -60,70 +221,6 @@ class chromophore:
         self.error = 0
 
 
-    def loadORCAOutput(self, fileName):
-        with open(fileName, 'r') as orcaFile:
-            dataFile = orcaFile.readlines()
-        recordPosData = False
-        recordMOData = False
-        listOfPositions = []
-        listOfMasses = []
-        orbitalData = []
-        self.chromoLength = 0
-        for line in dataFile:
-            if 'CARTESIAN COORDINATES (ANGSTROEM)' in line:
-                recordPosData = True
-                continue
-            if recordPosData == True:
-                if 'CARTESIAN COORDINATES (A.U.)' in line:
-                    recordPosData = False
-                for element in line[:-1].split(' '):
-                    if len(element) != 0:
-                        try:
-                            coordinate = float(element)
-                            listOfPositions[-1].append(coordinate)
-                        except:
-                            if len(element) <= 2:
-                                listOfPositions.append([])
-                                if element == 'H':
-                                    listOfMasses.append(1.00794)
-                                elif element == 'C':
-                                    listOfMasses.append(12.0107)
-                                elif element == 'S':
-                                    if self.ORCAType == 'single':
-                                        self.chromoLength += 1
-                                    listOfMasses.append(32.0660)
-                                else:
-                                    print element
-                                    raise SystemError('Unknown element')
-            if 'ORBITAL ENERGIES' in line:
-                recordMOData = True
-                continue
-            if recordMOData == True:
-                if 'MOLECULAR ORBITALS' in line:
-                    # Don't need anything else from the output file
-                    break
-                dataInLine = []
-                for element in line.split(' '):
-                    try:
-                        dataInLine.append(float(element))
-                    except:
-                        pass
-                if len(dataInLine) == 4:
-                    orbitalData.append(dataInLine)
-        self.position = helperFunctions.calcCOM(listOfPositions, listOfMasses)
-        for i in range(len(orbitalData)):
-            if orbitalData[i][1] == 0:
-                # This line is the first unoccupied orbital - i.e. LUMO
-                self.LUMO = orbitalData[i][3]
-                self.HOMO = orbitalData[i-1][3]
-                self.HOMO_1 = orbitalData[i-2][3]
-                self.LUMO_1 = orbitalData[i+1][3]
-                # Don't need any other orbitals
-                break
-        if recordMOData == False:
-            # Molecular orbital data not present in this file
-            raise ORCAError(self.inputFile)
-        #print self.inputFile, self.HOMO_1, self.HOMO, self.LUMO, self.LUMO_1
 
         
     def calculateTransferIntegral(self, singleChromos):
@@ -290,291 +387,3 @@ def revertORCAFiles(inputFile):
             break
     with open(inputFile, 'w+') as fileName:
         fileName.writelines(originalLines)
-
-
-def execute(morphologyFile):
-    morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile,'/')[-1]+1:]
-    orcaOutputDir = os.getcwd()+'/outputFiles/'+morphologyName+'/chromophores/outputORCA'
-    CSVDir = os.getcwd()+'/outputFiles/'+morphologyName+'/chromophores'
-    orcaDir = os.getenv('ORCA_BIN', str(os.getcwd())+'/ORCA')
-    orcaPath = orcaDir+'/orca'
-    singleCSVPresent = False
-    pairCSVPresent = False
-    pairCheckDict = {}
-    # Load a pickle of the transfer integral dictionaries?
-    try:
-        with open(CSVDir+'/singles.csv', 'r') as CSVFile:
-            singlesCSVPresent = True
-            singleChromoDict = readCSVData(CSVFile, 'singles')
-    except IOError:
-        singleCSVPresent = False
-        singleChromoDict = {} # Is a dictionary because we need to be able to look up energy levels quickly
-    try:
-        with open(CSVDir+'/pairs.csv', 'r') as CSVFile:
-            pairCSVPresent = True
-            pairChromos = readCSVData(CSVFile, 'pairs')
-            for pair in pairChromos:
-                pairCheckDict[str([pair.chromo1ID, pair.chromo2ID])] = True
-    except IOError:
-        pairCSVPresent = False
-        pairChromos = []
-        
-    singleDir = orcaOutputDir+'/single'
-    pairDir = orcaOutputDir+'/pair'
-    try:
-        procIDs = list(np.arange(int(os.environ.get('SLURM_NPROCS'))))
-    except (AttributeError, TypeError):
-        # Was not loaded using SLURM, so use all physical processors
-        procIDs = list(np.arange(mp.cpu_count()))
-
-    failedSinglesDict = {}
-    # Load all of the single ORCA chromophores first to get their energy levels
-    # (We need these first to calculate Tij for the pairs)
-    failedSingleFiles = []
-    failedSingleNos = []
-    singleOutputs = []
-    for fileName in os.listdir(singleDir):
-        if '.out' in fileName:
-            singleOutputs.append(fileName)
-    for fileNo, fileName in enumerate(singleOutputs):
-        chromoID = getChromoID(fileName)
-        if chromoID[0] in singleChromoDict:
-            print "Single chromophore", chromoID, "already present in CSV file. Skipping...\r",
-            continue
-        print "Examining single chromophore", fileNo+1, "of", str(len(singleOutputs))+"...\r",
-        chromo = chromophore(singleDir+'/'+fileName, chromoID)
-        if chromo.error == 0:
-            singleChromoDict[chromoID[0]] = chromo
-        else:
-            failedSingleFiles.append(singleDir.replace('outputORCA', 'inputORCA')+'/'+fileName.replace('.out', '.inp'))
-            failedSingleNos.append(chromoID[0])
-    print "\n"
-    print "There were", len(failedSingleNos), "failed single chromophore runs"
-    # Modify the energy levels to get the experimental DoS distribution
-    singleChromoDict = scaleEnergies(singleChromoDict)
-    # Fixed the failed files
-    while len(failedSingleFiles) > 0:
-        fixedFilesIndices = []
-        try:
-            print "Calculations completed for single-segments, however there were", len(failedSingleFiles), "errors in calculating the single-segment HOMO levels."
-            for failIndex, fileName in enumerate(failedSingleFiles):
-                print "Re-examining file:", fileName
-                if fileName not in failedSinglesDict:
-                    failedSinglesDict[fileName] = 1
-                elif failedSinglesDict[fileName] == 18:
-                    continue
-                else:
-                    failedSinglesDict[fileName] += 1
-                failedRerunCounter = failedSinglesDict[fileName]
-                if failedRerunCounter == 3:
-                    # Three lots of reruns without any successes, try to turn off SOSCF
-                    print str(fileName)+": Three lots of reruns without any success - turning off SOSCF to see if that helps..."
-                    turnOffSOSCF(fileName)
-                if failedRerunCounter == 6:
-                    # Still no joy - increase the number of SCF iterations and see if convergence was just slow
-                    print str(fileName)+": Six lots of reruns without any success - increasing the number of SCF iterations to 500..."
-                    increaseIterations(fileName)
-                if failedRerunCounter == 9:
-                    # Finally, turn down the SCF tolerance
-                    print str(fileName)+": Nine lots of reruns without any success - decreasing SCF tolerance (sloppySCF)..."
-                    reduceTolerance(fileName)
-                if failedRerunCounter == 12:
-                    print str(fileName)+": Failed to rerun ORCA 12 times, one final thing that can be done is to change the numerical accuracy..."
-                    revertORCAFiles(fileName)
-                    increaseGrid(fileName)
-                if failedRerunCounter == 15:
-                    print str(fileName)+": Failed to rerun ORCA 15 times. Will try high numerical accuracy with no SOSCF as a last-ditch effort..."
-                    increaseGridNoSOSCF(fileName)
-                if failedRerunCounter == 18:
-                    # SERIOUS PROBLEM
-                    print str(fileName)+": Failed to rerun ORCA 18 times, even with all the input file tweaks. Examine the geometry - it is most likely unreasonable."
-                    print "Reverting "+str(fileName)+" back to its original state..."
-                    revertORCAFiles(fileName)
-                    fixedFilesIndices.append(failIndex)
-                    failedSinglesDict.pop(fileName)
-                    failedSinglesFiles.pop(failIndex)
-            if len(failedSingleFiles) == 0:
-                break
-            jobsList = [failedSingleFiles[i:i+(int(np.ceil(len(failedSingleFiles)/len(procIDs))))+1] for i in xrange(0, len(failedSingleFiles), int(np.ceil(len(failedSingleFiles)/float(len(procIDs)))))]
-            with open(CSVDir+'/ORCAJobs.pickle', 'w+') as pickleFile:
-                pickle.dump(jobsList, pickleFile)
-            # Now rerun ORCA
-            if len(jobsList) <= len(procIDs):
-                procIDs = procIDs[:len(jobsList)]
-            runningJobs = []
-            for CPURank in procIDs:
-                print 'python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &'
-                #os.system('python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &')
-                runningJobs.append(sp.Popen(['python', str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank), '1'])) # The final argument here tells ORCA to ignore the presence of the output file and recalculate
-                    # orcaJob = sp.Popen([str(orcaPath), str(fileName)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
-                    # orcaShellOutput = orcaJob.communicate()
-                    # helperFunctions.writeToFile(fileName.replace('inputORCA', 'outputORCA').replace('.inp', '.out'), orcaShellOutput[0].split('\n'), mode = 'outputFile')
-            # Wait for running jobs to finish
-            t0 = T.time()
-            exitCodes = [p.wait() for p in runningJobs]
-            t1 = T.time()
-            # Now check if the file is fixed
-            for failIndex, fileName in enumerate(failedSingleFiles):
-                outputFileName = fileName.replace('inputORCA', 'outputORCA').replace('.inp', '.out')
-                shortFileName = outputFileName[helperFunctions.findIndex(outputFileName, '/')[-1]+1:]
-                chromoID = getChromoID(shortFileName)
-                chromo = chromophore(outputFileName, chromoID)
-                if chromo.error == 0:
-                    fixedFilesIndices.append(failIndex)
-                    failedSinglesDict.pop(fileName)
-                    singleChromoDict[chromoID[0]] = chromo
-            # At end of loop, pop all the fixed files
-            if len(fixedFilesIndices) > 0:
-                for index in sorted(fixedFilesIndices, reverse=True):
-                    failedSingleFiles.pop(index)
-        except KeyboardInterrupt:
-            print "Kill command recieved. Reverting ORCA files..."
-            for inputName, failCount in failedSinglesDict.items():
-                revertORCAFiles(inputName)
-            print "File reversion complete. Terminating..."
-            sys.exit(0)
-    # Now write the singles.csv file now we have all the data
-    singleChromoDict = scaleEnergies(singleChromoDict)
-    singleChromoCSVData, emptyVar = prepareCSVData(singleChromoDict, None)
-    helperFunctions.writeCSV(CSVDir+'/singles.csv', singleChromoCSVData)
-
-    print "Calculations completed for single-segments with no errors."
-    os.system('rm '+str(CSVDir)+'/ORCAJobs.pickle')
-
-
-    # Now do the pairs
-    failedPairsDict = {}
-    failedPairFiles = []
-    needKoopmans = 0
-    pairOutputs = []
-    for fileName in os.listdir(pairDir):
-        if '.out' in fileName:
-            pairOutputs.append(fileName)
-    for fileNo, fileName in enumerate(pairOutputs):
-        chromoID = getChromoID(fileName)
-        if str(chromoID) in pairCheckDict:
-            print "Chromophore pair", chromoID, "already present in CSV file. Skipping...\r",
-            continue
-        print "Examining chromophore pair", fileNo+1, "of", str(len(pairOutputs))+"...\r",
-        if (chromoID[0] in failedSingleNos) or (chromoID[1] in failedSingleNos):
-            print "\n"
-            print "One of", chromoID, "failed in the singles. Skipping..."
-            continue
-        chromoPair = chromophore(pairDir+'/'+fileName, chromoID, singleChromoDict)
-        if chromoPair.error == 0:
-            pairChromos.append(chromoPair)
-            dataToWrite = [chromoPair.chromo1ID, chromoPair.chromo2ID, chromoPair.HOMO_1, chromoPair.HOMO, chromoPair.LUMO, chromoPair.LUMO_1, chromoPair.Tij]
-            helperFunctions.appendCSV(CSVDir+'/pairs.csv', dataToWrite)
-            needKoopmans += chromoPair.needKoopmans
-        else:
-            failedPairFiles.append(pairDir.replace('outputORCA', 'inputORCA')+'/'+fileName.replace('.out', '.inp'))
-    # Recalculate the transfer integrals if the csv file is already present (in case scaling the single energies has affected things)
-    if pairCSVPresent == True:
-        pairChromos, needKoopmans = recalculateTij(pairChromos, singleChromoDict)
-        emptyVar, pairCSVData = prepareCSVData(None, pairChromos)
-        helperFunctions.writeCSV(CSVDir+'/pairs.csv', pairCSVData)
-
-    print "\n"
-    print failedPairFiles
-    print needKoopmans, "pairs out of", len(pairChromos), "had DeltaE > HOMO splitting and so need Koopmans approximation to avoid complex Tij"
-    print "There were", len(failedPairFiles), "failed pair chromophore runs"
-    # Fix the failed files
-    while len(failedPairFiles) > 0:
-        fixedFilesIndices = []
-        try:
-            print "Calculations completed for segment pairs, however there were", len(failedPairFiles), "errors in calculating the pair HOMO splitting."
-            for failIndex, fileName in enumerate(failedPairFiles):
-                if fileName not in failedPairsDict:
-                    failedPairsDict[fileName] = 1
-                else:
-                    failedPairsDict[fileName] += 1
-                failedRerunCounter = failedPairsDict[fileName]
-                if failedRerunCounter == 3:
-                    # Three lots of reruns without any successes, try to turn off SOSCF
-                    print str(fileName)+": Three lots of reruns without any success - turning off SOSCF to see if that helps..."
-                    turnOffSOSCF(fileName)
-                if failedRerunCounter == 6:
-                    # Still no joy - increase the number of SCF iterations and see if convergence was just slow
-                    print str(fileName)+": Six lots of reruns without any success - increasing the number of SCF iterations to 500..."
-                    increaseIterations(fileName)
-                if failedRerunCounter == 9:
-                    # Finally, turn down the SCF tolerance
-                    print str(fileName)+": Nine lots of reruns without any success - decreasing SCF tolerance (sloppySCF)..."
-                    reduceTolerance(fileName)
-                if failedRerunCounter == 12:
-                    print str(fileName)+": Failed to rerun ORCA 12 times, one final thing that can be done is to change the numerical accuracy..."
-                    revertORCAFiles(fileName)
-                    increaseGrid(fileName)
-                if failedRerunCounter == 15:
-                    print str(fileName)+": Failed to rerun ORCA 15 times. Will try high numerical accuracy with no SOSCF as a last-ditch effort..."
-                    increaseGridNoSOSCF(fileName)
-                if failedRerunCounter == 18:
-                    # SERIOUS PROBLEM
-                    print str(fileName)+": Failed to rerun ORCA 18 times, even with all the input file tweaks. Examine the geometry - it is most likely unreasonable."
-                    print "Reverting "+str(fileName)+" back to its original state..."
-                    revertORCAFiles(fileName)
-                    fixedFilesIndices.append(failIndex)
-                    failedPairsDict.pop(fileName)
-                    failedPairFiles.pop(failIndex)
-            # If failed to run 18 times, just continue and skip
-            if len(failedPairFiles) == 0:
-                break
-            jobsList = [failedPairFiles[i:i+(int(np.ceil(len(failedPairFiles)/len(procIDs))))+1] for i in xrange(0, len(failedPairFiles), int(np.ceil(len(failedPairFiles)/float(len(procIDs)))))]
-            with open(CSVDir+'/ORCAJobs.pickle', 'w+') as pickleFile:
-                pickle.dump(jobsList, pickleFile)
-            # NOW RERUN ORCA
-            if len(jobsList) <= len(procIDs):
-                procIDs = procIDs[:len(jobsList)]
-            runningJobs = []
-            for CPURank in procIDs:
-                print 'python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &'
-                runningJobs.append(sp.Popen(['python', str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank), '1']))# The final argument here tells ORCA to ignore the presence of the output file and recalculate
-            # for failIndex, fileName in enumerate(failedPairFiles):
-            #     orcaJob = sp.Popen([str(orcaPath), str(fileName)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
-            #     orcaShellOutput = orcaJob.communicate()
-            #     helperFunctions.writeToFile(fileName.replace('inputORCA', 'outputORCA').replace('.inp', '.out'), orcaShellOutput[0].split('\n'), mode = 'outputFile')
-            # Sleep for 20 minutes
-            exitCodes = [p.wait() for p in runningJobs]
-            # Now check if the file is fixed
-            for failIndex, fileName in enumerate(failedPairFiles):
-                outputFileName = fileName.replace('inputORCA', 'outputORCA').replace('.inp', '.out')
-                chromoID = getChromoID(outputFileName)
-                chromoPair = chromophore(outputFileName, chromoID, singleChromoDict)
-                if chromoPair.error == 0:
-                    fixedFilesIndices.append(failIndex)
-                    failedPairsDict.pop(fileName)
-                    pairChromos.append(chromoPair)
-                    # Put in a check here to see why certain attributes don't exist
-                    try:
-                        dataToWrite = [chromoPair.chromo1ID, chromoPair.chromo2ID, chromoPair.HOMO_1, chromoPair.HOMO, chromoPair.LUMO, chromoPair.LUMO_1, chromoPair.Tij]
-                    except AttributeError:
-                        print "outputFileName =", outputFileName
-                        print "chromoID =", chromoID
-                        print "chromoPair attributes =", dir(chromoPair)
-                        continue
-                    helperFunctions.appendCSV(CSVDir+'/pairs.csv', dataToWrite)
-            # At end of loop, pop all the fixed files
-            if len(fixedFilesIndices) > 0:
-                for index in sorted(fixedFilesIndices, reverse=True):
-                    failedPairFiles.pop(index)
-        except KeyboardInterrupt:
-            print "Kill command recieved. Reverting ORCA files..."
-            for inputName, failCount in failedPairsDict.items():
-                revertORCAFiles(inputName)
-            print "File reversion complete. Terminating..."
-            sys.exit(0)
-
-    print "Calculations completed for segment pairs with no errors."
-    os.system('rm '+str(CSVDir)+'/ORCAJobs.pickle')
-
-
-    
-    # Now write the CSV outputs for the KMC code
-    # singleChromoCSVData, pairChromoCSVData = prepareCSVData(singleChromoDict, pairChromos)
-    # helperFunctions.writeCSV(CSVDir+'/singles.csv', singleChromoCSVData)
-    # helperFunctions.writeCSV(CSVDir+'/pairs.csv', pairChromoCSVData)
-
-
-if __name__ == "__main__":
-    morphologyFile = sys.argv[1]
-    execute(morphologyFile)
