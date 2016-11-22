@@ -2,6 +2,7 @@
 temp/
 *.pyc
 *.swp
+*.swo
 *.inp
 *.gbw
 *.out

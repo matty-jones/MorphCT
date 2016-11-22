@@ -71,6 +71,15 @@ CGSiteSpecies = {\
 'C':'None',\
 }
 maximumHopDistance = 10.0
+removeORCAInputs = False
+removeORCAOutputs = False
+
+# ---=== Chromophore Energy Scaling Parameters ===---
+
+literatureHOMO = -5.0
+literatureLUMO = None
+targetDoSSTDHOMO = 0.1
+targetDoSSTDLUMO = None
 
 # ---=== Forcefield Parameters ===---
 

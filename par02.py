@@ -16,7 +16,7 @@ executeFinegraining = True
 executeMolecularDynamics = True
 executeExtractMolecules = True
 executeObtainChromophores = True
-executeZINDOS = True
+executeZINDO = True
 executeCalculateTransferIntegrals = True
 executeCalculateMobility = True
 

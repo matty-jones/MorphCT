@@ -184,6 +184,11 @@ def determineNeighbours(chromophoreList, parameterDict, simDims):
             if separation <= parameterDict['maximumHopDistance']:
                 chromophore1.neighbours.append([chromophore2.ID, relativeImageOfChromo2])
                 chromophore2.neighbours.append([chromophore1.ID, list(-np.array(relativeImageOfChromo2))])
+                # Make the deltaE and the Tij lists as long as the neighbour lists for easy access later
+                chromophore1.neighboursDeltaE.append(None)
+                chromophore1.neighboursTI.append(None)
+                chromophore2.neighboursDeltaE.append(None)
+                chromophore2.neighboursTI.append(None)
         # DEBUG TESTING
         # if chromophore1.ID == 1961:
         #     print ""

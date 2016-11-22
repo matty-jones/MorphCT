@@ -248,7 +248,8 @@ if __name__ == "__main__":
     plt.xlabel('Temperature, Arb. U')
     plt.ylabel('Mobility, cm'+r'$^{2}$ '+'V'+r'$^{-1}$'+r's$^{-1}$')
     # plt.ylim([1E-6, 1E1])
-    plt.xlim([1.4, 2.6])
+    plt.title('p1-L15-f0.3-P0.1-TX.X-e0.1', fontsize=24)
+    plt.xlim([0.9, 2.6])
     plt.savefig('./mobTemp.png')
     plt.clf()
     print "Mobility curve saved as './mobTemp.png'"

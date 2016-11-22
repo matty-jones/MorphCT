@@ -49,290 +49,37 @@ def loadORCAOutput(fileName):
             break
     if recordMOData == False:
         # Molecular orbital data not present in this file
-        raise ORCAError(self.inputFile)
+        raise ORCAError(fileName)
     return HOMO_1, HOMO, LUMO, LUMO_1
 
 
-def rerunFails(failedChromoFiles):
-    # Need a clever function that works out which ones have failed and updates the ones that have been fixed
-    pass
-
-
-
-def updateChromophoreList(chromophoreList, parameterDict):
-    orcaOutputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/outputORCA'
-    # NOTE: This can possibly be done by recursively iterating through the neighbourlist of each chromophore, but I
-    # imagine Python will whinge about the levels of recursion, so for now I'll just go through every chromophore twice.
-    # Firstly, set the energy levels for each single chromophore, rerunning them if they fail.
-    failedSingleChromos = {}
-    for chromophore in chromophoreList:
-        fileName = '/single/%04d.out' % (chromophore.ID)
-        # Update the chromophores in the chromophoreList with their energyLevels
-        try:
-            chromophore.HOMO_1, chromophore.HOMO, chromophore.LUMO, chromophore.LUMO_1 = loadORCAOutput(fileName)
-        except ORCAError:
-            failedSingleChromos[fileName] = 1
-    # Rerun any failed ORCA jobs
-    while len(failedSingleChromos) > 0:
-        failedSingleChromos = rerunFails(failedSingleChromos)
-
-    # Now that all the single chromophore energy levels are done, iterate through again and check the neighbours,
-    # rerunning the pair file if it failed (which it won't have done because all my chromophores are delicious now).
-
-
-    # Delete the orca output files when they're done based on the parameterDict variable (MAKE THIS)
-
-
-
-
-def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
-    updateChromophoreList(chromophoreList, parameterDict)
-
-
-    
-    # Now write the CSV outputs for the KMC code
-    # singleChromoCSVData, pairChromoCSVData = prepareCSVData(singleChromoDict, pairChromos)
-    # helperFunctions.writeCSV(CSVDir+'/singles.csv', singleChromoCSVData)
-    # helperFunctions.writeCSV(CSVDir+'/pairs.csv', pairChromoCSVData)
-
-if __name__ == "__main__":
-    try:
-        pickleFile = sys.argv[1]
-    except:
-        print "Please specify the pickle file to load to continue the pipeline from this point."
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(pickleFile)
-    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class chromophore:
-    def __init__(self, inputFile, chromoID, singleChromos = None, chromoData = None):
-        if chromoData != None:
-            if len(chromoData) == 9:
-                # Data for Single
-                self.chromo1ID = int(float(chromoData[0]))
-                self.position = np.array([float(chromoData[1]), float(chromoData[2]), float(chromoData[3])])
-                self.HOMO_1 = float(chromoData[4])
-                self.HOMO = float(chromoData[5])
-                self.LUMO = float(chromoData[6])
-                self.LUMO_1 = float(chromoData[7])
-                self.chromoLength = int(float(chromoData[8]))
-                self.error = 0
-                return
-            elif len(chromoData) == 7:
-                # Data for Pair
-                self.chromo1ID = int(float(chromoData[0]))
-                self.chromo2ID = int(float(chromoData[1]))
-                self.HOMO_1 = float(chromoData[2])
-                self.HOMO = float(chromoData[3])
-                self.LUMO = float(chromoData[4])
-                self.LUMO_1 = float(chromoData[5])
-                self.Tij = float(chromoData[6])
-                self.error = 0
-                return
-            else:
-                raise SystemError('Unexpected read chromoData Length')
-        self.inputFile = inputFile
-        self.chromo1ID = int(chromoID[0])
-        if len(chromoID) == 1:
-            self.ORCAType = 'single'
-        else:
-            self.ORCAType = 'pair'
-        try:
-            self.loadORCAOutput(inputFile)
-        except ORCAError as errorMessage:
-            print errorMessage
-            self.error = 1
-            return
-        if len(chromoID) == 2:
-            self.chromo2ID = int(chromoID[1])
-            self.Tij = self.calculateTransferIntegral(singleChromos)
-        self.error = 0
-
-
-
-        
-    def calculateTransferIntegral(self, singleChromos):
-        epsilon1 = singleChromos[self.chromo1ID].HOMO
-        epsilon2 = singleChromos[self.chromo2ID].HOMO
-        HOMOSplitting = self.HOMO-self.HOMO_1
-        deltaE = epsilon2-epsilon1
-        if deltaE**2 > HOMOSplitting**2:
-            # print "\n"
-            # print self.inputFile
-            # print "HOMO Splitting =", HOMOSplitting
-            # print "Delta E =", deltaE
-            # raw_input("Complex Transfer Integral")
-            self.needKoopmans = 1
-            return 0
-        else:
-            self.needKoopmans = 0
-        return 0.5*(np.sqrt(np.abs((self.HOMO - self.HOMO_1)**2 - (epsilon2 - epsilon1)**2))) # Positive anyway so np.abs unnecessary
-        # return 0.5*(np.sqrt((self.HOMO - self.HOMO_1)**2 - (epsilon2 - epsilon1)**2))
-
-
-def readCSVData(fileName, mode):
-    singleChromoDict = {}
-    pairChromoList = []
-    document = csv.reader(fileName, delimiter = ',')
-    for row in document:
-        chromo = chromophore(None, None, singleChromos = None, chromoData = row)
-        if mode == 'singles':
-            singleChromoDict[int(float(chromo.chromo1ID))] = chromo
-        elif mode == 'pairs':
-            pairChromoList.append(chromo)
-    if mode == 'singles':
-        return singleChromoDict
-    elif mode == 'pairs':
-        return pairChromoList
-    
-        
-def prepareCSVData(singleChromoDict = None, pairChromoList = None):
-    singleChromoCSVData = [] # each row = 1 chromo: [ID, x, y, z, HOMO-1, HOMO, LUMO, LUMO+1, chromoLength]
-    pairChromoCSVData = [] # each row = 1 pair: [ID1, ID2, HOMO-1, HOMO, LUMO, LUMO+1, Tij]
-    if singleChromoDict != None:
-        singleChromoKeys = sorted(singleChromoDict.keys())
-        for singleChromoKey in singleChromoKeys:
-            chromophore = singleChromoDict[singleChromoKey]
-            singleChromoCSVData.append([chromophore.chromo1ID, chromophore.position[0], chromophore.position[1], chromophore.position[2], chromophore.HOMO_1, chromophore.HOMO, chromophore.LUMO, chromophore.LUMO_1, chromophore.chromoLength])
-    if pairChromoList != None:
-        for chromophore in pairChromoList:
-            pairChromoCSVData.append([chromophore.chromo1ID, chromophore.chromo2ID, chromophore.HOMO_1, chromophore.HOMO, chromophore.LUMO, chromophore.LUMO_1, chromophore.Tij])
-    return np.array(singleChromoCSVData), np.array(pairChromoCSVData)
-        
-    
-def scaleEnergies(singleChromoDict):
-    # Shorter chromophores have significantly deeper HOMOs because they are treated as small molecules instead of chain segments.
-    # To rectify this, find the average HOMO level for each chromophore length and then map that average to the literature P3HT HOMO
-    litHOMO = -5.0 #eV
-    # Calculate the average HOMO for each length
-    HOMOLengthDict = {}
-    for singleChromoKey in singleChromoDict.keys():
-        chromophore = singleChromoDict[singleChromoKey]
-        if chromophore.chromoLength not in HOMOLengthDict:
-            HOMOLengthDict[chromophore.chromoLength] = [chromophore.HOMO]
-        else:
-            HOMOLengthDict[chromophore.chromoLength].append(chromophore.HOMO)
-    # Calculate the change required to map the energy levels to experiment
-    deltaHOMO = {}
-    for length, HOMO in HOMOLengthDict.iteritems():
-        avHOMO = np.average(HOMO)
-        deltaHOMO[length] = litHOMO - avHOMO
-    # Perform the map
-    for singleChromoKey in singleChromoDict.keys():
-        chromoLength = singleChromoDict[singleChromoKey].chromoLength
-        singleChromoDict[singleChromoKey].HOMO_1 += deltaHOMO[chromoLength]
-        singleChromoDict[singleChromoKey].HOMO += deltaHOMO[chromoLength]
-        singleChromoDict[singleChromoKey].LUMO += deltaHOMO[chromoLength]
-        singleChromoDict[singleChromoKey].LUMO_1 += deltaHOMO[chromoLength]
-    # Now shrink down the DoS to 100 meV
-    targetstd = 0.1
-    HOMOLevels = []
-    for singleChromoKey in singleChromoDict.keys():
-        HOMOLevels.append(singleChromoDict[singleChromoKey].HOMO)
-    mean = np.mean(np.array(HOMOLevels))
-    std = np.std(np.array(HOMOLevels))
-    for singleChromoKey in singleChromoDict.keys():
-        sigma = (singleChromoDict[singleChromoKey].HOMO - mean)/float(std)
-        newDeviation = targetstd*sigma
-        singleChromoDict[singleChromoKey].HOMO = mean + newDeviation
-    newHOMOLevels = []
-    for singleChromoKey in singleChromoDict.keys():
-        newHOMOLevels.append(singleChromoDict[singleChromoKey].HOMO)
-    return singleChromoDict
-
-def recalculateTij(pairChromos, singleChromoDict):
-    koopmans = 0
-    for chromoPair in pairChromos:
-        chromo1ID = chromoPair.chromo1ID
-        chromo2ID = chromoPair.chromo2ID
-        HOMOSplitting = chromoPair.HOMO-chromoPair.HOMO_1
-        deltaE = singleChromoDict[chromo2ID].HOMO - singleChromoDict[chromo1ID].HOMO
-        if deltaE**2 > HOMOSplitting**2:
-            chromoPair.Tij = 0
-            koopmans += 1
-        else:
-            chromoPair.Tij = 0.5*np.sqrt((HOMOSplitting**2) - (deltaE**2))
-    return pairChromos, koopmans
-    
-    
-        
-def getChromoID(fileName):
-    slashList = helperFunctions.findIndex(fileName, '/')
-    if slashList != None:
-        fileName = fileName[slashList[-1]+1:]
-    return map(int, ('_'+fileName[:-4]).split('_chromo')[1:])
+def modifyORCAFiles(failedFile, failedCount):
+    if failedCount == 3:
+        # Three lots of reruns without any successes, try to turn off SOSCF
+        print str(fileName)+": Three lots of reruns without any success - turning off SOSCF to see if that helps..."
+        turnOffSOSCF(failedFile)
+    elif failedCount == 6:
+        # Still no joy - increase the number of SCF iterations and see if convergence was just slow
+        print str(fileName)+": Six lots of reruns without any success - increasing the number of SCF iterations to 500..."
+        increaseIterations(fileName)
+    elif failedCount == 9:
+        # Finally, turn down the SCF tolerance
+        print str(fileName)+": Nine lots of reruns without any success - decreasing SCF tolerance (sloppySCF)..."
+        reduceTolerance(fileName)
+    elif failedCount == 12:
+        print str(fileName)+": Failed to rerun ORCA 12 times, one final thing that can be done is to change the numerical accuracy..."
+        revertORCAFiles(fileName)
+        increaseGrid(fileName)
+    elif failedCount == 15:
+        print str(fileName)+": Failed to rerun ORCA 15 times. Will try high numerical accuracy with no SOSCF as a last-ditch effort..."
+        increaseGridNoSOSCF(fileName)
+    elif failedCount == 18:
+        # SERIOUS PROBLEM
+        print str(fileName)+": Failed to rerun ORCA 18 times, even with all the input file tweaks. Examine the geometry - it is most likely unreasonable."
+        print "Reverting "+str(fileName)+" back to its original state..."
+        revertORCAFiles(fileName)
+        return 1
+    return 0
 
 
 def turnOffSOSCF(inputFile):
@@ -375,7 +122,7 @@ def increaseGridNoSOSCF(inputFile):
     with open(inputFile, 'w+') as fileName:
         fileName.writelines(originalLines)
 
-        
+
 def revertORCAFiles(inputFile):
     with open(inputFile, 'r') as fileName:
         originalLines = fileName.readlines()
@@ -387,3 +134,286 @@ def revertORCAFiles(inputFile):
             break
     with open(inputFile, 'w+') as fileName:
         fileName.writelines(originalLines)
+
+
+def rerunFails(failedChromoFiles):
+    print "There were", len(failedChromoFiles.keys()), "failed jobs."
+    # Firstly, modify the input files to see if numerical tweaks make ORCA happier
+    for failedFile, failedData in failedChromoFiles.iteritems():
+        failedCount = failedData[0]
+        errorCode = modifyORCAFiles(failedFile, failedCount)
+        if errorCode == 1:
+            failedChromoFiles.pop(failedFile)
+    # If there are no files left, then everything has failed so this function has completed its task
+    if len(failedChromoFiles) == 0:
+        return failedChromoFiles
+    # Otherwise, rerun those failed files
+    # As before, split the list of reruns based on the number of processors
+    try:
+        procIDs = list(np.arange(int(os.environ.get('SLURM_NPROCS'))))
+    except (AttributeError, TypeError):
+        # Was not loaded using SLURM, so use all physical processors
+        procIDs = list(np.arange(mp.cpu_count()))
+    jobsList = [failedChromoFiles.keys()[i:i+(int(np.ceil(len(failedChromoFiles)/len(procIDs))))+1] for i in xrange(0, len(failedChromoFiles), int(np.ceil(len(failedChromoFiles)/float(len(procIDs)))))]
+    # Write the jobs pickle for singleCoreRunORCA to obtain
+    with open(CSVDir+'/ORCAJobs.pickle', 'w+') as pickleFile:
+        pickle.dump(jobsList, pickleFile)
+    # Now rerun ORCA
+    if len(jobsList) <= len(procIDs):
+        procIDs = procIDs[:len(jobsList)]
+    runningJobs = []
+    for CPURank in procIDs:
+        print 'python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &'
+        runningJobs.append(sp.Popen(['python', str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank), '1'])) # The final argument here tells ORCA to ignore the presence of the output file and recalculate
+    # Wait for running jobs to finish
+    exitCodes = [p.wait() for p in runningJobs]
+    # Finally, return the failed files list to the main failure handler to see if we need to iterate
+    return failedChromoFiles
+
+
+def calculateDeltaE(chromophoreList, chromo1ID, chromo2ID):
+    chromo1 = chromophoreList[chromo1ID]
+    chromo2 = chromophoreList[chromo2ID]
+    #### NOTE: SANITY CHECK  ####
+    if (chromo1.ID != chromo1ID) or (chromo2.ID != chromo2ID):
+        print "chromo1.ID (" + str(chromo1.ID) + ") != chromo1ID (" + str(chromo1ID) + "), or chromo2.ID (" + str(chromo2.ID) + ") != chromo2ID (" + str(chromo2ID) + ")! CHECK CODE!"
+        exit()
+    #### END OF SANITY CHECK ####
+    if chromo1.species == 'Donor':
+        # Hole transporter
+        chromo1E = chromo1.HOMO
+    elif chromo1.species == 'Acceptor':
+        # Electron transporter
+        chromo1E = chromo1.LUMO
+    if chromo2.species == 'Donor':
+        # Hole transporter
+        chromo2E = chromo2.HOMO
+    elif chromo2.species == 'Acceptor':
+        # Electron transporter
+        chromo2E = chromo2.LUMO
+    #### NOTE: SANITY CHECK  ####
+    if chromo1.species != chromo2.species:
+        print "chromo1.species (" + str(chromo1.species) + ") != chromo2.species (" + str(chromo2.species) + ")! CHECK CODE!"
+        exit()
+    #### END OF SANITY CHECK ####
+    return chromo2E - chromo1E, chromo1.species
+
+
+def calculateTI(orbitalSplitting, deltaE):
+    # Use the energy splitting in dimer method to calculate the electronic transfer integral in eV
+    if deltaE**2 > orbitalSplitting**2:
+        # Avoid an imaginary TI by returning zero.
+        # (Could use KOOPMAN'S APPROXIMATION here if desired)
+        TI = 0
+    else:
+        TI = 0.5 * np.sqrt((orbitalSplitting**2) - (deltaE**2))
+    return TI
+
+
+def updateSingleChromophoreList(chromophoreList, parameterDict):
+    orcaOutputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/outputORCA/'
+    # NOTE: This can possibly be done by recursively iterating through the neighbourlist of each chromophore, but I
+    # imagine Python will whinge about the levels of recursion, so for now I'll just go through every chromophore twice.
+    # Firstly, set the energy levels for each single chromophore, rerunning them if they fail.
+    failedSingleChromos = {}  # Has the form {'FileName': [failCount, locationInChromophoreList]}
+    for chromoLocation, chromophore in enumerate(chromophoreList):
+        fileName = 'single/%04d.out' % (chromophore.ID)
+        # Update the chromophores in the chromophoreList with their energyLevels
+        try:
+            chromophore.HOMO_1, chromophore.HOMO, chromophore.LUMO, chromophore.LUMO_1 = loadORCAOutput(orcaOutputDir + fileName)
+            if parameterDict['removeORCAInputs'] is True:
+                os.remove(chromophore.orcaInput.replace('.inp','.*'))
+            if parameterDict['removeORCAOutputs'] is True:
+                os.remove(chromophore.orcaOutput)
+        except ORCAError:
+            failedSingleChromos[fileName] = [1, chromoLocation]
+    # Rerun any failed ORCA jobs
+    while len(failedSingleChromos) > 0:
+        failedSingleChromos = rerunFails(failedSingleChromos)
+        # Now check all of the files to see if we can update the chromophoreList
+        for chromoName, chromoData in failedSingleChromos.iteritems():
+            chromoID = chromoData[1]
+            try:
+                # Update the chromophore data in the chromophoreList
+                chromophoreList[chromoID].HOMO_1, chromophoreList[chromoID].HOMO, chromophoreList[chromoID].LUMO, chromophoreList[chromoID].LUMO_1 = loadORCAOutput(orcaOutputDir + chromoName)
+                # This chromophore didn't fail, so remove it from the failed list
+                failedSingleChromos.pop(chromoName)
+                if parameterDict['removeORCAInputs'] is True:
+                    os.remove(chromophoreList[chromoID].orcaInput.replace('.inp','.*'))
+                if parameterDict['removeORCAOutputs'] is True:
+                    os.remove(chromophoreList[chromoID].orcaOutput)
+            except:
+                # This chromophore failed so increment its fail counter
+                failedSingleChromos[chromoName][0] += 1
+    return chromophoreList
+
+
+def updatePairChromophoreList(chromophoreList, parameterDict):
+    # Now that all the single chromophore energy levels are done, iterate through again and check the neighbours,
+    # rerunning the pair file if it failed (which it won't have done because all my chromophores are delicious now).
+    orcaOutputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/outputORCA/'
+    failedPairChromos = {}
+    for chromoLocation, chromophore in enumerate(chromophoreList):
+        for neighbourID in chromophore.neighbours:
+            if chromophore.ID > neighbourID:
+                continue
+            fileName = 'pair/%04d-%04d.out' % (chromophore.ID, neighbourID)
+            try:
+                dimerHOMO_1, dimerHOMO, dimerLUMO, dimerLUMO_1 = loadORCAOutput(orcaOutputDir + fileName)
+                # Calculate the deltaE between the two single chromophores
+                deltaE, species = calculateDeltaE(chromophoreList, chromophore.ID, neighbourID)
+                # Calculate the TI using the ESD method
+                if species == 'Donor':
+                    TI = calculateTI(dimerHOMO - dimerHOMO_1, deltaE)
+                elif species == 'Acceptor':
+                    TI = calculateTI(dimerLUMO - dimerLUMO_1, deltaE)
+                # Update both the current chromophore and the neighbour (for the reverse hop)
+                chromophore.neighboursDeltaE[chromophore.neighbours.index(neighbourID)] = deltaE
+                chromophoreList[neighbourID].neighboursDeltaE[chromophoreList[neighbourID].neighbours.index(chromophore.ID)] = - deltaE
+                chromophore.neighboursTI[chromophore.neighbours.index(neighbourID)] = TI
+                chromophoreList[neighbourID].neighboursTI[chromophoreList[neighbourID].neighbours.index(chromophore.ID)] = TI
+                if parameterDict['removeORCAInputs'] is True:
+                    os.remove(orcaOutputDir.replace('outputORCA', 'inputORCA') + fileName.replace('.inp','.*'))
+                if parameterDict['removeORCAOutputs'] is True:
+                    os.remove(orcaOutputDir + fileName)
+            except ORCAError:
+                failedPairChromos[fileName] = [1, chromoLocation, neighbourID]
+    while len(failedPairChromos) > 0:
+        failedPairChromos = rerunFails(failedPairChromos)
+        for chromoName, chromoData in failedPairChromos.iteritems():
+            chromo1ID = chromoData[1]
+            chromo2ID = chromoData[2]
+            try:
+                dimerHOMO_1, dimerHOMO, dimerLUMO, dimerLUMO_1 = loadORCAOutput(orcaOutputDir + fileName)
+                # Calculate the deltaE between the two single chromophores
+                deltaE, species = calculateDeltaE(chromophoreList, chromophore.ID, neighbourID)
+                # Calculate the TI using the ESD method
+                if species == 'Donor':
+                    TI = calculateTI(dimerHOMO - dimerHOMO_1, deltaE)
+                elif species == 'Acceptor':
+                    TI = calculateTI(dimerLUMO - dimerLUMO_1, deltaE)
+                # Update both the current chromophore and the neighbour (for the reverse hop)
+                chromophore.neighboursDeltaE[chromophore.neighbours.index(neighbourID)] = deltaE
+                chromophoreList[neighbourID].neighboursDeltaE[chromophoreList[neighbourID].neighbours.index(chromophore.ID)] = - deltaE
+                chromophore.neighboursTI[chromophore.neighbours.index(neighbourID)] = TI
+                chromophoreList[neighbourID].neighboursTI[chromophoreList[neighbourID].neighbours.index(chromophore.ID)] = TI
+                failedPairChromos.pop(chromoName)
+                if parameterDict['removeORCAInputs'] is True:
+                    os.remove(orcaOutputDir.replace('outputORCA', 'inputORCA') + fileName.replace('.inp','.*'))
+                if parameterDict['removeORCAOutputs'] is True:
+                    os.remove(orcaOutputDir + fileName)
+            except:
+                # This dimer failed so increment its fail counter
+                failedPairChromos[chromoName][0] += 1
+    return chromophoreList
+
+
+def scaleEnergies(chromophoreList, parameterDict):
+    # Shorter chromophores have significantly deeper HOMOs because they are treated as small molecules instead of chain segments.
+    # To rectify this, find the average energy level for each chromophore and then map that average to the literature value
+    # First, get the energy level data
+    donorLevels = []
+    acceptorLevels = []
+    for chromo in chromophoreList:
+        if (chromo.species == 'Donor'):
+            donorLevels.append(chromo.HOMO)
+        elif (chromo.species == 'Acceptor'):
+            acceptorLevels.append(chromo.LUMO)
+    avHOMO = np.average(donorLevels)
+    avLUMO = np.average(acceptorLevels)
+    deltaEHOMO = 0.0
+    deltaELUMO = 0.0
+    # Then add the lateral shift to to the energy levels to put the mean in line with the literature value
+    # This is justified because we treat each chromophore in exactly the same way. Any deviation between the average of the calculated MOs and the literature one is therefore a systematic error arising from the short chromophore lengths and the frequency of the terminating groups in order to perform the DFT calculations.
+    # By shifting the mean back to the literature value, we are accounting for this systematic error.
+    if (parameterDict['literatureHOMO'] is None) and (parameterDict['literatureLUMO'] is None):
+        # No energy level scaling necessary, move on to the target DoS width
+        pass
+    else:
+        if (parameterDict['literatureHOMO'] is not None):
+            deltaEHOMO = parameterDict['literatureHOMO'] - avHOMO
+            donorLevels = list(np.array(donorLevels) + np.array([deltaEHOMO] * len(donorLevels)))
+            avHOMO = parameterDict['literatureHOMO']
+        if (parameterDict['literatureLUMO'] is not None):
+            deltaELUMO = parameterDict['literatureLUMO'] - avLUMO
+            acceptorLevels = list(np.array(acceptorLevels) + np.array([deltaELUMO] * len(acceptorLevels)))
+            avLUMO = parameterDict['literatureLUMO']
+        for chromo in chromophoreList:
+            if (chromo.species == 'Donor'):
+                deltaE = deltaEHOMO
+            elif (chromo.species == 'Acceptor'):
+                deltaE = deltaELUMO
+            chromo.HOMO_1 += deltaE
+            chromo.HOMO += deltaE
+            chromo.LUMO += deltaE
+            chromo.LUMO_1 += deltaE
+    # Now squeeze the DoS of the distribution to account for the noise in these ZINDO/S calculations
+    if (parameterDict['targetDoSSTDHOMO'] is None) and (parameterDict['targetDoSSTDHOMO'] is None):
+        # No squeezing necessary, return the chromophoreList
+        pass
+    else:
+        stdHOMO = np.std(np.array(donorLevels))
+        stdLUMO = np.std(np.array(acceptorLevels))
+        for chromo in chromophoreList:
+            if (chromo.species == 'Donor') and (parameterDict['targetDoSSTDHOMO'] is not None):
+                # Determine how many sigmas away from the mean this datapoint is
+                sigma = (chromo.HOMO - avHOMO) / float(stdHOMO)
+                # Calculate the new deviation from the mean based on the target STD and sigma
+                newDeviation = parameterDict['targetDoSSTDHOMO'] * sigma
+                # Work out the change in energy to be applied to meet this target energy level
+                deltaE = (avHOMO + newDeviation) - chromo.HOMO
+            elif (chromo.species == 'Acceptor') and (parameterDict['targetDoSSTDLUMO'] is not None):
+                sigma = (chromo.LUMO - avLUMO) / float(stdLUMO)
+                newDeviation = parameterDict['targetDoSSTDLUMO'] * sigma
+                deltaE = (avLUMO + newDeviation) - chromo.LUMO
+            # Apply the energy level displacement
+            chromo.HOMO_1 += deltaE
+            chromo.HOMO += deltaE
+            chromo.LUMO += deltaE
+            chromo.LUMO_1 += deltaE
+    return chromoList
+
+
+def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+    # First, check that we need to examine the single chromophores
+    if overwriteCurrentData is False:
+        # Only perform this check if the user hasn't already specified to overwrite the data (in which case it runs anyway)
+        runSingles == False
+        # Run all singles if any of the single's data is missing (i.e. the HOMO level should suffice because all energy levels are updated at the same time, so we don't need to check all of them individually)
+        for chromophore in chromophoreList:
+            if chromophore.HOMO is None:
+                runSingles = True
+                break
+    if (runSingles is True) or (parameterDict['overwriteCurrentData'] is True):
+        print "Beginning analysis of single chromophores..."
+        chromophoreList = updateSingleChromophoreList(chromophoreList, parameterDict)
+        # Now include any scaling to narrow the DoS or modulate the mean to match the literature HOMO/LUMO levels (which helps to negate the effect of short chromophores with additional hydrogens/terminating groups
+        chromophoreList = scaleEnergies(chromophoreList, parameterDict)
+        print "Single chromophore calculations completed. Saving..."
+        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList), pickleName)
+    else:
+        print "All single chromophore calculations already performed. Skipping..."
+    # Then, check the pairs
+    if overwriteCurrentData is False:
+        runPairs == False:
+            for chromophore in chromophoreList:
+                # Just check the first neighbour for each chromophore
+                if chromophore.neighboursTI[0] is None:
+                    runPairs = True
+                    break
+    if (runPairs is True) or (parameterDict['overwriteCurrentData'] is True):
+        print "Beginning analysis of chromophore pairs..."
+        chromophoreList = updatePairChromophoreList(chromophoreList, parameterDict)
+        print "Pair chromophore calculations completed. Saving..."
+        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList), pickleName)
+    else:
+        print "All pair chromophore calculations already performed. Skipping..."
+
+
+if __name__ == "__main__":
+    try:
+        pickleFile = sys.argv[1]
+    except:
+        print "Please specify the pickle file to load to continue the pipeline from this point."
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(pickleFile)
+    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
