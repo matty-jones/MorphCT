@@ -7,6 +7,7 @@ import cPickle as pickle
 
 
 if __name__ == '__main__':
+    print sys.argv
     morphologyFile = sys.argv[1]
     CPURank = int(sys.argv[2])
     overwrite = False

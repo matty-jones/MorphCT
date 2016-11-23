@@ -1028,38 +1028,14 @@ def writeORCAInp(inputDictList, outputDir, mode):
         raw_input("Hit return to continue...")
 
 
-def getORCAJobs(inputDir):
-    singleORCAFileList = os.listdir(inputDir + '/single')
-    pairORCAFileList = os.listdir(inputDir + '/pair')
-    ORCAFilesToRun = []
-    for fileName in singleORCAFileList:
-        if fileName[-4:] == '.inp':
-            ORCAFilesToRun.append(inputDir + '/single/' + fileName)
-    for fileName in pairORCAFileList:
-        if fileName[-4:] == '.inp':
-            ORCAFilesToRun.append(inputDir + '/pair/' + fileName)
-    ORCAFilesToRun.sort()
-    # Delete any jobs that have already at least started running
-    popList = []
-    for jobNo, job in enumerate(ORCAFilesToRun):
-        try:
-            with open(job.replace('inputORCA', 'outputORCA').replace('.inp', '.out'), 'r'):
-                popList.append(jobNo)
-        except IOError:
-            pass
-    popList.sort(reverse=True)
-    for popIndex in popList:
-        ORCAFilesToRun.pop(popIndex)
-    # Now split the list of remaining jobs based on the number of processors
+def getCPUCores():
+    # Determine the number of available processors, either by querying the SLURM_NPROCS environment variable, or by using multiprocessing to count the number of visible CPUs.
     try:
         procIDs = list(np.arange(int(os.environ.get('SLURM_NPROCS'))))
     except (AttributeError, TypeError):
         # Was not loaded using SLURM, so use all physical processors
         procIDs = list(np.arange(mp.cpu_count()))
-    if len(ORCAFilesToRun) == 0:
-        return procIDs, []
-    jobsList = [ORCAFilesToRun[i:i + (int(np.ceil(len(ORCAFilesToRun) / len(procIDs)))) + 1] for i in xrange(0, len(ORCAFilesToRun), int(np.ceil(len(ORCAFilesToRun) / float(len(procIDs)))))]
-    return procIDs, jobsList
+    return procIDs
 
 
 def writeToFile(logFile, stringList, mode='logFile'):

@@ -1,8 +1,6 @@
 import os
 import sys
-import csv
 import numpy as np
-import cPickle as pickle
 import random as R
 import matplotlib
 matplotlib.use('Agg')
@@ -18,15 +16,121 @@ plottingSubroutines = False
 elementaryCharge = 1.60217657E-19 # C
 kB = 1.3806488E-23 # m^{2} kg s^{-2} K^{-1}
 hbar = 1.05457173E-34 # m^{2} kg s^{-1}
-temperature = 290 # K
-defaultSimTime = 5e-6
-limitByHops = False
-hopLimit = 5000
-numberOfCarriersToSimulate = 10000
 
 # Flag for outputting all hop times to a CSV (slow!)
 debug = False
 ###
+
+
+class carrier:
+    def __init__(self, chromophoreList, parameterDict, chromoID, lifetime):
+        if parameterDict['recordCarrierHistory'] is True:
+            self.carrierHistoryMatrix = np.zeros((len(chromophoreList), len(chromophoreList)), dtype = int)
+        else:
+            self.carrierHistoryMatrix = None
+        self.image = [0, 0, 0]
+        self.currentChromophore = chromophoreList[chromoID]
+        self.lifetime = lifetime
+        self.currentTime = 0.0
+
+
+def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList):
+    # Determine the maximum simulation times based on the parameter dictionary
+    simulationTimes = np.logspace(np.log10(parameterDict['minimumSimulationTime']), np.log10(parameterDict['maximumSimulationTime']), len(parameterDict['procIDs']))
+    carrierList = []
+    # For each specifed carrier
+    for carrierNo in range(len(numberOfCarriersPerSimulationTime)):
+        # For each specified simulation time (do the loops this way round to even out the job lists when we split all the KMC jobs over the CPUs)
+        for lifetime in simulationTimes:
+            # Find an initial position (for now, just pick a chromophore at random)
+            startChromoID = R.randint(0, len(chromophoreList) - 1)
+            carrierList.append(carrier(chromophoreList, parameterDict, chromoID, lifetime))
+    # The carrierList is now like the ORCAJobsList, so split it over each procID
+
+    # Then run a bunch of singleCoreRunKMC jobs
+
+    # In that, probably make a csv file with the important data, to save us having to dump to the pickle every 5 minutes
+
+
+    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList
+
+
+if __name__ == "__main__":
+    try:
+        pickleFile = sys.argv[1]
+    except:
+        print "Please specify the pickle file to load to continue the pipeline from this point."
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(pickleFile)
+    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class chargeCarrier:

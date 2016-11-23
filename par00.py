@@ -14,7 +14,7 @@ executeFinegraining = False
 executeMolecularDynamics = False
 executeExtractMolecules = False
 executeObtainChromophores = False
-executeZINDO = True
+executeZINDO = False
 executeCalculateTransferIntegrals = True
 executeCalculateMobility = True
 
@@ -62,24 +62,6 @@ moleculeTerminatingConnections = [\
 ['C10-H1', 0],\
 ['C1-H1', 3],\
 ]
-
-# ---=== Chromophore Parameters ===---
-
-CGSiteSpecies = {\
-'A':'Donor',\
-'B':'None',\
-'C':'None',\
-}
-maximumHopDistance = 10.0
-removeORCAInputs = False
-removeORCAOutputs = False
-
-# ---=== Chromophore Energy Scaling Parameters ===---
-
-literatureHOMO = -5.0
-literatureLUMO = None
-targetDoSSTDHOMO = 0.1
-targetDoSSTDLUMO = None
 
 # ---=== Forcefield Parameters ===---
 
@@ -344,14 +326,48 @@ durations = [1E5, 1E4, 1E3, 1E3, 1E3, 1E4, 1E5, 1E5]
 terminationConditions = ['KEmin', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt']
 groupAnchorings = ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'none']
 
+# ---=== Chromophore Parameters ===---
+
+CGSiteSpecies = {\
+'A':'Donor',\
+'B':'None',\
+'C':'None',\
+}
+maximumHopDistance = 10.0
+removeORCAInputs = False
+removeORCAOutputs = False
+
+# ---=== Chromophore Energy Scaling Parameters ===---
+
+literatureHOMO = -5.0
+literatureLUMO = None
+targetDoSSTDHOMO = 0.1
+targetDoSSTDLUMO = None
+
+
+# ---=== Kinetic Monte Carlo Parameters ===---
+
+systemTemperature = 290
+numberOfCarriersPerSimulationTime = 10000
+hopLimit = 0
+minimumSimulationTime = 1e-11
+maximumSimulationTime = 1e-7
+recordCarrierHistory = True
 
 # ---=== Begin run ===---
+
 parameterFile = __file__
 
 if __name__ == "__main__":
     import runMorphCT
+    import sys
 
-    parameterNames = [i for i in dir() if (not i.startswith('__')) and (i not in ['runMorphCT'])]
+    sys.path.append('./code')
+
+    import helperFunctions
+
+    procIDs = helperFunctions.getCPUCores()
+    parameterNames = [i for i in dir() if (not i.startswith('__')) and (i not in ['runMorphCT', 'helperFunctions', 'sys'])]
     parameters = {}
     for name in parameterNames:
         parameters[name] = locals()[name]

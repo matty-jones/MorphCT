@@ -13,6 +13,7 @@ def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
         # Include the molecule terminating units on the required atoms of the chromophore
         terminatingGroupPositions = terminateMonomers(chromophore, parameterDict, AAMorphologyDict)
         writeOrcaInp(AAMorphologyDict, chromophore.AAIDs, [chromophore.image] * len(chromophore.AAIDs), terminatingGroupPositions, [chromophore.image] * len(terminatingGroupPositions), chromophore.orcaInput)
+    print ""
     # Determine how many pairs there are first:
     numberOfPairs = 0
     for chromo in chromophoreList:
@@ -47,6 +48,7 @@ def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
             inputName = chromophore1.orcaInput.replace('.inp', '-%04d.inp' % (chromophore2.ID)).replace('single', 'pair')
             # Write the dimer input file
             writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPositions1 + terminatingGroupPositions2, terminatingGroupImages1 + terminatingGroupImages2, inputName)
+    print ""
 
 
 def removeAdjacentTerminators(group1, group2):
@@ -126,7 +128,7 @@ def terminateMonomers(chromophore, parameterDict, AAMorphologyDict):
     return newHydrogenPositions
 
 
-def getORCAJobs(inputDir):
+def getORCAJobs(inputDir, procIDs):
     # First delete any previous log files as we're about to start again with the ZINDO/S calculations
     try:
         os.unlink(inputDir.replace('/inputORCA', '/*.log'))
@@ -154,23 +156,18 @@ def getORCAJobs(inputDir):
     popList.sort(reverse=True)
     for popIndex in popList:
         ORCAFilesToRun.pop(popIndex)
-    # Now split the list of remaining jobs based on the number of processors
-    try:
-        procIDs = list(np.arange(int(os.environ.get('SLURM_NPROCS'))))
-    except (AttributeError, TypeError):
-        # Was not loaded using SLURM, so use all physical processors
-        procIDs = list(np.arange(mp.cpu_count()))
     if len(ORCAFilesToRun) == 0:
-        return procIDs, []
+        return []
     # Create a jobslist for each procID
     jobsList = [ORCAFilesToRun[i:i + (int(np.ceil(len(ORCAFilesToRun) / len(procIDs)))) + 1] for i in xrange(0, len(ORCAFilesToRun), int(np.ceil(len(ORCAFilesToRun) / float(len(procIDs)))))]
-    return procIDs, jobsList
+    return jobsList
 
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList):
     createInputFiles(chromophoreList, AAMorphologyDict, parameterDict)
     inputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/inputORCA'
-    procIDs, jobsList = getORCAJobs(inputDir)
+    procIDs = parameterDict['procIDs']
+    jobsList = getORCAJobs(inputDir, procIDs)
     numberOfInputs = sum([len(ORCAFilesToRun) for ORCAFilesToRun in jobsList])
     print "Found", numberOfInputs, "ORCA files to run."
     if numberOfInputs > 0:
@@ -185,7 +182,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         # Open the required processes to execute the ORCA jobs
         for CPURank in procIDs:
             print 'python ' + os.getcwd() + '/code/singleCoreRunORCA.py ' + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + ' ' + str(CPURank) + ' &'
-            runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunORCA.py', parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + ' ' + str(CPURank)]))
+            runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunORCA.py', parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4], str(CPURank)]))
         # Wait for all jobs to complete
         [p.wait() for p in runningJobs]
         # Delete the job pickle
