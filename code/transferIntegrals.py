@@ -32,10 +32,8 @@ def loadORCAOutput(fileName):
                 break
             dataInLine = []
             for element in line.split(' '):
-                try:
+                if len(element) > 0:
                     dataInLine.append(float(element))
-                except:
-                    pass
             if len(dataInLine) == 4:
                 orbitalData.append(dataInLine)
     for i in range(len(orbitalData)):
@@ -53,7 +51,7 @@ def loadORCAOutput(fileName):
     return HOMO_1, HOMO, LUMO, LUMO_1
 
 
-def modifyORCAFiles(failedFile, failedCount):
+def modifyORCAFiles(fileName, failedFile, failedCount):
     if failedCount == 3:
         # Three lots of reruns without any successes, try to turn off SOSCF
         print str(fileName)+": Three lots of reruns without any success - turning off SOSCF to see if that helps..."
@@ -136,32 +134,39 @@ def revertORCAFiles(inputFile):
         fileName.writelines(originalLines)
 
 
-def rerunFails(failedChromoFiles, procIDs):
+def rerunFails(failedChromoFiles, parameterDict):
+    print ""
+    print failedChromoFiles
     print "There were", len(failedChromoFiles.keys()), "failed jobs."
+    procIDs = parameterDict['procIDs']
+    outputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4]
     # Firstly, modify the input files to see if numerical tweaks make ORCA happier
     for failedFile, failedData in failedChromoFiles.iteritems():
         failedCount = failedData[0]
-        errorCode = modifyORCAFiles(failedFile, failedCount)
+        errorCode = modifyORCAFiles(failedFile, outputDir + '/chromophores/inputORCA/' + failedFile.replace('.out', 'inp'), failedCount)
         if errorCode == 1:
             failedChromoFiles.pop(failedFile)
     # If there are no files left, then everything has failed so this function has completed its task
     if len(failedChromoFiles) == 0:
         return failedChromoFiles
-    # Otherwise, rerun those failed files
+    # Otherwise, rerun those failed files.
+    # First, find the correct locations of the input Files
+    inputFiles = [outputDir + '/chromophores/inputORCA/' + fileName.replace('.out', '.inp') for fileName in failedChromoFiles.keys()]
     # As before, split the list of reruns based on the number of processors
-    jobsList = [failedChromoFiles.keys()[i:i+(int(np.ceil(len(failedChromoFiles)/len(procIDs))))+1] for i in xrange(0, len(failedChromoFiles), int(np.ceil(len(failedChromoFiles)/float(len(procIDs)))))]
+    jobsList = [inputFiles[i:i + (int(np.ceil(len(inputFiles) / len(procIDs)))) + 1] for i in xrange(0, len(inputFiles), int(np.ceil(len(inputFiles)/float(len(procIDs)))))]
+    print jobsList
     # Write the jobs pickle for singleCoreRunORCA to obtain
-    with open(CSVDir+'/ORCAJobs.pickle', 'w+') as pickleFile:
+    with open(outputDir + '/chromophores/ORCAJobs.pickle', 'w+') as pickleFile:
         pickle.dump(jobsList, pickleFile)
     # Now rerun ORCA
     if len(jobsList) <= len(procIDs):
         procIDs = procIDs[:len(jobsList)]
     runningJobs = []
     for CPURank in procIDs:
-        print 'python '+os.getcwd()+'/code/singleCoreRunORCA.py '+os.getcwd()+'/outputFiles/'+morphologyName+' '+str(CPURank)+' &'
-        runningJobs.append(sp.Popen(['python', str(os.getcwd())+'/code/singleCoreRunORCA.py', str(os.getcwd())+'/outputFiles/'+morphologyName, str(CPURank), '1'])) # The final argument here tells ORCA to ignore the presence of the output file and recalculate
+        print 'python ' + os.getcwd() + '/code/singleCoreRunORCA.py ' + outputDir + ' ' + str(CPURank) + ' &'
+        runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunORCA.py', outputDir, str(CPURank), '1'])) # The final argument here tells ORCA to ignore the presence of the output file and recalculate
     # Wait for running jobs to finish
-    exitCodes = [p.wait() for p in runningJobs]
+    [p.wait() for p in runningJobs]
     # Finally, return the failed files list to the main failure handler to see if we need to iterate
     return failedChromoFiles
 
@@ -213,6 +218,8 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
     failedSingleChromos = {}  # Has the form {'FileName': [failCount, locationInChromophoreList]}
     for chromoLocation, chromophore in enumerate(chromophoreList):
         fileName = 'single/%04d.out' % (chromophore.ID)
+        print "\rDetermining energy levels for", fileName,
+        sys.stdout.flush()
         # Update the chromophores in the chromophoreList with their energyLevels
         try:
             chromophore.HOMO_1, chromophore.HOMO, chromophore.LUMO, chromophore.LUMO_1 = loadORCAOutput(orcaOutputDir + fileName)
@@ -222,17 +229,21 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
                 os.remove(chromophore.orcaOutput)
         except ORCAError:
             failedSingleChromos[fileName] = [1, chromoLocation]
+            continue
+    print ""
     # Rerun any failed ORCA jobs
     while len(failedSingleChromos) > 0:
-        failedSingleChromos = rerunFails(failedSingleChromos, parameterDict['procIDs'])
+        failedSingleChromos = rerunFails(failedSingleChromos, parameterDict)
+        successfulReruns = []
         # Now check all of the files to see if we can update the chromophoreList
         for chromoName, chromoData in failedSingleChromos.iteritems():
+            print "Checking previously failed", chromoName
             chromoID = chromoData[1]
             try:
                 # Update the chromophore data in the chromophoreList
                 chromophoreList[chromoID].HOMO_1, chromophoreList[chromoID].HOMO, chromophoreList[chromoID].LUMO, chromophoreList[chromoID].LUMO_1 = loadORCAOutput(orcaOutputDir + chromoName)
                 # This chromophore didn't fail, so remove it from the failed list
-                failedSingleChromos.pop(chromoName)
+                successfulReruns.append(chromoName)
                 if parameterDict['removeORCAInputs'] is True:
                     os.remove(chromophoreList[chromoID].orcaInput.replace('.inp','.*'))
                 if parameterDict['removeORCAOutputs'] is True:
@@ -240,6 +251,10 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
             except:
                 # This chromophore failed so increment its fail counter
                 failedSingleChromos[chromoName][0] += 1
+                continue
+        for chromoName in successfulReruns:
+            failedSingleChromos.pop(chromoName)
+    print ""
     return chromophoreList
 
 
@@ -249,57 +264,76 @@ def updatePairChromophoreList(chromophoreList, parameterDict):
     orcaOutputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/outputORCA/'
     failedPairChromos = {}
     for chromoLocation, chromophore in enumerate(chromophoreList):
-        for neighbourID in chromophore.neighbours:
-            if chromophore.ID > neighbourID[0]:
+        neighbourIDs = [neighbourData[0] for neighbourData in chromophore.neighbours]
+        for neighbourLoc, neighbourID in enumerate(neighbourIDs):
+            if chromophore.ID > neighbourID:
                 continue
-            fileName = 'pair/%04d-%04d.out' % (chromophore.ID, neighbourID[0])
+            fileName = 'pair/%04d-%04d.out' % (chromophore.ID, neighbourID)
+            print "\rDetermining energy levels for", fileName,
+            sys.stdout.flush()
             try:
                 dimerHOMO_1, dimerHOMO, dimerLUMO, dimerLUMO_1 = loadORCAOutput(orcaOutputDir + fileName)
                 # Calculate the deltaE between the two single chromophores
-                deltaE, species = calculateDeltaE(chromophoreList, chromophore.ID, neighbourID[0])
+                deltaE, species = calculateDeltaE(chromophoreList, chromophore.ID, neighbourID)
                 # Calculate the TI using the ESD method
                 if species == 'Donor':
                     TI = calculateTI(dimerHOMO - dimerHOMO_1, deltaE)
                 elif species == 'Acceptor':
                     TI = calculateTI(dimerLUMO - dimerLUMO_1, deltaE)
+                # Get the location of the current chromophore.ID in the neighbour's neighbourList
+                reverseLoc = [neighbourData[0] for neighbourData in chromophoreList[neighbourID].neighbours].index(chromophore.ID)
                 # Update both the current chromophore and the neighbour (for the reverse hop)
-                chromophore.neighboursDeltaE[chromophore.neighbours.index(neighbourID[0])] = deltaE
-                chromophoreList[neighbourID[0]].neighboursDeltaE[chromophoreList[neighbourID[0]].neighbours.index(chromophore.ID)] = - deltaE
-                chromophore.neighboursTI[chromophore.neighbours.index(neighbourID[0])] = TI
-                chromophoreList[neighbourID[0]].neighboursTI[chromophoreList[neighbourID[0]].neighbours.index(chromophore.ID)] = TI
+                chromophore.neighboursDeltaE[neighbourLoc] = deltaE
+                chromophoreList[neighbourID].neighboursDeltaE[reverseLoc] = - deltaE
+                chromophore.neighboursTI[neighbourLoc] = TI
+                chromophoreList[neighbourID].neighboursTI[reverseLoc] = TI
                 if parameterDict['removeORCAInputs'] is True:
                     os.remove(orcaOutputDir.replace('outputORCA', 'inputORCA') + fileName.replace('.inp','.*'))
                 if parameterDict['removeORCAOutputs'] is True:
                     os.remove(orcaOutputDir + fileName)
             except ORCAError:
-                failedPairChromos[fileName] = [1, chromoLocation, neighbourID[0]]
+                failedPairChromos[fileName] = [1, chromoLocation, neighbourID]
+    print ""
     while len(failedPairChromos) > 0:
-        failedPairChromos = rerunFails(failedPairChromos, parameterDict['procIDs'])
+        failedPairChromos = rerunFails(failedPairChromos, parameterDict)
+        successfulReruns = []
         for chromoName, chromoData in failedPairChromos.iteritems():
+            print "Checking previously failed", chromoName
             chromo1ID = chromoData[1]
             chromo2ID = chromoData[2]
             try:
                 dimerHOMO_1, dimerHOMO, dimerLUMO, dimerLUMO_1 = loadORCAOutput(orcaOutputDir + fileName)
                 # Calculate the deltaE between the two single chromophores
-                deltaE, species = calculateDeltaE(chromophoreList, chromophore.ID, neighbourID[0])
+                deltaE, species = calculateDeltaE(chromophoreList, chromophore.ID, neighbourID)
                 # Calculate the TI using the ESD method
                 if species == 'Donor':
                     TI = calculateTI(dimerHOMO - dimerHOMO_1, deltaE)
                 elif species == 'Acceptor':
                     TI = calculateTI(dimerLUMO - dimerLUMO_1, deltaE)
+                # Get the location of the current chromophore.ID in the neighbour's neighbourList
+                reverseLoc = [neighbourData[0] for neighbourData in chromophoreList[neighbourID].neighbours].index(chromophore.ID)
                 # Update both the current chromophore and the neighbour (for the reverse hop)
-                chromophore.neighboursDeltaE[chromophore.neighbours.index(neighbourID[0])] = deltaE
-                chromophoreList[neighbourID[0]].neighboursDeltaE[chromophoreList[neighbourID[0]].neighbours.index(chromophore.ID)] = - deltaE
-                chromophore.neighboursTI[chromophore.neighbours.index(neighbourID[0])] = TI
-                chromophoreList[neighbourID[0]].neighboursTI[chromophoreList[neighbourID[0]].neighbours.index(chromophore.ID)] = TI
-                failedPairChromos.pop(chromoName)
+                chromophoreList[chromo1ID].neighboursDeltaE[neighbourLoc] = deltaE
+                chromophoreList[chromo2ID].neighboursDeltaE[reverseLoc] = - deltaE
+                chromophoreList[chromo1ID].neighboursTI[neighbourLoc] = TI
+                chromophoreList[chromo2ID].neighboursTI[reverseLoc] = TI
+                # This rerun was successful so remove this chromophore from the rerun list
+                successfulReruns.append(chromoName)
                 if parameterDict['removeORCAInputs'] is True:
                     os.remove(orcaOutputDir.replace('outputORCA', 'inputORCA') + fileName.replace('.inp','.*'))
                 if parameterDict['removeORCAOutputs'] is True:
                     os.remove(orcaOutputDir + fileName)
+                print chromoName, "was successful!"
             except:
                 # This dimer failed so increment its fail counter
                 failedPairChromos[chromoName][0] += 1
+                print chromoName, "still failed, incrementing counter"
+                continue
+        print len(failedPairChromos)
+        for chromoName in successfulReruns:
+            failedPairChromos.pop(chromoName)
+        print len(failedPairChromos)
+    print ""
     return chromophoreList
 
 
@@ -372,6 +406,7 @@ def scaleEnergies(chromophoreList, parameterDict):
 
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList):
+    pickleName = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle'
     # First, check that we need to examine the single chromophores
     runSingles = False
     if parameterDict['overwriteCurrentData'] is False:
@@ -387,7 +422,6 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         print "Scaling energies..."
         chromophoreList = scaleEnergies(chromophoreList, parameterDict)
         print "Single chromophore calculations completed. Saving..."
-        pickleName = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle'
         helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList), pickleName)
     else:
         print "All single chromophore calculations already performed. Skipping..."
@@ -402,9 +436,6 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     if (runPairs is True) or (parameterDict['overwriteCurrentData'] is True):
         print "Beginning analysis of chromophore pairs..."
         chromophoreList = updatePairChromophoreList(chromophoreList, parameterDict)
-        for chromo in chromophoreList:
-            print chromo.neighboursTI
-        exit()
         print "Pair chromophore calculations completed. Saving..."
         helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList), pickleName)
     else:

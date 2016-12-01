@@ -2,7 +2,6 @@ import os
 import sys
 import time as T
 import subprocess as sp
-import executeKMC
 
 sys.path.append(os.getcwd()+'/code')
 import fineGrainer
@@ -12,6 +11,7 @@ import extractMol
 import obtainChromophores
 import executeZINDO
 import transferIntegrals
+import hoppingKMC
 
 
 class simulation:
@@ -43,19 +43,33 @@ class simulation:
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, [], []).analyseMorphology()
         # Now begin running the code based on user's flags
         if self.executeFinegraining is True:
+            print "---=== BACKMAPPING COARSE-GRAINED SITES... ===---"
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, chromophoreList, carrierList).analyseMorphology()
+            print "---=== BACKMAPPING COMPLETED ===---"
         if self.executeMolecularDynamics is True:
+            print "---=== EQUILIBRATING FINE-GRAINED MORPHOLOGY... ===---"
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = runHoomd.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+            print "---=== EQUILIBRATION COMPLETED ===---"
         if self.executeExtractMolecules is True:
+            print "---=== EXTRACTING SINGLE MOLECULES FROM SYSTEM... ===---"
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = extractMol.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+            print "---=== EXTRACTION COMPLETED ===---"
         if self.executeObtainChromophores is True:
+            print "---=== IDENTIFYING CHROMOPHORES OF CHARGE CARRIER DELOCALISATION... ===---"
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = obtainChromophores.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+            print "---=== IDENTIFICATION COMPLETED ===---"
         if self.executeZINDO is True:
+            print "---=== PERFORMING SEMI-EMPIRICAL ZINDO/S CALCULATIONS... ===---"
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = executeZINDO.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+            print "---=== CALCULATIONS COMPLETED ===---"
         if self.executeCalculateTransferIntegrals is True:
+            print "---=== DETERMINING ELECTRONIC TRANSFER INTEGRALS... ===---"
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = transferIntegrals.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
-
-
+            print "---=== DETERMINATION COMPLETED ===---"
+        if self.executeCalculateMobility is True:
+            print "---=== EXECUTING KINETIC MONTE CARLO SIMULATIONS... ===---"
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = hoppingKMC.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+            print "---=== EXECUTION COMPLETED ===---"
         exit()
 
 
@@ -80,10 +94,10 @@ class simulation:
     def makeDirTree(self):
         print "Sorting out directory structure..."
         # Delete any previous data if the user asked to
-        if self.overwriteCurrentData == True:
-            sp.Popen('echo rm -rf '+self.outputDirectory+'/*', shell=True)
-            # Make sure that the rm command has finished before moving on
-            sp.Popen('rm -rf '+self.outputDirectory+'/*', shell=True).communicate()
+        #if self.overwriteCurrentData == True:
+        #    sp.Popen('echo rm -rf '+self.outputDirectory+'/*', shell=True)
+        #    # Make sure that the rm command has finished before moving on
+        #    sp.Popen('rm -rf '+self.outputDirectory+'/*', shell=True).communicate()
         # Then, make sure that all the required directories are in place
         # TODO: Remove the helperFunctions that mess around with the directory structure, do it all here instead.
         for directoryToMake in ['chromophores/{input,output}ORCA/{single,pair}', 'KMC', 'molecules', 'morphology', 'code']:

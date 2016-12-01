@@ -15,7 +15,7 @@ executeMolecularDynamics = False
 executeExtractMolecules = False
 executeObtainChromophores = False
 executeZINDO = False
-executeCalculateTransferIntegrals = True
+executeCalculateTransferIntegrals = False
 executeCalculateMobility = True
 
 # ---=== Fine Graining Parameters ===---
@@ -348,11 +348,12 @@ targetDoSSTDLUMO = None
 # ---=== Kinetic Monte Carlo Parameters ===---
 
 systemTemperature = 290
-numberOfCarriersPerSimulationTime = 10000
+numberOfCarriersPerSimulationTime = 100
 hopLimit = 0
 minimumSimulationTime = 1e-11
-maximumSimulationTime = 1e-7
+maximumSimulationTime = 1e-9
 recordCarrierHistory = True
+reorganisationEnergy = 0.3063
 
 # ---=== Begin run ===---
 

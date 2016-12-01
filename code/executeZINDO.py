@@ -12,7 +12,7 @@ def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
     for chromophore in chromophoreList:
         # Include the molecule terminating units on the required atoms of the chromophore
         terminatingGroupPositions = terminateMonomers(chromophore, parameterDict, AAMorphologyDict)
-        writeOrcaInp(AAMorphologyDict, chromophore.AAIDs, [chromophore.image] * len(chromophore.AAIDs), terminatingGroupPositions, [chromophore.image] * len(terminatingGroupPositions), chromophore.orcaInput)
+        writeOrcaInp(AAMorphologyDict, chromophore.AAIDs, [chromophore.image] * len(chromophore.AAIDs), terminatingGroupPositions, [chromophore.image] * len(terminatingGroupPositions), parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophore.orcaInput)
     print ""
     # Determine how many pairs there are first:
     numberOfPairs = 0
@@ -21,7 +21,7 @@ def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
             if int(neighbour[0]) > chromo.ID:
                 numberOfPairs += 1
     numberOfPairs = np.sum([len(chromo.neighbours) for chromo in chromophoreList])
-    print "There are", numberOfPairs, "total neighbour pairs to consider."
+    print "There are", numberOfPairs/2, "total neighbour pairs to consider."  # /2 because the forwards and backwards hops are identical
     # Then consider each chromophore against every other chromophore
     for chromophore1 in chromophoreList:
         neighboursID = [neighbour[0] for neighbour in chromophore1.neighbours]
@@ -47,7 +47,7 @@ def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
             # Update the ORCA input name
             inputName = chromophore1.orcaInput.replace('.inp', '-%04d.inp' % (chromophore2.ID)).replace('single', 'pair')
             # Write the dimer input file
-            writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPositions1 + terminatingGroupPositions2, terminatingGroupImages1 + terminatingGroupImages2, inputName)
+            writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPositions1 + terminatingGroupPositions2, terminatingGroupImages1 + terminatingGroupImages2, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + inputName)
     print ""
 
 
@@ -165,6 +165,7 @@ def getORCAJobs(inputDir, procIDs):
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList):
     createInputFiles(chromophoreList, AAMorphologyDict, parameterDict)
+    exit()
     inputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/inputORCA'
     procIDs = parameterDict['procIDs']
     jobsList = getORCAJobs(inputDir, procIDs)
@@ -186,7 +187,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         # Wait for all jobs to complete
         [p.wait() for p in runningJobs]
         # Delete the job pickle
-        os.system('rm ' + inputDir.replace('inputORCA', 'ORCAJobs.pickle'))
+        os.system('rm ' + pickleName)
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList
 
 

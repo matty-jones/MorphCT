@@ -15,8 +15,8 @@ except ImportError:
 class chromophore:
     def __init__(self, chromoID, chromophoreCGSites, CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims):
         self.ID = chromoID
-        self.orcaInput = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/inputORCA/single/%04d.inp' % (self.ID)
-        self.orcaOutput = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/outputORCA/single/%04d.out' % (self.ID)
+        self.orcaInput = '/chromophores/inputORCA/single/%04d.inp' % (self.ID)
+        self.orcaOutput = '/chromophores/outputORCA/single/%04d.out' % (self.ID)
         self.CGIDs = chromophoreCGSites
         # Determine whether this chromophore is a donor or an acceptor, as well as the site types that have been
         # defined as the electronically active in the chromophore
@@ -175,20 +175,25 @@ def determineNeighbours(chromophoreList, parameterDict, simDims):
                 halfBoxLength = (simDims[axis][1] - simDims[axis][0]) / 2.0
                 while deltaPosn[axis] > halfBoxLength:
                     deltaPosn[axis] -= simDims[axis][1] - simDims[axis][0]
-                    relativeImageOfChromo2[axis] += 1
+                    relativeImageOfChromo2[axis] -= 1
                 while deltaPosn[axis] < - halfBoxLength:
                     deltaPosn[axis] += simDims[axis][1] - simDims[axis][0]
-                    relativeImageOfChromo2[axis] -= 1
+                    relativeImageOfChromo2[axis] += 1
             separation = np.linalg.norm(deltaPosn)
             # If proximity is within tolerance, add these chromophores as neighbours
             if separation <= parameterDict['maximumHopDistance']:
-                chromophore1.neighbours.append([chromophore2.ID, relativeImageOfChromo2])
-                chromophore2.neighbours.append([chromophore1.ID, list(-np.array(relativeImageOfChromo2))])
-                # Make the deltaE and the Tij lists as long as the neighbour lists for easy access later
-                chromophore1.neighboursDeltaE.append(None)
-                chromophore1.neighboursTI.append(None)
-                chromophore2.neighboursDeltaE.append(None)
-                chromophore2.neighboursTI.append(None)
+                # Only add the neighbours if they haven't already been added so far
+                chromo1NeighbourIDs = [neighbourData[0] for neighbourData in chromophore1.neighbours]
+                chromo2NeighbourIDs = [neighbourData[0] for neighbourData in chromophore2.neighbours]
+                # Also, make the deltaE and the Tij lists as long as the neighbour lists for easy access later
+                if chromophore2.ID not in chromo1NeighbourIDs:
+                    chromophore1.neighbours.append([chromophore2.ID, relativeImageOfChromo2])
+                    chromophore1.neighboursDeltaE.append(None)
+                    chromophore1.neighboursTI.append(None)
+                if chromophore1.ID not in chromo2NeighbourIDs:
+                    chromophore2.neighbours.append([chromophore1.ID, list(-np.array(relativeImageOfChromo2))])
+                    chromophore2.neighboursDeltaE.append(None)
+                    chromophore2.neighboursTI.append(None)
         # DEBUG TESTING
         # if chromophore1.ID == 1961:
         #     print ""
