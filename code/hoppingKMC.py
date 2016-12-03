@@ -43,8 +43,7 @@ class carrier:
         self.T = parameterDict['systemTemperature']
         self.lifetime = lifetime
         self.currentTime = 0.0
-        self.chromophoreList = chromophoreList
-        self.parameterDict = parameterDict
+        self.lambdaij = parameterDict['reorganisationEnergy']
         self.noHops = 0
         self.simDims = [[-AAMorphologyDict['lx'] / 2.0, AAMorphologyDict['lx'] / 2.0], [-AAMorphologyDict['ly'] / 2.0, AAMorphologyDict['ly'] / 2.0], [-AAMorphologyDict['lz'] / 2.0, AAMorphologyDict['lz'] / 2.0]]
         self.displacement = None
@@ -68,7 +67,7 @@ class carrier:
             tau = 1E99
         return tau
 
-    def calculateHop(self):
+    def calculateHop(self, chromophoreList):
         # Terminate if the next hop would be more than the termination limit
         if self.hopLimit is not None:
             if self.noHops + 1 > self.hopLimit:
@@ -76,18 +75,17 @@ class carrier:
         # Determine the hop times to all possible neighbours
         hopTimes = []
         # Obtain the reorganisation energy in J (from eV in the parameter file)
-        lambdaij = self.parameterDict['reorganisationEnergy']
         for neighbourIndex, transferIntegral in enumerate(self.currentChromophore.neighboursTI):
             deltaEij = self.currentChromophore.neighboursDeltaE[neighbourIndex]
             # All of the energies are in eV currently, so convert them to J
-            hopRate = self.calculateHopRate(lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge)
+            hopRate = self.calculateHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge)
             hopTime = self.determineHopTime(hopRate)
             # Keep track of the chromophoreID and the corresponding tau
             hopTimes.append([self.currentChromophore.neighbours[neighbourIndex][0], hopTime])
         # Sort by ascending hop time
         hopTimes.sort(key = lambda x:x[1])
         # Take the quickest hop
-        destinationChromophore = self.chromophoreList[hopTimes[0][0]]
+        destinationChromophore = chromophoreList[hopTimes[0][0]]
         # As long as we're not limiting by the number of hops:
         if self.hopLimit is None:
             # Ensure that the next hop does not put the carrier over its lifetime
@@ -127,7 +125,7 @@ class carrier:
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList):
     # Determine the maximum simulation times based on the parameter dictionary
-    simulationTimes = np.logspace(np.log10(parameterDict['minimumSimulationTime']), np.log10(parameterDict['maximumSimulationTime']), len(parameterDict['procIDs']))
+    simulationTimes = parameterDict['simulationTimes']
     carrierList = []
     # For each specifed carrier
     for carrierNo in range(parameterDict['numberOfCarriersPerSimulationTime']):
@@ -142,7 +140,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     procIDs = parameterDict['procIDs']
     outputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/KMC'
     jobsList = [carrierList[i:i + (int(np.ceil(len(carrierList) / len(procIDs)))) + 1] for i in xrange(0, len(carrierList), int(np.ceil(len(carrierList)/float(len(procIDs)))))]
-    # Create pickle file containing the jobs sorted by ProcID to be picked up by singleCoreRunORCA.py
+    # Create pickle file containing the jobs sorted by ProcID to be picked up by singleCoreRunKMC.py
     pickleName = outputDir + '/carrierJobs.pickle'
     print "Writing job pickle for each CPU..."
     with open(pickleName, 'w+') as pickleFile:

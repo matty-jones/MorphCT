@@ -350,8 +350,7 @@ targetDoSSTDLUMO = None
 systemTemperature = 290
 numberOfCarriersPerSimulationTime = 100
 hopLimit = 0
-minimumSimulationTime = 1e-11
-maximumSimulationTime = 1e-9
+simulationTimes = [1.00e-11, 2.15e-11, 4.64e-11, 1.00e-10]
 recordCarrierHistory = True
 reorganisationEnergy = 0.3063
 

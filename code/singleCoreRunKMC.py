@@ -72,6 +72,14 @@ if __name__ == '__main__':
         # helperFunctions.writeToFile(logFile, affinityJob[1].split('\n')) #stdErr for affinity set
     except OSError:
         helperFunctions.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinity..."])
+    # Now load the main morphology pickle (used as a workaround to obtain the chromophoreList without having to save it in each carrier [very memory inefficient!])
+    pickleDir = KMCDirectory.replace('/KMC', '/code')
+    for fileName in os.listdir(pickleDir):
+        if 'pickle' in fileName:
+            mainMorphologyPickleName = pickleDir + '/' + fileName
+    helperFunctions.writeToFile(logFile, ['Found main morphology pickle file at ' + mainMorphologyPickleName + '! Loading data...'])
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(mainMorphologyPickleName)
+    helperFunctions.writeToFile(logFile, ['Main morphology pickle loaded!'])
     # TEST THIS
     # Attempt to catch a kill signal to ensure that we save the pickle before termination
     killer = terminationSignal()
@@ -90,7 +98,7 @@ if __name__ == '__main__':
             helperFunctions.writeToFile(logFile, ['Running carrier %d for %.2E...' % (carrier.ID, carrier.lifetime)])
             terminateSimulation = False
             while terminateSimulation is False:
-                terminateSimulation = bool(carrier.calculateHop())
+                terminateSimulation = bool(carrier.calculateHop(chromophoreList))
                 if killer.killSent is True:
                     raise Terminate('Kill command sent, terminating KMC simulation...')
             # Now the carrier has finished hopping, let's calculate its vitals
@@ -116,7 +124,7 @@ if __name__ == '__main__':
             helperFunctions.writeToFile(logFile, ['Carrier hopped ' + str(carrier.noHops) + ' times into image ' + str(carrier.image) + ' for a displacement of ' + str(carrier.displacement) + ' in ' + str(elapsedTime) + ' ' + str(timeunits)])
             # Save the pickle file as a `checkpoint' either every 100 carriers or every 1%, whichever is greater
             if jobNumber in checkpointCarriers:
-                print "Completed", jobNumber, "jobs. Making checkpoint at %3d%%" % (np.round(jobNumber / float(len(jobsToRun)) * 100))
+                print "Completed", jobNumber, "jobs. Making checkpoint at %3d%%" % (np.round(jobNumber + 1 / float(len(jobsToRun)) * 100))
                 helperFunctions.writeToFile(logFile, ['Completed ' + str(jobNumber) + ' jobs. Making checkpoint at %3d%%' % (np.round(jobNumber / float(len(jobsToRun)) * 100))])
                 savePickle(jobsToRun, savePickleName)
     except Exception as errorMessage:
