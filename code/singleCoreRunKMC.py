@@ -54,15 +54,13 @@ if __name__ == '__main__':
         overwrite = bool(sys.argv[3])
     except:
         pass
-    pickleFileName = KMCDirectory + '/carrierJobs.pickle'
+    pickleFileName = KMCDirectory + '/KMCData_%02d.pickle' % (CPURank)
     with open(pickleFileName, 'r') as pickleFile:
-        jobsList = pickle.load(pickleFile)
-    savePickleName = KMCDirectory + '/KMCData_' + str(CPURank) + '.pickle'
+        jobsToRun = pickle.load(pickleFile)
     logFile = KMCDirectory + '/KMClog_' + str(CPURank) + '.log'
     # Reset the log file
     with open(logFile, 'w+') as logFileHandle:
         pass
-    jobsToRun = jobsList[CPURank]
     helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
     # Set the affinities for this current process to make sure it's maximising available CPU usage
     currentPID = os.getpid()
@@ -126,13 +124,13 @@ if __name__ == '__main__':
             if jobNumber in checkpointCarriers:
                 print "Completed", jobNumber, "jobs. Making checkpoint at %3d%%" % (np.round(jobNumber + 1 / float(len(jobsToRun)) * 100))
                 helperFunctions.writeToFile(logFile, ['Completed ' + str(jobNumber) + ' jobs. Making checkpoint at %3d%%' % (np.round(jobNumber / float(len(jobsToRun)) * 100))])
-                savePickle(jobsToRun, savePickleName)
+                savePickle(jobsToRun, pickleFileName)
     except Exception as errorMessage:
         print traceback.format_exc()
         print "Saving the pickle file cleanly before termination..."
         helperFunctions.writeToFile(logFile, [str(errorMessage)])
         helperFunctions.writeToFile(logFile, ['Saving the pickle file cleanly before termination...'])
-        savePickle(jobsToRun, savePickleName)
+        savePickle(jobsToRun, pickleFileName)
         exit()
     t3 = T.time()
     elapsedTime = float(t3) - float(t0)

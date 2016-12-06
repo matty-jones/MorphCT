@@ -3,7 +3,6 @@ import sys
 import numpy as np
 import random as R
 from scipy.sparse import lil_matrix
-from scipy.sparse import find as findNonZero
 import cPickle as pickle
 import subprocess as sp
 import matplotlib
@@ -129,7 +128,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     carrierList = []
     # For each specifed carrier
     for carrierNo in range(parameterDict['numberOfCarriersPerSimulationTime']):
-        print "\rCreating carrier number", str(carrierNo), "of", str(parameterDict['numberOfCarriersPerSimulationTime'] - 1) + "...",
+        print "\rCreating carrier number", str(carrierNo + 1), "of", str(parameterDict['numberOfCarriersPerSimulationTime']) + "...",
         # For each specified simulation time (do the loops this way round to even out the job lists when we split all the KMC jobs over the CPUs)
         for lifetime in simulationTimes:
             # Find an initial position (for now, just pick a chromophore at random)
@@ -140,24 +139,42 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     procIDs = parameterDict['procIDs']
     outputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/KMC'
     jobsList = [carrierList[i:i + (int(np.ceil(len(carrierList) / len(procIDs)))) + 1] for i in xrange(0, len(carrierList), int(np.ceil(len(carrierList)/float(len(procIDs)))))]
-    # Create pickle file containing the jobs sorted by ProcID to be picked up by singleCoreRunKMC.py
-    pickleName = outputDir + '/carrierJobs.pickle'
-    print "Writing job pickle for each CPU..."
-    with open(pickleName, 'w+') as pickleFile:
-        pickle.dump(jobsList, pickleFile)
-    print "KMC jobs list written to", pickleName
-    if len(jobsList) <= len(procIDs):
-        procIDs = procIDs[:len(jobsList)]
+    print "Writing job pickles for each CPU..."
     runningJobs = []
-    # Open the required processes to execute the KMC jobs
-    for CPURank in procIDs:
-        print 'python ' + os.getcwd() + '/code/singleCoreRunKMC.py ' + outputDir + ' ' + str(CPURank) + ' &'
-        runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunKMC.py', outputDir, str(CPURank)]))
+    for procID, jobs in enumerate(jobsList):
+        pickleName = outputDir + '/KMCData_%02d.pickle' % (procID)
+        with open(pickleName, 'w+') as pickleFile:
+            pickle.dump(jobs, pickleFile)
+        print "KMC jobs for procID", procID, "written to KMCData_%02d.pickle" % (procID)
+        # Open the required processes to execute the KMC jobs
+        print 'python ' + os.getcwd() + '/code/singleCoreRunKMC.py ' + outputDir + ' ' + str(procID) + ' &'
+        runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunKMC.py', outputDir, str(procID)]))
     # Wait for all jobs to complete
     [p.wait() for p in runningJobs]
-    # Delete the job pickle
-    os.system('rm ' + pickleName)
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList
+
+
+
+
+
+#    # Create pickle file containing the jobs sorted by ProcID to be picked up by singleCoreRunKMC.py
+#    pickleName = outputDir + '/carrierJobs.pickle'
+#    print "Writing job pickle for each CPU..."
+#    with open(pickleName, 'w+') as pickleFile:
+#        pickle.dump(jobsList, pickleFile)
+#    print "KMC jobs list written to", pickleName
+#    if len(jobsList) <= len(procIDs):
+#        procIDs = procIDs[:len(jobsList)]
+#    runningJobs = []
+#    # Open the required processes to execute the KMC jobs
+#    for CPURank in procIDs:
+#        print 'python ' + os.getcwd() + '/code/singleCoreRunKMC.py ' + outputDir + ' ' + str(CPURank) + ' &'
+#        runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunKMC.py', outputDir, str(CPURank)]))
+#    # Wait for all jobs to complete
+#    [p.wait() for p in runningJobs]
+#    # Delete the job pickle
+#    os.system('rm ' + pickleName)
+#    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList
 
 
 if __name__ == "__main__":

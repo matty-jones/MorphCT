@@ -32,8 +32,11 @@ def loadORCAOutput(fileName):
                 break
             dataInLine = []
             for element in line.split(' '):
-                if len(element) > 0:
-                    dataInLine.append(float(element))
+                if len(element) > 1:
+                    try:
+                        dataInLine.append(float(element))
+                    except:
+                        continue
             if len(dataInLine) == 4:
                 orbitalData.append(dataInLine)
     for i in range(len(orbitalData)):
@@ -224,9 +227,9 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
         try:
             chromophore.HOMO_1, chromophore.HOMO, chromophore.LUMO, chromophore.LUMO_1 = loadORCAOutput(orcaOutputDir + fileName)
             if parameterDict['removeORCAInputs'] is True:
-                os.remove(chromophore.orcaInput.replace('.inp','.*'))
+                sp.Popen("rm -f " + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophore.orcaInput.replace('.inp','.*'), shell = True).communicate()
             if parameterDict['removeORCAOutputs'] is True:
-                os.remove(chromophore.orcaOutput)
+                sp.Popen("rm -f " + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophore.orcaOutput, shell = True).communicate()
         except ORCAError:
             failedSingleChromos[fileName] = [1, chromoLocation]
             continue
@@ -245,9 +248,9 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
                 # This chromophore didn't fail, so remove it from the failed list
                 successfulReruns.append(chromoName)
                 if parameterDict['removeORCAInputs'] is True:
-                    os.remove(chromophoreList[chromoID].orcaInput.replace('.inp','.*'))
+                    sp.Popen("rm " + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophoreList[chromoID].orcaInput.replace('.inp','.*'), shell = True).communicate()
                 if parameterDict['removeORCAOutputs'] is True:
-                    os.remove(chromophoreList[chromoID].orcaOutput)
+                    sp.Popen("rm " + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophoreList[chromoID].orcaOutput, shell = True).communicate()
             except:
                 # This chromophore failed so increment its fail counter
                 failedSingleChromos[chromoName][0] += 1
@@ -288,17 +291,17 @@ def updatePairChromophoreList(chromophoreList, parameterDict):
                 chromophore.neighboursTI[neighbourLoc] = TI
                 chromophoreList[neighbourID].neighboursTI[reverseLoc] = TI
                 if parameterDict['removeORCAInputs'] is True:
-                    os.remove(orcaOutputDir.replace('outputORCA', 'inputORCA') + fileName.replace('.inp','.*'))
+                    sp.Popen("rm " + orcaOutputDir.replace('outputORCA', 'inputORCA') + fileName.replace('.out','.*'), shell = True).communicate()
                 if parameterDict['removeORCAOutputs'] is True:
-                    os.remove(orcaOutputDir + fileName)
+                    sp.Popen("rm " + orcaOutputDir + fileName, shell = True).communicate()
             except ORCAError:
                 failedPairChromos[fileName] = [1, chromoLocation, neighbourID]
     print ""
     while len(failedPairChromos) > 0:
         failedPairChromos = rerunFails(failedPairChromos, parameterDict)
         successfulReruns = []
-        for chromoName, chromoData in failedPairChromos.iteritems():
-            print "Checking previously failed", chromoName
+        for fileName, chromoData in failedPairChromos.iteritems():
+            print "Checking previously failed", fileName
             chromo1ID = chromoData[1]
             chromo2ID = chromoData[2]
             try:
@@ -318,20 +321,20 @@ def updatePairChromophoreList(chromophoreList, parameterDict):
                 chromophoreList[chromo1ID].neighboursTI[neighbourLoc] = TI
                 chromophoreList[chromo2ID].neighboursTI[reverseLoc] = TI
                 # This rerun was successful so remove this chromophore from the rerun list
-                successfulReruns.append(chromoName)
+                successfulReruns.append(fileName)
                 if parameterDict['removeORCAInputs'] is True:
                     os.remove(orcaOutputDir.replace('outputORCA', 'inputORCA') + fileName.replace('.inp','.*'))
                 if parameterDict['removeORCAOutputs'] is True:
                     os.remove(orcaOutputDir + fileName)
-                print chromoName, "was successful!"
+                print fileName, "was successful!"
             except:
                 # This dimer failed so increment its fail counter
-                failedPairChromos[chromoName][0] += 1
-                print chromoName, "still failed, incrementing counter"
+                failedPairChromos[fileName][0] += 1
+                print fileName, "still failed, incrementing counter"
                 continue
         print len(failedPairChromos)
-        for chromoName in successfulReruns:
-            failedPairChromos.pop(chromoName)
+        for fileName in successfulReruns:
+            failedPairChromos.pop(fileName)
         print len(failedPairChromos)
     print ""
     return chromophoreList
@@ -430,9 +433,10 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     if parameterDict['overwriteCurrentData'] is False:
         for chromophore in chromophoreList:
             # Just check the first neighbour for each chromophore
-            if chromophore.neighboursTI[0] is None:
-                runPairs = True
-                break
+            for neighbour in chromophore.neighboursTI:
+                if neighbour is None:
+                    runPairs = True
+                    break
     if (runPairs is True) or (parameterDict['overwriteCurrentData'] is True):
         print "Beginning analysis of chromophore pairs..."
         chromophoreList = updatePairChromophoreList(chromophoreList, parameterDict)

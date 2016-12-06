@@ -165,7 +165,6 @@ def getORCAJobs(inputDir, procIDs):
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList):
     createInputFiles(chromophoreList, AAMorphologyDict, parameterDict)
-    exit()
     inputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/inputORCA'
     procIDs = parameterDict['procIDs']
     jobsList = getORCAJobs(inputDir, procIDs)
