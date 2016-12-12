@@ -146,7 +146,7 @@ def rerunFails(failedChromoFiles, parameterDict):
     # Firstly, modify the input files to see if numerical tweaks make ORCA happier
     for failedFile, failedData in failedChromoFiles.iteritems():
         failedCount = failedData[0]
-        errorCode = modifyORCAFiles(failedFile, outputDir + '/chromophores/inputORCA/' + failedFile.replace('.out', 'inp'), failedCount)
+        errorCode = modifyORCAFiles(failedFile, outputDir + '/chromophores/inputORCA/' + failedFile.replace('.out', '.inp'), failedCount)
         if errorCode == 1:
             failedChromoFiles.pop(failedFile)
     # If there are no files left, then everything has failed so this function has completed its task
@@ -227,9 +227,9 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
         try:
             chromophore.HOMO_1, chromophore.HOMO, chromophore.LUMO, chromophore.LUMO_1 = loadORCAOutput(orcaOutputDir + fileName)
             if parameterDict['removeORCAInputs'] is True:
-                sp.Popen("rm -f " + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophore.orcaInput.replace('.inp','.*'), shell = True).communicate()
+                sp.Popen("rm -f " + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophore.orcaInput.replace('.inp','.*'), shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
             if parameterDict['removeORCAOutputs'] is True:
-                sp.Popen("rm -f " + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophore.orcaOutput, shell = True).communicate()
+                sp.Popen("rm -f " + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophore.orcaOutput, shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
         except ORCAError:
             failedSingleChromos[fileName] = [1, chromoLocation]
             continue
@@ -248,9 +248,9 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
                 # This chromophore didn't fail, so remove it from the failed list
                 successfulReruns.append(chromoName)
                 if parameterDict['removeORCAInputs'] is True:
-                    sp.Popen("rm " + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophoreList[chromoID].orcaInput.replace('.inp','.*'), shell = True).communicate()
+                    sp.Popen("rm -f " + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophoreList[chromoID].orcaInput.replace('.inp','.*'), shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
                 if parameterDict['removeORCAOutputs'] is True:
-                    sp.Popen("rm " + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophoreList[chromoID].orcaOutput, shell = True).communicate()
+                    sp.Popen("rm -f " + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophoreList[chromoID].orcaOutput, shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
             except:
                 # This chromophore failed so increment its fail counter
                 failedSingleChromos[chromoName][0] += 1
@@ -291,9 +291,9 @@ def updatePairChromophoreList(chromophoreList, parameterDict):
                 chromophore.neighboursTI[neighbourLoc] = TI
                 chromophoreList[neighbourID].neighboursTI[reverseLoc] = TI
                 if parameterDict['removeORCAInputs'] is True:
-                    sp.Popen("rm " + orcaOutputDir.replace('outputORCA', 'inputORCA') + fileName.replace('.out','.*'), shell = True).communicate()
+                    sp.Popen("rm -f " + orcaOutputDir.replace('outputORCA', 'inputORCA') + fileName.replace('.out','.*'), shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
                 if parameterDict['removeORCAOutputs'] is True:
-                    sp.Popen("rm " + orcaOutputDir + fileName, shell = True).communicate()
+                    sp.Popen("rm -f " + orcaOutputDir + fileName, shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
             except ORCAError:
                 failedPairChromos[fileName] = [1, chromoLocation, neighbourID]
     print ""

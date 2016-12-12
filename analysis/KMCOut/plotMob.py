@@ -19,47 +19,37 @@ kB = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}
 temperature = 290  # K
 
 
-def combinePickleFiles(directory):
-    pickleFiles = []
-    for fileName in os.listdir(directory):
-        if 'KMCData' == fileName[:7]:
-            pickleFiles.append(directory + '/' + fileName)
-    print len(pickleFiles), "pickle files found to concatenate."
-    print "Concatenating data..."
-    carrierList = []
-    for pickleNo, pickleFileName in enumerate(pickleFiles):
-        print "\rLoading data", pickleNo + 1, "of", len(pickleFiles),
-        sys.stdout.flush()
-        with open(pickleFileName, 'r') as pickleFile:
-            carrierList += pickle.load(pickleFile)
-    print "\nAll data concatenated!"
-    print "Writing combined pickle..."
-    with open(directory + '/combinedKMCData.pickle', 'w+') as pickleFile:
-        pickle.dump(carrierList, pickleFile)
-    return carrierList
-
-
-def getData(carrierList):
+def getData(carrierData):
+    carrierHistory = carrierData['carrierHistoryMatrix']
+    totalDataPoints = 0
+    totalDataPointsAveragedOver = 0
     squaredDisps = {}
     actualTimes = {}
+    for carrierIndex, displacement in enumerate(carrierData['displacement']):
+        if (carrierData['currentTime'][carrierIndex] > carrierData['lifetime'][carrierIndex] * 2) or (carrierData['currentTime'][carrierIndex] < carrierData['lifetime'][carrierIndex] / 2.0) or (carrierData['noHops'][carrierIndex] == 1):
+            totalDataPoints += 1
+            continue
+        carrierKey = 
+
+
     noChromophoresVisited = {}
-    completeCarrierHistory = lil_matrix(carrierList[0].carrierHistoryMatrix.shape, dtype = int)
+    completeCarrierHistory = lil_matrix(carrierList[0]['carrierHistoryMatrix'].shape, dtype = int)
     totalDataPoints = 0
     totalDataPointsAveragedOver = 0
     for carrier in carrierList:
-        if (carrier.currentTime > carrier.lifetime * 2) or (carrier.currentTime < carrier.lifetime / 2.0) or (carrier.noHops == 1):
+        if (carrier['currentTime'] > carrier['lifetime'] * 2) or (carrier['currentTime'] < carrier['lifetime'] / 2.0) or (carrier['noHops'] == 1):
             totalDataPoints += 1
             continue
-        carrierKey = str(carrier.lifetime)
+        carrierKey = str(carrier['lifetime'])
         if carrierKey not in squaredDisps:
-            squaredDisps[carrierKey] = [(carrier.displacement * 1E-10) ** 2]  # Carrier displacement is in angstroems, convert to metres
-            actualTimes[carrierKey] = [carrier.currentTime]
-            noChromophoresVisited[carrierKey] = [len(findNonZero(carrier.carrierHistoryMatrix)[0])]
+            squaredDisps[carrierKey] = [(carrier['displacement'] * 1E-10) ** 2]  # Carrier displacement is in angstroems, convert to metres
+            actualTimes[carrierKey] = [carrier['currentTime']]
+            noChromophoresVisited[carrierKey] = [len(findNonZero(carrier['carrierHistoryMatrix'])[0])]
         else:
-            squaredDisps[carrierKey].append((carrier.displacement * 1E-10) ** 2)  # Carrier displacement is in angstroems, convert to metres
-            actualTimes[carrierKey].append(carrier.currentTime)
-            noChromophoresVisited[carrierKey].append(len(findNonZero(carrier.carrierHistoryMatrix)[0]))
-        completeCarrierHistory += carrier.carrierHistoryMatrix
+            squaredDisps[carrierKey].append((carrier['displacement'] * 1E-10) ** 2)  # Carrier displacement is in angstroems, convert to metres
+            actualTimes[carrierKey].append(carrier['currentTime'])
+            noChromophoresVisited[carrierKey].append(len(findNonZero(carrier['carrierHistoryMatrix'])[0]))
+        completeCarrierHistory += carrier['carrierHistoryMatrix']
         totalDataPointsAveragedOver += 1
         totalDataPoints += 1
     times = []
@@ -71,7 +61,7 @@ def getData(carrierList):
         timeStandardErrors.append(np.std(actualTimes[time]) / len(actualTimes[time]))
         MSDs.append(np.average(disps))
         MSDStandardErrors.append(np.std(disps) / len(disps))
-    return completeCarrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors
+    return carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors
 
 
 def plotHeatMap(carrierHistory, directory):
@@ -171,32 +161,73 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory):
     return mobility, mobError
 
 
+def calculateAnisotropy(xvals, yvals, zvals):
+    # First calculate the `centre of position' for the particles
+    centre = [np.mean(xvals), np.mean(yvals), np.mean(zvals)]
+    # First calculate the gyration tensor:
+    Sxx = 0
+    Sxy = 0
+    Sxz = 0
+    Syy = 0
+    Syz = 0
+    Szz = 0
+    for carrierID, rawXval in enumerate(xvals):
+        xval = rawXval - centre[0]
+        yval = yvals[carrierID] - centre[1]
+        zval = zvals[carrierID] - centre[2]
+        Sxx += xval * xval
+        Sxy += xval * yval
+        Sxz += xval * zval
+        Syy += yval * yval
+        Syz += yval * zval
+        Szz += zval * zval
+    S = np.array([[Sxx, Sxy, Sxz], [Sxy, Syy, Syz], [Sxz, Syz, Szz]])
+    eigenValues, eigenVectors = np.linalg.eig(S)
+    # Diagonalisation of S is the diagonal matrix of the eigenvalues in ascending order
+    # diagonalMatrix = np.diag(sorted(eigenValues))
+    # We only need the eigenvalues though, no more matrix multiplication
+    diagonal = sorted(eigenValues)
+    # Then calculate the relative shape anisotropy (kappa**2)
+    anisotropy = (3/2) * (((diagonal[0] ** 2) + (diagonal[1] ** 2) + (diagonal[2] ** 2)) / ((diagonal[0] + diagonal[1] + diagonal[2]) ** 2)) - (1/2)
+    return anisotropy
+
+
+def plotAnisotropy(carrierList, directory):
+    fig = plt.gcf()
+    ax = p3.Axes3D(fig)
+    xvals = []
+    yvals = []
+    zvals = []
+    for carrier in carrierList:
+        xvals.append(carrier['image'][0])
+        yvals.append(carrier['image'][1])
+        zvals.append(carrier['image'][2])
+    anisotropy = calculateAnisotropy(xvals, yvals, zvals)
+    print "Anisotropy calculated as", anisotropy
+    plt.scatter(xvals, yvals, zs = zvals, c = 'b', s = 20)
+    plt.scatter(0, 0, zs = 0, c = 'r', s = 50)
+    plt.savefig(directory + '/anisotropy.pdf')
+    plt.clf()
+    print "Figure saved as", directory + "/anisotropy.pdf"
+    return anisotropy
+
+
 if __name__ == "__main__":
     sys.path.append('../../code')
     directory = os.getcwd() + '/' + sys.argv[1]
-    print "Combining Pickle Files..."
-    needToCombine = True
-    for fileName in os.listdir(directory):
-        if 'combinedKMCData' in fileName:
-            combinedPickleName = fileName
-            needToCombine = False
-            break
-    if needToCombine is True:
-        print "combinedKMCData.pickle not found! Combining data..."
-        carrierList = combinePickleFiles(directory)
-    else:
-        with open(directory + '/combinedKMCData.pickle', 'r') as pickleFile:
-            carrierList = pickle.load(pickleFile)
-    print "Carrier List obtained"
+    with open(directory + '/KMCResults.pickle', 'r') as pickleFile:
+        carrierData = pickle.load(pickleFile)
+    print "Carrier Data obtained"
     print "Obtaining mean squared displacements..."
-    carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getData(carrierList)
+    carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getData(carrierData)
     print "MSDs obtained"
     # Create the first figure that will be replotted each time
     plt.figure()
+    plotAnisotropy(carrierList, directory)
     #plotHeatMap(carrierHistory, directory)
     # READ IN THE MAIN CHROMOPHORELIST PICKLE FILE TO DO THIS
     print "Loading chromophoreList..."
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle('./' + sys.argv[1] + '/' + sys.argv[1] + '.pickle')
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, emptyCarrierList = helperFunctions.loadPickle('./' + sys.argv[1] + '/' + sys.argv[1] + '.pickle')
     print "ChromophoreList obtained"
     plotConnections(chromophoreList, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']], carrierHistory, directory)
     times, MSDs = helperFunctions.parallelSort(times, MSDs)
