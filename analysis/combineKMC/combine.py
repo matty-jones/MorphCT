@@ -23,24 +23,12 @@ if __name__ == "__main__":
         # The pickle was repeatedly dumped to, in order to save time.
         # Each dump stream is self-contained, so iteratively unpickle to add the new data.
         with open(fileName, 'r') as pickleFile:
-            print "Iteratively unpickling", fileName + "..."
-            while True:
-                try:
-                    pickledData = pickle.load(pickleFile)
-                    for key, val in pickledData.iteritems():
-                        if key not in combinedData:
-                            combinedData[key] = val
-                        else:
-                            # Run into massive memory errors if we treat all of the carrierHistoryMatrices separately
-                            if key == 'carrierHistoryMatrix':
-                                combinedSparseMatrix = lil_matrix(pickledData[key][0].shape, dtype = int)
-                                for sparseMatrix in pickledData[key]:
-                                    combinedSparseMatrix += sparseMatrix
-                                combinedData[key] = combinedSparseMatrix
-                            else:
-                                combinedData[key] += val
-                except EOFError:
-                    break
+            pickledData = pickle.load(pickleFile)
+            for key, val in pickledData.iteritems():
+                if key not in combinedData:
+                    combinedData[key] = val
+                else:
+                    combinedData[key] += val
     # Write out the combined data
     print "Writing out the combined pickle file..."
     with open(outputDir + '/KMCResults.pickle', 'w+') as pickleFile:

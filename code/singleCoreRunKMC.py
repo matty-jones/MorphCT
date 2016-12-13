@@ -188,16 +188,11 @@ if __name__ == '__main__':
     helperFunctions.writeToFile(logFile, ['Main morphology pickle loaded!'])
     # Attempt to catch a kill signal to ensure that we save the pickle before termination
     killer = terminationSignal()
-    # Save the pickle file as a `checkpoint' either every 1000 carriers or every 10%, whichever is smaller
-    checkpointCarriers = []
-    tenPercentOfJobs = int(len(jobsToRun) / 100)*10
-    if tenPercentOfJobs < 1000:
-        checkpointCarriers = list(map(int, np.arange(tenPercentOfJobs, len(jobsToRun), tenPercentOfJobs)))
-    else:
-        checkpointCarriers = list(map(int, np.arange(1000, len(jobsToRun), 1000)))
     # Save the pickle as a list of `saveCarrier' instances that contain the bare minimum
     saveData = initialiseSaveData(len(chromophoreList))
     t0 = T.time()
+    saveTime = T.time()
+    saveSlot = 'slot1'
     try:
         for jobNumber, [carrierNo, lifetime] in enumerate(jobsToRun):
             t1 = T.time()
@@ -241,17 +236,22 @@ if __name__ == '__main__':
                 timeunits = 'days.'
             elapsedTime = '%.1f' % (float(elapsedTime))
             helperFunctions.writeToFile(logFile, ['Carrier hopped ' + str(thisCarrier.noHops) + ' times into image ' + str(thisCarrier.image) + ' for a displacement of ' + str(thisCarrier.displacement) + ' in ' + str(elapsedTime) + ' ' + str(timeunits)])
-            # Save the pickle file as a `checkpoint' either every 100 carriers or every 1%, whichever is greater
-            if jobNumber in checkpointCarriers:
-                print "Completed", jobNumber, "jobs. Making checkpoint at %3d%%" % (np.round(jobNumber + 1 / float(len(jobsToRun)) * 100))
+            # Save the pickle file every hour
+            if (t2 - saveTime) > 3600:
+                print "Completed", jobNumber, "of", len(jobsToRun) "jobs. Making checkpoint at %3d%%" % (np.round(jobNumber + 1 / float(len(jobsToRun)) * 100))
                 helperFunctions.writeToFile(logFile, ['Completed ' + str(jobNumber) + ' jobs. Making checkpoint at %3d%%' % (np.round(jobNumber / float(len(jobsToRun)) * 100))])
-                savePickle(saveData, pickleFileName.replace('Data', 'Results'))
+                savePickle(saveData, pickleFileName.replace('Data', saveSlot + 'Results'))
+                if saveSlot = 'slot1':
+                    saveSlot = 'slot2'
+                elif saveSlot = 'slot2':
+                    saveSlot = 'slot1'
+                saveTime = T.time()
     except Exception as errorMessage:
         print traceback.format_exc()
         print "Saving the pickle file cleanly before termination..."
         helperFunctions.writeToFile(logFile, [str(errorMessage)])
         helperFunctions.writeToFile(logFile, ['Saving the pickle file cleanly before termination...'])
-        savePickle(saveData, pickleFileName.replace('Data', 'Results'))
+        savePickle(saveData, pickleFileName.replace('Data', 'TerminatedResults'))
         print "Pickle saved! Exitting Python..."
         exit()
     t3 = T.time()

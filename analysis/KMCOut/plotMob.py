@@ -29,27 +29,13 @@ def getData(carrierData):
         if (carrierData['currentTime'][carrierIndex] > carrierData['lifetime'][carrierIndex] * 2) or (carrierData['currentTime'][carrierIndex] < carrierData['lifetime'][carrierIndex] / 2.0) or (carrierData['noHops'][carrierIndex] == 1):
             totalDataPoints += 1
             continue
-        carrierKey = 
-
-
-    noChromophoresVisited = {}
-    completeCarrierHistory = lil_matrix(carrierList[0]['carrierHistoryMatrix'].shape, dtype = int)
-    totalDataPoints = 0
-    totalDataPointsAveragedOver = 0
-    for carrier in carrierList:
-        if (carrier['currentTime'] > carrier['lifetime'] * 2) or (carrier['currentTime'] < carrier['lifetime'] / 2.0) or (carrier['noHops'] == 1):
-            totalDataPoints += 1
-            continue
-        carrierKey = str(carrier['lifetime'])
+        carrierKey = str(carrierData['lifetime'][carrierIndex])
         if carrierKey not in squaredDisps:
-            squaredDisps[carrierKey] = [(carrier['displacement'] * 1E-10) ** 2]  # Carrier displacement is in angstroems, convert to metres
-            actualTimes[carrierKey] = [carrier['currentTime']]
-            noChromophoresVisited[carrierKey] = [len(findNonZero(carrier['carrierHistoryMatrix'])[0])]
+            squaredDisps[carrierKey] = [(carrierData['displacement'][carrierIndex] * 1E-10) ** 2]  # Carrier displacement is in angstroems, convert to metres
+            actualTimes[carrierKey] = [carrierData['currentTime'][carrierIndex]]
         else:
-            squaredDisps[carrierKey].append((carrier['displacement'] * 1E-10) ** 2)  # Carrier displacement is in angstroems, convert to metres
-            actualTimes[carrierKey].append(carrier['currentTime'])
-            noChromophoresVisited[carrierKey].append(len(findNonZero(carrier['carrierHistoryMatrix'])[0]))
-        completeCarrierHistory += carrier['carrierHistoryMatrix']
+            squaredDisps[carrierKey].append((carrierData['displacement'][carrierIndex] * 1E-10) ** 2)  # Carrier displacement is in angstroems, convert to metres
+            actualTimes[carrierKey].append(carrierData['currentTime'][carrierIndex])
         totalDataPointsAveragedOver += 1
         totalDataPoints += 1
     times = []
@@ -108,10 +94,11 @@ def plotConnections(chromophoreList, simExtent, carrierHistory, directory):
                 if (np.abs(coords2[0] - coords1[0]) < simExtent[0] / 2.0) and (np.abs(coords2[1] - coords1[1]) < simExtent[1] / 2.0) and (np.abs(coords2[2] - coords1[2]) < simExtent[2] / 2.0):
                     colourIntensity = np.log(value) / normalizeTo
                     ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = plt.cm.jet(colourIntensity), linewidth = 0.5)
-    plt.savefig('./3d.pdf')
-    plt.show()
-    exit()
-    pass
+    fileName = '3d.pdf'
+    plt.savefig(directory + '/' + fileName)
+    print "Figure saved as", directory + "/" + fileName
+    plt.clf()
+    #plt.show()
 
 
 def calcMobility(linFitX, linFitY, avTimeError, avMSDError):
@@ -144,7 +131,7 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory):
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
     #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
-    fileName = 'LinMSD.png'
+    fileName = 'LinMSD.pdf'
     plt.savefig(directory + '/' + fileName)
     plt.clf()
     print "Figure saved as", directory + "/" + fileName
@@ -154,7 +141,7 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory):
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
     #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
-    fileName = 'LogMSD.png'
+    fileName = 'LogMSD.pdf'
     plt.savefig(directory + '/' + fileName)
     plt.clf()
     print "Figure saved as", directory + "/" + fileName
@@ -192,16 +179,16 @@ def calculateAnisotropy(xvals, yvals, zvals):
     return anisotropy
 
 
-def plotAnisotropy(carrierList, directory):
+def plotAnisotropy(carrierData, directory):
     fig = plt.gcf()
     ax = p3.Axes3D(fig)
     xvals = []
     yvals = []
     zvals = []
-    for carrier in carrierList:
-        xvals.append(carrier['image'][0])
-        yvals.append(carrier['image'][1])
-        zvals.append(carrier['image'][2])
+    for image in carrierData['image']:
+        xvals.append(image[0])
+        yvals.append(image[1])
+        zvals.append(image[2])
     anisotropy = calculateAnisotropy(xvals, yvals, zvals)
     print "Anisotropy calculated as", anisotropy
     plt.scatter(xvals, yvals, zs = zvals, c = 'b', s = 20)
@@ -212,26 +199,71 @@ def plotAnisotropy(carrierList, directory):
     return anisotropy
 
 
+def getTempVal(string):
+    hyphenList = helperFunctions.findIndex(string, '-')
+    tempVal = float(string[hyphenList[-2] + 2 : hyphenList[-1]])
+    return tempVal
+
+
+def plotTemperatureProgression(tempData, mobilityData, anisotropyData):
+    plt.gcf()
+    xvals = tempData
+    yvals = list(np.array(mobilityData)[:,0])
+    yerrs = list(np.array(mobilityData)[:,1])
+    plt.xlabel('Temperature, Arb. U')
+    plt.ylabel('Mobility, cm'+r'$^{2}$ '+'V'+r'$^{-1}$'+r's$^{-1}$')
+    plt.title('p1-L15-f0.0-P0.1-TX.X-e0.1', fontsize = 24)
+    plt.xlim([1.4, 2.6])
+    plt.semilogy(xvals, yvals, c = 'b')
+    plt.errorbar(xvals, yvals, xerr = 0, yerr = yerrs)
+    fileName = './mobility.pdf'
+    plt.savefig(fileName)
+    plt.clf()
+    print "Figure saved as " + fileName
+
+    plt.plot(tempData, anisotropyData, c = 'r')
+    fileName = './anisotropy.pdf'
+    plt.xlabel('Temperature, Arb. U')
+    plt.ylabel('Anisotropy, Arb. U')
+    plt.savefig(fileName)
+    plt.clf()
+    print "Figure saved as " + fileName
+
+
 if __name__ == "__main__":
     sys.path.append('../../code')
-    directory = os.getcwd() + '/' + sys.argv[1]
-    with open(directory + '/KMCResults.pickle', 'r') as pickleFile:
-        carrierData = pickle.load(pickleFile)
-    print "Carrier Data obtained"
-    print "Obtaining mean squared displacements..."
-    carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getData(carrierData)
-    print "MSDs obtained"
-    # Create the first figure that will be replotted each time
-    plt.figure()
-    plotAnisotropy(carrierList, directory)
-    #plotHeatMap(carrierHistory, directory)
-    # READ IN THE MAIN CHROMOPHORELIST PICKLE FILE TO DO THIS
-    print "Loading chromophoreList..."
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, emptyCarrierList = helperFunctions.loadPickle('./' + sys.argv[1] + '/' + sys.argv[1] + '.pickle')
-    print "ChromophoreList obtained"
-    plotConnections(chromophoreList, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']], carrierHistory, directory)
-    times, MSDs = helperFunctions.parallelSort(times, MSDs)
-    mobility, mobError = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory)
-    print "----------====================----------"
-    print "Mobility for", directory[helperFunctions.findIndex(directory, '/')[-1] + 1:], "= %.2E +- %.2E cm^{2} V^{-1} s^{-1}" % (mobility, mobError)
-    print "----------====================----------"
+    directoryList = []
+    for directory in os.listdir(os.getcwd()):
+        if '-T' in directory:
+            directoryList.append(directory)
+    tempData = []
+    mobilityData = []
+    anisotropyData = []
+    for directory in directoryList:
+        tempData.append(getTempVal(directory))
+        with open(directory + '/KMCResults.pickle', 'r') as pickleFile:
+            carrierData = pickle.load(pickleFile)
+        print "Carrier Data obtained"
+        print "Obtaining mean squared displacements..."
+        carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getData(carrierData)
+        print "MSDs obtained"
+        # Create the first figure that will be replotted each time
+        plt.figure()
+        anisotropy = plotAnisotropy(carrierData, directory)
+        #plotHeatMap(carrierHistory, directory)
+        # READ IN THE MAIN CHROMOPHORELIST PICKLE FILE TO DO THIS
+        print "Loading chromophoreList..."
+        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, emptyCarrierList = helperFunctions.loadPickle('./' + directory + '/' + directory + '.pickle')
+        print "ChromophoreList obtained"
+        print "Determining carrier hopping connections..."
+        plotConnections(chromophoreList, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']], carrierHistory, directory)
+        times, MSDs = helperFunctions.parallelSort(times, MSDs)
+        print "Calculating MSD..."
+        mobility, mobError = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory)
+        print "----------====================----------"
+        print "Mobility for", directory, "= %.2E +- %.2E cm^{2} V^{-1} s^{-1}" % (mobility, mobError)
+        print "----------====================----------"
+        anisotropyData.append(anisotropy)
+        mobilityData.append([mobility, mobError])
+    print "Plotting temperature progression..."
+    plotTemperatureProgression(tempData, mobilityData, anisotropyData)
