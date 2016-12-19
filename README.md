@@ -1,4 +1,4 @@
-![alt-text](logo.pdf "MorphCT Logo")
+![Scheme](logo.pdf)
 # MorphCT #
 
 The intention of this code is to:
