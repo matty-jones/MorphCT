@@ -1,3 +1,4 @@
+![alt-text](./logo.pdf, "MorphCT Logo")
 # MorphCT #
 
 The intention of this code is to:
