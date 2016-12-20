@@ -1,5 +1,4 @@
 ![alt-text](logo.png "MorphCT Logo")
-# MorphCT #
 
 The intention of this code is to:
 
@@ -10,17 +9,25 @@ The intention of this code is to:
 * Perform fast quantum chemical calculations (semi-empirical ZINDO/S) to determine the frontier molecular orbitals of each chromophore and calculate the electronic transfer integrals between each neighbouring pair (within a given cut-off)
 * Use the transfer integrals to run a simple Kinetic Monte Carlo algorithm to determine the charge carrier mobility, which can be used to infer morphology charge transport properties
 
+### Table of Contents ###
 
-### Package Contents and Directory Structures ###
+* [Package and Directory Structures](#package)
+* [General Code Comments](#general)
+* [Getting Started](#started)
+* [Specific Module Details](#modules)
+* [Analysis Programs Included](#analysis)
+* [Future Work](#future)
 
-Map of the repo here
+###<a name="package"></a>Package and Directory Structures ###
 
-### General Code Comments ###
+MorphCT
+
+###<a name="general"></a>General Code Comments ###
 
 Discussion of data structures and initialisations
 I.E. PARAMETER FILES AND HOW TO GENERATE
 
-### Getting Started ###
+###<a name="started"></a>Getting Started ###
 
 Plop a morphology into inputMorphs (one provided), and call hoomd runMorphCT.py
 
@@ -30,15 +37,15 @@ The fine-graining is handled by code/fineGrainer.py and the execution of hoomd i
 
 runHoomd.py now fully supports restarting - the output directory is examined to determine the most recently completed stage, and the simulation continues by reading in the most recently output xml file. The fourth phase (the long one) also dumps 100 reset files during its run which can be restarted from if required.
 
-### Specific Module Details ###
+###<a name="modules"></a>Specific Module Details ###
 
 Describe the process of how each module works here (and a breakdown of how long it takes)
 
-### Analysis Programs Provided ###
+###<a name="analysis"></a>Analysis Programs Included ###
 
 Brief description of how to use each thing
 
-### Future Work ###
+###<a name="future"></a>Future Work ###
 
 * Split the final morphology into individual chains that can be exported as .xyz files for the DFT calculations
 * Analyse the chains in the morphology to determine whether the volume can be characterised by a subset of chains (to reduce the number of DFT calculations required)
