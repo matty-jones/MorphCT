@@ -18,16 +18,16 @@ The intention of this code is to:
 * [Analysis Programs Included](#analysis)
 * [Future Work](#future)
 
-###<a name="package"></a>Package and Directory Structures ###
+###<a name="package">Package and Directory Structures</a>###
 
 MorphCT
 
-###<a name="general"></a>General Code Comments ###
+###<a name="general">General Code Comments</a>###
 
 Discussion of data structures and initialisations
 I.E. PARAMETER FILES AND HOW TO GENERATE
 
-###<a name="started"></a>Getting Started ###
+###<a name="started">Getting Started</a>###
 
 Plop a morphology into inputMorphs (one provided), and call hoomd runMorphCT.py
 
@@ -37,15 +37,15 @@ The fine-graining is handled by code/fineGrainer.py and the execution of hoomd i
 
 runHoomd.py now fully supports restarting - the output directory is examined to determine the most recently completed stage, and the simulation continues by reading in the most recently output xml file. The fourth phase (the long one) also dumps 100 reset files during its run which can be restarted from if required.
 
-###<a name="modules"></a>Specific Module Details ###
+###<a name="modules">Specific Module Details</a>###
 
 Describe the process of how each module works here (and a breakdown of how long it takes)
 
-###<a name="analysis"></a>Analysis Programs Included ###
+###<a name="analysis">Analysis Programs Included</a>###
 
 Brief description of how to use each thing
 
-###<a name="future"></a>Future Work ###
+###<a name="future">Future Work</a>###
 
 * Split the final morphology into individual chains that can be exported as .xyz files for the DFT calculations
 * Analyse the chains in the morphology to determine whether the volume can be characterised by a subset of chains (to reduce the number of DFT calculations required)
