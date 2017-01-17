@@ -179,20 +179,39 @@ def calculateAnisotropy(xvals, yvals, zvals):
     return anisotropy
 
 
-def plotAnisotropy(carrierData, directory):
+def plotAnisotropy(carrierData, directory, simDims):
     fig = plt.gcf()
     ax = p3.Axes3D(fig)
     xvals = []
     yvals = []
     zvals = []
-    for image in carrierData['image']:
-        xvals.append(image[0])
-        yvals.append(image[1])
-        zvals.append(image[2])
+    colours = []
+
+    for carrierNo, posn in enumerate(carrierData['finalPosition']):
+        #if bool(sum([x < -3 or x > 3 for x in image])):
+        #    continue
+        position = [0.0, 0.0, 0.0]
+        for axis in range(len(posn)):
+            position[axis] = (carrierData['image'][carrierNo][axis] * simDims[axis]) + posn[axis]
+        xvals.append(position[0]/10.)
+        yvals.append(position[1]/10.)
+        zvals.append(position[2]/10.)
+        colours.append('b')
     anisotropy = calculateAnisotropy(xvals, yvals, zvals)
     print "Anisotropy calculated as", anisotropy
-    plt.scatter(xvals, yvals, zs = zvals, c = 'b', s = 20)
+    plt.scatter(xvals, yvals, zs = zvals, c = colours, s = 20)
     plt.scatter(0, 0, zs = 0, c = 'r', s = 50)
+    ax.set_xlabel('X (nm)', fontsize = 20, labelpad = 40)
+    ax.set_ylabel('Y (nm)', fontsize = 20, labelpad = 40)
+    ax.set_zlabel('Z (nm)', fontsize = 20, labelpad = 40)
+    maximum = max([max(xvals), max(yvals), max(zvals)])
+    ax.set_xlim([-maximum, maximum])
+    ax.set_ylim([-maximum, maximum])
+    ax.set_zlim([-maximum, maximum])
+    for tick in ax.xaxis.get_major_ticks() + ax.yaxis.get_major_ticks() + ax.zaxis.get_major_ticks():
+        tick.label.set_fontsize(16)
+    plt.title(directory[directory.index('T'):directory.index('T')+directory[directory.index('T'):].index('-')], fontsize = 24)
+    ax.dist = 11
     plt.savefig(directory + '/anisotropy.pdf')
     plt.clf()
     print "Figure saved as", directory + "/anisotropy.pdf"
@@ -223,8 +242,8 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData):
 
     plt.plot(tempData, anisotropyData, c = 'r')
     fileName = './anisotropy.pdf'
-    plt.xlabel('Temperature, Arb. U')
-    plt.ylabel('Anisotropy, Arb. U')
+    plt.xlabel('T, Arb. U')
+    plt.ylabel(r'$\kappa$'+', Arb. U')
     plt.savefig(fileName)
     plt.clf()
     print "Figure saved as " + fileName
@@ -247,9 +266,12 @@ if __name__ == "__main__":
         print "Obtaining mean squared displacements..."
         carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getData(carrierData)
         print "MSDs obtained"
+        print "Loading chromophoreList..."
+        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, emptyCarrierList = helperFunctions.loadPickle('./' + directory + '/' + directory + '.pickle')
+        print "ChromophoreList obtained"
         # Create the first figure that will be replotted each time
         plt.figure()
-        anisotropy = plotAnisotropy(carrierData, directory)
+        anisotropy = plotAnisotropy(carrierData, directory, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']])
         #plotHeatMap(carrierHistory, directory)
         # READ IN THE MAIN CHROMOPHORELIST PICKLE FILE TO DO THIS
         print "Loading chromophoreList..."
