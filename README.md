@@ -27,3 +27,7 @@ Note that the majority of the fine-graining process is currently hard-coded to w
 * The morphology is then being split into multiple chromophores (currently of length single repeat unit)
 * ZINDO/S calculations are performed to determine the electronic transfer integrals between pairs of chromophores
 * Kinetic Monte Carlo simulations are then performed using Marcus hopping theory to determine the carrier mobility through the input morphology, which can then be plot as a function of varying state-point value (e.g. annealing temperature).
+
+
+
+Note: This code is no longer being developed on the master branch, as I am focusing on finishing the generalized MorphCT2.0, which is currently located on the /generalized branch of the repo. When it is complete, it will form the new `latest version' of MorphCT and the current master branch will be deprecated as MorphCT1.0. This will make it easier to add additional functionality in the future.
