@@ -8,7 +8,7 @@ import scipy.stats
 
 elementaryCharge = 1.60217657E-19  # C
 kB = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}
-temperature = 290  # K
+systemTemperature = 290  # K
 
 
 def loadCSVs(CSVDir):
@@ -143,7 +143,7 @@ def plotMSD(times, MSDs, CSVDir):
     print "Fitting rVal =", rVal
     #gradient, F = linearFit(times, MSDs)
     #exit()
-    fitY = (fitX*gradient)
+    fitY = (fitX*gradient)# + intercept
     mobility = calcMobility(fitX, fitY)
     #plt.figure()
     plt.plot(times, MSDs)
@@ -151,7 +151,9 @@ def plotMSD(times, MSDs, CSVDir):
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
     #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
-    fileName = 'LinMSD.png'
+    plt.xscale('log')
+    plt.yscale('log')
+    fileName = 'LogLogMSD.png'
     plt.savefig(CSVDir+'/'+fileName)
     plt.clf()
     print "Figure saved as", CSVDir+"/"+fileName
@@ -180,7 +182,7 @@ def plotChromoHistory(times, chromosVisited, CSVDir):
 def calcMobility(linFitX, linFitY):
     diffusionCoeff = (linFitY[-1] - linFitY[0])/(linFitX[-1] - linFitX[0])
     # Use Einstein relation (include the factor of 1/6!! It is in the Carbone/Troisi 2014 paper)
-    mobility = elementaryCharge*diffusionCoeff/(6*kB*temperature) # This is in m^{2} / Vs
+    mobility = elementaryCharge*diffusionCoeff/(6*kB*systemTemperature) # This is in m^{2} / Vs
     return mobility*(100**2)
 
 
@@ -210,49 +212,74 @@ if __name__ == "__main__":
     for fileName in os.listdir(os.getcwd()):
         if fileName[0] == 'T':
             tempDirs.append(fileName)
-    temps = []
-    mobs = []
-    chromosData = []
-    plt.figure()
+    tempDict = {}
     for tempDir in tempDirs:
-        CSVDir = os.getcwd()+'/'+tempDir
-        completeCSVData, targetTimes = loadCSVs(CSVDir)
-        times = []
-        MSDs = []
-        chromophoresVisited = []
-        chromophoresPerTime = []
-        for index, CSVFile in enumerate(completeCSVData):
-            MSD, meanTime, chromoVisit = plotHist(CSVFile, targetTimes[index], CSVDir)
-            if MSD == None:
+        temperature = tempDir[1:findIndex(tempDir,'F')[0]]
+        if str(temperature) not in tempDict.keys():
+            tempDict[str(temperature)] = [tempDir]
+        else:
+            tempDict[str(temperature)].append(tempDir)
+    plt.figure()
+    plotTemps = []
+    plotMobs = []
+    plotMobErrors = []
+    for temperature, tempDirs in tempDict.iteritems():
+        temps = []
+        mobs = []
+        chromosData = []
+        for tempDir in tempDirs:
+            CSVDir = os.getcwd()+'/'+tempDir
+            completeCSVData, targetTimes = loadCSVs(CSVDir)
+            times = []
+            MSDs = []
+            chromophoresVisited = []
+            chromophoresPerTime = []
+            for index, CSVFile in enumerate(completeCSVData):
+                MSD, meanTime, chromoVisit = plotHist(CSVFile, targetTimes[index], CSVDir)
+                if MSD == None:
+                    continue
+                times.append(meanTime)
+                MSDs.append(MSD)
+                chromophoresVisited.append(chromoVisit)
+                chromophoresPerTime.append(chromoVisit/meanTime)
+            times, MSDs = parallelSort(times, MSDs)
+            mobility = plotMSD(times, MSDs, CSVDir)
+            plotChromoHistory(times, chromophoresVisited, CSVDir)
+            print "---=== Mobility for this KMC run ===---"
+            print "Mobility =", mobility, "cm^{2} / Vs"
+            print "Av. Number of New Chromophores Visited Per Unit Time By Each Carrier =", np.average(chromophoresPerTime)
+            print "---=================================---"
+            if mobility < 0:
+                print "NEGATIVE MOBILITY, SKIPPING..."
                 continue
-            times.append(meanTime)
-            MSDs.append(MSD)
-            chromophoresVisited.append(chromoVisit)
-            chromophoresPerTime.append(chromoVisit/meanTime)
-        times, MSDs = parallelSort(times, MSDs)
-        mobility = plotMSD(times, MSDs, CSVDir)
-        plotChromoHistory(times, chromophoresVisited, CSVDir)
-        print "---=== Mobility for this KMC run ===---"
-        print "Mobility =", mobility, "cm^{2} / Vs"
-        print "Av. Number of New Chromophores Visited Per Unit Time By Each Carrier =", np.average(chromophoresPerTime)
-        print "---=================================---"
-        if mobility < 0:
-            print "NEGATIVE MOBILITY, SKIPPING..."
-            continue
-        MLoc = findIndex(tempDir, 'M')
-        temps.append(tempDir[1:MLoc[0]])
-        mobs.append(mobility)
-        chromosData.append(np.average(chromophoresPerTime))
+            temps.append(float(temperature))
+            mobs.append(mobility)
+            chromosData.append(np.average(chromophoresPerTime))
+            raise SystemError('EXIT')
+        avTemp = np.average(temps)
+        # Convert to SI
+        plotTemps.append(avTemp * (489/2.5))
+        avMob = np.average(mobs)
+        sdMob = np.std(mobs)
+        plotMobs.append(avMob)
+        plotMobErrors.append(sdMob / np.sqrt(len(mobs)))
 
-    plt.semilogy(temps, mobs)
-    plt.xlabel('Temperature, Arb. U')
+    print plotTemps
+    print plotMobs
+    print plotMobErrors
+    plt.errorbar(plotTemps, plotMobs, yerr=plotMobErrors)
+    plt.yscale('log')
+    plt.xlabel('Temperature, K')
     plt.ylabel('Mobility, cm'+r'$^{2}$ '+'V'+r'$^{-1}$'+r's$^{-1}$')
     # plt.ylim([1E-6, 1E1])
     plt.title('p1-L15-f0.3-P0.1-TX.X-e0.1', fontsize=24)
-    plt.xlim([0.9, 2.6])
+    #plt.xlim([0.9, 2.6])
     plt.savefig('./mobTemp.png')
     plt.clf()
     print "Mobility curve saved as './mobTemp.png'"
+
+    print "NOW PUT IN THE EXPERIMENTAL DATA"
+    exit()
 
     if None not in chromosData:
         plt.semilogy(temps, chromosData)
