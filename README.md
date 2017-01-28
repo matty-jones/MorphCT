@@ -31,3 +31,7 @@ Note that the majority of the fine-graining process is currently hard-coded to w
 
 
 Note: This code is no longer being developed on the master branch, as I am focusing on finishing the generalized MorphCT2.0, which is currently located on the /generalized branch of the repo. When it is complete, it will form the new `latest version' of MorphCT and the current master branch will be deprecated as MorphCT1.0. This will make it easier to add additional functionality in the future.
+
+
+
+This code is released under GPL 3.0. See LICENSE.txt for more details. Code maintained by Matthew Jones (mattyjones@boisestate.edu).
