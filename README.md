@@ -1,4 +1,4 @@
-![alt-text](logo.png "MorphCT Logo")
+![alt-text](logo.png "MorphCT Logo" =500)
 
 # PLEASE NOTE, README IS A WORK IN PROGRESS. #
 
@@ -11,21 +11,19 @@ The intention of this code is to:
 * Perform fast quantum chemical calculations (semi-empirical ZINDO/S) to determine the frontier molecular orbitals of each chromophore and calculate the electronic transfer integrals between each neighbouring pair (within a given cut-off)
 * Use the transfer integrals to run a simple Kinetic Monte Carlo algorithm to determine the charge carrier mobility, which can be used to infer morphology charge transport properties
 
-<hr>
-
+---
 
 # Table of Contents #
 
-* [Package and Directory Structures](#package)
-* [General Code Comments](#general)
-* [Job Pipeline](#pipeline)
-* [Example - P3HT Simulation](#example)
-* [Analysis Programs Included](#analysis)
-* [Future Work](#future)
+* [Package and Directory Structures](#package-and-directory-structures)
+* [General Code Comments](#general-code-comments)
+* [Job Pipeline](#job-pipeline)
+* [Example P3HT Simulation](#example-p3ht-simulation)
+* [Analysis Programs Included](#analysis-programs-included)
+* [Future Work](#future-work)
 
-<hr>
+---
 
-<a name="package"></a>
 # Package and Directory Structures #
 
 * ## MorphCT ##
@@ -51,9 +49,8 @@ The intention of this code is to:
     *The `templates` directory contains blank versions of all the files required to make MorphCT run. For instance, `parTemplate.py` is a blank `parXX.py` file that `generateParameterFile.py` reads in and modifies in order to generate a new MorphCT job. `template.inp` is the blank ZINDO/S input file for the ORCA simulation suite, which is used to perform the electronic structure calculations. `sample.sh` is a SLURM script which can be used to send MorphCT jobs to a cluster. Finally, `template.xml` is a blank HOOMD XML file, which is populated with the atomistic morphology after the relaxed atomic positions have been determined.
     Within this directory, the user should place their atomistic templates corresponding to the coarse-grained morphologies in the inputCGMorphs directory. An example has been provided in the repository and explained in [Example - P3HT Simulation](#example).*
 
-<hr>
+---
 
-<a name="general"></a>
 # General Code Comments #
 
 Discussion of data structures and initialisations
@@ -61,9 +58,8 @@ I.E. PARAMETER FILES AND HOW TO GENERATE, PICKLES etc.
 
 Also, don't forget to talk about restarting and how to do it.
 
-<hr>
+---
 
-<a name="pipeline"></a>
 # Job Pipeline #
 
 * ### Prerequisites ###
@@ -97,25 +93,22 @@ Also, don't forget to talk about restarting and how to do it.
 
 *Talk about how to extract the mobility data after the KMC*
 
-<hr>
+---
 
-<a name="example"></a>
 # Example - P3HT Simulation #
 
 For the user's convenience, an example has been provided in the repository. `mid3HT.xml` is an atomistic representation for a single repeat monomer of poly(3-hexylthiophene), which corresponds to the coarse-grained morphologies `p1-L15-f0.0-P0.1-TX.X-e0.5.xml` provided in `inputCGMorphs`. The parameter file `par00.py` shows BLAH BLAH
 
 INCLUDE A BREAKDOWN OF HOW LONG EACH MODULE TAKES
 
-<hr>
+---
 
-<a name="analysis"></a>
 # Analysis Programs Included #
 
 For instance, `KMCOut` parses the output KMC pickle file and determines the carrier mobility, anisotropy and connectivity of the simulated morphology. `plotTI` allows for extensive plotting of the electronic properties between statepoints, highlighting the distributions of frontier molecular orbitals, transfer integrals and both intra- and inter-molecular hopping rates. `trimMorphology` can operate on the coarse-grained input file to remove particular coarse-grained elements, while maintaining a consistent intra-molecular constraints list (i.e. remove a CG site type and all bonds, angles, dihedrals and impropers associated with that type while leaving the rest of the morphology intact).    
 
-<hr>
+---
 
-<a name="future"></a>
 # Future Work #
 
 * Update MorphCT to use Python 3.X
