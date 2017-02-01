@@ -1,4 +1,4 @@
-![alt-text](logo.png "MorphCT Logo" =500)
+![alt-text](logo.png "MorphCT Logo" =500x)
 
 # PLEASE NOTE, README IS A WORK IN PROGRESS. #
 
@@ -64,8 +64,9 @@ Also, don't forget to talk about restarting and how to do it.
 
 * ### Prerequisites ###
 
-*Prerequisite: Install ORCA and set the correct flag*
-*Which python modules are needed from the Scipy stack?*
+1. MorphCT is written in the `python` 2.7 programming language and requires the following modules from the `scipy` stack in addition to the standard python library modules: `numpy`, `matplotlib`, `scipy.sparse`, and `mpl_toolkits` (optional for 3D plotting). Support for Python 3.X will soon be added.
+2. In order to use the fine-graining modules `runHoomd` and `extractMol`, the Molecular Dynamics simulation package HOOMD-Blue is required. The source code for HOOMD-Blue can be found at [https://bitbucket.org/glotzer/hoomd-blue/](https://bitbucket.org/glotzer/hoomd-blue/). Note that the current version of MorphCT uses HOOMD 1.3 for its fine-graining procedure and so HOOMD 2.X is currently unsupported. The installation of HOOMD-Blue should automatically set the correct `PATH` and `PYTHONPATH` environment variables, and this can be tested by ensuring that typing `hoomd` into the terminal brings up a python IDE.
+3. In order to use the quantum-chemical module `executeZINDO`, the quantum-chemical simulation package ORCA is required. The pre-compiled binaries for ORCA can be downloaded from [https://orcaforum.cec.mpg.de/downloads.php](https://orcaforum.cec.mpg.de/downloads.php). MorphCT has been set up to use ORCA 3.0.3. Previous versions of ORCA may be compatible but are unsupported. After installing ORCA, the `ORCA_BIN` environment variable must be set as the location of the `orca` binary, using the `export` command on Linux-based machines.
 
 * ### Input Files ###
 
@@ -87,7 +88,7 @@ Also, don't forget to talk about restarting and how to do it.
 
 * ### Calculating Electronic Transfer Integrals ###
 
-* ### Executing Kinetic Monte Carlo Simulation ###
+* ### Executing Kinetic Monte Carlo Simulations ###
 
 * ### Analysing Data ###
 
@@ -119,6 +120,7 @@ For instance, `KMCOut` parses the output KMC pickle file and determines the carr
 * Benchmark code and optimise the most commonly-called subroutines
 
 ### MJ TO DOs ###
+
 * Merge the generalized branch onto Master when I'm happy everything is working
 * Remove redundant analysis scripts and update readme
 * Find and fix the mystery seg fault caused by ORCA on Kestrel
