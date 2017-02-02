@@ -277,8 +277,9 @@ if __name__ == "__main__":
         print "Loading chromophoreList..."
         AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, emptyCarrierList = helperFunctions.loadPickle('./' + directory + '/' + directory + '.pickle')
         print "ChromophoreList obtained"
-        print "Determining carrier hopping connections..."
-        plotConnections(chromophoreList, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']], carrierHistory, directory)
+        if carrierHistory is not None:
+            print "Determining carrier hopping connections..."
+            plotConnections(chromophoreList, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']], carrierHistory, directory)
         times, MSDs = helperFunctions.parallelSort(times, MSDs)
         print "Calculating MSD..."
         mobility, mobError = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory)

@@ -216,7 +216,10 @@ if __name__ == '__main__':
             for name in importantData:
                 saveData[name].append(thisCarrier.__dict__[name])
             # Update the carrierHistoryMatrix
-            saveData['carrierHistoryMatrix'] += thisCarrier.carrierHistoryMatrix
+            if parameterDict['recordCarrierHistory'] is True:
+                saveData['carrierHistoryMatrix'] += thisCarrier.carrierHistoryMatrix
+            else:
+                saveData['carrierHistoryMatrix'] = None
             # Then add in the initial and final positions
             saveData['initialPosition'].append(initialPosition)
             saveData['finalPosition'].append(finalPosition)
