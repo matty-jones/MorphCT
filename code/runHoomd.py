@@ -295,10 +295,11 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
                 print outputFile, "already exists. Skipping..."
                 continue
         MDPhase(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, phaseNo, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/' + inputFile, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/' + outputFile, sScale, eScale).optimiseStructure()
-    # Now all phases are complete, remove the ghost particles from the system
     finalXMLName = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/final_' + parameterDict['morphology']
-    print "Removing ghost particles to create final output..."
-    removeGhostParticles(parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/' + outputFile, finalXMLName)
+    if 'final_' + parameterDict['morphology'] not in currentFiles:
+        # Now all phases are complete, remove the ghost particles from the system
+        print "Removing ghost particles to create final output..."
+        removeGhostParticles(parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/' + outputFile, finalXMLName)
     # Finally, update the pickle file with the most recent and realistic
     # AAMorphologyDict so that we can load it again further along the pipeline
     AAMorphologyDict = helperFunctions.loadMorphologyXML(finalXMLName)
