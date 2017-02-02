@@ -274,4 +274,6 @@ if __name__ == '__main__':
         timeunits = 'days.'
     elapsedTime = '%.1f' % (float(elapsedTime))
     helperFunctions.writeToFile(logFile, ['All jobs completed in ' + elapsedTime + ' ' + timeunits])
+    helperFunctions.writeToFile(logFile, ['Saving the pickle file cleanly before termination...'])
+    savePickle(saveData, pickleFileName.replace('Data', 'Results'))
     helperFunctions.writeToFile(logFile, ['Exiting normally...'])
