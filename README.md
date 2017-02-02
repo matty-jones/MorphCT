@@ -15,12 +15,12 @@ The intention of this code is to:
 
 # Table of Contents #
 
-* [Package and Directory Structures](#package-and-directory-structures)
-* [General Code Comments](#general-code-comments)
-* [Job Pipeline](#job-pipeline)
-* [Example P3HT Simulation](#example-p3ht-simulation)
-* [Analysis Programs Included](#analysis-programs-included)
-* [Future Work](#future-work)
+* [Package and Directory Structures](#markdown-header-package-and-directory-structures)
+* [General Code Comments](#markdown-header-general-code-comments)
+* [Job Pipeline](#markdown-header-job-pipeline)
+* [Example P3HT Simulation](#markdown-header-example-p3ht-simulation)
+* [Analysis Programs Included](#markdown-header-analysis-programs-included)
+* [Future Work](#markdown-header-future-work)
 
 ---
 
@@ -53,6 +53,11 @@ The intention of this code is to:
 
 # General Code Comments #
 
+MorphCT is a modular 'one-size-fits-all' virtual organic electronic device simulator, that crosses all of the important lengthscales for device operation, from the angstroem lengthscale for individual molecules, right up to the hundreds of nanometers required to simulate the organic active layer. In order to effectively transfer information between the standalone modules, a variety of file types and data structures are used:
+
+* .xml (HOOMD)
+    * The real workhorse of MorphCT - the input coarse-grained morphologies are entered into the pipeline as HOOMD .xml files, the coarse-grained to fine-grained templates are HOOMD .xml files, and the fine-graining phases produces HOOMD .xml files for visualization purposes.
+
 Discussion of data structures and initialisations
 I.E. PARAMETER FILES AND HOW TO GENERATE, PICKLES etc.
 
@@ -66,7 +71,7 @@ Also, don't forget to talk about restarting and how to do it.
 
 1. MorphCT is written in the `python` 2.7 programming language and requires the following modules from the `scipy` stack in addition to the standard python library modules: `numpy`, `matplotlib`, `scipy.sparse`, and `mpl_toolkits` (optional for 3D plotting). Support for Python 3.X will soon be added.
 2. In order to use the fine-graining modules `runHoomd` and `extractMol`, the Molecular Dynamics simulation package HOOMD-Blue is required. The source code for HOOMD-Blue can be found at [https://bitbucket.org/glotzer/hoomd-blue/](https://bitbucket.org/glotzer/hoomd-blue/). Note that the current version of MorphCT uses HOOMD 1.3 for its fine-graining procedure and so HOOMD 2.X is currently unsupported. The installation of HOOMD-Blue should automatically set the correct `PATH` and `PYTHONPATH` environment variables, and this can be tested by ensuring that typing `hoomd` into the terminal brings up a python IDE.
-3. In order to use the quantum-chemical module `executeZINDO`, the quantum-chemical simulation package ORCA is required. The pre-compiled binaries for ORCA can be downloaded from [https://orcaforum.cec.mpg.de/downloads.php](https://orcaforum.cec.mpg.de/downloads.php). MorphCT has been set up to use ORCA 3.0.3. Previous versions of ORCA may be compatible but are unsupported. After installing ORCA, the `ORCA_BIN` environment variable must be set as the location of the `orca` binary, using the `export` command on Linux-based machines.
+3. In order to use the quantum-chemical module `executeZINDO`, the quantum-chemical simulation package ORCA is required. The pre-compiled binaries for ORCA can be downloaded from [https://orcaforum.cec.mpg.de/downloads.php](https://orcaforum.cec.mpg.de/downloads.php). MorphCT has been set up to use ORCA 3.0.3. Previous versions of ORCA may be compatible but are unsupported. After installing ORCA, the `ORCA_BIN` environment variable must be set as the directory that contains the `orca` binary, using the `export` command on Linux-based machines.
 
 * ### Input Files ###
 
