@@ -149,8 +149,8 @@ def calculateDisplacement(initialPosition, finalPosition, finalImage, simDims):
     return np.linalg.norm(np.array(displacement))
 
 
-def initialiseSaveData(nChromos):
-    return {'ID': [], 'image': [], 'lifetime': [], 'currentTime': [], 'noHops': [], 'displacement': [], 'carrierHistoryMatrix': lil_matrix((nChromos, nChromos), dtype = int), 'initialPosition': [], 'finalPosition': []}
+def initialiseSaveData(nChromos, seed):
+    return {'seed': seed, 'ID': [], 'image': [], 'lifetime': [], 'currentTime': [], 'noHops': [], 'displacement': [], 'carrierHistoryMatrix': lil_matrix((nChromos, nChromos), dtype = int), 'initialPosition': [], 'finalPosition': []}
 
 
 if __name__ == '__main__':
@@ -188,8 +188,10 @@ if __name__ == '__main__':
     helperFunctions.writeToFile(logFile, ['Main morphology pickle loaded!'])
     # Attempt to catch a kill signal to ensure that we save the pickle before termination
     killer = terminationSignal()
+    seed = R.Random(R.randint(0, sys.maxint))
+    R.seed(seed)
     # Save the pickle as a list of `saveCarrier' instances that contain the bare minimum
-    saveData = initialiseSaveData(len(chromophoreList))
+    saveData = initialiseSaveData(len(chromophoreList), seed)
     t0 = T.time()
     saveTime = T.time()
     saveSlot = 'slot1'
@@ -238,7 +240,7 @@ if __name__ == '__main__':
                 elapsedTime /= 86400.0
                 timeunits = 'days.'
             elapsedTime = '%.1f' % (float(elapsedTime))
-            helperFunctions.writeToFile(logFile, ['Carrier hopped ' + str(thisCarrier.noHops) + ' times into image ' + str(thisCarrier.image) + ' for a displacement of ' + str(thisCarrier.displacement) + ' in ' + str(elapsedTime) + ' ' + str(timeunits)])
+            helperFunctions.writeToFile(logFile, ['Carrier hopped ' + str(thisCarrier.noHops) + ' times, over ' + str(thisCarrier.currentTime) + 'seconds, into image ' + str(thisCarrier.image) + ', for a displacement of ' + str(thisCarrier.displacement) + ', in ' + str(elapsedTime) + ' wall-clock ' + str(timeunits)])
             # Save the pickle file every hour
             if (t2 - saveTime) > 3600:
                 print "Completed", jobNumber, "of", len(jobsToRun), "jobs. Making checkpoint at %3d%%" % (np.round(jobNumber + 1 / float(len(jobsToRun)) * 100))
