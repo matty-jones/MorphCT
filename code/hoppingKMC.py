@@ -44,7 +44,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     print "All KMC jobs completed!"
     print "Combining outputs..."
     combinedData = {}
-    for procID in procIDs:
+    for procID, jobs in enumerate(jobsList):
         fileName = outputDir + '/KMCResults_%02d.pickle' % (procID)
         # The pickle was repeatedly dumped to, in order to save time.
         # Each dump stream is self-contained, so iteratively unpickle to add the new data.
