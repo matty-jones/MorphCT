@@ -180,7 +180,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
             procIDs = procIDs[:len(jobsList)]
         runningJobs = []
         # Open the required processes to execute the ORCA jobs
-        for CPURank in procIDs:
+        for CPURank in len(jobsList):
             print 'python ' + os.getcwd() + '/code/singleCoreRunORCA.py ' + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + ' ' + str(CPURank) + ' &'
             runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunORCA.py', parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4], str(CPURank)]))
         # Wait for all jobs to complete
