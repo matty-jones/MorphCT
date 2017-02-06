@@ -141,6 +141,18 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory):
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
     #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
+    fileName = 'SemiLogMSD.pdf'
+    plt.savefig(directory + '/' + fileName)
+    plt.clf()
+    print "Figure saved as", directory + "/" + fileName
+    plt.plot(times, MSDs)
+    plt.errorbar(times, MSDs, xerr = timeStandardErrors, yerr = MSDStandardErrors)
+    plt.plot(fitX, fitY, 'r')
+    plt.xlabel('Time (s)')
+    plt.ylabel('MSD (m'+r'$^{2}$)')
+    plt.xscale('log')
+    plt.yscale('log')
+    #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
     fileName = 'LogMSD.pdf'
     plt.savefig(directory + '/' + fileName)
     plt.clf()
