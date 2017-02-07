@@ -65,13 +65,13 @@ class carrier:
         # Determine the hop times to all possible neighbours
         hopTimes = []
         # Obtain the reorganisation energy in J (from eV in the parameter file)
-        for neighbourIndex, transferIntegral in enumerate(self.currentChromophore.neighboursTI):
-            deltaEij = self.currentChromophore.neighboursDeltaE[neighbourIndex]
+        for neighbourIndex, transferIntegral in enumerate(self.currentChromophore.completeNeighboursTI):
+            deltaEij = self.currentChromophore.completeNeighboursDeltaE[neighbourIndex]
             # All of the energies are in eV currently, so convert them to J
             hopRate = self.calculateHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge)
             hopTime = self.determineHopTime(hopRate)
             # Keep track of the chromophoreID and the corresponding tau
-            hopTimes.append([self.currentChromophore.neighbours[neighbourIndex][0], hopTime])
+            hopTimes.append([self.currentChromophore.completeNeighbours[neighbourIndex][0], hopTime])
         # Sort by ascending hop time
         hopTimes.sort(key = lambda x:x[1])
         # Take the quickest hop

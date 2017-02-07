@@ -5,6 +5,7 @@ import cPickle as pickle
 import multiprocessing as mp
 import csv
 import xml.etree.cElementTree as ET
+import time as T
 
 
 def findMagnitude(vector):
@@ -1085,3 +1086,21 @@ def convertStringToInt(x):
         except:
             continue
     return 99999
+
+
+def TEMPAddBondedChromos(chromophoreList, CGMorphologyDict):
+    t0 = T.time()
+    for chromo1ID, chromo1 in enumerate(chromophoreList):
+        print "Examining chromophore", chromo1ID + 1, "of", len(chromophoreList)
+        for chromo2ID in [x[0] for x in chromo1.neighbours]:
+            chromo2 = chromophoreList[chromo2ID]
+            for bond in CGMorphologyDict['bond']:
+                if ((bond[1] in chromo1.CGIDs) and (bond[2] in chromo2.CGIDs)) or ((bond[2] in chromo1.CGIDs) and (bond[1] in chromo2.CGIDs)):
+                    if chromo1.ID not in chromo2.bondedChromos:
+                        chromo2.bondedChromos.append(chromo1.ID)
+                    if chromo2.ID not in chromo1.bondedChromos:
+                        chromo1.bondedChromos.append(chromo2.ID)
+                    break
+    t1 = T.time()
+    print "Took %f seconds" % (t1-t0)
+    return chromophoreList

@@ -36,6 +36,8 @@ class chromophore:
         # The self.neighbours list contains one element for each chromophore within parameterDict['maximumHopDistance']
         # of this one (including periodic boundary conditions). Its format is [[neighbour1ID, relativeImageOfNeighbour1],...]
         self.neighbours = []
+        # Also find out the chromoIDs that are bonded directly to this one
+        self.bondedChromos = []
         # The molecular orbitals of this chromophore have not yet been calculated, but they will simply be floats.
         self.HOMO = None
         self.HOMO_1 = None
@@ -46,6 +48,14 @@ class chromophore:
         # in self.neighbours for coherence.
         self.neighboursDeltaE = []
         self.neighboursTI = []
+        # The following lists are treated later on in the pipeline to add in additional neighbours to help model the
+        # variable chromophore length in polymers, which permits the carrier to hop between pairs of monomers that are nearby,
+        # but not necessarily the current monomer. Therefore, completeNeighbours shows the FINAL location of the charge 
+        # carrier (no matter where it started). The completeNeighboursDeltaE and completeNeighboursTI are determined from the
+        # conventional neighbour hopping for the nearby pairs. 
+        self.completeNeighbours = []
+        self.completeNeighboursDeltaE = []
+        self.completeNeighboursTI = []
         pass
 
     def getImportantBonds(self, bondList):
@@ -161,7 +171,7 @@ def updateChromophores(atomID, chromophoreList, bondedAtoms, CGTypeList, typesIn
     return chromophoreList, typesInThisChromophore
 
 
-def determineNeighbours(chromophoreList, parameterDict, simDims):
+def determineNeighbours(chromophoreList, parameterDict, simDims, CGMorphologyDict):
     for chromophore1 in chromophoreList:
         print "\rIdentifying neighbours of chromophore %04d of %04d..." % (chromophore1.ID, len(chromophoreList) - 1),
         sys.stdout.flush()
@@ -185,6 +195,14 @@ def determineNeighbours(chromophoreList, parameterDict, simDims):
                 # Only add the neighbours if they haven't already been added so far
                 chromo1NeighbourIDs = [neighbourData[0] for neighbourData in chromophore1.neighbours]
                 chromo2NeighbourIDs = [neighbourData[0] for neighbourData in chromophore2.neighbours]
+                # Determine if these chromophores are bonded
+                for bond in CGMorphologyDict['bond']:
+                    if ((bond[1] in chromophore1.CGIDs) and (bond[2] in chromophore2.CGIDs)) or ((bond[2] in chromophore1.CGIDs) and (bond[1] in chromophore2.CGIDs)):
+                        if chromophore1.ID not in chromophore2.bondedChromos:
+                            chromophore2.bondedChromos.append(chromophore1.ID)
+                        if chromophore2.ID not in chromophore1.bondedChromos:
+                            chromophore1.bondedChromos.append(chromophore2.ID)
+                        break
                 # Also, make the deltaE and the Tij lists as long as the neighbour lists for easy access later
                 if chromophore2.ID not in chromo1NeighbourIDs:
                     chromophore1.neighbours.append([chromophore2.ID, relativeImageOfChromo2])
@@ -245,7 +263,7 @@ def plotChromoNeighbours(chromophore, chromophoreList, simDims):
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList):
     simDims = [[-AAMorphologyDict['lx'] / 2.0, AAMorphologyDict['lx'] / 2.0], [-AAMorphologyDict['ly'] / 2.0, AAMorphologyDict['ly'] / 2.0], [-AAMorphologyDict['lz'] / 2.0, AAMorphologyDict['lz'] / 2.0]]
     chromophoreList = calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims)
-    chromophoreList = determineNeighbours(chromophoreList, parameterDict, simDims)
+    chromophoreList = determineNeighbours(chromophoreList, parameterDict, simDims, CGMorphologyDict)
     # Now we have updated the chromophoreList, rewrite the pickle with this new information.
     pickleName = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle'
     helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList), pickleName)

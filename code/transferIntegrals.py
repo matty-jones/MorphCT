@@ -3,6 +3,7 @@ import sys
 import os
 import helperFunctions
 import csv
+import copy
 import subprocess as sp
 import multiprocessing as mp
 import cPickle as pickle
@@ -261,7 +262,7 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
     return chromophoreList
 
 
-def updatePairChromophoreList(chromophoreList, parameterDict):
+def updatePairChromophoreList(chromophoreList, parameterDict, CGToAAIDMaster, CGMorphologyDict):
     # Now that all the single chromophore energy levels are done, iterate through again and check the neighbours,
     # rerunning the pair file if it failed (which it won't have done because all my chromophores are delicious now).
     orcaOutputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/outputORCA/'
@@ -337,7 +338,35 @@ def updatePairChromophoreList(chromophoreList, parameterDict):
             failedPairChromos.pop(fileName)
         print len(failedPairChromos)
     print ""
+    # Now take into account any carrier delocalization along the chain backbone (if chromophoreLength == 1, then this
+    # just updates the completeNeighbours, DeltaE and TI to be equal to the non-complete properties
+    chromophoreList = addNearbyChromophores(chromophoreList, parameterDict['chromophoreLength'], CGToAAIDMaster, CGMorphologyDict)
     return chromophoreList
+
+
+def addNearbyChromophores(chromophoreList, chromophoreLength, CGToAAIDMaster, CGMorphologyDict):
+        # Each chromo in chromophoreList already includes a list that describes what its bonded neighbours are.
+        # Now need to find out how many bonded shells to add. For example, if the chromophoreLength is 7, look at
+        # the 3 bonded neighbours on the left and 3 on the right (which makes seven when the current chromophore in the
+        # centre is also considered)
+        shellsToAdd = int((chromophoreLength - 1) / 2.0)
+        for chromo1 in chromophoreList:
+            #print "\rAdding the neighbours of the bonded chromophores up to a length of", chromophoreLength, "for chromophore", chromo1.ID+1, "of", len(chromophoreList),
+            completeChromophore = [chromo1.ID]
+            for i in range(shellsToAdd):
+                addTheseChromos = []
+                for chromoID in completeChromophore:
+                    for bondedChromoID in chromophoreList[chromoID].bondedChromos:
+                        if bondedChromoID not in completeChromophore:
+                            addTheseChromos.append(bondedChromoID)
+                completeChromophore += addTheseChromos
+            for chromo2ID in completeChromophore:
+                for index, neighbourChromo in enumerate(chromophoreList[chromo2ID].neighbours):
+                    if (neighbourChromo not in chromo1.completeNeighbours) and (neighbourChromo != chromo1.ID):
+                        chromo1.completeNeighbours.append(neighbourChromo)
+                        chromo1.completeNeighboursDeltaE.append(chromophoreList[chromo2ID].neighboursDeltaE[index])
+                        chromo1.completeNeighboursTI.append(chromophoreList[chromo2ID].neighboursTI[index])
+        return chromophoreList
 
 
 def scaleEnergies(chromophoreList, parameterDict):
@@ -439,7 +468,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
                     break
     if (runPairs is True) or (parameterDict['overwriteCurrentData'] is True):
         print "Beginning analysis of chromophore pairs..."
-        chromophoreList = updatePairChromophoreList(chromophoreList, parameterDict)
+        chromophoreList = updatePairChromophoreList(chromophoreList, parameterDict, CGToAAIDMaster, CGMorphologyDict)
         print "Pair chromophore calculations completed. Saving..."
         helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList), pickleName)
     else:
