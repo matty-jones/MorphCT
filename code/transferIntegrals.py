@@ -291,10 +291,6 @@ def updatePairChromophoreList(chromophoreList, parameterDict, CGToAAIDMaster, CG
                 chromophoreList[neighbourID].neighboursDeltaE[reverseLoc] = - deltaE
                 chromophore.neighboursTI[neighbourLoc] = TI
                 chromophoreList[neighbourID].neighboursTI[reverseLoc] = TI
-                if parameterDict['removeORCAInputs'] is True:
-                    sp.Popen("rm -f " + orcaOutputDir.replace('outputORCA', 'inputORCA') + fileName.replace('.out','.*'), shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
-                if parameterDict['removeORCAOutputs'] is True:
-                    sp.Popen("rm -f " + orcaOutputDir + fileName, shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
             except ORCAError:
                 failedPairChromos[fileName] = [1, chromoLocation, neighbourID]
     print ""
@@ -341,6 +337,11 @@ def updatePairChromophoreList(chromophoreList, parameterDict, CGToAAIDMaster, CG
     # Now take into account any carrier delocalization along the chain backbone (if chromophoreLength == 1, then this
     # just updates the completeNeighbours, DeltaE and TI to be equal to the non-complete properties
     chromophoreList = addNearbyChromophores(chromophoreList, parameterDict['chromophoreLength'], CGToAAIDMaster, CGMorphologyDict)
+    # Finally, delete any of the files that need to be deleted.
+    if parameterDict['removeORCAInputs'] is True:
+        sp.Popen("rm -f " + orcaOutputDir.replace('outputORCA', 'inputORCA') + '*.*', shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
+    if parameterDict['removeORCAOutputs'] is True:
+        sp.Popen("rm -f " + orcaOutputDir + '*.*', shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
     return chromophoreList
 
 
