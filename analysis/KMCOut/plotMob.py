@@ -118,6 +118,13 @@ def calcMobility(linFitX, linFitY, avTimeError, avMSDError):
 
 
 def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory):
+    ### DEBUG TEST ###
+    #print "DEBUG TEST CODE ACTIVE, DELETE TO GET PROPER RESULTS!"
+    #times = times[-3:]
+    #MSDs = MSDs[-3:]
+    #timeStandardErrors = timeStandardErrors[-3:]
+    #MSDStandardErrors = MSDStandardErrors[-3:]
+    ##################
     fit = np.polyfit(times, MSDs, 1)
     fitX = np.linspace(np.min(times), np.max(times), 100)
     gradient, intercept, rVal, pVal, stdErr = scipy.stats.linregress(times, MSDs)
