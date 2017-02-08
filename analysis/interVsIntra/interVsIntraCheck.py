@@ -2,7 +2,7 @@ import cPickle as pickle
 import numpy as np
 import sys
 from scipy.sparse import lil_matrix
-sys.path.append('../../../code')
+sys.path.append('../../code')
 import helperFunctions
 
 def chromoIDToMol(CGToAAIDMaster, chromophoreList):
