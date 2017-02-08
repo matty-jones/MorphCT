@@ -53,6 +53,7 @@ class chromophore:
         # but not necessarily the current monomer. Therefore, completeNeighbours shows the FINAL location of the charge 
         # carrier (no matter where it started). The completeNeighboursDeltaE and completeNeighboursTI are determined from the
         # conventional neighbour hopping for the nearby pairs. 
+        self.completeChromophore = []
         self.completeNeighbours = []
         self.completeNeighboursDeltaE = []
         self.completeNeighboursTI = []

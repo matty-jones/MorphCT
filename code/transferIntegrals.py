@@ -227,10 +227,6 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
         # Update the chromophores in the chromophoreList with their energyLevels
         try:
             chromophore.HOMO_1, chromophore.HOMO, chromophore.LUMO, chromophore.LUMO_1 = loadORCAOutput(orcaOutputDir + fileName)
-            if parameterDict['removeORCAInputs'] is True:
-                sp.Popen("rm -f " + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophore.orcaInput.replace('.inp','.*'), shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
-            if parameterDict['removeORCAOutputs'] is True:
-                sp.Popen("rm -f " + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophore.orcaOutput, shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
         except ORCAError:
             failedSingleChromos[fileName] = [1, chromoLocation]
             continue
@@ -248,10 +244,6 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
                 chromophoreList[chromoID].HOMO_1, chromophoreList[chromoID].HOMO, chromophoreList[chromoID].LUMO, chromophoreList[chromoID].LUMO_1 = loadORCAOutput(orcaOutputDir + chromoName)
                 # This chromophore didn't fail, so remove it from the failed list
                 successfulReruns.append(chromoName)
-                if parameterDict['removeORCAInputs'] is True:
-                    sp.Popen("rm -f " + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophoreList[chromoID].orcaInput.replace('.inp','.*'), shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
-                if parameterDict['removeORCAOutputs'] is True:
-                    sp.Popen("rm -f " + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophoreList[chromoID].orcaOutput, shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
             except:
                 # This chromophore failed so increment its fail counter
                 failedSingleChromos[chromoName][0] += 1
@@ -259,6 +251,10 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
         for chromoName in successfulReruns:
             failedSingleChromos.pop(chromoName)
     print ""
+    if parameterDict['removeORCAInputs'] is True:
+        sp.Popen("rm -f " + orcaOutputDir.replace('outputORCA', 'inputORCA') + 'single/*.*', shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
+    if parameterDict['removeORCAOutputs'] is True:
+        sp.Popen("rm -f " + orcaOutputDir + 'single/*.*', shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
     return chromophoreList
 
 
@@ -319,10 +315,6 @@ def updatePairChromophoreList(chromophoreList, parameterDict, CGToAAIDMaster, CG
                 chromophoreList[chromo2ID].neighboursTI[reverseLoc] = TI
                 # This rerun was successful so remove this chromophore from the rerun list
                 successfulReruns.append(fileName)
-                if parameterDict['removeORCAInputs'] is True:
-                    os.remove(orcaOutputDir.replace('outputORCA', 'inputORCA') + fileName.replace('.inp','.*'))
-                if parameterDict['removeORCAOutputs'] is True:
-                    os.remove(orcaOutputDir + fileName)
                 print fileName, "was successful!"
             except:
                 # This dimer failed so increment its fail counter
@@ -339,9 +331,9 @@ def updatePairChromophoreList(chromophoreList, parameterDict, CGToAAIDMaster, CG
     chromophoreList = addNearbyChromophores(chromophoreList, parameterDict['chromophoreLength'], CGToAAIDMaster, CGMorphologyDict)
     # Finally, delete any of the files that need to be deleted.
     if parameterDict['removeORCAInputs'] is True:
-        sp.Popen("rm -f " + orcaOutputDir.replace('outputORCA', 'inputORCA') + '*.*', shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
+        sp.Popen("rm -f " + orcaOutputDir.replace('outputORCA', 'inputORCA') + 'pair/*.*', shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
     if parameterDict['removeORCAOutputs'] is True:
-        sp.Popen("rm -f " + orcaOutputDir + '*.*', shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
+        sp.Popen("rm -f " + orcaOutputDir + 'pair/*.*', shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
     return chromophoreList
 
 
@@ -361,9 +353,12 @@ def addNearbyChromophores(chromophoreList, chromophoreLength, CGToAAIDMaster, CG
                         if bondedChromoID not in completeChromophore:
                             addTheseChromos.append(bondedChromoID)
                 completeChromophore += addTheseChromos
-            for chromo2ID in completeChromophore:
+            chromo1.completeChromophore = completeChromophore
+        # Now the complete chromophore list has been created, add in the important neighbours etc., ignoring any intra-chromophore hops
+        for chromo1 in chromophoreList:
+            for chromo2ID in chromo1.completeChromophore:
                 for index, neighbourChromo in enumerate(chromophoreList[chromo2ID].neighbours):
-                    if (neighbourChromo not in chromo1.completeNeighbours) and (neighbourChromo != chromo1.ID):
+                    if (neighbourChromo not in chromo1.completeChromophore):
                         chromo1.completeNeighbours.append(neighbourChromo)
                         chromo1.completeNeighboursDeltaE.append(chromophoreList[chromo2ID].neighboursDeltaE[index])
                         chromo1.completeNeighboursTI.append(chromophoreList[chromo2ID].neighboursTI[index])

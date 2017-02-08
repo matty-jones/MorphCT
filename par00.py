@@ -336,6 +336,7 @@ CGSiteSpecies = {\
 maximumHopDistance = 10.0
 removeORCAInputs = False
 removeORCAOutputs = False
+chromophoreLength = 3
 
 # ---=== Chromophore Energy Scaling Parameters ===---
 
