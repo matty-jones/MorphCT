@@ -8,6 +8,7 @@ import subprocess as sp
 import multiprocessing as mp
 import cPickle as pickle
 import time as T
+import glob
 
 
 class ORCAError(Exception):
@@ -324,9 +325,11 @@ def updatePairChromophoreList(chromophoreList, parameterDict):
     print ""
     # Finally, delete any of the files that need to be deleted.
     if parameterDict['removeORCAInputs'] is True:
-        sp.Popen("rm -f " + orcaOutputDir.replace('outputORCA', 'inputORCA') + 'pair/*.*', shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
+        for fileName in glob.glob(orcaOutputDir.replace('outputORCA', 'inputORCA') + 'pair/*.*'):
+            os.remove(fileName)
     if parameterDict['removeORCAOutputs'] is True:
-        sp.Popen("rm -f " + orcaOutputDir + 'pair/*.*', shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
+        for fileName in glob.glob(orcaOutputDir + 'pair/*.*'):
+            os.remove(fileName)
     return chromophoreList
 
 
@@ -398,7 +401,7 @@ def scaleEnergies(chromophoreList, parameterDict):
     return chromophoreList
 
 
-def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList):
+def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
     pickleName = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle'
     # First, check that we need to examine the single chromophores
     runSingles = False
@@ -415,7 +418,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         print "Scaling energies..."
         chromophoreList = scaleEnergies(chromophoreList, parameterDict)
         print "Single chromophore calculations completed. Saving..."
-        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList), pickleName)
+        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleName)
     else:
         print "All single chromophore calculations already performed. Skipping..."
     # Then, check the pairs
@@ -431,10 +434,10 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         print "Beginning analysis of chromophore pairs..."
         chromophoreList = updatePairChromophoreList(chromophoreList, parameterDict)
         print "Pair chromophore calculations completed. Saving..."
-        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList), pickleName)
+        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleName)
     else:
         print "All pair chromophore calculations already performed. Skipping..."
-    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList
+    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
 
 
 if __name__ == "__main__":
@@ -442,5 +445,5 @@ if __name__ == "__main__":
         pickleFile = sys.argv[1]
     except:
         print "Please specify the pickle file to load to continue the pipeline from this point."
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(pickleFile)
-    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
+    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)

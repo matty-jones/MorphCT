@@ -39,39 +39,39 @@ class simulation:
         self.copyCode()
         # Load any previous data to allow us to run individual phases
         try:
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(self.outputDirectory+'/code/'+self.morphology[:-4]+'.pickle')
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict, chromophoreList = helperFunctions.loadPickle(self.outputDirectory+'/code/'+self.morphology[:-4]+'.pickle')
         except:
             print "PICKLE NOT FOUND, EXECUTING FINEGRAINING TO OBTAIN REQUIRED PARAMETERS..."
             self.executeFinegraining = False
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, [], []).analyseMorphology()
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, [], []).analyseMorphology()
         # Now begin running the code based on user's flags
         if self.executeFinegraining is True:
             print "---=== BACKMAPPING COARSE-GRAINED SITES... ===---"
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, chromophoreList, carrierList).analyseMorphology()
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, chromophoreList).analyseMorphology()
             print "---=== BACKMAPPING COMPLETED ===---"
         if self.executeMolecularDynamics is True:
             print "---=== EQUILIBRATING FINE-GRAINED MORPHOLOGY... ===---"
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = runHoomd.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = runHoomd.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
             print "---=== EQUILIBRATION COMPLETED ===---"
         if self.executeExtractMolecules is True:
             print "---=== EXTRACTING SINGLE MOLECULES FROM SYSTEM... ===---"
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = extractMol.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = extractMol.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
             print "---=== EXTRACTION COMPLETED ===---"
         if self.executeObtainChromophores is True:
             print "---=== IDENTIFYING CHROMOPHORES OF CHARGE CARRIER DELOCALISATION... ===---"
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = obtainChromophores.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = obtainChromophores.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
             print "---=== IDENTIFICATION COMPLETED ===---"
         if self.executeZINDO is True:
             print "---=== PERFORMING SEMI-EMPIRICAL ZINDO/S CALCULATIONS... ===---"
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = executeZINDO.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = executeZINDO.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
             print "---=== CALCULATIONS COMPLETED ===---"
         if self.executeCalculateTransferIntegrals is True:
             print "---=== DETERMINING ELECTRONIC TRANSFER INTEGRALS... ===---"
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = transferIntegrals.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = transferIntegrals.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
             print "---=== DETERMINATION COMPLETED ===---"
         if self.executeCalculateMobility is True:
             print "---=== EXECUTING KINETIC MONTE CARLO SIMULATIONS... ===---"
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = hoppingKMC.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hoppingKMC.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
             print "---=== EXECUTION COMPLETED ===---"
         exit()
 

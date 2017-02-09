@@ -268,7 +268,7 @@ def scaleMorphology(initialMorphology, parameterDict, sScale, eScale):
     helperFunctions.writeMorphologyXML(initialMorphology, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/phase0_' + parameterDict['morphology'])
 
 
-def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList):
+def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
     # Main execution function for runHoomd that performs the required MD phases
     # First, scale the input morphology based on the pair potentials such that
     # the distances and energies are normalised to the strongest pair interaction
@@ -308,8 +308,8 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     # Add in the unwrapped positions
     AAMorphologyDict = helperFunctions.addUnwrappedPositions(AAMorphologyDict)
     # Write the pickle file
-    helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList), parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle')
-    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList
+    helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle')
+    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
 
 
 def removeGhostParticles(lastPhaseXML, outputFileName):
@@ -351,5 +351,5 @@ if __name__ == "__main__":
         pickleFile = sys.argv[1]
     except:
         print "Please specify the pickle file to load to continue the pipeline from this point."
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(pickleFile)
-    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
+    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)

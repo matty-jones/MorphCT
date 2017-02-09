@@ -163,7 +163,7 @@ def getORCAJobs(inputDir, procIDs):
     return jobsList
 
 
-def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList):
+def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
     createInputFiles(chromophoreList, AAMorphologyDict, parameterDict)
     inputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/inputORCA'
     procIDs = parameterDict['procIDs']
@@ -187,7 +187,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         [p.wait() for p in runningJobs]
         # Delete the job pickle
         os.system('rm ' + pickleName)
-    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList
+    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
 
 
 if __name__ == "__main__":
@@ -195,5 +195,5 @@ if __name__ == "__main__":
         pickleFile = sys.argv[1]
     except:
         print "Please specify the pickle file to load to continue the pipeline from this point."
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(pickleFile)
-    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
+    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
