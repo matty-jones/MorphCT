@@ -8,6 +8,7 @@ import subprocess as sp
 import multiprocessing as mp
 import cPickle as pickle
 import time as T
+import glob
 
 
 class ORCAError(Exception):
@@ -63,23 +64,23 @@ def modifyORCAFiles(fileName, failedFile, failedCount):
     elif failedCount == 6:
         # Still no joy - increase the number of SCF iterations and see if convergence was just slow
         print str(fileName)+": Six lots of reruns without any success - increasing the number of SCF iterations to 500..."
-        increaseIterations(fileName)
+        increaseIterations(failedFile)
     elif failedCount == 9:
         # Finally, turn down the SCF tolerance
         print str(fileName)+": Nine lots of reruns without any success - decreasing SCF tolerance (sloppySCF)..."
-        reduceTolerance(fileName)
+        reduceTolerance(failedFile)
     elif failedCount == 12:
         print str(fileName)+": Failed to rerun ORCA 12 times, one final thing that can be done is to change the numerical accuracy..."
-        revertORCAFiles(fileName)
-        increaseGrid(fileName)
+        revertORCAFiles(failedFile)
+        increaseGrid(failedFile)
     elif failedCount == 15:
         print str(fileName)+": Failed to rerun ORCA 15 times. Will try high numerical accuracy with no SOSCF as a last-ditch effort..."
-        increaseGridNoSOSCF(fileName)
+        increaseGridNoSOSCF(failedFile)
     elif failedCount == 18:
         # SERIOUS PROBLEM
         print str(fileName)+": Failed to rerun ORCA 18 times, even with all the input file tweaks. Examine the geometry - it is most likely unreasonable."
         print "Reverting "+str(fileName)+" back to its original state..."
-        revertORCAFiles(fileName)
+        revertORCAFiles(failedFile)
         return 1
     return 0
 
@@ -251,14 +252,10 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
         for chromoName in successfulReruns:
             failedSingleChromos.pop(chromoName)
     print ""
-    if parameterDict['removeORCAInputs'] is True:
-        sp.Popen("rm -f " + orcaOutputDir.replace('outputORCA', 'inputORCA') + 'single/*.*', shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
-    if parameterDict['removeORCAOutputs'] is True:
-        sp.Popen("rm -f " + orcaOutputDir + 'single/*.*', shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
     return chromophoreList
 
 
-def updatePairChromophoreList(chromophoreList, parameterDict, CGToAAIDMaster, CGMorphologyDict):
+def updatePairChromophoreList(chromophoreList, parameterDict, CGtoAAIDMaster, CGMorphologyDict):
     # Now that all the single chromophore energy levels are done, iterate through again and check the neighbours,
     # rerunning the pair file if it failed (which it won't have done because all my chromophores are delicious now).
     orcaOutputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/outputORCA/'
@@ -331,9 +328,11 @@ def updatePairChromophoreList(chromophoreList, parameterDict, CGToAAIDMaster, CG
     chromophoreList = addNearbyChromophores(chromophoreList, parameterDict['chromophoreLength'], CGToAAIDMaster, CGMorphologyDict)
     # Finally, delete any of the files that need to be deleted.
     if parameterDict['removeORCAInputs'] is True:
-        sp.Popen("rm -f " + orcaOutputDir.replace('outputORCA', 'inputORCA') + 'pair/*.*', shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
+        for fileName in glob.glob(orcaOutputDir.replace('outputORCA', 'inputORCA') + 'pair/*.*'):
+            os.remove(fileName)
     if parameterDict['removeORCAOutputs'] is True:
-        sp.Popen("rm -f " + orcaOutputDir + 'pair/*.*', shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
+        for fileName in glob.glob(orcaOutputDir + 'pair/*.*'):
+            os.remove(fileName)
     return chromophoreList
 
 
@@ -433,7 +432,7 @@ def scaleEnergies(chromophoreList, parameterDict):
     return chromophoreList
 
 
-def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList):
+def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
     pickleName = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle'
     # First, check that we need to examine the single chromophores
     runSingles = False
@@ -450,7 +449,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         print "Scaling energies..."
         chromophoreList = scaleEnergies(chromophoreList, parameterDict)
         print "Single chromophore calculations completed. Saving..."
-        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList), pickleName)
+        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleName)
     else:
         print "All single chromophore calculations already performed. Skipping..."
     # Then, check the pairs
@@ -466,10 +465,10 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         print "Beginning analysis of chromophore pairs..."
         chromophoreList = updatePairChromophoreList(chromophoreList, parameterDict, CGToAAIDMaster, CGMorphologyDict)
         print "Pair chromophore calculations completed. Saving..."
-        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList), pickleName)
+        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleName)
     else:
         print "All pair chromophore calculations already performed. Skipping..."
-    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList
+    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
 
 
 if __name__ == "__main__":
@@ -477,5 +476,5 @@ if __name__ == "__main__":
         pickleFile = sys.argv[1]
     except:
         print "Please specify the pickle file to load to continue the pipeline from this point."
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(pickleFile)
-    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
+    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)

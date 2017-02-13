@@ -184,7 +184,7 @@ if __name__ == '__main__':
         if 'pickle' in fileName:
             mainMorphologyPickleName = pickleDir + '/' + fileName
     helperFunctions.writeToFile(logFile, ['Found main morphology pickle file at ' + mainMorphologyPickleName + '! Loading data...'])
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(mainMorphologyPickleName)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(mainMorphologyPickleName)
     helperFunctions.writeToFile(logFile, ['Main morphology pickle loaded!'])
     # Attempt to catch a kill signal to ensure that we save the pickle before termination
     killer = terminationSignal()
