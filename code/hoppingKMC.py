@@ -15,7 +15,7 @@ except ImportError:
     print "Could not import 3D plotting engine, calling the plotCarrier subroutine will result in an error!"
 
 
-def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList):
+def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
     # Attempt 2. PROGRAM THIS SERIALLY FIRST SO THAT IT WORKS
     # Determine the maximum simulation times based on the parameter dictionary
     simulationTimes = parameterDict['simulationTimes']
@@ -63,13 +63,12 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     # Delete any unneeded files
     sp.Popen("rm -f " + outputDir + "/KMCData*", shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
     sp.Popen("rm -f " + outputDir + "/KMCResults_*", shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
-    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList
-
+    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
 
 if __name__ == "__main__":
     try:
         pickleFile = sys.argv[1]
     except:
         print "Please specify the pickle file to load to continue the pipeline from this point."
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(pickleFile)
-    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
+    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)

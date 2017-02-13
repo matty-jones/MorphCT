@@ -5,7 +5,7 @@ import sys
 
 
 class morphology:
-    def __init__(self, morphologyXML, morphologyName, parameterDict, chromophoreList, carrierList):
+    def __init__(self, morphologyXML, morphologyName, parameterDict, chromophoreList):
         # Import parameters from the parXX.py
         self.parameterDict = parameterDict
         for key, value in parameterDict.iteritems():
@@ -17,7 +17,6 @@ class morphology:
         self.CGDictionary = helperFunctions.loadMorphologyXML(self.xmlPath, sigma=self.inputSigma)
         self.CGDictionary = helperFunctions.addUnwrappedPositions(self.CGDictionary)
         self.chromophoreList = chromophoreList
-        self.carrierList = carrierList
 
     def analyseMorphology(self):
         # Split the morphology into individual molecules
@@ -92,8 +91,8 @@ class morphology:
         helperFunctions.writeMorphologyXML(AAMorphologyDict, AAFileName)
         # And finally write the pickle
         pickleLocation = './outputFiles/' + self.morphologyName + '/code/' + self.morphologyName + '.pickle'
-        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict, self.chromophoreList, self.carrierList), pickleLocation)
-        return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict, self.chromophoreList, self.carrierList
+        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict, self.chromophoreList), pickleLocation)
+        return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict, self.chromophoreList
 
     def splitMolecules(self):
         # Split the full morphology into individual molecules
