@@ -328,9 +328,11 @@ def updatePairChromophoreList(chromophoreList, parameterDict, CGtoAAIDMaster, CG
     chromophoreList = addNearbyChromophores(chromophoreList, parameterDict['chromophoreLength'], CGToAAIDMaster, CGMorphologyDict)
     # Finally, delete any of the files that need to be deleted.
     if parameterDict['removeORCAInputs'] is True:
+        print "Deleting ORCA input files..."
         for fileName in glob.glob(orcaOutputDir.replace('outputORCA', 'inputORCA') + 'pair/*.*'):
             os.remove(fileName)
     if parameterDict['removeORCAOutputs'] is True:
+        print "Deleting ORCA output files..."
         for fileName in glob.glob(orcaOutputDir + 'pair/*.*'):
             os.remove(fileName)
     return chromophoreList
