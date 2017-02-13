@@ -64,23 +64,23 @@ def modifyORCAFiles(fileName, failedFile, failedCount):
     elif failedCount == 6:
         # Still no joy - increase the number of SCF iterations and see if convergence was just slow
         print str(fileName)+": Six lots of reruns without any success - increasing the number of SCF iterations to 500..."
-        increaseIterations(fileName)
+        increaseIterations(failedFile)
     elif failedCount == 9:
         # Finally, turn down the SCF tolerance
         print str(fileName)+": Nine lots of reruns without any success - decreasing SCF tolerance (sloppySCF)..."
-        reduceTolerance(fileName)
+        reduceTolerance(failedFile)
     elif failedCount == 12:
         print str(fileName)+": Failed to rerun ORCA 12 times, one final thing that can be done is to change the numerical accuracy..."
-        revertORCAFiles(fileName)
-        increaseGrid(fileName)
+        revertORCAFiles(failedFile)
+        increaseGrid(failedFile)
     elif failedCount == 15:
         print str(fileName)+": Failed to rerun ORCA 15 times. Will try high numerical accuracy with no SOSCF as a last-ditch effort..."
-        increaseGridNoSOSCF(fileName)
+        increaseGridNoSOSCF(failedFile)
     elif failedCount == 18:
         # SERIOUS PROBLEM
         print str(fileName)+": Failed to rerun ORCA 18 times, even with all the input file tweaks. Examine the geometry - it is most likely unreasonable."
         print "Reverting "+str(fileName)+" back to its original state..."
-        revertORCAFiles(fileName)
+        revertORCAFiles(failedFile)
         return 1
     return 0
 
