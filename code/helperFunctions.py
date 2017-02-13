@@ -1052,12 +1052,9 @@ def writeToFile(logFile, stringList, mode='logFile'):
 def loadPickle(pickleLocation):
     print "Loading Pickle from", str(pickleLocation) + "..."
     with open(pickleLocation, 'r') as pickleFile:
-        try:
-            (AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList) = pickle.load(pickleFile)
-        except ValueError:
-            (AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList) = pickle.load(pickleFile)
+        objects = pickle.load(pickleFile)
     print "Pickle loaded successfully!"
-    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
+    return objects[0], objects[1], objects[2], objects[3], objects[4]
 
 
 def writePickle(toPickle, pickleFileName):

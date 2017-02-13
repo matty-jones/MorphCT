@@ -43,7 +43,7 @@ class simulation:
         except:
             print "PICKLE NOT FOUND, EXECUTING FINEGRAINING TO OBTAIN REQUIRED PARAMETERS..."
             self.executeFinegraining = False
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, [], []).analyseMorphology()
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, []).analyseMorphology()
         # Now begin running the code based on user's flags
         if self.executeFinegraining is True:
             print "---=== BACKMAPPING COARSE-GRAINED SITES... ===---"
