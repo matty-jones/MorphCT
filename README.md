@@ -30,19 +30,23 @@ The intention of this code is to:
   
   *The main `MorphCT` directory contains all of the required subdirectories, as well as the infrastructure for generating new MorphCT jobs. These jobs are executed by running a parameter file (`parXX.py`), which can be created manually by modifying the template, or by using `generateParameterFile.py`, and answering the questions posed. It is recommended that for each coarse-graining scheme, `generateParameterFile.py` is used only once and then manually copied and modified as desired to account for different inputs, forcefields or simulation parameters to save time.
   The parameter file then calls `runMorphCT.py` to execute the requested MorphCT modules with the parameters outlined in `parXX.py`.
-  For your convenience, an example SLURM submission script is also included as `submitMorphXXCT.sh`, which is calibrated to run on Boise State University's Kestrel HPC Cluster.*
+  For the user's convenience, an example SLURM submission script is also included as `submitMorphXXCT.sh`, which is calibrated to run on Boise State University's Kestrel HPC Cluster.*
+
 
   * ### analysis ###
   
     *The `analysis` directory contains several useful scripts for the preparation and analysis of input and output files. A complete description of these and more analysis scripts is given in [Analysis Programs Included](#analysis). Additionally, the user is encouraged to create their own analysis scripts for their system, to utilise the MorphCT data however they see fit.*
+
   
   * ### code ###
   
     *The `code` directory contains all of the important classes and functions for the various modules that can be executed in MorphCT. A summary of the function of each module and the important features available is given in [Job Pipeline](#pipeline). MorphCT's modular design permits additional modules to be added to improve functionality. The `helperFunctions.py` contains the generic functions/xml parsing subroutines that are shared between the worker modules.*
+
   
   * ### inputCGMorphs ###
     
     *The `inputCGMorphs` directory contains the coarse-grained simulations that the user would like to input into MorphCT, in order to determine the charge-transport characteristics. The `parXX.py` file selectes the morphology to be considered. The pipeline expects the input morphology to be in HOOMD-Blue XML format. While one of the main features of MorphCT is to fine-grain CG morphologies back to their atomistic representation, there is no reason that the pipeline will not function on an already atomistic morphology, however a significant proportion of code is likely to be redundant, and the user will have to spend significantly more time tuning the `parXX.py` parameter file to work with the infrastructure.*
+
   
   * ### templates ###
     
@@ -57,11 +61,18 @@ MorphCT is a modular 'one-size-fits-all' virtual organic electronic device simul
 
 In order to effectively transfer information between the standalone modules, a variety of file types and data structures are used:
 
+
+* parXX.py
+    * The parXX.py is the main executable of MorphCT and contains all of the tunable parameters for the simulations, including the input morphology and molecules, the force-field parameters to use during the fine-graining process, the duration of the KMC simulations etc. There are too many variables here to list in full, and so the user is encouraged to explore the file themselves, as many of the variable names are self-explanatory or are commented to provide more information.
+
+
 * .xml (HOOMD)
     * The real workhorse of MorphCT - the input coarse-grained morphologies are entered into the pipeline as HOOMD .xml files, the coarse-grained to fine-grained templates are HOOMD .xml files, and the fine-graining phases produces HOOMD .xml files for visualization purposes. In MorphCT, these xml files are stored in a morphology dictionary format using `helperFunctions.readMorphologyXML`.
 
+
 * *Morphology Dictionary Data Structure*
     * The morphology dictionary consits of keys corresponding to the HOOMD .xml tags (`natoms`, `dimensions`, `lx`, `ly`, `lz`, `time_step`, `position`, `image`, `type`, `body`, `charge`, `mass`, `diameter`, `bond`, `angle`, `dihedral`, `improper`) and values corresponding to the atom IDs given in the .xml. The data types for each key can vary but match those given in the HOOMD .xml. For example, the `body` tag is a list of integers, where each element in the list corresponds to each morphology element and the integer describes the rigid-body identifier. The `position` tag is a list of triplet floats that describe the x, y and z coordinates of each morphology element. The `bond` tag is a list of triplets, the first element of which is a string describing the bond type, and the second and third elements are integers corresponding to the IDs of the two bonded elements. In most cases, an additional `unwrapped_position` key is also used, which unwraps the periodic boundary image given in the atoms `image` tag. This is useful for subsequent chromophore calculations.
+
 
 * .pickle *(Main Morphology)*
     * All of the required data for every point in the pipeline is stored in the corresponding pickle file for that morphology. Specifically, the pickle contains 5 objects:
@@ -72,20 +83,17 @@ In order to effectively transfer information between the standalone modules, a v
         * `chromophoreList`: A list of chromophore class instances that contain all of the important chromophore information. The structure of the chromophore class is outlined below.
     During the simulations, any unknown data is replaced in the pickle with an empty NoneType object. For instance, the `chromophoreList` data is only obtained after the `obtainChromophores.py` section of the pipeline, whereby the `chromophoreList` object is replaced by the actual chromophore information. The data is stored in this manner to provide easy resuming of the pipeline (the code can dynamically determine which data is missing and perform any prerequisite steps accordingly), as well as the ability to extract all important data from the system at any time for further analysis and plotting.
 
+
 * *Chromophore class instances*
-    * The chromophore class contains a number of properties that are useful for the consideration and calculation of chromophores within the system. These include physical properties such as `self.ID`, `self.CGIDs` and `self.AAIDs` that describe the ID of the chromophore, and the corresponding coarse-grained and fine-grained elements that the chromophore represents, respectively. Also included are the `self.unwrappedPosn`, `self.posn`, `self.image` which locate the chromophore and `self.bonds` which describes the important bonds from the fine-grained morphology that are important for this chromophore. The energetic information for the chromophore is stored in `self.HOMO_1`, `self.HOMO`, `self.LUMO` and `self.LUMO_1`, along with the chromophore's `self.species` which defines whether it is a donor or acceptor chromophore (and therefore which energy levels are the most important). The species is defined when the chromophore is first generated, based on the input parameters, however the energy levels will only be populated after the ZINDO/S calculations have been performed. `self.neighbours` contains the chromophore IDs that are sufficiently close to the current chromophore to permitting charge transfer, and the corresponding electronic transfer integrals and site energy differences for each neighbour are stored in `self.neighboursTI` and `self.neighboursDeltaE` respectively. Again, these will be empty lists/NoneType until the quantum chemical calculations have been performed. Note that some branches of MorphCT include treatment of chromophores with length greater than a single monomer, and so some additional chromophore properties have been defined in order to account for this.
+    * The chromophore class is created in the `obtainChromophores.py` module, and contains a number of properties that are useful for the consideration and calculation of chromophores within the system. These include physical properties such as `self.ID`, `self.CGIDs` and `self.AAIDs` that describe the ID of the chromophore, and the corresponding coarse-grained and fine-grained elements that the chromophore represents, respectively. Also included are the `self.unwrappedPosn`, `self.posn`, `self.image` which locate the chromophore and `self.bonds` which describes the important bonds from the fine-grained morphology that are important for this chromophore. The energetic information for the chromophore is stored in `self.HOMO_1`, `self.HOMO`, `self.LUMO` and `self.LUMO_1`, along with the chromophore's `self.species` which defines whether it is a donor or acceptor chromophore (and therefore which energy levels are the most important). The species is defined when the chromophore is first generated, based on the input parameters, however the energy levels will only be populated after the ZINDO/S calculations have been performed. `self.neighbours` contains the chromophore IDs that are sufficiently close to the current chromophore to permitting charge transfer, and the corresponding electronic transfer integrals and site energy differences for each neighbour are stored in `self.neighboursTI` and `self.neighboursDeltaE` respectively. Again, these will be empty lists/NoneType until the quantum chemical calculations have been performed. Note that some branches of MorphCT include treatment of chromophores with length greater than a single monomer, and so some additional chromophore properties have been defined in order to account for this.
+
     
 * *Carrier class instances*
-    * Placeholder Text
+    * The carrier class is created in the `hoppingKMC.py` module, after the KMC jobs have been split onto individual cores and executed with `singleCoreRunKMC.py` (many carriers are created and their transport determined, so creating the classes in this way saved having to do excess read/write cycles). The current location of a given carrier is not stored as cartesian coordinates, instead its position is determined by the current `self.image` and `self.currentChromophore`, which records the ID of the chromophore the carrier is currently localised on. The initial starting point `self.initialChromophore` (always in periodic image [0, 0, 0]) is also recorded so that the carrier's displacement can be calculated. If the appropriate flag has been activated in the parameter file, the `self.carrierHistoryMatrix` is a `scipy.sparse.lilmatrix` n x n array, where n is the total number of chromophores in the system. A hop from chromophore_i to chromophore_j increments `self.carrierHistoryMatrix[i,j]` by one, in order to show where a hop has taken place in the morphology. Finally, the KMC simulation for the carrier is terminated when either `self.noHops` > the `hopLimit` assigned in the parameter file, or if `self.currentTime` > `self.lifetime`, where lifetime is the total KMC simulation time given by `simulationTimes` in the parameter file.
+
     
 * .pickle *(KMCResults)*
-    * Placeholder Text
-
-
-Discussion of data structures and initialisations
-I.E. PARAMETER FILES AND HOW TO GENERATE, PICKLES etc.
-
-Also, don't forget to talk about restarting and how to do it.
+    * The KMCResults pickle is created at the end of the `hoppingKMC.py` module, when all of the required carrier simulations have completed. It contains a single dictionary where the keys are the same as the carrier class instances, and the values are lists where each element corresponds to a single charge carrier. Note that, to conserve storage space for the pickle files, all of the `self.carrierHistoryMatrix` variables are summed together when the pickle is output, resulting in a single sparse matrix describing the routes of all carriers across the KMC simulations. The KMC code outputs a KMCResults.pickle every hour, to one of two "save slots". This means that only a maximum of one hour of simulation data can be lost, even if the simulation is terminated while the code is writing the pickle.
 
 ---
 
