@@ -53,10 +53,34 @@ The intention of this code is to:
 
 # General Code Comments #
 
-MorphCT is a modular 'one-size-fits-all' virtual organic electronic device simulator, that crosses all of the important lengthscales for device operation, from the angstroem lengthscale for individual molecules, right up to the hundreds of nanometers required to simulate the organic active layer. In order to effectively transfer information between the standalone modules, a variety of file types and data structures are used:
+MorphCT is a modular 'one-size-fits-all' virtual organic electronic device simulator, that crosses all of the important lengthscales for device operation, from the angstroem lengthscale for individual molecules, right up to the hundreds of nanometers required to simulate the organic active layer. The modules that constitute the MorphCT pipeline are described in detail below in [Job Pipeline](#pipeline), however this section will sereve to introduce the reader to the file types and data structures that are used to perform those calculations.
+
+In order to effectively transfer information between the standalone modules, a variety of file types and data structures are used:
 
 * .xml (HOOMD)
-    * The real workhorse of MorphCT - the input coarse-grained morphologies are entered into the pipeline as HOOMD .xml files, the coarse-grained to fine-grained templates are HOOMD .xml files, and the fine-graining phases produces HOOMD .xml files for visualization purposes.
+    * The real workhorse of MorphCT - the input coarse-grained morphologies are entered into the pipeline as HOOMD .xml files, the coarse-grained to fine-grained templates are HOOMD .xml files, and the fine-graining phases produces HOOMD .xml files for visualization purposes. In MorphCT, these xml files are stored in a morphology dictionary format using `helperFunctions.readMorphologyXML`.
+
+* *Morphology Dictionary Data Structure*
+    * The morphology dictionary consits of keys corresponding to the HOOMD .xml tags (`natoms`, `dimensions`, `lx`, `ly`, `lz`, `time_step`, `position`, `image`, `type`, `body`, `charge`, `mass`, `diameter`, `bond`, `angle`, `dihedral`, `improper`) and values corresponding to the atom IDs given in the .xml. The data types for each key can vary but match those given in the HOOMD .xml. For example, the `body` tag is a list of integers, where each element in the list corresponds to each morphology element and the integer describes the rigid-body identifier. The `position` tag is a list of triplet floats that describe the x, y and z coordinates of each morphology element. The `bond` tag is a list of triplets, the first element of which is a string describing the bond type, and the second and third elements are integers corresponding to the IDs of the two bonded elements. In most cases, an additional `unwrapped_position` key is also used, which unwraps the periodic boundary image given in the atoms `image` tag. This is useful for subsequent chromophore calculations.
+
+* .pickle *(Main Morphology)*
+    * All of the required data for every point in the pipeline is stored in the corresponding pickle file for that morphology. Specifically, the pickle contains 5 objects:
+        * `AAMorphologyDict`: The morphology dictionary that contains the atoms present in the fine-grained atomistic morphology
+        * `CGMorphologyDict`: The morphology dictionary that contains the coarse-grained beads present in the input morphology
+        * `CGToAAIDMaster`: A list of dictionaries, where each element in the list is a dictionary corresponding to each molecule in the system, with keys corresponding to the coarse-grained bead IDs from the input morphology, and values a list of all of the fine-grained atom IDs that the coarse-grained bead represents
+        * `parameterDict`: A dictionary of the input parameters specified in the `parXX.py` parameter file
+        * `chromophoreList`: A list of chromophore class instances that contain all of the important chromophore information. The structure of the chromophore class is outlined below.
+    During the simulations, any unknown data is replaced in the pickle with an empty NoneType object. For instance, the `chromophoreList` data is only obtained after the `obtainChromophores.py` section of the pipeline, whereby the `chromophoreList` object is replaced by the actual chromophore information. The data is stored in this manner to provide easy resuming of the pipeline (the code can dynamically determine which data is missing and perform any prerequisite steps accordingly), as well as the ability to extract all important data from the system at any time for further analysis and plotting.
+
+* *Chromophore class instances*
+    * Placeholder Text
+    
+* *Carrier class instances*
+    * Placeholder Text
+    
+* .pickle *(KMCResults)*
+    * Placeholder Text
+
 
 Discussion of data structures and initialisations
 I.E. PARAMETER FILES AND HOW TO GENERATE, PICKLES etc.
@@ -120,13 +144,11 @@ For instance, `KMCOut` parses the output KMC pickle file and determines the carr
 * Update MorphCT to use Python 3.X
 * Update MorphCT to use HOOMD 2.X
 * Enhance the Kinetic Monte Carlo simulations to permit full device characterisation (i.e. include exciton generation, multiple carriers, electrical contacts, carrier recombination, separation, and injection, etc.)
-* Remove all instances of the `carrierList` in the main morphology pickle as the carriers are treated separately
 * Consider removing the `chromophoreList` and treat it separately too?
 * Benchmark code and optimise the most commonly-called subroutines
 
 ### MJ TO DOs ###
 
-* Merge the generalized branch onto Master when I'm happy everything is working
 * Remove redundant analysis scripts and update readme
 * Find and fix the mystery seg fault caused by ORCA on Kestrel
-* Check which templates we actually use and remove the ones we don't. Then update the readme
+* Check which templates we actually use and remove the ones we don't. Then update the readme.
