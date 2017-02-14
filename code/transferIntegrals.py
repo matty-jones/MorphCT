@@ -255,7 +255,7 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
     return chromophoreList
 
 
-def updatePairChromophoreList(chromophoreList, parameterDict, CGtoAAIDMaster, CGMorphologyDict):
+def updatePairChromophoreList(chromophoreList, parameterDict, CGToAAIDMaster, CGMorphologyDict):
     # Now that all the single chromophore energy levels are done, iterate through again and check the neighbours,
     # rerunning the pair file if it failed (which it won't have done because all my chromophores are delicious now).
     orcaOutputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/outputORCA/'
