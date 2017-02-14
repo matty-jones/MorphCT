@@ -172,7 +172,7 @@ def updateChromophores(atomID, chromophoreList, bondedAtoms, CGTypeList, typesIn
     return chromophoreList, typesInThisChromophore
 
 
-def determineNeighbours(chromophoreList, parameterDict, simDims):
+def determineNeighbours(chromophoreList, parameterDict, simDims, CGMorphologyDict):
     for chromophore1 in chromophoreList:
         print "\rIdentifying neighbours of chromophore %04d of %04d..." % (chromophore1.ID, len(chromophoreList) - 1),
         sys.stdout.flush()
@@ -264,7 +264,7 @@ def plotChromoNeighbours(chromophore, chromophoreList, simDims):
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
     simDims = [[-AAMorphologyDict['lx'] / 2.0, AAMorphologyDict['lx'] / 2.0], [-AAMorphologyDict['ly'] / 2.0, AAMorphologyDict['ly'] / 2.0], [-AAMorphologyDict['lz'] / 2.0, AAMorphologyDict['lz'] / 2.0]]
     chromophoreList = calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims)
-    chromophoreList = determineNeighbours(chromophoreList, parameterDict, simDims)
+    chromophoreList = determineNeighbours(chromophoreList, parameterDict, simDims, CGMorphologyDict)
     # Now we have updated the chromophoreList, rewrite the pickle with this new information.
     pickleName = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle'
     helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleName)
