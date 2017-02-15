@@ -349,11 +349,12 @@ targetDoSSTDLUMO = None
 # ---=== Kinetic Monte Carlo Parameters ===---
 
 systemTemperature = 290
-numberOfCarriersPerSimulationTime = 100000
+numberOfCarriersPerSimulationTime = 10000
 hopLimit = 0
 simulationTimes = [1.00e-11, 2.15e-11, 4.64e-11, 1.00e-10, 2.15e-10, 4.64e-11, 1.00e-9]
 recordCarrierHistory = True
 reorganisationEnergy = 0.3063
+combineKMCResults = True
 
 # ---=== Begin run ===---
 

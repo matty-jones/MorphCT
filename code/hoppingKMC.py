@@ -42,27 +42,28 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     [p.wait() for p in runningJobs]
     # Now combine all of the pickle files into one:
     print "All KMC jobs completed!"
-    print "Combining outputs..."
-    combinedData = {}
-    for procID, jobs in enumerate(jobsList):
-        fileName = outputDir + '/KMCResults_%02d.pickle' % (procID)
-        # The pickle was repeatedly dumped to, in order to save time.
-        # Each dump stream is self-contained, so iteratively unpickle to add the new data.
-        with open(fileName, 'r') as pickleFile:
-            pickledData = pickle.load(pickleFile)
-            for key, val in pickledData.iteritems():
-                if key not in combinedData:
-                    combinedData[key] = val
-                else:
-                    combinedData[key] += val
-    # Write out the combined data
-    with open(outputDir + '/KMCResults.pickle', 'w+') as pickleFile:
-        pickle.dump(combinedData, pickleFile)
-    print "Complete data written to", outputDir + "/KMCResults.pickle."
-    print "Cleaning up..."
-    # Delete any unneeded files
+    if parameterDict['combineKMCResults'] is True:
+        print "Combining outputs..."
+        combinedData = {}
+        for procID, jobs in enumerate(jobsList):
+            fileName = outputDir + '/KMCResults_%02d.pickle' % (procID)
+            # The pickle was repeatedly dumped to, in order to save time.
+            # Each dump stream is self-contained, so iteratively unpickle to add the new data.
+            with open(fileName, 'r') as pickleFile:
+                pickledData = pickle.load(pickleFile)
+                for key, val in pickledData.iteritems():
+                    if key not in combinedData:
+                        combinedData[key] = val
+                    else:
+                        combinedData[key] += val
+        # Write out the combined data
+        with open(outputDir + '/KMCResults.pickle', 'w+') as pickleFile:
+            pickle.dump(combinedData, pickleFile)
+        print "Complete data written to", outputDir + "/KMCResults.pickle."
+        print "Cleaning up..."
+        # Delete any unneeded files
+        sp.Popen("rm -f " + outputDir + "/KMCResults_*", shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
     sp.Popen("rm -f " + outputDir + "/KMCData*", shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
-    sp.Popen("rm -f " + outputDir + "/KMCResults_*", shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
 
 if __name__ == "__main__":
