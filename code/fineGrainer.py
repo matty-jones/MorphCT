@@ -192,7 +192,7 @@ class atomistic:
     def runFineGrainer(self, ghostDictionary):
         AADictionary = {'position': [], 'image': [], 'unwrapped_position': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': [], 'lx': 0, 'ly': 0, 'lz': 0}
         # Find the COMs of each CG site in the system, so that we know where to move the template to
-        CGCoMs = self.getAATemplatePosition(self.CGToTemplateAAIDs)
+        CGCoMs, self.CGToTemplateAAIDs = self.getAATemplatePosition(self.CGToTemplateAAIDs)
         # Need to keep track of the atom ID numbers globally - runFineGrainer sees individual monomers, atomistic sees molecules and the XML needs to contain the entire morphology.
         noAtomsInMolecule = 0
         CGTypeList = {}
@@ -235,19 +235,23 @@ class atomistic:
                     # Every rigid body needs a ghost particle that describes its CoM
                     AAIDPositions = []
                     AAIDAtomTypes = []
+                    # If the key is specified with no values, assume that all the AAIDs in the template contitute the rigid body
+                    if len(self.rigidBodySites[CGTypeList[siteID]]) == 0:
+                        self.rigidBodySites[CGTypeList[siteID]] = list(np.arange(len(self.CGToTemplateAAIDs[CGTypeList[siteID]])))
                     for AAID in self.rigidBodySites[CGTypeList[siteID]]:
                         thisMonomerDictionary['body'][AAID] = currentMonomerIndex
                         AAIDPositions.append(thisMonomerDictionary['unwrapped_position'][AAID])
                         AAIDAtomTypes.append(thisMonomerDictionary['type'][AAID])
                     # Now create the ghost particle describing the rigid body
-                    ghostDictionary['unwrapped_position'].append(helperFunctions.calcCOM(AAIDPositions, listOfAtomTypes=AAIDAtomTypes))
+                    ghostCOM = helperFunctions.calcCOM(AAIDPositions, listOfAtomTypes=AAIDAtomTypes)
+                    ghostDictionary['unwrapped_position'].append(ghostCOM)
                     ghostDictionary['mass'].append(1.0)
                     ghostDictionary['diameter'].append(1.0)
                     ghostDictionary['type'].append('R' + str(CGTypeList[siteID]))
                     ghostDictionary['body'].append(currentMonomerIndex)
                     ghostDictionary['charge'].append(0.0)
                     # Then create the corresponding CG anchorpoint
-                    ghostDictionary['unwrapped_position'].append(self.CGDictionary['unwrapped_position'][siteID])
+                    ghostDictionary['unwrapped_position'].append(ghostCOM)
                     ghostDictionary['mass'].append(1.0)
                     ghostDictionary['diameter'].append(1.0)
                     ghostDictionary['type'].append('X' + str(CGTypeList[siteID]))
@@ -306,7 +310,8 @@ class atomistic:
             # Note that the ghost dictionary bond was already updated to have the correct realAtom AAID for this molecule when the bond was created. Therefore, leave the ghost dictionary unchanged.
             thisMonomerDictionary, ghostDictionary = helperFunctions.incrementAtomIDs(thisMonomerDictionary, ghostDictionary, noAtomsInMolecule, modifyGhostDictionary=False)
             # Find the connecting atoms to the terminating units based on monomer number
-            if len(self.moleculeTerminatingConnections) != 0:
+            # Only do this if the molecule length is > 1 (i.e. not small molecule)
+            if (self.moleculeLengths[self.moleculeIndex] > 1) and (len(self.moleculeTerminatingConnections) != 0):
                 if monomerNo == 0:
                     startAtomIndex = noAtomsInMolecule + self.moleculeTerminatingConnections[0][1]
                 elif monomerNo == len(monomerList) - 1:
@@ -322,7 +327,7 @@ class atomistic:
             AADictionary[key] = thisMonomerDictionary[key]
         # Add in the terminating units
         # TODO: This code only permits hydrogens to be used as terminating units current. Perhaps it wouldn't be that hard to implement a template-based termination unit for enhanced flexibility.
-        if len(self.moleculeTerminatingConnections) != 0:
+        if (self.moleculeLengths[self.moleculeIndex] > 1) and (len(self.moleculeTerminatingConnections) != 0):
             AADictionary, startTerminatingHydrogen = helperFunctions.addTerminatingHydrogen(AADictionary, startAtomIndex)
             AADictionary, endTerminatingHydrogen = helperFunctions.addTerminatingHydrogen(AADictionary, endAtomIndex)
             atomIDLookupTable[monomerList[0][0]][1].append(startTerminatingHydrogen + self.noAtomsInMorphology)
@@ -405,6 +410,11 @@ class atomistic:
         for siteName in CGToTemplateAAIDs.keys():
             atomIDs = CGToTemplateAAIDs[siteName]
             AATemplate = self.AATemplatesDictionary[siteName]
+            # If the key's length is zero, then add all the atoms from the template
+            if len(atomIDs) == 0:
+                atomIDs = list(np.arange(len(AATemplate['type'])))
+                # Update self.CGToTemplateAAIDs with these for later on
+                CGToTemplateAAIDs[siteName] = atomIDs
             sitePositions = []
             siteTypes = []
             for atomID in atomIDs:
@@ -412,4 +422,4 @@ class atomistic:
                 sitePositions.append(AATemplate['unwrapped_position'][atomID])
             # These output as numpy arrays because we can't do maths with lists
             CGCoMs[siteName] = helperFunctions.calcCOM(sitePositions, listOfAtomTypes=siteTypes)
-        return CGCoMs
+        return CGCoMs, CGToTemplateAAIDs
