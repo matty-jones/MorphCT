@@ -8,9 +8,6 @@ from scipy.sparse import lil_matrix
 
 if __name__ == "__main__":
     outputDir = sys.argv[1]
-    tasksetID = sys.argv[2]
-    currentPID = os.getpid()
-    affinityJob = sp.Popen(['taskset', '-pc', str(tasksetID), str(currentPID)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE).communicate()
     print "Combining outputs..."
     combinedData = {}
     pickleFiles = []
@@ -25,6 +22,8 @@ if __name__ == "__main__":
         with open(fileName, 'r') as pickleFile:
             pickledData = pickle.load(pickleFile)
             for key, val in pickledData.iteritems():
+                if val is None:
+                    continue
                 if key not in combinedData:
                     combinedData[key] = val
                 else:
@@ -34,7 +33,3 @@ if __name__ == "__main__":
     with open(outputDir + '/KMCResults.pickle', 'w+') as pickleFile:
         pickle.dump(combinedData, pickleFile)
     print "Complete data written to", outputDir + "/KMCResults.pickle."
-    print "Cleaning up..."
-    # Delete any unneeded files
-    sp.Popen("rm -f " + outputDir + "/KMCData*", shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
-    #sp.Popen("rm -f " + outputDir + "/KMCResults_*", shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()

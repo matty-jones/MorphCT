@@ -188,6 +188,9 @@ class MDPhase:
                     else:
                         if bondType[0] not in noAnchorBondTypes:
                             noAnchorBondTypes.append(bondType[0])
+            print anchorBondTypes
+            print noAnchorBondTypes
+            exit()
             for bondType in anchorBondTypes:
                 self.bondClass.bond_coeff.set(bondType, k=1E6, r0=0)
             for bondType in noAnchorBondTypes:

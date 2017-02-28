@@ -20,7 +20,10 @@ temperature = 290  # K
 
 
 def getData(carrierData):
-    carrierHistory = carrierData['carrierHistoryMatrix']
+    try:
+        carrierHistory = carrierData['carrierHistoryMatrix']
+    except:
+        carrierHistory = None
     totalDataPoints = 0
     totalDataPointsAveragedOver = 0
     squaredDisps = {}
@@ -286,7 +289,7 @@ if __name__ == "__main__":
         carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getData(carrierData)
         print "MSDs obtained"
         print "Loading chromophoreList..."
-        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, emptyCarrierList = helperFunctions.loadPickle('./' + directory + '/' + directory + '.pickle')
+        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle('./' + directory + '/' + directory + '.pickle')
         print "ChromophoreList obtained"
         # Create the first figure that will be replotted each time
         plt.figure()
@@ -294,7 +297,7 @@ if __name__ == "__main__":
         #plotHeatMap(carrierHistory, directory)
         # READ IN THE MAIN CHROMOPHORELIST PICKLE FILE TO DO THIS
         print "Loading chromophoreList..."
-        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, emptyCarrierList = helperFunctions.loadPickle('./' + directory + '/' + directory + '.pickle')
+        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle('./' + directory + '/' + directory + '.pickle')
         print "ChromophoreList obtained"
         if carrierHistory is not None:
             print "Determining carrier hopping connections..."
