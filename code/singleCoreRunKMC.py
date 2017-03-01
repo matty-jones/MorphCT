@@ -74,15 +74,16 @@ class carrier:
             hopTimes.append([self.currentChromophore.neighbours[neighbourIndex][0], hopTime])
         # Sort by ascending hop time
         hopTimes.sort(key = lambda x:x[1])
-        #### EXTRA CODE FOR INSTANTANEOUS NEAREST-NEIGHBOUR HOPS ####
-        # If the hop time is less than 1E-13 then treat it as instantaneous and ignore it and pick the next fastest
-        # If no slower hops are available, then take the quickest hop as normal.
-        hopIndex = 0
-        for hopNo, hop in enumerate(hopTimes):
-            if hop[1] > 1E-13:
-                hopIndex = hopNo
-                break
+        ##### EXTRA CODE FOR INSTANTANEOUS NEAREST-NEIGHBOUR HOPS ####
+        ## If the hop time is less than 1E-13 then treat it as instantaneous and ignore it and pick the next fastest
+        ## If no slower hops are available, then take the quickest hop as normal.
+        #hopIndex = 0
+        #for hopNo, hop in enumerate(hopTimes):
+        #    if hop[1] > 1E-13:
+        #        hopIndex = hopNo
+        #        break
         #### END OF EXTRA CODE FOR INSTANTANEOUS HOPPING ####
+        hopIndex = 0
         # Pick the destination chromophore based on the hop selected
         destinationChromophore = chromophoreList[hopTimes[hopIndex][0]]
         # As long as we're not limiting by the number of hops:
@@ -114,7 +115,10 @@ class carrier:
         # Carrier image now sorted, so update its current position
         self.currentChromophore = destinationChromophore
         # Increment the simulation time
-        self.currentTime += hopTime
+        #### EXTRA CODE FOR INSTANTANEOUS NEAREST-NEIGHBOUR HOPS ####
+        if hopTime > 1E-13:
+            self.currentTime += hopTime
+        #### END OF EXTRA CODE FOR INSTANTANEOUS HOPPING ####
         # Increment the hop counter
         self.noHops += 1
         # Now update the sparse history matrix
