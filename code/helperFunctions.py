@@ -458,6 +458,61 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
     return AtomDictionary
 
 
+def loadFFXML(xmlPath, mapping = False):
+    FFDict = {'lj':[], 'dpd':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[]}
+    with open(xmlPath, 'r') as xmlFile:
+        xmlData = xmlFile.readlines()
+        for line in xmlData:
+            if ('</' in line):
+                record = False
+            elif ('<lj' in line):
+                record = True
+                recordType = 'lj'
+                continue
+            elif ('<dpd' in line):
+                record = True
+                recordType = 'dpd'
+                continue
+            elif ('<bond' in line):
+                record = True
+                recordType = 'bond'
+                continue
+            elif ('<angle' in line):
+                record = True
+                recordType = 'angle'
+                continue
+            elif ('<dihedral' in line):
+                record = True
+                recordType = 'dihedral'
+                continue
+            elif ('<improper' in line):
+                record = True
+                recordType = 'improper'
+                continue
+            # Now we know what the variable is, append it to the dictionary data
+            if (record is True):
+                # Write to dictionary as combination
+                splitLine = line.split(' ')
+                # Remove the "\n"
+                splitLine[-1] = splitLine[-1][:-1]
+                splitLine[0] = str(splitLine[0])
+                for i in range(1, len(splitLine)):
+                    splitLine[i] = float(splitLine[i])
+                FFDict[recordType].append(splitLine)
+    # Now remap the names of the constraints if any mappings have been specified
+    if mapping is not False:
+        for constraintType in FFDict.keys():
+            for index, constraint in enumerate(FFDict[constraintType]):
+                # Split the constraint name up based on each atom type
+                constraintName = copy.deepcopy(constraint[0].split('-'))
+                # Remap each atom
+                for atomLoc, atomType in enumerate(constraintName):
+                    constraintName[atomLoc] = mapping[atomType]
+                # Apply the mapping to the FFDict
+                FFDict[constraintType][index][0] = '-'.join(constraintName)
+    return FFDict
+
+
 def removeRigidBodies(inputDictionary):
     print "Removing rigid bodies..."
     atomsToRemove = []

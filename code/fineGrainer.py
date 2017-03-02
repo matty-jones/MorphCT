@@ -41,6 +41,11 @@ class morphology:
         # The ghost dictionary contains all of the type T and type X particles that will
         # anchor the thiophene rings to the CG COM positions.
         ghostDictionary = {'position': [], 'image': [], 'unwrapped_position': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': []}
+
+        # Need to check for atom-type conflicts and suitably increment the type indices if more than
+        # one molecule type is being fine-grained
+        newTypeMappings = self.getNewTypeMappings(self.parameterDict['CGToTemplateDirs'], self.parameterDict['CGToTemplateForceFields'])
+        self.parameterDict['newTypeMappings'] = newTypeMappings
         print "Adding molecules to the system..."
         for moleculeNumber in range(len(moleculeIDs)):
             print "Adding molecule number", moleculeNumber, "\r",
@@ -140,6 +145,39 @@ class morphology:
             pass
         return moleculeList
 
+    def getNewTypeMappings(self, CGToTemplateDirs, CGToTemplateForceFields):
+        forceFieldLocations = []
+        forceFieldMappings = []
+        morphologyAtomTypes = []
+        CGToTemplateMappings = {}
+        for CGSite, directory in CGToTemplateDirs.iteritems():
+            FFLoc = directory + '/' + CGToTemplateForceFields[CGSite]
+            if FFLoc not in forceFieldLocations:
+                forceFieldLocations.append(FFLoc)
+        for FFLoc in forceFieldLocations:
+            mappingForThisFF = {}
+            forceField = helperFunctions.loadFFXML(FFLoc)
+            for ljInteraction in forceField['lj']:
+                atomType = ljInteraction[0]
+                while atomType in morphologyAtomTypes:
+                    # Atom type already exists in morphology, so increment the atomType number by one
+                    for i in range(1,len(atomType)):
+                        # Work out where the integer start so we can increment it (should be i = 1 for one-character element names)
+                        try:
+                            integer = int(atomType[i:])
+                            break
+                        except:
+                            continue
+                    atomType = atomType[:i] + str(integer + 1)
+                morphologyAtomTypes.append(atomType)
+                mappingForThisFF[ljInteraction[0]] = atomType
+            forceFieldMappings.append(mappingForThisFF)
+        for CGSite, directory in CGToTemplateDirs.iteritems():
+            FFLoc = directory + '/' + CGToTemplateForceFields[CGSite]
+            CGToTemplateMappings[CGSite] = forceFieldMappings[forceFieldLocations.index(FFLoc)]
+        print "CGToTemplateMappings:", CGToTemplateMappings
+        return CGToTemplateMappings
+
 
 class atomistic:
     def __init__(self, moleculeIndex, siteIDs, CGDictionary, moleculeLengths, rollingAAIndex, ghostDictionary, parameterDict):
@@ -158,6 +196,7 @@ class atomistic:
         # Load the template file for each CG atom
         for CGAtomType in self.CGToTemplateFiles.keys():
             templateDictionary = helperFunctions.loadMorphologyXML(self.CGToTemplateDirs[CGAtomType] + '/' + self.CGToTemplateFiles[CGAtomType])
+            templateDictionary = self.remapAtomTypes(templateDictionary, parameterDict['newTypeMappings'][CGAtomType])
             templateDictionary = helperFunctions.addUnwrappedPositions(templateDictionary)
             self.AATemplatesDictionary[CGAtomType] = templateDictionary
         self.AADictionary, self.atomIDLookupTable, self.ghostDictionary = self.runFineGrainer(ghostDictionary)
@@ -188,6 +227,22 @@ class atomistic:
         CGMonomerDictionary = helperFunctions.addUnwrappedPositions(CGMonomerDictionary)
         CGMonomerDictionary['natoms'] = len(CGMonomerDictionary['position'])
         return CGMonomerDictionary
+
+    def remapAtomTypes(self, templateDict, mappings):
+        # Remap the atom types first
+        for index, atomType in enumerate(templateDict['type']):
+            templateDict['type'][index] = mappings[atomType]
+        # Then rename the constraints appropriately
+        constraintTypes = ['bond', 'angle', 'dihedral', 'improper']
+        for constraintType in constraintTypes:
+            for constraintIndex, constraint in enumerate(templateDict[constraintType]):
+                newConstraint0 = ""  # Create a new constraint label
+                for atomID in constraint[1:]:
+                    newConstraint0 += templateDict['type'][atomID]
+                    newConstraint0 += '-'
+                    # Assign the constraint label
+                templateDict[constraintType][constraintIndex][0] = newConstraint0[:-1]
+        return templateDict
 
     def runFineGrainer(self, ghostDictionary):
         AADictionary = {'position': [], 'image': [], 'unwrapped_position': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': [], 'lx': 0, 'ly': 0, 'lz': 0}

@@ -116,6 +116,31 @@ class MDPhase:
         return 0
 
     def getFFCoeffs(self):
+        # First find all of the forcefields specified in the par file
+        allFFNames = {}
+        for CGSite, directory in self.CGToTemplateDirs.iteritems():
+            FFLoc = directory + '/' + self.CGToTemplateForceFields[CGSite]
+            if FFLoc not in allFFNames.values():
+                allFFNames[CGSite] = FFLoc
+        FFList = []
+        # Then load in all of the FFs with the appropriate mappings
+        for CGSite in allFFNames.keys():
+            FFList.append(helperFunctions.loadFFXML(allFFNames[CGSite], mapping = self.newTypeMappings[CGSite]))
+        # Combine all of the individual, mapped FFs into one master field
+        masterFF = {}
+        for FF in FFList:
+            for FFType in FF.keys():
+                if FFType not in masterFF.keys():
+                    masterFF[FFType] = FF[FFType]
+                else:
+                    masterFF[FFType] += FF[FFType]
+        # Finally, assign the expected variables to each value in the masterFF
+        self.ljCoeffs = masterFF['lj']
+        self.dpdCoeffs = masterFF['dpd']
+        self.bondCoeffs = masterFF['bond']
+        self.angleCoeffs = masterFF['angle']
+        self.dihedralCoeffs = masterFF['dihedral']
+        self.improperCoeffs = masterFF['improper']
         # Set Pair Coeffs
         self.pairClass = None
         if self.pairType != 'none':
@@ -134,12 +159,14 @@ class MDPhase:
             # Read in the pairTypes, parameters and coefficients and set them for HOOMD
             if self.pairType == 'dpd':
                 self.pairClass = pair.dpd(r_cut=self.pairRCut * self.sScale, T=self.temperature)
-                for pairCoeff in self.dpdCoeffs:
-                    self.pairClass.pair_coeff.set(pairCoeff[0].split('-')[0], pairCoeff[0].split('-')[1], A=pairCoeff[1] * self.eScale, r_cut=pairCoeff[2] * self.sScale * 2**(1. / 6.), gamma=self.pairDPDGammaVal)
-                    try:
-                        allPairTypes.remove(pairCoeff[0])
-                    except:
-                        allPairTypes.remove('-'.join(pairCoeff[0].split('-')[::-1]))  # The reverse way round
+                # Use the geometric mixing rule for all possible combinations of the specified forcefield coefficients
+                for atomIndex1, atomType1 in enumerate([coeff[0] for coeff in self.dpdCoeffs]):
+                    for atomIndex2, atomType2 in enumerate([coeff[0] for coeff in self.dpdCoeffs]):
+                        self.pairClass.pair_coeff.set(atomType1, atomType2, A = np.sqrt((self.dpdCoeffs[atomIndex1][1] * self.eScale) * (self.dpdCoeffs[atomIndex2][1] * self.eScale)), r_cut = np.sqrt((self.dpdCoeffs[atomIndex1][2] * self.sScale) * (self.dpdCoeffs[atomIndex2][1] * self.sScale)), gamma = self.pairDPDGammaVal)
+                        try:
+                            allPairTypes.remove(atomType1 + '-' + atomType2)
+                        except:
+                            pass
                 # Because we've been removing each pair from allPairTypes, all that are left
                 # are the pair potentials that are unspecified in the parXX.py (e.g. ghost
                 # particle interactions), so set these interactions to zero
@@ -148,12 +175,13 @@ class MDPhase:
             elif self.pairType == 'lj':
                 self.pairClass = pair.lj(r_cut=self.pairRCut * self.sScale)
                 self.pairClass.set_params(mode='xplor')
-                for pairCoeff in self.ljCoeffs:
-                    self.pairClass.pair_coeff.set(pairCoeff[0].split('-')[0], pairCoeff[0].split('-')[1], epsilon=pairCoeff[1] * self.eScale, sigma=pairCoeff[2] * self.sScale)
-                    try:
-                        allPairTypes.remove(pairCoeff[0])
-                    except:
-                        allPairTypes.remove('-'.join(pairCoeff[0].split('-')[::-1]))
+                for atomIndex1, atomType1 in enumerate([coeff[0] for coeff in self.ljCoeffs]):
+                    for atomIndex2, atomType2 in enumerate([coeff[0] for coeff in self.ljCoeffs]):
+                        self.pairClass.pair_coeff.set(atomType1, atomType2, epsilon = np.sqrt((self.ljCoeffs[atomIndex1][1] * self.eScale) * (self.ljCoeffs[atomIndex2][1] * self.eScale)), sigma = np.sqrt((self.ljCoeffs[atomIndex1][2] * self.sScale) * (self.ljCoeffs[atomIndex2][2] * self.sScale)))
+                        try:
+                            allPairTypes.remove(atomType1 + '-' + atomType2)
+                        except:
+                            pass
                 # Because we've been removing each pair from allPairTypes, all that are left
                 # are the pair potentials that are unspecified in the parXX.py (e.g. ghost
                 # particle interactions), so set these interactions to zero
@@ -188,9 +216,6 @@ class MDPhase:
                     else:
                         if bondType[0] not in noAnchorBondTypes:
                             noAnchorBondTypes.append(bondType[0])
-            print anchorBondTypes
-            print noAnchorBondTypes
-            exit()
             for bondType in anchorBondTypes:
                 self.bondClass.bond_coeff.set(bondType, k=1E6, r0=0)
             for bondType in noAnchorBondTypes:
@@ -258,8 +283,13 @@ def multiHarmonicTorsion(theta, V0, V1, V2, V3, V4):
 def obtainScaleFactors(parameterDict):
     print "Obtaining correct scaling for epsilon and sigma..."
     # The scaling factors are 1/largestSigma in the LJ coeffs, and 1/largestEpsilon
-    largestSigma = max(map(float, np.array(parameterDict['ljCoeffs'])[:, 2]))
-    largestEpsilon = max(map(float, np.array(parameterDict['ljCoeffs'])[:, 1]))
+    LJFFs = []
+    for CGSite, directory in parameterDict['CGToTemplateDirs'].iteritems():
+        FFLoc = directory + '/' + parameterDict['CGToTemplateForceFields'][CGSite]
+        FF = helperFunctions.loadFFXML(FFLoc)
+        LJFFs += FF['lj']
+    largestSigma = max(map(float, np.array(LJFFs)[:, 2]))
+    largestEpsilon = max(map(float, np.array(LJFFs)[:, 1]))
     return 1 / float(largestSigma), 1 / float(largestEpsilon)
 
 
