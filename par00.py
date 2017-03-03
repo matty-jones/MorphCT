@@ -32,6 +32,12 @@ CGToTemplateFiles = {\
 'C':'mid3HT.xml',\
 'D':'PCBM.xml',\
 }
+CGToTemplateForceFields = {\
+'A':'FFP3HT.xml',\
+'B':'FFP3HT.xml',\
+'C':'FFP3HT.xml',\
+'D':'FFPCBM.xml',\
+}
 CGToTemplateAAIDs = {\
 'A':[0, 1, 2, 3, 4, 24],\
 'B':[5, 6, 7, 18, 19, 20, 21, 22, 23],\
