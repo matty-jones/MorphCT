@@ -40,6 +40,10 @@ class simulation:
         # Load any previous data to allow us to run individual phases
         try:
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict, chromophoreList = helperFunctions.loadPickle(self.outputDirectory+'/code/'+self.morphology[:-4]+'.pickle')
+            # Load in any parameters from the previousParameterDict that have not been already defined in the new parameterDict (e.g. CGTypeMappings):
+            for key, previousValue in previousParameterDict.iteritems():
+                if key not in parameterDict.keys():
+                    parameterDict[key] = previousValue
         except:
             print "PICKLE NOT FOUND, EXECUTING FINEGRAINING TO OBTAIN REQUIRED PARAMETERS..."
             self.executeFinegraining = False

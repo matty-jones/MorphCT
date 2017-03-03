@@ -175,7 +175,6 @@ class morphology:
         for CGSite, directory in CGToTemplateDirs.iteritems():
             FFLoc = directory + '/' + CGToTemplateForceFields[CGSite]
             CGToTemplateMappings[CGSite] = forceFieldMappings[forceFieldLocations.index(FFLoc)]
-        print "CGToTemplateMappings:", CGToTemplateMappings
         return CGToTemplateMappings
 
 
