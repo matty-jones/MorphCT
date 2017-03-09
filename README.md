@@ -4,8 +4,6 @@
 
 # MorphCT has been published in Molecular Simulation 2017, which can be found at [http://dx.doi.org/10.1080/08927022.2017.1296958](http://dx.doi.org/10.1080/08927022.2017.1296958). Please read and cite this paper if you use any of MorphCT's code in your own research! #
 
-# NOTE: As of February 16th 2017, the above DOI has been assigned to the paper, which will be populated when the final proofs have been returned and the article published online. This is expected to be completed by February 27th 2017 at the latest. #
-
 
 
 The intention of this code is to:
