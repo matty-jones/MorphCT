@@ -51,15 +51,15 @@ class morphology:
             print "Adding molecule number", moleculeNumber, "\r",
             sys.stdout.flush()
             # Obtain the AA dictionary for each molecule using the fine-grainining procedure
-            CGMoleculeDict, AAMoleculeDict, CGtoAAIDs, ghostDictionary = atomistic(moleculeNumber, moleculeIDs[moleculeNumber], self.CGDictionary, moleculeLengths, rollingAAIndex, ghostDictionary, self.parameterDict).returnData()
+            AAMoleculeDict, CGtoAAIDs, ghostDictionary = atomistic(moleculeNumber, moleculeIDs[moleculeNumber], self.CGDictionary, moleculeLengths, rollingAAIndex, ghostDictionary, self.parameterDict).returnData()
             CGToAAIDMaster.append(CGtoAAIDs)
             # Update the morphology dictionaries with this new molecule
-            for key in CGMoleculeDict.keys():
-                if key not in ['lx', 'ly', 'lz']:
-                    if key not in CGMorphologyDict.keys():
-                        CGMorphologyDict[key] = CGMoleculeDict[key]
-                    else:
-                        CGMorphologyDict[key] += CGMoleculeDict[key]
+            for key in self.CGDictionary.keys():
+                if key not in ['lx', 'ly', 'lz', 'time_step', 'dimensions']:
+                    #if key not in CGMorphologyDict.keys():
+                    #    CGMorphologyDict[key] = CGMoleculeDict[key]
+                    #else:
+                    #    CGMorphologyDict[key] += CGMoleculeDict[key]
                     if key not in AAMorphologyDict.keys():
                         AAMorphologyDict[key] = AAMoleculeDict[key]
                     else:
@@ -96,8 +96,8 @@ class morphology:
         helperFunctions.writeMorphologyXML(AAMorphologyDict, AAFileName)
         # And finally write the pickle
         pickleLocation = './outputFiles/' + self.morphologyName + '/code/' + self.morphologyName + '.pickle'
-        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict, self.chromophoreList), pickleLocation)
-        return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict, self.chromophoreList
+        helperFunctions.writePickle((AAMorphologyDict, self.CGDictionary, CGToAAIDMaster, self.parameterDict, self.chromophoreList), pickleLocation)
+        return AAMorphologyDict, self.CGDictionary, CGToAAIDMaster, self.parameterDict, self.chromophoreList
 
     def splitMolecules(self):
         # Split the full morphology into individual molecules
@@ -187,7 +187,7 @@ class atomistic:
         self.siteIDs = siteIDs
         self.CGDictionary = CGDictionary
         # Get the dictionary of all the CG sites in this molecule
-        self.CGMonomerDictionary = self.getCGMonomerDict()
+        #self.CGMonomerDictionary = self.getCGMonomerDict()
         # Import the parXX.py parameters
         for key, value in parameterDict.iteritems():
             self.__dict__[key] = value
@@ -202,7 +202,7 @@ class atomistic:
 
     def returnData(self):
         # Return the important fine-grained results from this class
-        return self.CGMonomerDictionary, self.AADictionary, self.atomIDLookupTable, self.ghostDictionary
+        return self.AADictionary, self.atomIDLookupTable, self.ghostDictionary
 
     def getCGMonomerDict(self):
         CGMonomerDictionary = {'position': [], 'image': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': [], 'lx': 0, 'ly': 0, 'lz': 0}
