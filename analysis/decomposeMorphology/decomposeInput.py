@@ -7,7 +7,7 @@ if __name__ == "__main__":
     morphFile = sys.argv[1]
     CGMorphology = helperFunctions.loadMorphologyXML('./' + morphFile)
     fullereneIndices = []
-    siteTypes = ['C']
+    siteTypes = ['C2', 'C3', 'C4', 'O1', 'O2', 'H1', 'H2']
     for index, siteType in enumerate(CGMorphology['type']):
         if siteType in siteTypes:
             fullereneIndices.append(index)
