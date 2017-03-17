@@ -145,12 +145,17 @@ def rerunFails(failedChromoFiles, parameterDict):
     print "There were", len(failedChromoFiles.keys()), "failed jobs."
     procIDs = parameterDict['procIDs']
     outputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4]
+    popList = []
     # Firstly, modify the input files to see if numerical tweaks make ORCA happier
     for failedFile, failedData in failedChromoFiles.iteritems():
         failedCount = failedData[0]
         errorCode = modifyORCAFiles(failedFile, outputDir + '/chromophores/inputORCA/' + failedFile.replace('.out', '.inp'), failedCount)
         if errorCode == 1:
-            failedChromoFiles.pop(failedFile)
+            # Don't delete the elements from the list here because we're still trying to iterate over this dict and it cannot change length!
+            popList.append(failedFile)
+    # Now pop the correct elements from the failedChromoFiles dict
+    for failedFile in popList:
+        failedChromoFiles.pop(failedFile)
     # If there are no files left, then everything has failed so this function has completed its task
     if len(failedChromoFiles) == 0:
         return failedChromoFiles
