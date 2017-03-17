@@ -6,6 +6,8 @@ import sys
 
 class morphology:
     def __init__(self, morphologyXML, morphologyName, parameterDict, chromophoreList):
+        # Need to save the parameterDict in full as well as its component values because we're going to update the parameterDict with the new type mappings by the end of this code module.
+        self.parameterDict = parameterDict
         # Import parameters from the parXX.py
         for key, value in parameterDict.iteritems():
             self.__dict__[key] = value
