@@ -37,21 +37,22 @@ class simulation:
         self.makeDirTree()
         # Copy the current code and the parameter file for safekeeping
         self.copyCode()
+        if self.executeFinegraining is False:
         # Load any previous data to allow us to run individual phases
-        try:
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict, chromophoreList = helperFunctions.loadPickle(self.outputDirectory+'/code/'+self.morphology[:-4]+'.pickle')
-            # Load in any parameters from the previousParameterDict that have not been already defined in the new parameterDict (e.g. CGTypeMappings):
-            for key, previousValue in previousParameterDict.iteritems():
-                if key not in parameterDict.keys():
-                    parameterDict[key] = previousValue
-        except:
-            print "PICKLE NOT FOUND, EXECUTING FINEGRAINING TO OBTAIN REQUIRED PARAMETERS..."
-            self.executeFinegraining = False
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, []).analyseMorphology()
+            try:
+                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict, chromophoreList = helperFunctions.loadPickle(self.outputDirectory+'/code/'+self.morphology[:-4]+'.pickle')
+                # Load in any parameters from the previousParameterDict that have not been already defined in the new parameterDict (e.g. CGTypeMappings):
+                for key, previousValue in previousParameterDict.iteritems():
+                    if key not in parameterDict.keys():
+                        parameterDict[key] = previousValue
+            except:
+                print "PICKLE NOT FOUND, EXECUTING FINEGRAINING TO OBTAIN REQUIRED PARAMETERS..."
+                self.executeFinegraining = False
+                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, []).analyseMorphology()
         # Now begin running the code based on user's flags
-        if self.executeFinegraining is True:
+        else:
             print "---=== BACKMAPPING COARSE-GRAINED SITES... ===---"
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, chromophoreList).analyseMorphology()
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, []).analyseMorphology()
             print "---=== BACKMAPPING COMPLETED ===---"
         if self.executeMolecularDynamics is True:
             print "---=== EQUILIBRATING FINE-GRAINED MORPHOLOGY... ===---"

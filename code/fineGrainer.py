@@ -349,13 +349,14 @@ class atomistic:
                     thisMonomerDictionary['bond'].append(self.CGToTemplateBonds[CGBondType])
             # Now need to add in the additionalConstraints for this monomer (which include the bond, angle and dihedral for the inter-monomer connections.
             # However, we need a check to make sure that we don't add stuff for the final monomer (because those atoms +25 don't exist in this molecule!)
-            for importantCGType, constraint in self.additionalConstraints.iteritems():
+            for constraint in self.additionalConstraints:
                 # Firstly, skip this constraint if the current monomer doesn't have the relevant CG types
+                importantCGType = constraint[0]
                 if importantCGType not in monomerCGTypes:
                     continue
                 # Also check that we're not at the final monomer
                 atFinalMonomer = False
-                for atomID in constraint[1:]:
+                for atomID in constraint[2:]:
                     if (noAtomsInMolecule + atomID + 1) > totalPermittedAtoms:
                         atFinalMonomer = True
                         break
@@ -364,7 +365,7 @@ class atomistic:
                 # Work out which key to write the constraint to based on its length:
                 # 3 = Bond, 4 = Angle, 5 = Dihedral, 6 = Improper
                 constraintType = ['bond', 'angle', 'dihedral', 'improper']
-                thisMonomerDictionary[constraintType[len(constraint) - 3]].append(constraint)
+                thisMonomerDictionary[constraintType[len(constraint) - 4]].append(constraint[1:])
             # Finally, increment the atom IDs to take into account previous monomers in this molecule and then update the AADictionary.
             # Note that the ghost dictionary bond was already updated to have the correct realAtom AAID for this molecule when the bond was created. Therefore, leave the ghost dictionary unchanged.
             thisMonomerDictionary, ghostDictionary = helperFunctions.incrementAtomIDs(thisMonomerDictionary, ghostDictionary, noAtomsInMolecule, modifyGhostDictionary=False)
