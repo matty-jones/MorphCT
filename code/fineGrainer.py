@@ -7,7 +7,6 @@ import sys
 class morphology:
     def __init__(self, morphologyXML, morphologyName, parameterDict, chromophoreList):
         # Import parameters from the parXX.py
-        self.parameterDict = parameterDict
         for key, value in parameterDict.iteritems():
             self.__dict__[key] = value
         self.xmlPath = morphologyXML
@@ -44,7 +43,8 @@ class morphology:
 
         # Need to check for atom-type conflicts and suitably increment the type indices if more than
         # one molecule type is being fine-grained
-        newTypeMappings = self.getNewTypeMappings(self.parameterDict['CGToTemplateDirs'], self.parameterDict['CGToTemplateForceFields'])
+        newTypeMappings = self.getNewTypeMappings(self.CGToTemplateDirs, self.CGToTemplateForceFields)
+        # Need to update the self.parameterDict, which will be rewritten at the end of this module
         self.parameterDict['newTypeMappings'] = newTypeMappings
         print "Adding molecules to the system..."
         for moleculeNumber in range(len(moleculeIDs)):
@@ -347,8 +347,11 @@ class atomistic:
                     thisMonomerDictionary['bond'].append(self.CGToTemplateBonds[CGBondType])
             # Now need to add in the additionalConstraints for this monomer (which include the bond, angle and dihedral for the inter-monomer connections.
             # However, we need a check to make sure that we don't add stuff for the final monomer (because those atoms +25 don't exist in this molecule!)
-            for constraint in self.additionalConstraints:
-                # Check that we're not at the final monomer
+            for importantCGType, constraint in self.additionalConstraints.iteritems():
+                # Firstly, skip this constraint if the current monomer doesn't have the relevant CG types
+                if importantCGType not in monomerCGTypes:
+                    continue
+                # Also check that we're not at the final monomer
                 atFinalMonomer = False
                 for atomID in constraint[1:]:
                     if (noAtomsInMolecule + atomID + 1) > totalPermittedAtoms:
