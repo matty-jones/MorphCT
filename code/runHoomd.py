@@ -231,10 +231,16 @@ class MDPhase:
         else:
             raise SystemError('Non-harmonic angle potentials not yet hard-coded! Please describe how to interpret them on this line.')
         # Set Dihedral Coeffs
+        # NOTE: Some of the FFs I have currently mix molecules that have 'table' and 'opls' dihedral types. (For instance, the P3HT Dihedrals are `table' and the C60/PCBM ones are `OPLS'). The user can set up the parameter file so that it alternates between the integration of the P3HT and the PCBM to keep the dihedral types the same, but MorphCT will still try to read in ALL of the dihedral types and map them, even if they aren't integrated over.
+        # As such, I'm going to throw in a try/except here that maps V4 = 0 if there aren't enough coefficients to go round.
         if self.dihedralType == 'table':
             self.dihedralClass = dihedral.table(width=1000)
             for dihedralCoeff in self.dihedralCoeffs:
-                self.dihedralClass.dihedral_coeff.set(dihedralCoeff[0], func=multiHarmonicTorsion, coeff=dict(V0=dihedralCoeff[1] * self.eScale, V1=dihedralCoeff[2] * self.eScale, V2=dihedralCoeff[3] * self.eScale, V3=dihedralCoeff[4] * self.eScale, V4=dihedralCoeff[5] * self.eScale))
+                # See above for reasoning with this try/except
+                try:
+                    self.dihedralClass.dihedral_coeff.set(dihedralCoeff[0], func=multiHarmonicTorsion, coeff=dict(V0=dihedralCoeff[1] * self.eScale, V1=dihedralCoeff[2] * self.eScale, V2=dihedralCoeff[3] * self.eScale, V3=dihedralCoeff[4] * self.eScale, V4=dihedralCoeff[5] * self.eScale))
+                except IndexError:
+                    self.dihedralClass.dihedral_coeff.set(dihedralCoeff[0], func=multiHarmonicTorsion, coeff=dict(V0=dihedralCoeff[1] * self.eScale, V1=dihedralCoeff[2] * self.eScale, V2=dihedralCoeff[3] * self.eScale, V3=dihedralCoeff[4] * self.eScale, V4=0))
         elif self.dihedralType == 'opls':
             self.dihedralClass = dihedral.opls()
             for dihedralCoeff in self.dihedralCoeffs:
