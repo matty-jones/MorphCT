@@ -48,6 +48,28 @@ class morphology:
         newTypeMappings = self.getNewTypeMappings(self.CGToTemplateDirs, self.CGToTemplateForceFields)
         # Need to update the self.parameterDict, which will be rewritten at the end of this module
         self.parameterDict['newTypeMappings'] = newTypeMappings
+        molecule = []
+        uniqueMappings = []
+        CGSites, mappings = helperFunctions.parallelSort(newTypeMappings.keys(), newTypeMappings.values())
+        for index, mapping in enumerate(mappings):
+            if mapping not in uniqueMappings:
+                molecule.append([])
+                uniqueMappings.append(mapping)
+            molecule[-1].append(CGSites[index])
+        printExplanation = True
+        for index, CGSites in enumerate(molecule):
+            printMol = True
+            initialAtoms, finalAtoms = helperFunctions.parallelSort(uniqueMappings[index].keys(), uniqueMappings[index].values())
+            for index, initialAtom in enumerate(initialAtoms):
+                #if initialAtom == finalAtoms[index]:
+                #    continue
+                if printExplanation is True:
+                    print "The following atom types have been remapped due to conflicting typenames in the atomistic templates:"
+                    printExplanation = False
+                if printMol is True:
+                    print "Atom types belonging the molecule described by", repr(CGSites)+":"
+                    printMol = False
+                print initialAtom, "--->", finalAtoms[index]
         print "Adding molecules to the system..."
         for moleculeNumber in range(len(moleculeIDs)):
             print "Adding molecule number", moleculeNumber, "\r",
