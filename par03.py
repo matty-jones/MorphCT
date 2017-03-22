@@ -79,6 +79,7 @@ pairRCut = 10.0
 pairDPDGammaVal = 0.0
 
 # ---=== Molecular Dynamics Phase Parameters ===---
+
 numberOfPhases = 8
 temperatures = [1.0]
 taus = [1.0]
@@ -91,6 +92,8 @@ timesteps = [1E-3, 1E-3, 1E-10, 1E-9, 1E-8, 1E-7, 1E-6, 1E-5]
 durations = [1E5, 1E4, 1E3, 1E3, 1E3, 1E4, 1E5, 1E6]
 terminationConditions = ['KEmin', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt']
 groupAnchorings = ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'D']
+DCDFileWrite = True
+DCDFileDumpsteps = [0]
 
 # ---=== Chromophore Parameters ===---
 

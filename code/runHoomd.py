@@ -3,9 +3,6 @@ import numpy as np
 import helperFunctions
 import sys
 
-DEBUGWriteDCDFiles = True
-
-
 class ExitHoomd(Exception):
     '''This class is raised to terminate a HOOMD simulation mid-run for a particular reason (e.g. minimum KE found)'''
     def __init__(self, string):
@@ -30,7 +27,7 @@ class MDPhase:
         for key in parameterDict.keys():
             self.__dict__[key] = parameterDict[key]
         # Get the phase-specific simulation parameters
-        for key in ['temperatures', 'taus', 'pairTypes', 'bondTypes', 'angleTypes', 'dihedralTypes', 'integrationTargets', 'timesteps', 'durations', 'terminationConditions', 'groupAnchorings']:
+        for key in ['temperatures', 'taus', 'pairTypes', 'bondTypes', 'angleTypes', 'dihedralTypes', 'integrationTargets', 'timesteps', 'durations', 'terminationConditions', 'groupAnchorings', 'DCDFileDumpsteps']:
             # If the phase-specific parameter is not defined for this phase number then use the first one.
             if self.phaseNumber + 1 > len(parameterDict[key]):
                 self.__dict__[key[:-1]] = parameterDict[key][0]
@@ -49,8 +46,12 @@ class MDPhase:
 
     def optimiseStructure(self):
         # Activate the dumping of the trajectory dcd file
-        if DEBUGWriteDCDFiles is True:
-            self.dumpDCD = dump.dcd(filename=self.outputFile.replace('xml', 'dcd'), period=self.duration / 100.0, overwrite=True)
+        if self.DCDFileWrite is True:
+            if self.DCDFileDumpstep is not 0:
+                print "Setting DCD dump step to", self.DCDFileDumpstep
+                self.dumpDCD = dump.dcd(filename=self.outputFile.replace('xml', 'dcd'), period=self.DCDFileDumpstep, overwrite=True)
+            else:
+                self.dumpDCD = dump.dcd(filename=self.outputFile.replace('xml', 'dcd'), period=self.duration / 100.0, overwrite=True)
         else:
             self.dumpDCD = None
         # Set the integrators, groups and timestep
