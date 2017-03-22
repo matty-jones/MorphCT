@@ -61,8 +61,8 @@ class morphology:
             printMol = True
             initialAtoms, finalAtoms = helperFunctions.parallelSort(uniqueMappings[index].keys(), uniqueMappings[index].values())
             for index, initialAtom in enumerate(initialAtoms):
-                #if initialAtom == finalAtoms[index]:
-                #    continue
+                if initialAtom == finalAtoms[index]:
+                    continue
                 if printExplanation is True:
                     print "The following atom types have been remapped due to conflicting typenames in the atomistic templates:"
                     printExplanation = False
