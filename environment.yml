@@ -1,0 +1,6 @@
+name: hoomd1.3
+channels:
+- glotzer
+- defaults
+dependencies:
+- hoomd=1.3
