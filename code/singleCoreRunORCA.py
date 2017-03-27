@@ -34,7 +34,7 @@ if __name__ == '__main__':
         # Check if file exists already
         if overwrite is False:
             try:
-                with open(outputFileName, 'rb') as testFile:
+                with open(outputFileName, 'r') as testFile:
                     pass
                 helperFunctions.writeToFile(logFile, [outputFileName + ' already exists! Skipping...'])
                 continue
@@ -50,9 +50,9 @@ if __name__ == '__main__':
             helperFunctions.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinities..."])
         orcaShellOutput = orcaJob.communicate()
         # Write the outputFile:
-        helperFunctions.writeToFile(outputFileName, orcaShellOutput[0].split('\n'), mode='outputFile')
+        helperFunctions.writeToFile(outputFileName, orcaShellOutput[0].decode().split('\n'), mode='outputFile')
         # helperFunctions.writeToFile(logFile, orcaShellOutput[0].split('\n'))  # stdOut
-        helperFunctions.writeToFile(logFile, orcaShellOutput[1].split('\n'))  # stdErr
+        helperFunctions.writeToFile(logFile, orcaShellOutput[1].decode().split('\n'))  # stdErr
         # os.system(orcaDir+'/orca '+str(job)+' > '+str(outputFileName))
         t2 = T.time()
         elapsedTime = float(t2) - float(t1)

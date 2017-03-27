@@ -1096,9 +1096,9 @@ def getCPUCores():
 
 def writeToFile(logFile, stringList, mode='logFile'):
     if mode == 'outputFile':
-        openAs = 'wb+'
+        openAs = 'w+'
     else:
-        openAs = 'ab+'
+        openAs = 'a+'
     with open(logFile, openAs) as logWrite:
         for line in stringList:
             logWrite.writelines(line + '\n')
