@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 try:
     import mpl_toolkits.mplot3d.axes3d as p3
 except ImportError:
-    print "Could not import 3D plotting engine, calling the plotMolecule3D function will result in an error!"
+    print("Could not import 3D plotting engine, calling the plotMolecule3D function will result in an error!")
     pass
 
 
@@ -23,7 +23,7 @@ class chromophore:
         electronicallyActiveCGSites, self.species = self.obtainElectronicSpecies(chromophoreCGSites, CGMorphologyDict['type'], parameterDict['CGSiteSpecies'])
         # CGToAAIDMaster is a list of dictionaries where each list element corresponds to a new molecule.
         # Firstly, flatten this out so that it becomes a single CG:AAID dictionary
-        flattenedCGToAAIDMaster = {dictKey: dictVal[1] for dictionary in CGToAAIDMaster for dictKey, dictVal in dictionary.iteritems()}
+        flattenedCGToAAIDMaster = {dictKey: dictVal[1] for dictionary in CGToAAIDMaster for dictKey, dictVal in dictionary.items()}
         # Now, using chromophoreCGSites as the keys, build up a list of all of the AAIDs in the chromophore,
         # where each element corresponds to each CG site, and then flatten it.
         self.AAIDs = [AAID for AAIDs in [flattenedCGToAAIDMaster[CGID] for CGID in chromophoreCGSites] for AAID in AAIDs]
@@ -101,7 +101,7 @@ def calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, pa
     # small molecules.
     # Therefore, we need to assign each CG site in the morphology to a particular chromophore,
     # so first, it's important to generate a `neighbourlist' of all bonded atoms
-    print "Determining chromophores in the system..."
+    print("Determining chromophores in the system...")
     bondedAtoms = helperFunctions.obtainBondedList(CGMorphologyDict['bond'])
     chromophoreList = [i for i in range(len(CGMorphologyDict['type']))]
     for CGSiteID, chromophoreID in enumerate(chromophoreList):
@@ -110,7 +110,7 @@ def calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, pa
         chromophoreList, typesInThisChromophore = updateChromophores(CGSiteID, chromophoreList, bondedAtoms, CGMorphologyDict['type'], typesInThisChromophore, parameterDict)
     chromophoreData = {}
     for atomID, chromoID in enumerate(chromophoreList):
-        if chromoID not in chromophoreData.keys():
+        if chromoID not in list(chromophoreData.keys()):
             chromophoreData[chromoID] = [atomID]
         else:
             chromophoreData[chromoID].append(atomID)
@@ -119,15 +119,15 @@ def calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, pa
     oldKeys = sorted(chromophoreData.keys())
     for newKey, oldKey in enumerate(oldKeys):
         chromophoreData[newKey] = chromophoreData.pop(oldKey)
-    print str(len(chromophoreData.keys())) + " chromophores successfully identified!"
+    print(str(len(list(chromophoreData.keys()))) + " chromophores successfully identified!")
     # Now let's create a list of all the chromophore instances which contain all of the
     # information we could ever want about them.
     chromophoreInstances = []
-    for chromoID, chromophoreCGSites in chromophoreData.iteritems():
-        print "\rCalculating properties of chromophore %04d of %04d..." % (chromoID, len(chromophoreData.keys()) - 1),
+    for chromoID, chromophoreCGSites in chromophoreData.items():
+        print("\rCalculating properties of chromophore %04d of %04d..." % (chromoID, len(list(chromophoreData.keys())) - 1), end=' ')
         sys.stdout.flush()
         chromophoreInstances.append(chromophore(chromoID, chromophoreCGSites, CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims))
-    print ""
+    print("")
     return chromophoreInstances
 
 
@@ -163,7 +163,7 @@ def updateChromophores(atomID, chromophoreList, bondedAtoms, CGTypeList, typesIn
 
 def determineNeighbours(chromophoreList, parameterDict, simDims):
     for chromophore1 in chromophoreList:
-        print "\rIdentifying neighbours of chromophore %04d of %04d..." % (chromophore1.ID, len(chromophoreList) - 1),
+        print("\rIdentifying neighbours of chromophore %04d of %04d..." % (chromophore1.ID, len(chromophoreList) - 1), end=' ')
         sys.stdout.flush()
         for chromophore2 in chromophoreList:
             # Skip if chromo2 is chromo1
@@ -206,7 +206,7 @@ def determineNeighbours(chromophoreList, parameterDict, simDims):
         #     for neighbour in chromophore1.neighbours:
         #         print neighbour[0], neighbour[1], chromophoreList[neighbour[0]].posn
         #     plotChromoNeighbours(chromophore1, chromophoreList, simDims)
-    print ""
+    print("")
     return chromophoreList
 
 
@@ -222,8 +222,8 @@ def plotChromoNeighbours(chromophore, chromophoreList, simDims):
 #            while position[axis] <= simDims[axis][0]:
 #                position[axis] += simDims[axis][1] - simDims[axis][0]
 #        ax.scatter(position[0], position[1], position[2], s = 5, c = 'k')
-    print "PLOTTING"
-    print simDims
+    print("PLOTTING")
+    print(simDims)
     for neighbour in chromophore.neighbours:
         neighbourID = neighbour[0]
         neighbourImage = neighbour[1]
@@ -234,7 +234,7 @@ def plotChromoNeighbours(chromophore, chromophoreList, simDims):
         for axis in range(3):
             simLength = simDims[axis][1] - simDims[axis][0]
             neighbourPosn[axis] += neighbourImage[axis] * simLength
-        print neighbourID, neighbourChromo.posn, neighbourImage, neighbourPosn
+        print(neighbourID, neighbourChromo.posn, neighbourImage, neighbourPosn)
         ax.scatter(neighbourPosn[0], neighbourPosn[1], neighbourPosn[2], s=50, c='b')
         ax.scatter(neighbourChromo.posn[0], neighbourChromo.posn[1], neighbourChromo.posn[2], s=50, c='g')
     # Finally, draw box
@@ -260,6 +260,6 @@ if __name__ == "__main__":
     try:
         pickleFile = sys.argv[1]
     except:
-        print "Please specify the pickle file to load to continue the pipeline from this point."
+        print("Please specify the pickle file to load to continue the pipeline from this point.")
     AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
     execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)

@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 import os
-import cPickle as pickle
+import pickle
 import multiprocessing as mp
 import csv
 import xml.etree.cElementTree as ET
@@ -85,7 +85,7 @@ def calcCOM(listOfPositions, listOfAtomTypes=None, listOfMasses=None):
             # Masses obtained from nist.gov, for the atoms we are likely to simulate the most.
             # Add in new atoms here if your molecule requires it!
             if ('BR' in atomType) or ('Br' in atomType) or ('br' in atomType):
-                print "Br 79 being used as the preferred isotope, change in helperFunctions.calcCOM if not!"
+                print("Br 79 being used as the preferred isotope, change in helperFunctions.calcCOM if not!")
                 listOfMasses.append(78.918338)
             elif ('SI' in atomType) or ('Si' in atomType) or ('si' in atomType):
                 listOfMasses.append(27.976926)
@@ -138,9 +138,9 @@ def getRotationMatrix(vector1, vector2):
 
 def parallelSort(list1, list2):
     '''This function sorts a pair of lists by the first list in ascending order (for example, atom mass and corresponding position can be input, sorted by ascending mass, and the two lists output, where the mass[atom_i] still corresponds to position[atom_i]'''
-    data = zip(list1, list2)
+    data = list(zip(list1, list2))
     data.sort()
-    list1, list2 = map(lambda t: list(t), zip(*data))
+    list1, list2 = [list(t) for t in zip(*data)]
     return list1, list2
 
 
@@ -157,7 +157,7 @@ def writeCSV(fileName, data):
         document = csv.writer(csvFile, delimiter=',')
         for row in data:
             document.writerow(list(row))
-    print "CSV written to", fileName
+    print("CSV written to", fileName)
 
 
 def rotationMatrix(vector1, vector2):
@@ -302,20 +302,20 @@ def loadMorphologyXMLETree(xmlPath, sigma=1.0):
     with open(xmlPath, 'r') as xmlFileName:
         xmlFile = ET.parse(xmlFileName)
     morphologyConfig = xmlFile.getroot()[-1]
-    for axis, systemDim in morphologyConfig.find('box').attrib.iteritems():
+    for axis, systemDim in morphologyConfig.find('box').attrib.items():
         atomDictionary[axis] = float(systemDim)
     for key in atomPropsInt:
-        atomDictionary[key] = map(int, morphologyConfig.find(key).text.split('\n')[1:-1])
+        atomDictionary[key] = list(map(int, morphologyConfig.find(key).text.split('\n')[1:-1]))
     for key in atomPropsFloat:
-        atomDictionary[key] = map(float, morphologyConfig.find(key).text.split('\n')[1:-1])
+        atomDictionary[key] = list(map(float, morphologyConfig.find(key).text.split('\n')[1:-1]))
     for key in atomPropsStr:
         atomDictionary[key] = morphologyConfig.find(key).text.split('\n')[1:-1]
     for key in atomProps3DInt:
-        atomDictionary[key] = [map(int, x.split(' ')) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
+        atomDictionary[key] = [list(map(int, x.split(' '))) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
     for key in atomProps3DFloat:
-        atomDictionary[key] = [list(np.array(map(float, x.split(' '))) * sigma) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
+        atomDictionary[key] = [list(np.array(list(map(float, x.split(' ')))) * sigma) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
     for key in constraintProps:
-        atomDictionary[key] = [[x.split(' ')[0]] + map(int, x.split(' ')[1:]) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
+        atomDictionary[key] = [[x.split(' ')[0]] + list(map(int, x.split(' ')[1:])) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
     return atomDictionary
 
 
@@ -501,7 +501,7 @@ def loadFFXML(xmlPath, mapping = False):
                 FFDict[recordType].append(splitLine)
     # Now remap the names of the constraints if any mappings have been specified
     if mapping is not False:
-        for constraintType in FFDict.keys():
+        for constraintType in list(FFDict.keys()):
             for index, constraint in enumerate(FFDict[constraintType]):
                 # Split the constraint name up based on each atom type
                 constraintName = copy.deepcopy(constraint[0].split('-'))
@@ -514,7 +514,7 @@ def loadFFXML(xmlPath, mapping = False):
 
 
 def removeRigidBodies(inputDictionary):
-    print "Removing rigid bodies..."
+    print("Removing rigid bodies...")
     atomsToRemove = []
     bondsToRemove = []
     # First remove the anchor points
@@ -535,12 +535,12 @@ def removeRigidBodies(inputDictionary):
         inputDictionary['body'][index] = -1
     # Finally, update the number of atoms in the morphology
     inputDictionary['natoms'] -= len(atomsToRemove)
-    print len(atomsToRemove), "atoms and", len(bondsToRemove), "bonds removed."
+    print(len(atomsToRemove), "atoms and", len(bondsToRemove), "bonds removed.")
     return inputDictionary
 
 
 def writeMorphologyXMLETree(inputDictionary, outputFile):
-    print "Checking wrapped positions before writing XML..."
+    print("Checking wrapped positions before writing XML...")
     inputDictionary = checkWrappedPositions(inputDictionary)
     systemProps = ['box']
     atomProps3D = ['position', 'image']
@@ -575,12 +575,12 @@ def writeMorphologyXMLETree(inputDictionary, outputFile):
     root.insert(0, config)
     tree = ET.ElementTree(root)
     tree.write(outputFile, xml_declaration=True, encoding='UTF-8')
-    print "XML file written to", str(outputFile) + "!"
+    print("XML file written to", str(outputFile) + "!")
 
 
 def writeMorphologyXML(inputDictionary, outputFile):
     # First, need to check the positions of the atoms to ensure that everything is correctly contained inside the box
-    print "Checking wrapped positions before writing XML..."
+    print("Checking wrapped positions before writing XML...")
     inputDictionary = checkWrappedPositions(inputDictionary)
     # inputDictionary['position'], inputDictionary['image'] = pbc.shift_pbc(inputDictionary['position'], [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']])
     # print inputDictionary['image'][:20]
@@ -646,7 +646,7 @@ def writeMorphologyXML(inputDictionary, outputFile):
     linesToWrite.append('</hoomd_xml>\n')
     with open(outputFile, 'w+') as xmlFile:
         xmlFile.writelines(linesToWrite)
-    print "XML file written to", str(outputFile) + "!"
+    print("XML file written to", str(outputFile) + "!")
 
 
 def writePOSCARFile(inputDict, outputFile):
@@ -723,7 +723,7 @@ def writePOSCARFile(inputDict, outputFile):
         POSCARFile.writelines(linesToWrite)
     with open(outputFile.replace('POSCAR', 'pickle'), 'w+') as bondPickle:
         pickle.dump(inputDict['bond'], bondPickle)
-    print "POSCAR data written to", str(outputFile) + ". Bond data written to", str(outputFile.replace('POSCAR', 'pickle')) + "."
+    print("POSCAR data written to", str(outputFile) + ". Bond data written to", str(outputFile.replace('POSCAR', 'pickle')) + ".")
 
 
 def writeXYZFile(inputDict, outputFile):
@@ -747,7 +747,7 @@ def writeXYZFile(inputDict, outputFile):
         rowsToWrite.append(lineToWrite)
     with open(outputFile, 'w+') as xyzFile:
         xyzFile.writelines(rowsToWrite)
-    print "XYZ data written to", str(outputFile) + "."
+    print("XYZ data written to", str(outputFile) + ".")
 
 
 def createSlurmSubmissionScript(outputDir, runName, mode):
@@ -890,13 +890,13 @@ def cellSearchBonds(moleculeDict):
     atomIDs = np.arange(len(moleculeDict['position']))
     for coordinates in moleculeDict['position']:
         cellLocation = np.copy(coordinates)
-        moleculeDict['neighbourCell'].append(map(int, np.round(cellLocation / maximumBondLength)))
-        print coordinates, moleculeDict['neighbourCell'][-1]
+        moleculeDict['neighbourCell'].append(list(map(int, np.round(cellLocation / maximumBondLength))))
+        print(coordinates, moleculeDict['neighbourCell'][-1])
     neighbourCells = np.copy(moleculeDict['neighbourCell'])
-    print calculateSeparation(moleculeDict['position'][0], moleculeDict['position'][1]), calculateSeparation(moleculeDict['position'][1], moleculeDict['position'][2])
+    print(calculateSeparation(moleculeDict['position'][0], moleculeDict['position'][1]), calculateSeparation(moleculeDict['position'][1], moleculeDict['position'][2]))
     parallelSort(neighbourCells, atomIDs)
     for i in range(len(atomIDs)):
-        print atomIDs[i], neighbourCells[i]
+        print(atomIDs[i], neighbourCells[i])
 
 
 def getAAIDsByMolecule(CGtoAAIDs):
@@ -904,7 +904,7 @@ def getAAIDsByMolecule(CGtoAAIDs):
     moleculeAAIDs = []
     for moleculeID, CGtoAAIDDict in enumerate(CGtoAAIDs):
         moleculeAAIDs.append([])
-        for dictionaryValue in CGtoAAIDs[moleculeID].values():
+        for dictionaryValue in list(CGtoAAIDs[moleculeID].values()):
             moleculeAAIDs[-1] += dictionaryValue[1]
         moleculeAAIDs[-1].sort()
     return moleculeAAIDs
@@ -926,7 +926,7 @@ def loadDict(masterDict, moleculeIDs, bondPickleName):
     moleculeDict = {'position': [], 'unwrapped_position': [], 'type': [], 'diameter': [], 'image': [], 'charge': [], 'mass': []}
     # First get atom-specific properties
     for atomID in moleculeIDs:
-        for key in moleculeDict.keys():
+        for key in list(moleculeDict.keys()):
             moleculeDict[key].append(masterDict[key][atomID])
     # Then add in the simulation properties
     for key in ['lx', 'ly', 'lz', 'xy', 'xz', 'yz', 'dimensions']:
@@ -961,7 +961,7 @@ def loadPoscar(inputFilePath):
     moleculeDict['lz'] = simDims[2][2]
     simBoxDims = ['lx', 'ly', 'lz']
     typeList = poscarData[5].split('\n')[0].split(' ')
-    freqList = map(int, poscarData[6].split('\n')[0].split(' '))
+    freqList = list(map(int, poscarData[6].split('\n')[0].split(' ')))
     for i in range(len(typeList)):
         if len(typeList[i]) != 0:  # Catch for the extra space I had to put in to make VMD behave properly
             moleculeDict['type'] += [typeList[i]] * freqList[i]
@@ -985,7 +985,7 @@ def checkORCAFileStructure(outputDir):
     if 'KMC' not in morphologyDirList:
         os.makedirs(outputDir + '/KMC')
     if 'chromophores' not in morphologyDirList:
-        print "Making /chromophores directory..."
+        print("Making /chromophores directory...")
         os.makedirs(outputDir + '/chromophores')
         os.makedirs(outputDir + '/chromophores/inputORCA')
         os.makedirs(outputDir + '/chromophores/inputORCA/single')
@@ -996,7 +996,7 @@ def checkORCAFileStructure(outputDir):
     else:
         chromophoresDirList = os.listdir(outputDir + '/chromophores')
         if 'inputORCA' not in chromophoresDirList:
-            print "Making /inputORCA directory..."
+            print("Making /inputORCA directory...")
             os.makedirs(outputDir + '/chromophores/inputORCA')
             os.makedirs(outputDir + '/chromophores/inputORCA/single')
             os.makedirs(outputDir + '/chromophores/inputORCA/pair')
@@ -1007,7 +1007,7 @@ def checkORCAFileStructure(outputDir):
             if 'pair' not in inputDirList:
                 os.makedirs(outputDir + '/chromophores/inputORCA/pair')
         if 'outputORCA' not in chromophoresDirList:
-            print "Making /outputORCA directory..."
+            print("Making /outputORCA directory...")
             os.makedirs(outputDir + '/chromophores/outputORCA')
             os.makedirs(outputDir + '/chromophores/outputORCA/single')
             os.makedirs(outputDir + '/chromophores/outputORCA/pair')
@@ -1042,9 +1042,9 @@ def writeORCAInp(inputDictList, outputDir, mode):
         fileExists = False
     inputFileName = outputDir + '/chromophores/inputORCA/' + mode + '/' + ORCAFileName
     if fileExists is True:
-        print "File", ORCAFileName, "already exists, skipping..."
+        print("File", ORCAFileName, "already exists, skipping...")
         return
-        print "Creating file anyway to check that they are the same"
+        print("Creating file anyway to check that they are the same")
         inputFileName = inputFileName.replace('.inp', '_2.inp')
 
     # chromophore1COM = calcCOM(chromophore1['position'], chromophore1['mass'])
@@ -1078,10 +1078,10 @@ def writeORCAInp(inputDictList, outputDir, mode):
     inpFileLines[-1:-1] = linesToWrite
     with open(inputFileName, 'w+') as ORCAInputFile:
         ORCAInputFile.writelines(inpFileLines)
-    print "ORCA input file written to", inputFileName, "\r",
+    print("ORCA input file written to", inputFileName, "\r", end=' ')
     if fileExists is True:
-        print "\n"
-        raw_input("Hit return to continue...")
+        print("\n")
+        input("Hit return to continue...")
 
 
 def getCPUCores():
@@ -1105,18 +1105,18 @@ def writeToFile(logFile, stringList, mode='logFile'):
 
 
 def loadPickle(pickleLocation):
-    print "Loading Pickle from", str(pickleLocation) + "..."
+    print("Loading Pickle from", str(pickleLocation) + "...")
     with open(pickleLocation, 'r') as pickleFile:
         objects = pickle.load(pickleFile)
-    print "Pickle loaded successfully!"
+    print("Pickle loaded successfully!")
     return objects[0], objects[1], objects[2], objects[3], objects[4]
 
 
 def writePickle(toPickle, pickleFileName):
-    print "Writing pickle file..."
+    print("Writing pickle file...")
     with open(pickleFileName, 'w+') as pickleFile:
         pickle.dump(toPickle, pickleFile)
-    print "Pickle file written to", pickleFileName
+    print("Pickle file written to", pickleFileName)
 
 
 def obtainBondedList(bondList):
@@ -1146,7 +1146,7 @@ def convertStringToInt(x):
 def TEMPAddBondedChromos(chromophoreList, CGMorphologyDict):
     t0 = T.time()
     for chromo1ID, chromo1 in enumerate(chromophoreList):
-        print "Examining chromophore", chromo1ID + 1, "of", len(chromophoreList)
+        print("Examining chromophore", chromo1ID + 1, "of", len(chromophoreList))
         for chromo2ID in [x[0] for x in chromo1.neighbours]:
             chromo2 = chromophoreList[chromo2ID]
             for bond in CGMorphologyDict['bond']:
@@ -1157,5 +1157,5 @@ def TEMPAddBondedChromos(chromophoreList, CGMorphologyDict):
                         chromo1.bondedChromos.append(chromo2.ID)
                     break
     t1 = T.time()
-    print "Took %f seconds" % (t1-t0)
+    print("Took %f seconds" % (t1-t0))
     return chromophoreList

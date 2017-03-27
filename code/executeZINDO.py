@@ -4,7 +4,7 @@ import numpy as np
 import helperFunctions
 import subprocess as sp
 import multiprocessing as mp
-import cPickle as pickle
+import pickle
 
 
 def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
@@ -13,7 +13,7 @@ def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
         # Include the molecule terminating units on the required atoms of the chromophore
         terminatingGroupPositions = terminateMonomers(chromophore, parameterDict, AAMorphologyDict)
         writeOrcaInp(AAMorphologyDict, chromophore.AAIDs, [chromophore.image] * len(chromophore.AAIDs), terminatingGroupPositions, [chromophore.image] * len(terminatingGroupPositions), parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophore.orcaInput)
-    print ""
+    print("")
     # Determine how many pairs there are first:
     numberOfPairs = 0
     for chromo in chromophoreList:
@@ -21,7 +21,7 @@ def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
             if int(neighbour[0]) > chromo.ID:
                 numberOfPairs += 1
     numberOfPairs = np.sum([len(chromo.neighbours) for chromo in chromophoreList])
-    print "There are", numberOfPairs/2, "total neighbour pairs to consider."  # /2 because the forwards and backwards hops are identical
+    print("There are", numberOfPairs/2, "total neighbour pairs to consider.")  # /2 because the forwards and backwards hops are identical
     # Then consider each chromophore against every other chromophore
     for chromophore1 in chromophoreList:
         neighboursID = [neighbour[0] for neighbour in chromophore1.neighbours]
@@ -48,7 +48,7 @@ def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
             inputName = chromophore1.orcaInput.replace('.inp', '-%04d.inp' % (chromophore2.ID)).replace('single', 'pair')
             # Write the dimer input file
             writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPositions1 + terminatingGroupPositions2, terminatingGroupImages1 + terminatingGroupImages2, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + inputName)
-    print ""
+    print("")
 
 
 def removeAdjacentTerminators(group1, group2):
@@ -94,7 +94,7 @@ def writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPosns, termina
     # Write the ORCA input file
     with open(inputName, 'w+') as orcaFile:
         orcaFile.writelines(inpFileLines)
-    print "\rOrca Input File written as", inputName[helperFunctions.findIndex(inputName, '/')[-1] + 1:],
+    print("\rOrca Input File written as", inputName[helperFunctions.findIndex(inputName, '/')[-1] + 1:], end=' ')
 
 
 def terminateMonomers(chromophore, parameterDict, AAMorphologyDict):
@@ -159,7 +159,7 @@ def getORCAJobs(inputDir, procIDs):
     if len(ORCAFilesToRun) == 0:
         return []
     # Create a jobslist for each procID
-    jobsList = [ORCAFilesToRun[i:i + (int(np.ceil(len(ORCAFilesToRun) / len(procIDs)))) + 1] for i in xrange(0, len(ORCAFilesToRun), int(np.ceil(len(ORCAFilesToRun) / float(len(procIDs)))))]
+    jobsList = [ORCAFilesToRun[i:i + (int(np.ceil(len(ORCAFilesToRun) / len(procIDs)))) + 1] for i in range(0, len(ORCAFilesToRun), int(np.ceil(len(ORCAFilesToRun) / float(len(procIDs)))))]
     return jobsList
 
 
@@ -169,19 +169,19 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     procIDs = parameterDict['procIDs']
     jobsList = getORCAJobs(inputDir, procIDs)
     numberOfInputs = sum([len(ORCAFilesToRun) for ORCAFilesToRun in jobsList])
-    print "Found", numberOfInputs, "ORCA files to run."
+    print("Found", numberOfInputs, "ORCA files to run.")
     if numberOfInputs > 0:
         # Create pickle file containing the jobs sorted by ProcID to be picked up by singleCoreRunORCA.py
         pickleName = inputDir.replace('inputORCA', 'ORCAJobs.pickle')
         with open(pickleName, 'w+') as pickleFile:
             pickle.dump(jobsList, pickleFile)
-        print "ORCA jobs list written to", pickleName
+        print("ORCA jobs list written to", pickleName)
         if len(jobsList) <= len(procIDs):
             procIDs = procIDs[:len(jobsList)]
         runningJobs = []
         # Open the required processes to execute the ORCA jobs
         for CPURank, jobs in enumerate(jobsList):
-            print 'python ' + os.getcwd() + '/code/singleCoreRunORCA.py ' + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + ' ' + str(CPURank) + ' &'
+            print('python ' + os.getcwd() + '/code/singleCoreRunORCA.py ' + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + ' ' + str(CPURank) + ' &')
             runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunORCA.py', parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4], str(CPURank)]))
         # Wait for all jobs to complete
         [p.wait() for p in runningJobs]
@@ -194,6 +194,6 @@ if __name__ == "__main__":
     try:
         pickleFile = sys.argv[1]
     except:
-        print "Please specify the pickle file to load to continue the pipeline from this point."
+        print("Please specify the pickle file to load to continue the pipeline from this point.")
     AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
     execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)

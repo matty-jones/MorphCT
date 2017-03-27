@@ -8,7 +8,7 @@ import time as T
 import random as R
 from scipy.sparse import lil_matrix
 import subprocess as sp
-import cPickle as pickle
+import pickle
 
 
 elementaryCharge = 1.60217657E-19 # C
@@ -115,7 +115,7 @@ class carrier:
 
 class saveCarrier:
     def __init__(self, **kwargs):#ID, image, initialPosn, finalPosn, lifetime, currentTime, noHops, displacement):
-        for key, value in kwargs.iteritems():
+        for key, value in kwargs.items():
             self.__dict__[key] = value
 
 
@@ -188,7 +188,7 @@ if __name__ == '__main__':
     helperFunctions.writeToFile(logFile, ['Main morphology pickle loaded!'])
     # Attempt to catch a kill signal to ensure that we save the pickle before termination
     killer = terminationSignal()
-    seed = R.randint(0, sys.maxint)
+    seed = R.randint(0, sys.maxsize)
     R.seed(seed)
     # Save the pickle as a list of `saveCarrier' instances that contain the bare minimum
     saveData = initialiseSaveData(len(chromophoreList), seed)
@@ -243,7 +243,7 @@ if __name__ == '__main__':
             helperFunctions.writeToFile(logFile, ['Carrier hopped ' + str(thisCarrier.noHops) + ' times, over ' + str(thisCarrier.currentTime) + ' seconds, into image ' + str(thisCarrier.image) + ', for a displacement of ' + str(thisCarrier.displacement) + ', in ' + str(elapsedTime) + ' wall-clock ' + str(timeunits)])
             # Save the pickle file every hour
             if (t2 - saveTime) > 3600:
-                print "Completed", jobNumber, "of", len(jobsToRun), "jobs. Making checkpoint at %3d%%" % (np.round(jobNumber + 1 / float(len(jobsToRun)) * 100))
+                print("Completed", jobNumber, "of", len(jobsToRun), "jobs. Making checkpoint at %3d%%" % (np.round(jobNumber + 1 / float(len(jobsToRun)) * 100)))
                 helperFunctions.writeToFile(logFile, ['Completed ' + str(jobNumber) + ' jobs. Making checkpoint at %3d%%' % (np.round(jobNumber / float(len(jobsToRun)) * 100))])
                 savePickle(saveData, pickleFileName.replace('Data', saveSlot + 'Results'))
                 if saveSlot == 'slot1':
@@ -252,12 +252,12 @@ if __name__ == '__main__':
                     saveSlot = 'slot1'
                 saveTime = T.time()
     except Exception as errorMessage:
-        print traceback.format_exc()
-        print "Saving the pickle file cleanly before termination..."
+        print(traceback.format_exc())
+        print("Saving the pickle file cleanly before termination...")
         helperFunctions.writeToFile(logFile, [str(errorMessage)])
         helperFunctions.writeToFile(logFile, ['Saving the pickle file cleanly before termination...'])
         savePickle(saveData, pickleFileName.replace('Data', 'TerminatedResults'))
-        print "Pickle saved! Exitting Python..."
+        print("Pickle saved! Exitting Python...")
         exit()
     t3 = T.time()
     elapsedTime = float(t3) - float(t0)

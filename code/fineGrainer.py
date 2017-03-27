@@ -9,7 +9,7 @@ class morphology:
         # Need to save the parameterDict in full as well as its component values because we're going to update the parameterDict with the new type mappings by the end of this code module.
         self.parameterDict = parameterDict
         # Import parameters from the parXX.py
-        for key, value in parameterDict.iteritems():
+        for key, value in parameterDict.items():
             self.__dict__[key] = value
         self.xmlPath = morphologyXML
         self.morphologyName = morphologyName
@@ -21,7 +21,7 @@ class morphology:
 
     def analyseMorphology(self):
         # Split the morphology into individual molecules
-        print "Finding molecules..."
+        print("Finding molecules...")
         moleculeIDs, moleculeLengths = self.splitMolecules()
         rollingAAIndex = 0
         CGMorphologyDict = {}
@@ -39,12 +39,12 @@ class morphology:
         # If no CGToTemplate info is present in the parameter dict, then we can assume that the morphology 
         # is already fine-grained and so we can just return the important information and skip this module
         if len(self.CGToTemplateDirs) == 0:
-            print "No CG to AA data found in parameter file - the morphology is already fine-grained! Skipping this module..."
+            print("No CG to AA data found in parameter file - the morphology is already fine-grained! Skipping this module...")
             # Create the CGToAAIDMaster, where the CG (input IDs) == AA (output IDs)
             for atomIDs in moleculeIDs:
                 CGToAAIDMaster.append(atomIDs)
             # Now write the XML file and create the pickle
-            print "Writing XML file..."
+            print("Writing XML file...")
             AAFileName = './outputFiles/' + self.morphologyName + '/morphology/' + self.morphologyName + '.xml'
             # Now write the morphology XML
             helperFunctions.writeMorphologyXML(self.CGDictionary, AAFileName)
@@ -67,7 +67,7 @@ class morphology:
         self.parameterDict['newTypeMappings'] = newTypeMappings
         molecule = []
         uniqueMappings = []
-        CGSites, mappings = helperFunctions.parallelSort(newTypeMappings.keys(), newTypeMappings.values())
+        CGSites, mappings = helperFunctions.parallelSort(list(newTypeMappings.keys()), list(newTypeMappings.values()))
         for index, mapping in enumerate(mappings):
             if mapping not in uniqueMappings:
                 molecule.append([])
@@ -76,32 +76,32 @@ class morphology:
         printExplanation = True
         for index, CGSites in enumerate(molecule):
             printMol = True
-            initialAtoms, finalAtoms = helperFunctions.parallelSort(uniqueMappings[index].keys(), uniqueMappings[index].values())
+            initialAtoms, finalAtoms = helperFunctions.parallelSort(list(uniqueMappings[index].keys()), list(uniqueMappings[index].values()))
             for index, initialAtom in enumerate(initialAtoms):
                 if initialAtom == finalAtoms[index]:
                     continue
                 if printExplanation is True:
-                    print "The following atom types have been remapped due to conflicting typenames in the atomistic templates:"
+                    print("The following atom types have been remapped due to conflicting typenames in the atomistic templates:")
                     printExplanation = False
                 if printMol is True:
-                    print "Atom types belonging the molecule described by", repr(CGSites)+":"
+                    print("Atom types belonging the molecule described by", repr(CGSites)+":")
                     printMol = False
-                print initialAtom, "--->", finalAtoms[index]
-        print "Adding molecules to the system..."
+                print(initialAtom, "--->", finalAtoms[index])
+        print("Adding molecules to the system...")
         for moleculeNumber in range(len(moleculeIDs)):
-            print "Adding molecule number", moleculeNumber, "\r",
+            print("Adding molecule number", moleculeNumber, "\r", end=' ')
             sys.stdout.flush()
             # Obtain the AA dictionary for each molecule using the fine-grainining procedure
             AAMoleculeDict, CGtoAAIDs, ghostDictionary = atomistic(moleculeNumber, moleculeIDs[moleculeNumber], self.CGDictionary, moleculeLengths, rollingAAIndex, ghostDictionary, self.parameterDict).returnData()
             CGToAAIDMaster.append(CGtoAAIDs)
             # Update the morphology dictionaries with this new molecule
-            for key in self.CGDictionary.keys():
+            for key in list(self.CGDictionary.keys()):
                 if key not in ['lx', 'ly', 'lz', 'time_step', 'dimensions']:
                     #if key not in CGMorphologyDict.keys():
                     #    CGMorphologyDict[key] = CGMoleculeDict[key]
                     #else:
                     #    CGMorphologyDict[key] += CGMoleculeDict[key]
-                    if key not in AAMorphologyDict.keys():
+                    if key not in list(AAMorphologyDict.keys()):
                         AAMorphologyDict[key] = AAMoleculeDict[key]
                     else:
                         AAMorphologyDict[key] += AAMoleculeDict[key]
@@ -123,13 +123,13 @@ class morphology:
             if str(bond[2])[0] == '*':
                 ghostDictionary['bond'][bondNo][2] = int(bond[2][1:]) + totalNumberOfAtoms
         # Now append all ghosts to morphology
-        for key in ghostDictionary.keys():
+        for key in list(ghostDictionary.keys()):
             AAMorphologyDict[key] += ghostDictionary[key]
         # Finally, update the number of atoms
         AAMorphologyDict['natoms'] += len(ghostDictionary['type'])
-        print "\n"
+        print("\n")
         # Now write the XML file and create the pickle
-        print "Writing XML file..."
+        print("Writing XML file...")
         AAFileName = './outputFiles/' + self.morphologyName + '/morphology/' + self.morphologyName + '.xml'
         # Replace the `positions' with the `unwrapped_positions' ready for writing
         AAMorphologyDict = helperFunctions.replaceWrappedPositions(AAMorphologyDict)
@@ -158,7 +158,7 @@ class morphology:
             else:
                 moleculeData[moleculeList[atomID]].append(atomID)
         # Return the list of AAIDs and the lengths of the molecules
-        for moleculeID in moleculeData.keys():
+        for moleculeID in list(moleculeData.keys()):
             moleculeAAIDs.append(sorted(moleculeData[moleculeID]))
             moleculeLengths.append(len(moleculeData[moleculeID]))
         return moleculeAAIDs, moleculeLengths
@@ -191,7 +191,7 @@ class morphology:
         forceFieldMappings = []
         morphologyAtomTypes = []
         CGToTemplateMappings = {}
-        for CGSite, directory in CGToTemplateDirs.iteritems():
+        for CGSite, directory in CGToTemplateDirs.items():
             FFLoc = directory + '/' + CGToTemplateForceFields[CGSite]
             if FFLoc not in forceFieldLocations:
                 forceFieldLocations.append(FFLoc)
@@ -213,7 +213,7 @@ class morphology:
                 morphologyAtomTypes.append(atomType)
                 mappingForThisFF[ljInteraction[0]] = atomType
             forceFieldMappings.append(mappingForThisFF)
-        for CGSite, directory in CGToTemplateDirs.iteritems():
+        for CGSite, directory in CGToTemplateDirs.items():
             FFLoc = directory + '/' + CGToTemplateForceFields[CGSite]
             CGToTemplateMappings[CGSite] = forceFieldMappings[forceFieldLocations.index(FFLoc)]
         return CGToTemplateMappings
@@ -230,11 +230,11 @@ class atomistic:
         # Get the dictionary of all the CG sites in this molecule
         #self.CGMonomerDictionary = self.getCGMonomerDict()
         # Import the parXX.py parameters
-        for key, value in parameterDict.iteritems():
+        for key, value in parameterDict.items():
             self.__dict__[key] = value
         self.AATemplatesDictionary = {}
         # Load the template file for each CG atom
-        for CGAtomType in self.CGToTemplateFiles.keys():
+        for CGAtomType in list(self.CGToTemplateFiles.keys()):
             templateDictionary = helperFunctions.loadMorphologyXML(self.CGToTemplateDirs[CGAtomType] + '/' + self.CGToTemplateFiles[CGAtomType])
             templateDictionary = self.remapAtomTypes(templateDictionary, parameterDict['newTypeMappings'][CGAtomType])
             templateDictionary = helperFunctions.addUnwrappedPositions(templateDictionary)
@@ -307,9 +307,9 @@ class atomistic:
                 templateFiles.append(self.CGToTemplateFiles[self.CGDictionary['type'][CGSite]])
                 monomerCGTypes.append(self.CGDictionary['type'][CGSite])
             if len(set(templateFiles)) != 1:
-                print monomer
-                print monomerCGTypes
-                print templateFiles
+                print(monomer)
+                print(monomerCGTypes)
+                print(templateFiles)
                 raise SystemError('NOT ALL MONOMER SITES ARE THE SAME TEMPLATE')
             # Copy the template dictionary for editing for this monomer
             thisMonomerDictionary = copy.deepcopy(self.AATemplatesDictionary[self.CGDictionary['type'][monomer[0]]])
@@ -494,7 +494,7 @@ class atomistic:
     def updateMoleculeDictionary(self, currentMonomerDictionary, AADictionary):
         # Update AADictionary with all of the values in currentMonomerDictionary,
         # except ths system dimensions which will be sorted later
-        keyList = AADictionary.keys()
+        keyList = list(AADictionary.keys())
         keyList.remove('lx')
         keyList.remove('ly')
         keyList.remove('lz')
@@ -506,7 +506,7 @@ class atomistic:
     def getAATemplatePosition(self, CGToTemplateAAIDs):
         CGCoMs = {}
         # For each CG site, determine the types and positions so we can calculate the COM
-        for siteName in CGToTemplateAAIDs.keys():
+        for siteName in list(CGToTemplateAAIDs.keys()):
             atomIDs = CGToTemplateAAIDs[siteName]
             AATemplate = self.AATemplatesDictionary[siteName]
             # If the key's length is zero, then add all the atoms from the template

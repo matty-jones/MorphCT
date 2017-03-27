@@ -66,7 +66,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     # for the atoms in each molecule
     for molecule in CGToAAIDMaster:
         moleculeAAIDs = []
-        for CGSite in molecule.keys():
+        for CGSite in list(molecule.keys()):
             moleculeAAIDs += molecule[CGSite][1]
         moleculeMaster.append(sorted(moleculeAAIDs))
     # Iterate through the moleculeMaster, creating new XML files for each
@@ -82,6 +82,6 @@ if __name__ == "__main__":
     try:
         pickleFile = sys.argv[1]
     except:
-        print "Please specify the pickle file to load to continue the pipeline from this point."
+        print("Please specify the pickle file to load to continue the pipeline from this point.")
     AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
     execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
