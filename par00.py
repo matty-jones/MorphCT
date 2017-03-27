@@ -4,7 +4,7 @@ outputDir = '/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/outputFiles'
 
 # ---=== Input Morphology Details ===---
 
-morphology = 'P3HTC60.xml'
+morphology = 'blend5_10_All.xml'
 inputSigma = 3.0
 overwriteCurrentData = True
 
@@ -80,18 +80,18 @@ pairDPDGammaVal = 0.0
 
 # ---=== Molecular Dynamics Phase Parameters ===---
 
-numberOfPhases = 9
+numberOfPhases = 1
 temperatures = [1.0]
 taus = [1.0]
-pairTypes = ['none', 'dpd', 'lj', 'lj', 'lj', 'lj', 'lj', 'lj', 'lj']
+pairTypes = ['none']
 bondTypes = ['harmonic']
 angleTypes = ['harmonic']
 dihedralTypes = ['table']
 integrationTargets = ['all']
-timesteps = [1E-3, 1E-3, 1E-10, 1E-9, 1E-8, 1E-7, 1E-6, 1E-5, 1E-5]
-durations = [1E5, 1E3, 1E2, 1E2, 1E2, 1E3, 1E4, 1E4, 1E4]
-terminationConditions = ['KEmin', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt']
-groupAnchorings = ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'D', 'D']
+timesteps = [1E-3]
+durations = [1E5]
+terminationConditions = ['maxt']
+groupAnchorings = ['all']
 DCDFileWrite = True
 DCDFileDumpsteps = [0]
 
@@ -119,9 +119,9 @@ targetDoSSTDLUMO = 0.1
 # ---=== Kinetic Monte Carlo Parameters ===---
 
 systemTemperature = 290
-numberOfCarriersPerSimulationTime = 1000
+numberOfCarriersPerSimulationTime = 1
 hopLimit = 0
-simulationTimes = [1.00e-12, 1.00e-11, 1.00e-10, 1.00e-9, 1.00e-8]
+simulationTimes = [1.00e-10]
 recordCarrierHistory = True
 reorganisationEnergyDonor = 0.3063
 reorganisationEnergyAcceptor = 0.1600
