@@ -257,6 +257,15 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
         for chromoName in successfulReruns:
             failedSingleChromos.pop(chromoName)
     print("")
+    # Finally, delete any of the files that need to be deleted.
+    if parameterDict['removeORCAInputs'] is True:
+        print("Deleting ORCA input files...")
+        for fileName in glob.glob(orcaOutputDir.replace('outputORCA', 'inputORCA') + 'single/*.*'):
+            os.remove(fileName)
+    if parameterDict['removeORCAOutputs'] is True:
+        print("Deleting ORCA output files...")
+        for fileName in glob.glob(orcaOutputDir + 'single/*.*'):
+            os.remove(fileName)
     return chromophoreList
 
 
