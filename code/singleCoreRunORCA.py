@@ -34,7 +34,7 @@ if __name__ == '__main__':
         # Check if file exists already
         if overwrite is False:
             try:
-                with open(outputFileName, 'r') as testFile:
+                with open(outputFileName, 'rb') as testFile:
                     pass
                 helperFunctions.writeToFile(logFile, [outputFileName + ' already exists! Skipping...'])
                 continue

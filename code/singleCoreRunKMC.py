@@ -167,7 +167,7 @@ if __name__ == '__main__':
         jobsToRun = pickle.load(pickleFile)
     logFile = KMCDirectory + '/KMClog_' + str(CPURank) + '.log'
     # Reset the log file
-    with open(logFile, 'w+') as logFileHandle:
+    with open(logFile, 'wb+') as logFileHandle:
         pass
     helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
     # Set the affinities for this current process to make sure it's maximising available CPU usage
