@@ -137,7 +137,7 @@ class Terminate(Exception):
         return self.string
 
 def savePickle(saveData, savePickleName):
-    with open(savePickleName, 'w+') as pickleFile:
+    with open(savePickleName, 'wb+') as pickleFile:
         pickle.dump(saveData, pickleFile)
     helperFunctions.writeToFile(logFile, ['Pickle file saved successfully as ' + savePickleName + '!'])
 
@@ -163,7 +163,7 @@ if __name__ == '__main__':
         pass
     # Load `jobsToRun' which is a list of tuples that contains the [carrier.ID, carrier.lifetime]
     pickleFileName = KMCDirectory + '/KMCData_%02d.pickle' % (CPURank)
-    with open(pickleFileName, 'r') as pickleFile:
+    with open(pickleFileName, 'rb') as pickleFile:
         jobsToRun = pickle.load(pickleFile)
     logFile = KMCDirectory + '/KMClog_' + str(CPURank) + '.log'
     # Reset the log file

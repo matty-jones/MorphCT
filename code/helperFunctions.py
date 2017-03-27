@@ -721,7 +721,7 @@ def writePOSCARFile(inputDict, outputFile):
         linesToWrite.append(coordinates + '\n')
     with open(outputFile, 'w+') as POSCARFile:
         POSCARFile.writelines(linesToWrite)
-    with open(outputFile.replace('POSCAR', 'pickle'), 'w+') as bondPickle:
+    with open(outputFile.replace('POSCAR', 'pickle'), 'wb+') as bondPickle:
         pickle.dump(inputDict['bond'], bondPickle)
     print("POSCAR data written to", str(outputFile) + ". Bond data written to", str(outputFile.replace('POSCAR', 'pickle')) + ".")
 
@@ -935,7 +935,7 @@ def loadDict(masterDict, moleculeIDs, bondPickleName):
         except:
             continue
     # Then load the relevant bonds
-    with open(bondPickleName, 'r') as bondPickle:
+    with open(bondPickleName, 'rb') as bondPickle:
         moleculeDict['bond'] = pickle.load(bondPickle)
     # Now need to unwrap the coordinates
     # moleculeDict = addUnwrappedPositions(moleculeDict)
@@ -973,7 +973,7 @@ def loadPoscar(inputFilePath):
                 coordinatesToWrite.append(float(coordinate))
             for i in range(len(coordinatesToWrite)):
                 moleculeDict['position'][-1].append(coordinatesToWrite[i] - (moleculeDict[simBoxDims[i]] / 2.0))
-    with open(inputFilePath.replace('POSCAR', 'pickle'), 'r') as bondPickle:
+    with open(inputFilePath.replace('POSCAR', 'pickle'), 'rb') as bondPickle:
         moleculeDict['bond'] = pickle.load(bondPickle)
     moleculeDict = addMasses(moleculeDict)
     return moleculeDict
@@ -1106,7 +1106,7 @@ def writeToFile(logFile, stringList, mode='logFile'):
 
 def loadPickle(pickleLocation):
     print("Loading Pickle from", str(pickleLocation) + "...")
-    with open(pickleLocation, 'r') as pickleFile:
+    with open(pickleLocation, 'rb') as pickleFile:
         objects = pickle.load(pickleFile)
     print("Pickle loaded successfully!")
     return objects[0], objects[1], objects[2], objects[3], objects[4]
@@ -1114,7 +1114,7 @@ def loadPickle(pickleLocation):
 
 def writePickle(toPickle, pickleFileName):
     print("Writing pickle file...")
-    with open(pickleFileName, 'w+') as pickleFile:
+    with open(pickleFileName, 'wb+') as pickleFile:
         pickle.dump(toPickle, pickleFile)
     print("Pickle file written to", pickleFileName)
 

@@ -173,7 +173,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     if numberOfInputs > 0:
         # Create pickle file containing the jobs sorted by ProcID to be picked up by singleCoreRunORCA.py
         pickleName = inputDir.replace('inputORCA', 'ORCAJobs.pickle')
-        with open(pickleName, 'w+') as pickleFile:
+        with open(pickleName, 'wb+') as pickleFile:
             pickle.dump(jobsList, pickleFile)
         print("ORCA jobs list written to", pickleName)
         if len(jobsList) <= len(procIDs):

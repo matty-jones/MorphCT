@@ -166,7 +166,7 @@ def rerunFails(failedChromoFiles, parameterDict):
     jobsList = [inputFiles[i:i + (int(np.ceil(len(inputFiles) / len(procIDs)))) + 1] for i in range(0, len(inputFiles), int(np.ceil(len(inputFiles)/float(len(procIDs)))))]
     print(jobsList)
     # Write the jobs pickle for singleCoreRunORCA to obtain
-    with open(outputDir + '/chromophores/ORCAJobs.pickle', 'w+') as pickleFile:
+    with open(outputDir + '/chromophores/ORCAJobs.pickle', 'wb+') as pickleFile:
         pickle.dump(jobsList, pickleFile)
     # Now rerun ORCA
     if len(jobsList) <= len(procIDs):

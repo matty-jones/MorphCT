@@ -22,7 +22,7 @@ if __name__ == '__main__':
     logFile = inputDir.replace('/inputORCA', '/ORCAlog_' + str(CPURank) + '.log')
     outputDir = os.getcwd() + '/outputFiles/' + morphologyName + '/chromophores/outputORCA'
     pickleFileName = inputDir.replace('inputORCA', 'ORCAJobs.pickle')
-    with open(pickleFileName, 'r') as pickleFile:
+    with open(pickleFileName, 'rb') as pickleFile:
         jobsList = pickle.load(pickleFile)
     jobsToRun = jobsList[CPURank]
     helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])

@@ -32,7 +32,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     runningJobs = []
     for procID, jobs in enumerate(jobsList):
         pickleName = outputDir + '/KMCData_%02d.pickle' % (procID)
-        with open(pickleName, 'w+') as pickleFile:
+        with open(pickleName, 'wb+') as pickleFile:
             pickle.dump(jobs, pickleFile)
         print("KMC jobs for procID", procID, "written to KMCData_%02d.pickle" % (procID))
         # Open the required processes to execute the KMC jobs
@@ -49,7 +49,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
             fileName = outputDir + '/KMCResults_%02d.pickle' % (procID)
             # The pickle was repeatedly dumped to, in order to save time.
             # Each dump stream is self-contained, so iteratively unpickle to add the new data.
-            with open(fileName, 'r') as pickleFile:
+            with open(fileName, 'rb') as pickleFile:
                 pickledData = pickle.load(pickleFile)
                 for key, val in pickledData.items():
                     if key not in combinedData:
@@ -57,7 +57,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
                     else:
                         combinedData[key] += val
         # Write out the combined data
-        with open(outputDir + '/KMCResults.pickle', 'w+') as pickleFile:
+        with open(outputDir + '/KMCResults.pickle', 'wb+') as pickleFile:
             pickle.dump(combinedData, pickleFile)
         print("Complete data written to", outputDir + "/KMCResults.pickle.")
         print("Cleaning up...")
