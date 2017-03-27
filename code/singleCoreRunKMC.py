@@ -33,7 +33,10 @@ class carrier:
         self.T = parameterDict['systemTemperature']
         self.lifetime = lifetime
         self.currentTime = 0.0
-        self.lambdaij = parameterDict['reorganisationEnergy']
+        if self.currentChromophore.species == 'Donor':
+            self.lambdaij = parameterDict['reorganisationEnergyDonor']
+        elif self.currentChromophore.species == 'Acceptor':
+            self.lambdaij = parameterDict['reorganisationEnergyAcceptor']
         self.noHops = 0
         self.simDims = [[-AAMorphologyDict['lx'] / 2.0, AAMorphologyDict['lx'] / 2.0], [-AAMorphologyDict['ly'] / 2.0, AAMorphologyDict['ly'] / 2.0], [-AAMorphologyDict['lz'] / 2.0, AAMorphologyDict['lz'] / 2.0]]
         self.displacement = None
