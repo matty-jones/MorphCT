@@ -6,7 +6,7 @@ if __name__ == "__main__":
     for fileName in files:
         if '.inp' not in fileName:
             continue
-        print fileName
+        print(fileName)
         with open('./'+fileName, 'r') as inpFile:
             inData = inpFile.readlines()
         xyzData = []
