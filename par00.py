@@ -10,12 +10,12 @@ overwriteCurrentData = True
 
 # ---=== Execution Modules ===---
 
-executeFinegraining = True
-executeMolecularDynamics = True
+executeFinegraining = False
+executeMolecularDynamics = False
 executeExtractMolecules = False
-executeObtainChromophores = False
-executeZINDO = False
-executeCalculateTransferIntegrals = False
+executeObtainChromophores = True
+executeZINDO = True
+executeCalculateTransferIntegrals = True
 executeCalculateMobility = False
 
 # ---=== Fine Graining Parameters ===---
@@ -87,10 +87,12 @@ bondTypes = ['harmonic']
 angleTypes = ['harmonic']
 dihedralTypes = ['table']
 integrationTargets = ['all']
-timesteps = [1E-3, 1E-3, 1E-10, 1E-9, 1E-8, 1E-7, 1E-6, 1E-5]
-durations = [1E5, 1E5, 1E3, 1E3, 1E3, 1E4, 1E5, 1E6]
-terminationConditions = ['KEmin', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt', 'maxt']
-groupAnchorings = ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'D']
+timesteps = [1E-3]
+durations = [1E3]
+terminationConditions = ['maxt']
+groupAnchorings = ['all']
+DCDFileWrite = True
+DCDFileDumpsteps = [0]
 
 # ---=== Chromophore Parameters ===---
 
@@ -101,8 +103,8 @@ CGSiteSpecies = {\
 'D':'Acceptor',\
 }
 maximumHopDistance = 10.0
-removeORCAInputs = True
-removeORCAOutputs = True
+removeORCAInputs = False
+removeORCAOutputs = False
 chromophoreLength = 3
 
 # ---=== Chromophore Energy Scaling Parameters ===---
@@ -116,13 +118,17 @@ targetDoSSTDLUMO = 0.1
 # ---=== Kinetic Monte Carlo Parameters ===---
 
 systemTemperature = 290
+<<<<<<< Updated upstream
 numberOfCarriersPerSimulationTime = 1000
+=======
+numberOfCarriersPerSimulationTime = 100
+>>>>>>> Stashed changes
 hopLimit = 0
 simulationTimes = [1.00e-12, 1.00e-11, 1.00e-10, 1.00e-9, 1.00e-8]
 recordCarrierHistory = True
 reorganisationEnergyDonor = 0.3063
 reorganisationEnergyAcceptor = 0.1600
-combineKMCResults = False
+combineKMCResults = True
 
 # ---=== Begin run ===---
 
