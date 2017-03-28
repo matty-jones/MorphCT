@@ -118,11 +118,7 @@ targetDoSSTDLUMO = 0.1
 # ---=== Kinetic Monte Carlo Parameters ===---
 
 systemTemperature = 290
-<<<<<<< Updated upstream
-numberOfCarriersPerSimulationTime = 1000
-=======
 numberOfCarriersPerSimulationTime = 100
->>>>>>> Stashed changes
 hopLimit = 0
 simulationTimes = [1.00e-12, 1.00e-11, 1.00e-10, 1.00e-9, 1.00e-8]
 recordCarrierHistory = True
