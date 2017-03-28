@@ -104,8 +104,8 @@ CGSiteSpecies = {\
 'D':'Acceptor',\
 }
 maximumHopDistance = 10.0
-removeORCAInputs = True
-removeORCAOutputs = True
+removeORCAInputs = False
+removeORCAOutputs = False
 chromophoreLength = 3
 
 # ---=== Chromophore Energy Scaling Parameters ===---
@@ -119,7 +119,7 @@ targetDoSSTDLUMO = 0.1
 # ---=== Kinetic Monte Carlo Parameters ===---
 
 systemTemperature = 290
-numberOfCarriersPerSimulationTime = 1
+numberOfCarriersPerSimulationTime = 100
 hopLimit = 0
 simulationTimes = [1.00e-10]
 recordCarrierHistory = True
