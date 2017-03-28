@@ -512,6 +512,21 @@ def loadFFXML(xmlPath, mapping = False):
                 FFDict[constraintType][index][0] = '-'.join(constraintName)
     return FFDict
 
+def checkConstraintNames(AAMorphologyDict):
+    # A function that renames the constraints based on the atom types given in the dictionary
+    constraintTypes = ['bond', 'angle', 'dihedral', 'improper']
+    for constraintType in constraintTypes:
+        for constraintID, constraint in enumerate(AAMorphologyDict[constraintType]):
+            newConstraintName = ""
+            # Iterate through the atomIDs and update the constraint name based on the types
+            for atomID in constraint[1:]:
+                newConstraintName += AAMorphologyDict['type'][atomID]
+                newConstraintName += "-"
+            # Update the dict if the name has changed
+            if (constraint[0] != newConstraintName[:-1]):
+                AAMorphologyDict[constraintType][constraintID][0] = newConstraintName[:-1]
+    return AAMorphologyDict
+
 
 def removeRigidBodies(inputDictionary):
     print("Removing rigid bodies...")

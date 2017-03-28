@@ -133,6 +133,8 @@ class morphology:
         AAFileName = './outputFiles/' + self.morphologyName + '/morphology/' + self.morphologyName + '.xml'
         # Replace the `positions' with the `unwrapped_positions' ready for writing
         AAMorphologyDict = helperFunctions.replaceWrappedPositions(AAMorphologyDict)
+        # Update the additionalConstraints that we put in by checking all of the constraints have the correct names before writing
+        AAMorphologyDict = helperFunctions.checkConstraintNames(AAMorphologyDict)
         # Now write the morphology XML
         helperFunctions.writeMorphologyXML(AAMorphologyDict, AAFileName)
         # And finally write the pickle
@@ -419,8 +421,7 @@ class atomistic:
             currentMonomerIndex += 1
             # Update the current AA dictionary with this monomer
             AADictionary = self.updateMoleculeDictionary(thisMonomerDictionary, AADictionary)
-            # All Monomers sorted, now for the final bits
-
+        # All Monomers sorted, now for the final bits
         AADictionary['natoms'] = noAtomsInMolecule
         for key in ['lx', 'ly', 'lz']:
             AADictionary[key] = thisMonomerDictionary[key]
