@@ -10,13 +10,13 @@ overwriteCurrentData = True
 
 # ---=== Execution Modules ===---
 
-executeFinegraining = False
-executeMolecularDynamics = False
+executeFinegraining = True
+executeMolecularDynamics = True
 executeExtractMolecules = False
 executeObtainChromophores = True
 executeZINDO = True
 executeCalculateTransferIntegrals = True
-executeCalculateMobility = False
+executeCalculateMobility = True
 
 # ---=== Fine Graining Parameters ===---
 
