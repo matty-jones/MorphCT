@@ -301,6 +301,9 @@ class atomistic:
         atomIDLookupTable = {}
         # Calculate the total number of permitted atoms
         totalPermittedAtoms = self.totalPermittedAtoms(monomerList)
+        # Set the initial and final atom indices to None initially, so that we don't add terminating units for small molecules
+        startAtomIndex = None
+        endAtomIndex = None
         for monomerNo, monomer in enumerate(monomerList):
             # This monomer should have the same template file for all CG sites in the monomer, if not we've made a mistake in splitting the monomers. So check this:
             templateFiles = []
@@ -412,11 +415,17 @@ class atomistic:
             thisMonomerDictionary, ghostDictionary = helperFunctions.incrementAtomIDs(thisMonomerDictionary, ghostDictionary, noAtomsInMolecule, modifyGhostDictionary=False)
             # Find the connecting atoms to the terminating units based on monomer number
             # Only do this if the molecule length is > 1 (i.e. not small molecule)
-            if (self.moleculeLengths[self.moleculeIndex] > 1) and (len(self.moleculeTerminatingConnections) != 0):
-                if monomerNo == 0:
-                    startAtomIndex = noAtomsInMolecule + self.moleculeTerminatingConnections[0][1]
-                elif monomerNo == len(monomerList) - 1:
-                    endAtomIndex = noAtomsInMolecule + self.moleculeTerminatingConnections[1][1]
+            if len(self.moleculeTerminatingConnections) != 0:
+                # Work out which types need terminating
+                terminateTheseTypes = set([connection[0] for connection in self.moleculeTerminatingConnections])
+                # Check if any of these CGTypes exist in the current monomer
+                for CGType in set([self.CGDictionary['type'][CGID] for CGID in monomer]):
+                    if CGType in terminateTheseTypes:
+                        terminationConnections = [self.moleculeTerminatingConnections[i] for i in range(len(self.moleculeTerminatingConnections)) if self.moleculeTerminatingConnections[i][0] == CGType]
+                        if monomerNo == 0:
+                            startAtomIndex = noAtomsInMolecule + terminationConnections[0][2]
+                        elif monomerNo == len(monomerList) - 1:
+                            endAtomIndex = noAtomsInMolecule + terminationConnections[1][2]
             noAtomsInMolecule += len(thisMonomerDictionary['type'])
             currentMonomerIndex += 1
             # Update the current AA dictionary with this monomer
@@ -426,8 +435,7 @@ class atomistic:
         for key in ['lx', 'ly', 'lz']:
             AADictionary[key] = thisMonomerDictionary[key]
         # Add in the terminating units
-        # TODO: This code only permits hydrogens to be used as terminating units current. Perhaps it wouldn't be that hard to implement a template-based termination unit for enhanced flexibility.
-        if (self.moleculeLengths[self.moleculeIndex] > 1) and (len(self.moleculeTerminatingConnections) != 0):
+        if (startAtomIndex is not None) and (endAtomIndex is not None):
             AADictionary, startTerminatingHydrogen = helperFunctions.addTerminatingHydrogen(AADictionary, startAtomIndex)
             AADictionary, endTerminatingHydrogen = helperFunctions.addTerminatingHydrogen(AADictionary, endAtomIndex)
             atomIDLookupTable[monomerList[0][0]][1].append(startTerminatingHydrogen + self.noAtomsInMorphology)

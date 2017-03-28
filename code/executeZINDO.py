@@ -11,8 +11,13 @@ def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
     # Singles first
     for chromophore in chromophoreList:
         # Include the molecule terminating units on the required atoms of the chromophore
-        terminatingGroupPositions = terminateMonomers(chromophore, parameterDict, AAMorphologyDict)
-        writeOrcaInp(AAMorphologyDict, chromophore.AAIDs, [chromophore.image] * len(chromophore.AAIDs), terminatingGroupPositions, [chromophore.image] * len(terminatingGroupPositions), parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophore.orcaInput)
+        if chromophore.terminate is True:
+            terminatingGroupPositions = terminateMonomers(chromophore, parameterDict, AAMorphologyDict)
+            terminatingGroupImages = [chromophore.image] * len(terminatingGroupPositions)
+        else:
+            terminatingGroupPositions = None
+            terminatingGroupImages = None
+        writeOrcaInp(AAMorphologyDict, chromophore.AAIDs, [chromophore.image] * len(chromophore.AAIDs), terminatingGroupPositions, terminatingGroupImages, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophore.orcaInput)
     print("")
     # Determine how many pairs there are first:
     numberOfPairs = 0
@@ -31,6 +36,8 @@ def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
             # Also skip if chromophore2's ID is < chromophore1's ID to prevent duplicates
             if (chromophore2.ID not in neighboursID) or (chromophore2.ID < chromophore1.ID):
                 continue
+            # Update the ORCA input name
+            inputName = chromophore1.orcaInput.replace('.inp', '-%04d.inp' % (chromophore2.ID)).replace('single', 'pair')
             # Find the correct relative image for the neighbour chromophore
             chromophore2RelativeImage = neighboursImage[neighboursID.index(chromophore2.ID)]
             chromophore2Transformation = list(np.array(chromophore1.image) - np.array(chromophore2.image) + np.array(chromophore2RelativeImage))
@@ -38,16 +45,19 @@ def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
             AAIDs = chromophore1.AAIDs + chromophore2.AAIDs
             images = [[0, 0, 0] for i in range(len(chromophore1.AAIDs))] + [chromophore2Transformation for i in range(len(chromophore2.AAIDs))]
             # Now add the terminating groups to both chromophores
-            terminatingGroupPositions1 = terminateMonomers(chromophore1, parameterDict, AAMorphologyDict)
-            terminatingGroupPositions2 = terminateMonomers(chromophore2, parameterDict, AAMorphologyDict)
-            # We don't want to add the terminating hydrogens for adjacent monomers, so remove the ones that are within a particular distance
-            terminatingGroupPositions1, terminatingGroupPositions2 = removeAdjacentTerminators(terminatingGroupPositions1, terminatingGroupPositions2)
-            terminatingGroupImages1 = [[0, 0, 0] for i in range(len(terminatingGroupPositions1))]
-            terminatingGroupImages2 = [chromophore2Transformation for i in range(len(terminatingGroupPositions2))]
-            # Update the ORCA input name
-            inputName = chromophore1.orcaInput.replace('.inp', '-%04d.inp' % (chromophore2.ID)).replace('single', 'pair')
-            # Write the dimer input file
-            writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPositions1 + terminatingGroupPositions2, terminatingGroupImages1 + terminatingGroupImages2, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + inputName)
+            # Note that we would only ever expect both chromophores to require termination or neither
+            if chromophore1.terminate is True:
+                terminatingGroupPositions1 = terminateMonomers(chromophore1, parameterDict, AAMorphologyDict)
+                terminatingGroupPositions2 = terminateMonomers(chromophore2, parameterDict, AAMorphologyDict)
+                # We don't want to add the terminating hydrogens for adjacent monomers, so remove the ones that are within a particular distance
+                terminatingGroupPositions1, terminatingGroupPositions2 = removeAdjacentTerminators(terminatingGroupPositions1, terminatingGroupPositions2)
+                terminatingGroupImages1 = [[0, 0, 0] for i in range(len(terminatingGroupPositions1))]
+                terminatingGroupImages2 = [chromophore2Transformation for i in range(len(terminatingGroupPositions2))]
+                # Write the dimer input file
+                writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPositions1 + terminatingGroupPositions2, terminatingGroupImages1 + terminatingGroupImages2, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + inputName)
+            else:
+                # Write the dimer input file
+                writeOrcaInp(AAMorphologyDict, AAIDs, images, None, None, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + inputName)
     print("")
 
 
@@ -75,12 +85,13 @@ def writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPosns, termina
         allAtomTypes.append(''.join([i for i in AAMorphologyDict['type'][atomID] if not i.isdigit()]))
         # Add in the correct periodic images to the position
         allPositions.append(AAMorphologyDict['unwrapped_position'][atomID] + np.array([(images[index][i] * [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']][i]) for i in range(3)]))
-    # Now add in the terminating Hydrogens
-    for index, position in enumerate(terminatingGroupPosns):
-        # Cut the integer bit off the atomType
-        allAtomTypes.append('H')
-        # Add in the correct periodic images to the position
-        allPositions.append(position + np.array([(terminatingGroupImages[index][i] * [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']][i]) for i in range(3)]))
+    # Now add in the terminating Hydrogens if necessary
+    if terminatingGroupPosns is not None:
+        for index, position in enumerate(terminatingGroupPosns):
+            # Cut the integer bit off the atomType
+            allAtomTypes.append('H')
+            # Add in the correct periodic images to the position
+            allPositions.append(position + np.array([(terminatingGroupImages[index][i] * [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']][i]) for i in range(3)]))
     # Now geometrically centralize all of the atoms that are to be included in this input file to make it easier on ORCA
     centralPosition = np.array([np.average(np.array(allPositions)[:, 0]), np.average(np.array(allPositions)[:, 1]), np.average(np.array(allPositions)[:, 2])])
     # Create the lines to be written in the input file
@@ -103,13 +114,13 @@ def terminateMonomers(chromophore, parameterDict, AAMorphologyDict):
     # Remove any termination connections that already exist (i.e. terminating unit at the end of the molecule)
     popList = []
     for bondNo, bond in enumerate(terminatingBonds):
-        if bond[0] in np.array(np.array(chromophore.bonds)[:, 0]):
+        if bond[0] in np.array(np.array(chromophore.bonds)[:, 1]):
             popList.append(bondNo)
     for index in sorted(popList, reverse=True):
         terminatingBonds.pop(index)
-    # Because we didn't reorder the AAID list at any point, the integer in terminatingBond[1] should correspond
+    # Because we didn't reorder the AAID list at any point, the integer in terminatingBond[2] should correspond
     # to the correct AAID in chromo.AAIDs
-    AAIDsToAttachTo = [chromophore.AAIDs[index] for index in map(int, list(np.array(terminatingBonds)[:, 1]))]
+    AAIDsToAttachTo = [chromophore.AAIDs[index] for index in map(int, list(np.array(terminatingBonds)[:, 2]))]
     # Now work out the positions of any bonded atoms for each of these terminating atoms to work out where we
     # should put the hydrogen
     newHydrogenPositions = []

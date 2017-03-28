@@ -64,13 +64,13 @@ additionalConstraints = [\
 ['A', 'C2-C1-C10-S1', 2, 3, 25, 29],\
 ]
 moleculeTerminatingUnits = [\
-['H1',0,0,0],\
+['A', 'H1',0,0,0],\
 ]
 moleculeTerminatingBonds = [\
 ]
 moleculeTerminatingConnections = [\
-['C10-H1', 0],\
-['C1-H1', 3],\
+['A', 'C10-H1', 0],\
+['A', 'C1-H1', 3],\
 ]
 
 # ---=== Forcefield Parameters ===---

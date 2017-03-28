@@ -32,6 +32,10 @@ class chromophore:
         # A list of the important bonds for this chromophore from the morphology would be useful when determining
         # if a terminating group is already present on this monomer
         self.bonds = self.getImportantBonds(AAMorphologyDict['bond'])
+        # Determine if this chromophore is a repeat unit and therefore will need terminating before ORCA
+        CGTypes = set([CGMorphologyDict['type'][CGID] for CGID in chromophoreCGSites])
+        # self.terminate = True if any of the CGTypes in this chromophore are defined as having termination conditions in the parameter file
+        self.terminate = any(CGType in CGTypes for CGType in [connection[0] for connection in parameterDict['moleculeTerminatingConnections']])
         # Now to create a load of placeholder parameters to update later when we have the full list/energy levels
         # The self.neighbours list contains one element for each chromophore within parameterDict['maximumHopDistance']
         # of this one (including periodic boundary conditions). Its format is [[neighbour1ID, relativeImageOfNeighbour1],...]
