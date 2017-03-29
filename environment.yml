@@ -4,3 +4,5 @@ channels:
 - defaults
 dependencies:
 - hoomd=1.3
+- scipy=0.16.0
+- matplotlib=1.4.3
