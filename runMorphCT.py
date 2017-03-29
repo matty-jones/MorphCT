@@ -92,7 +92,7 @@ class simulation:
         if len(squeueCommand[1]) != 0:
             print("StdErr not empty:", squeueCommand[1])
             return None
-        outputLines = squeueCommand[0].split('\n')
+        outputLines = squeueCommand[0].decode().split('\n')
         # If the command ran, the output is sorted by ascending runtime, so this job will be the most recent submission from the current user which is outputLines[1]
         for element in outputLines[1].split(' '):
             if len(element) != 0:
