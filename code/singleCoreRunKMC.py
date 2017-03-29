@@ -78,7 +78,11 @@ class carrier:
         # Sort by ascending hop time
         hopTimes.sort(key = lambda x:x[1])
         # Take the quickest hop
-        destinationChromophore = chromophoreList[hopTimes[0][0]]
+        if len(hopTimes) > 0:
+            destinationChromophore = chromophoreList[hopTimes[0][0]]
+        else:
+            # We are trapped here, so create a dummy hop with time 1E99
+            hopTimes = [[self.currentChromophore.ID, 1E99]]
         # As long as we're not limiting by the number of hops:
         if self.hopLimit is None:
             # Ensure that the next hop does not put the carrier over its lifetime
