@@ -393,21 +393,44 @@ def scaleEnergies(chromophoreList, parameterDict):
             chromo.LUMO += deltaE
             chromo.LUMO_1 += deltaE
     # Now squeeze the DoS of the distribution to account for the noise in these ZINDO/S calculations
-    if (parameterDict['targetDoSSTDHOMO'] is None) and (parameterDict['targetDoSSTDHOMO'] is None):
-        # No squeezing necessary, return the chromophoreList
-        pass
+    # Check the current STD of the DoS for both the donor and the acceptor, and skip the calculation if the current
+    # STD is smaller than the literature value
+    # First check the donor DoS
+    if (parameterDict['targetDoSSTDHOMO'] is None):
+        squeezeHOMO = False
+    elif (parameterDict['targetDoSSTDHOMO'] > stdHOMO):
+        squeezeHOMO = False
     else:
+        squeezeHOMO = True
+    # Then check the acceptor DoS
+    if (parameterDict['targetDoSSTDLUMO'] is None):
+        squeezeLUMO = False
+    elif (parameterDict['targetDoSSTDLUMO'] > stdLUMO):
+        squeezeLUMO = False
+    else:
+        squeezeLUMO = True
+    if squeezeHOMO is True:
         for chromo in chromophoreList:
-            if (chromo.species == 'Donor') and (parameterDict['targetDoSSTDHOMO'] is not None):
+            if chromo.species == 'Donor':
                 # Determine how many sigmas away from the mean this datapoint is
                 sigma = (chromo.HOMO - avHOMO) / float(stdHOMO)
                 # Calculate the new deviation from the mean based on the target STD and sigma
                 newDeviation = parameterDict['targetDoSSTDHOMO'] * sigma
                 # Work out the change in energy to be applied to meet this target energy level
                 deltaE = (avHOMO + newDeviation) - chromo.HOMO
-            elif (chromo.species == 'Acceptor') and (parameterDict['targetDoSSTDLUMO'] is not None):
+            # Apply the energy level displacement
+            chromo.HOMO_1 += deltaE
+            chromo.HOMO += deltaE
+            chromo.LUMO += deltaE
+            chromo.LUMO_1 += deltaE
+    if squeezeLUMO is True:
+        for chromo in chromophoreList:
+            if chromo.species == 'Acceptor':
+                # Determine how many sigmas away from the mean this datapoint is
                 sigma = (chromo.LUMO - avLUMO) / float(stdLUMO)
+                # Calculate the new deviation from the mean based on the target STD and sigma
                 newDeviation = parameterDict['targetDoSSTDLUMO'] * sigma
+                # Work out the change in energy to be applied to meet this target energy level
                 deltaE = (avLUMO + newDeviation) - chromo.LUMO
             # Apply the energy level displacement
             chromo.HOMO_1 += deltaE
