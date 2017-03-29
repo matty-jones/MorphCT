@@ -11,6 +11,9 @@
 #SBATCH --gres=gpu:2
 
 cd /scratch/erjank_project/mattyMorphCT
+on-conda
+removePathDuplicates
+source activate hoomd1.3
 hoomd -u runMorphCT.py 0
 #cp files you'd like to move off of scratch
 #mv files that you'd like moved off of scratch
