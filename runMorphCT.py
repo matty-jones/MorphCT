@@ -1,5 +1,6 @@
 import os
 import sys
+import shutil
 import time as T
 import subprocess as sp
 
@@ -109,15 +110,16 @@ class simulation:
         # Then, make sure that all the required directories are in place
         # TODO: Remove the helperFunctions that mess around with the directory structure, do it all here instead.
         for directoryToMake in ['chromophores/{input,output}ORCA/{single,pair}', 'KMC', 'molecules', 'morphology', 'code']:
-            sp.Popen('echo mkdir -p '+self.outputDirectory+'/'+directoryToMake, shell=True)
+            print('mkdir -p ' + self.outputDirectory + '/' + directoryToMake)
             # Make sure that the mkdir command has finished before moving on
-            sp.Popen('mkdir -p '+self.outputDirectory+'/'+directoryToMake, shell=True).communicate()
+            os.makedirs(self.outputDirectory + '/' + directoryToMake, exist_ok=True)
 
 
     def copyCode(self):
         print("Copying code...")
         codeDir = os.getcwd()+'/code'
-        sp.Popen('echo cp '+codeDir+'/*.py '+self.outputDirectory+'/code/', shell=True)
-        sp.Popen('echo cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputDirectory+'/code/', shell=True)
-        sp.Popen('cp '+codeDir+'/*.py '+self.outputDirectory+'/code/', shell=True)
-        sp.Popen('cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputDirectory+'/code/', shell=True)
+        print('cp '+codeDir+'/*.py '+self.outputDirectory+'/code/')
+        print('cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputDirectory+'/code/')
+        shutil.copy(os.getcwd() + '/' + self.parameterFile, self.outputDirectory + '/code')
+        shutil.copy(codeDir+'/*.py', self.outputDirectory+'/code/')
+        shutil.copy(os.getcwd()+'/'+self.parameterFile, self.outputDirectory+'/code/')
