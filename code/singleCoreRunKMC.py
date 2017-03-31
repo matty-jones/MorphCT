@@ -69,6 +69,9 @@ class carrier:
         hopTimes = []
         # Obtain the reorganisation energy in J (from eV in the parameter file)
         for neighbourIndex, transferIntegral in enumerate(self.currentChromophore.neighboursTI):
+            # Ignore any hops with a NoneType transfer integral (usually due to an ORCA error)
+            if transferIntegral is None:
+                continue
             deltaEij = self.currentChromophore.neighboursDeltaE[neighbourIndex]
             # All of the energies are in eV currently, so convert them to J
             hopRate = self.calculateHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge)
