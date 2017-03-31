@@ -1,6 +1,7 @@
 import os
 import sys
 import shutil
+import glob
 import time as T
 import subprocess as sp
 
@@ -121,5 +122,6 @@ class simulation:
         print('cp '+codeDir+'/*.py '+self.outputDirectory+'/code/')
         print('cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputDirectory+'/code/')
         shutil.copy(os.getcwd() + '/' + self.parameterFile, self.outputDirectory + '/code')
-        shutil.copy(codeDir+'/*.py', self.outputDirectory+'/code/')
+        for fileName in glob.glob(codeDir + '/*.py'):
+            shutil.copy(fileName, self.outputDirectory+'/code/')
         shutil.copy(os.getcwd()+'/'+self.parameterFile, self.outputDirectory+'/code/')
