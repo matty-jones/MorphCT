@@ -20,22 +20,43 @@ class chromophore:
         self.CGIDs = chromophoreCGSites
         # Determine whether this chromophore is a donor or an acceptor, as well as the site types that have been
         # defined as the electronically active in the chromophore
-        electronicallyActiveCGSites, self.species = self.obtainElectronicSpecies(chromophoreCGSites, CGMorphologyDict['type'], parameterDict['CGSiteSpecies'])
-        # CGToAAIDMaster is a list of dictionaries where each list element corresponds to a new molecule.
-        # Firstly, flatten this out so that it becomes a single CG:AAID dictionary
-        flattenedCGToAAIDMaster = {dictKey: dictVal[1] for dictionary in CGToAAIDMaster for dictKey, dictVal in dictionary.items()}
-        # Now, using chromophoreCGSites as the keys, build up a list of all of the AAIDs in the chromophore,
-        # where each element corresponds to each CG site, and then flatten it.
-        self.AAIDs = [AAID for AAIDs in [flattenedCGToAAIDMaster[CGID] for CGID in chromophoreCGSites] for AAID in AAIDs]
+        if CGMorphologyDict is not None:
+            # Normal operation
+            electronicallyActiveCGSites, self.species = self.obtainElectronicSpecies(chromophoreCGSites, CGMorphologyDict['type'], parameterDict['CGSiteSpecies'])
+            # CGToAAIDMaster is a list of dictionaries where each list element corresponds to a new molecule.
+            # Firstly, flatten this out so that it becomes a single CG:AAID dictionary
+            flattenedCGToAAIDMaster = {dictKey: dictVal[1] for dictionary in CGToAAIDMaster for dictKey, dictVal in dictionary.items()}
+            # Now, using chromophoreCGSites as the keys, build up a list of all of the AAIDs in the chromophore,
+            # where each element corresponds to each CG site, and then flatten it.
+            self.AAIDs = [AAID for AAIDs in [flattenedCGToAAIDMaster[CGID] for CGID in chromophoreCGSites] for AAID in AAIDs]
+            # By using electronicallyActiveCGSites, determine the AAIDs for the electrically active proportion of the
+            # chromophore, so that we can calculate its proper position. Again each element corresponds to each CG site
+            # so the list needs to be flattened afterwards.
+            electronicallyActiveAAIDs = [AAID for AAIDs in [flattenedCGToAAIDMaster[CGID] for CGID in electronicallyActiveCGSites] for AAID in AAIDs]
+        else:
+            # No fine-graining has been performed, so assign the electronic species of all atoms in the molecule as the only provided value, or raise an error if multiple species have been defined
+            electronicallyActiveCGSites = chromophoreCGSites
+            electronicallyActiveAAIDs = chromophoreCGSites
+            if len(parameterDict['CGSiteSpecies']) == 1:
+                self.species = list(parameterDict['CGSiteSpecies'].values())[0]
+            else:
+                raise SystemError("Multiple electronic species defined, but no way to map them without a coarse-grained morphology (no CG morph has been given)")
+            self.AAIDs = chromophoreCGSites
         # The position of the chromophore can be calculated easily. Note that here, the `self.image' is the periodic image that the unwrapped_position of the chromophore is located in, relative to the original simulation volume.
-        self.unwrappedPosn, self.posn, self.image = self.obtainChromophoreCoM(electronicallyActiveCGSites, flattenedCGToAAIDMaster, AAMorphologyDict, simDims)
+        electronicallyActiveUnwrappedPosns = [AAMorphologyDict['unwrapped_position'][AAID] for AAID in electronicallyActiveAAIDs]
+        electronicallyActiveTypes = [AAMorphologyDict['type'][AAID] for AAID in electronicallyActiveAAIDs]
+        self.unwrappedPosn, self.posn, self.image = self.obtainChromophoreCoM(electronicallyActiveUnwrappedPosns, electronicallyActiveTypes, simDims)
         # A list of the important bonds for this chromophore from the morphology would be useful when determining
         # if a terminating group is already present on this monomer
         self.bonds = self.getImportantBonds(AAMorphologyDict['bond'])
-        # Determine if this chromophore is a repeat unit and therefore will need terminating before ORCA
-        CGTypes = set([CGMorphologyDict['type'][CGID] for CGID in chromophoreCGSites])
-        # self.terminate = True if any of the CGTypes in this chromophore are defined as having termination conditions in the parameter file
-        self.terminate = any(CGType in CGTypes for CGType in [connection[0] for connection in parameterDict['moleculeTerminatingConnections']])
+        if CGMorphologyDict is not None:
+            # Determine if this chromophore is a repeat unit and therefore will need terminating before ORCA
+            CGTypes = set([CGMorphologyDict['type'][CGID] for CGID in chromophoreCGSites])
+            # self.terminate = True if any of the CGTypes in this chromophore are defined as having termination conditions in the parameter file
+            self.terminate = any(CGType in CGTypes for CGType in [connection[0] for connection in parameterDict['moleculeTerminatingConnections']])
+        else:
+            # Small molecules in atomistic morphology therefore no terminations needed
+            self.terminate = False
         # Now to create a load of placeholder parameters to update later when we have the full list/energy levels
         # The self.neighbours list contains one element for each chromophore within parameterDict['maximumHopDistance']
         # of this one (including periodic boundary conditions). Its format is [[neighbour1ID, relativeImageOfNeighbour1],...]
@@ -59,13 +80,7 @@ class chromophore:
                 importantBonds.append(bond)
         return importantBonds
 
-    def obtainChromophoreCoM(self, electronicallyActiveCGSites, flattenedCGToAAIDMaster, AAMorphologyDict, simDims):
-        # By using electronicallyActiveCGSites, determine the AAIDs for the electrically active proportion of the
-        # chromophore, so that we can calculate its proper position. Again each element corresponds to each CG site
-        # so the list needs to be flattened afterwards.
-        electronicallyActiveAAIDs = [AAID for AAIDs in [flattenedCGToAAIDMaster[CGID] for CGID in electronicallyActiveCGSites] for AAID in AAIDs]
-        electronicallyActiveUnwrappedPosns = [AAMorphologyDict['unwrapped_position'][AAID] for AAID in electronicallyActiveAAIDs]
-        electronicallyActiveTypes = [AAMorphologyDict['type'][AAID] for AAID in electronicallyActiveAAIDs]
+    def obtainChromophoreCoM(self, electronicallyActiveUnwrappedPosns, electronicallyActiveTypes, simDims):
         # Calculate the chromophore's position in the morphology (CoM of all atoms in self.AAIDs from AAMorphologyDict)
         chromoUnwrappedPosn = helperFunctions.calcCOM(electronicallyActiveUnwrappedPosns, listOfAtomTypes=electronicallyActiveTypes)
         chromoWrappedPosn = copy.deepcopy(chromoUnwrappedPosn)
@@ -135,6 +150,41 @@ def calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, pa
     return chromophoreInstances
 
 
+def calculateChromophoresAA(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims):
+    # This function works in the same way as the coarse-grained version above, except 
+    # this one iterates through the AA bonds instead. This is FAR SLOWER and so shouldn't
+    # be done, except in the case where the coarse-grained morphology does not exist 
+    # (because we started with an atomistic morphology and are only interested in running
+    # KMC on it)
+    print("Determining chromophores in the system...")
+    bondedAtoms = helperFunctions.obtainBondedList(AAMorphologyDict['bond'])
+    chromophoreList = [i for i in range(len(AAMorphologyDict['type']))]
+    for AASiteID, chromophoreID in enumerate(chromophoreList):
+        AASiteType = AAMorphologyDict['type'][AASiteID]
+        chromophoreList = updateChromophoresAA(AASiteID, chromophoreList, bondedAtoms, parameterDict)
+    chromophoreData = {}
+    for atomID, chromoID in enumerate(chromophoreList):
+        if chromoID not in list(chromophoreData.keys()):
+            chromophoreData[chromoID] = [atomID]
+        else:
+            chromophoreData[chromoID].append(atomID)
+    # Now rename the chromophore IDs so that they increment sensibly (they will be used later
+    # for the ORCA files)
+    oldKeys = sorted(chromophoreData.keys())
+    for newKey, oldKey in enumerate(oldKeys):
+        chromophoreData[newKey] = chromophoreData.pop(oldKey)
+    print(str(len(list(chromophoreData.keys()))) + " chromophores successfully identified!")
+    # Now let's create a list of all the chromophore instances which contain all of the
+    # information we could ever want about them.
+    chromophoreInstances = []
+    for chromoID, chromophoreCGSites in chromophoreData.items():
+        print("\rCalculating properties of chromophore %04d of %04d..." % (chromoID, len(list(chromophoreData.keys())) - 1), end=' ')
+        sys.stdout.flush()
+        chromophoreInstances.append(chromophore(chromoID, chromophoreCGSites, CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims))
+    print("")
+    return chromophoreInstances
+
+
 def updateChromophores(atomID, chromophoreList, bondedAtoms, CGTypeList, typesInThisChromophore, parameterDict):
     # Recursively add all neighbours of atom number atomID to this chromophore, providing the same type does not already exist in it
     try:
@@ -163,6 +213,32 @@ def updateChromophores(atomID, chromophoreList, bondedAtoms, CGTypeList, typesIn
         # This means that there are no bonded CG sites (i.e. it's a single chromophore)
         pass
     return chromophoreList, typesInThisChromophore
+
+
+def updateChromophoresAA(atomID, chromophoreList, bondedAtoms, parameterDict):
+    # This version of the update chromophores function does not check for CG site types, instead
+    # just adding all bonded atoms. Therefore it should only be used in the case of already-atomistic
+    # morphologies (no CG morph specified) containing ONLY small molecules
+    try:
+        for bondedAtom in bondedAtoms[atomID]:
+            # If the atomID of the bonded atom is larger than that of the current one,
+            # update the bonded atom's ID to the current one's to put it in this chromophore,
+            # then iterate through all of the bonded atom's neighbours
+            if chromophoreList[bondedAtom] > chromophoreList[atomID]:
+                chromophoreList[bondedAtom] = chromophoreList[atomID]
+                chromophoreList = updateChromophoresAA(bondedAtom, chromophoreList, bondedAtoms, parameterDict)
+            # If the atomID of the current atom is larger than that of the bonded one,
+            # update the current atom's ID to the bonded one's to put it in this chromophore,
+            # then iterate through all of the current atom's neighbours
+            elif chromophoreList[bondedAtom] < chromophoreList[atomID]:
+                chromophoreList[atomID] = chromophoreList[bondedAtom]
+                chromophoreList = updateChromophoresAA(atomID, chromophoreList, bondedAtoms, parameterDict)
+            # Else: both the current and the bonded atom are already known to be in this
+            # chromophore, so we don't have to do anything else.
+    except KeyError:
+        # This means that there are no bonded CG sites (i.e. it's a single chromophore)
+        pass
+    return chromophoreList
 
 
 def determineNeighbours(chromophoreList, parameterDict, simDims):
@@ -252,7 +328,10 @@ def plotChromoNeighbours(chromophore, chromophoreList, simDims):
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
     simDims = [[-AAMorphologyDict['lx'] / 2.0, AAMorphologyDict['lx'] / 2.0], [-AAMorphologyDict['ly'] / 2.0, AAMorphologyDict['ly'] / 2.0], [-AAMorphologyDict['lz'] / 2.0, AAMorphologyDict['lz'] / 2.0]]
-    chromophoreList = calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims)
+    if len(parameterDict['CGToTemplateDirs']) > 0:
+        chromophoreList = calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims)
+    else:
+        chromophoreList = calculateChromophoresAA(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims)
     chromophoreList = determineNeighbours(chromophoreList, parameterDict, simDims)
     # Now we have updated the chromophoreList, rewrite the pickle with this new information.
     pickleName = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle'

@@ -40,18 +40,15 @@ class morphology:
         # is already fine-grained and so we can just return the important information and skip this module
         if len(self.CGToTemplateDirs) == 0:
             print("No CG to AA data found in parameter file - the morphology is already fine-grained! Skipping this module...")
-            # Create the CGToAAIDMaster, where the CG (input IDs) == AA (output IDs)
-            for atomIDs in moleculeIDs:
-                CGToAAIDMaster.append(atomIDs)
-            # Now write the XML file and create the pickle
+            # Write the XML file and create the pickle
             print("Writing XML file...")
             AAFileName = './outputFiles/' + self.morphologyName + '/morphology/' + self.morphologyName + '.xml'
             # Now write the morphology XML
             helperFunctions.writeMorphologyXML(self.CGDictionary, AAFileName)
             # And finally write the pickle with the CGDictionary as both the input and output morphologies
             pickleLocation = './outputFiles/' + self.morphologyName + '/code/' + self.morphologyName + '.pickle'
-            helperFunctions.writePickle((self.CGDictionary, self.CGDictionary, CGToAAIDMaster, self.parameterDict, self.chromophoreList), pickleLocation)
-            return self.CGDictionary, self.CGDictionary, CGToAAIDMaster, self.parameterDict, self.chromophoreList
+            helperFunctions.writePickle((self.CGDictionary, None, None, self.parameterDict, self.chromophoreList), pickleLocation)
+            return self.CGDictionary, None, None, self.parameterDict, self.chromophoreList
 
         # Create a ghost particle dictionary to be added at the end of the morphology.
         # This way, we don't mess up the order of atoms later on when trying to split
