@@ -110,7 +110,7 @@ class simulation:
         #    sp.Popen('rm -rf '+self.outputDirectory+'/*', shell=True).communicate()
         # Then, make sure that all the required directories are in place
         # TODO: Remove the helperFunctions that mess around with the directory structure, do it all here instead.
-        for directoryToMake in ['chromophores/{input,output}ORCA/{single,pair}', 'KMC', 'molecules', 'morphology', 'code']:
+        for directoryToMake in ['chromophores/inputORCA/single', 'chromophores/inputORCA/pair','chromophores/outputORCA/single', 'chromophores/outputORCA/pair', 'KMC', 'molecules', 'morphology', 'code']:
             print('mkdir -p ' + self.outputDirectory + '/' + directoryToMake)
             # Make sure that the mkdir command has finished before moving on
             os.makedirs(self.outputDirectory + '/' + directoryToMake, exist_ok=True)
