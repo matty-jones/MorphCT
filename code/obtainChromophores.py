@@ -22,6 +22,7 @@ class chromophore:
         # defined as the electronically active in the chromophore
         if CGMorphologyDict is not None:
             # Normal operation
+            self.CGTypes = sorted(list(set([CGMorphologyDict['type'][CGID] for CGID in self.CGIDs])))
             electronicallyActiveCGSites, self.species = self.obtainElectronicSpecies(chromophoreCGSites, CGMorphologyDict['type'], parameterDict['CGSiteSpecies'])
             # CGToAAIDMaster is a list of dictionaries where each list element corresponds to a new molecule.
             # Firstly, flatten this out so that it becomes a single CG:AAID dictionary

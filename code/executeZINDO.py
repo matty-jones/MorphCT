@@ -109,12 +109,23 @@ def writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPosns, termina
 
 
 def terminateMonomers(chromophore, parameterDict, AAMorphologyDict):
+    # DEBUG
     # Get the connections to the terminating groups from the parXX.py
     terminatingBonds = [bond for bond in parameterDict['moleculeTerminatingConnections']]
+    # Remap these terminating bonds based on the new type mapping
+    for bondNo, bond in enumerate(terminatingBonds):
+        newTypeName = ""
+        for typeName in bond[1].split('-'):
+            # Should be able to use any of the CG types to work out which mappings are relevant, so just ask for the first one
+            # Get the new type for each element of the bond name
+            newTypeName += parameterDict['newTypeMappings'][chromophore.CGTypes[0]][typeName]
+            newTypeName += '-'
+        # Then update the bond
+        terminatingBonds[bondNo][1] = newTypeName[:-1]
     # Remove any termination connections that already exist (i.e. terminating unit at the end of the molecule)
     popList = []
     for bondNo, bond in enumerate(terminatingBonds):
-        if bond[0] in np.array(np.array(chromophore.bonds)[:, 1]):
+        if bond[1] in np.array(np.array(chromophore.bonds)[:, 0]):
             popList.append(bondNo)
     for index in sorted(popList, reverse=True):
         terminatingBonds.pop(index)
