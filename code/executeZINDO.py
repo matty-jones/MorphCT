@@ -109,7 +109,6 @@ def writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPosns, termina
 
 
 def terminateMonomers(chromophore, parameterDict, AAMorphologyDict):
-    # DEBUG
     # Get the connections to the terminating groups from the parXX.py
     terminatingBonds = [bond for bond in parameterDict['moleculeTerminatingConnections']]
     # Remap these terminating bonds based on the new type mapping

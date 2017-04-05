@@ -335,6 +335,18 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         chromophoreList = calculateChromophoresAA(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims)
     chromophoreList = determineNeighbours(chromophoreList, parameterDict, simDims)
     # Now we have updated the chromophoreList, rewrite the pickle with this new information.
+    #### SANITY CHECK  ####
+    for index, chromo in enumerate(chromophoreList):
+        if index != chromo.ID:
+            print("Inconsistency found in the ordering of the chromophoreList, rewriting the chromophoreList in the correct order...")
+            newChromophoreList = []
+            for chromo in chromophoreList:
+                newChromophoreList.append(0)
+            for chromo in chromophoreList:
+                newChromophoreList[chromo.ID] = chromo
+            chromophoreList = newChromophoreList
+            break
+    #### END OF SANITY CHECK ####
     pickleName = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle'
     helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleName)
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
