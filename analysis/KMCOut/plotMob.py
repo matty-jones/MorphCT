@@ -1,8 +1,8 @@
 import os
 import sys
+import pickle
 import matplotlib.pyplot as plt
 import numpy as np
-import cPickle as pickle
 import scipy.optimize
 import scipy.stats
 from scipy.sparse import lil_matrix
@@ -12,7 +12,7 @@ import helperFunctions
 try:
     import mpl_toolkits.mplot3d as p3
 except ImportError:
-    print "Could not import 3D plotting engine, calling the plotMolecule3D function will result in an error!"
+    print("Could not import 3D plotting engine, calling the plotMolecule3D function will result in an error!")
 
 elementaryCharge = 1.60217657E-19  # C
 kB = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}
@@ -45,7 +45,7 @@ def getData(carrierData):
     MSDs = []
     timeStandardErrors = []
     MSDStandardErrors = []
-    for time, disps in squaredDisps.iteritems():
+    for time, disps in squaredDisps.items():
         times.append(float(time))
         timeStandardErrors.append(np.std(actualTimes[time]) / len(actualTimes[time]))
         MSDs.append(np.average(disps))
@@ -99,7 +99,7 @@ def plotConnections(chromophoreList, simExtent, carrierHistory, directory):
                     ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = plt.cm.jet(colourIntensity), linewidth = 0.5)
     fileName = '3d.pdf'
     plt.savefig(directory + '/' + fileName)
-    print "Figure saved as", directory + "/" + fileName
+    print("Figure saved as", directory + "/" + fileName)
     plt.clf()
     #plt.show()
 
@@ -131,8 +131,8 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory):
     fit = np.polyfit(times, MSDs, 1)
     fitX = np.linspace(np.min(times), np.max(times), 100)
     gradient, intercept, rVal, pVal, stdErr = scipy.stats.linregress(times, MSDs)
-    print "StandardError", stdErr
-    print "Fitting rVal =", rVal
+    print("StandardError", stdErr)
+    print("Fitting rVal =", rVal)
     fitY = (fitX * gradient) + intercept
     mobility, mobError = calcMobility(fitX, fitY, np.average(timeStandardErrors), np.average(MSDStandardErrors))
     plt.plot(times, MSDs)
@@ -144,7 +144,7 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory):
     fileName = 'LinMSD.pdf'
     plt.savefig(directory + '/' + fileName)
     plt.clf()
-    print "Figure saved as", directory + "/" + fileName
+    print("Figure saved as", directory + "/" + fileName)
     plt.semilogx(times, MSDs)
     plt.errorbar(times, MSDs, xerr = timeStandardErrors, yerr = MSDStandardErrors)
     plt.semilogx(fitX, fitY, 'r')
@@ -154,7 +154,7 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory):
     fileName = 'SemiLogMSD.pdf'
     plt.savefig(directory + '/' + fileName)
     plt.clf()
-    print "Figure saved as", directory + "/" + fileName
+    print("Figure saved as", directory + "/" + fileName)
     plt.plot(times, MSDs)
     plt.errorbar(times, MSDs, xerr = timeStandardErrors, yerr = MSDStandardErrors)
     plt.plot(fitX, fitY, 'r')
@@ -166,7 +166,7 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory):
     fileName = 'LogMSD.pdf'
     plt.savefig(directory + '/' + fileName)
     plt.clf()
-    print "Figure saved as", directory + "/" + fileName
+    print("Figure saved as", directory + "/" + fileName)
     return mobility, mobError
 
 
@@ -220,7 +220,7 @@ def plotAnisotropy(carrierData, directory, simDims):
         zvals.append(position[2]/10.)
         colours.append('b')
     anisotropy = calculateAnisotropy(xvals, yvals, zvals)
-    print "Anisotropy calculated as", anisotropy
+    print("Anisotropy calculated as", anisotropy)
     plt.scatter(xvals, yvals, zs = zvals, c = colours, s = 20)
     plt.scatter(0, 0, zs = 0, c = 'r', s = 50)
     ax.set_xlabel('X (nm)', fontsize = 20, labelpad = 40)
@@ -232,11 +232,14 @@ def plotAnisotropy(carrierData, directory, simDims):
     ax.set_zlim([-maximum, maximum])
     for tick in ax.xaxis.get_major_ticks() + ax.yaxis.get_major_ticks() + ax.zaxis.get_major_ticks():
         tick.label.set_fontsize(16)
-    plt.title(directory[directory.index('T'):directory.index('T')+directory[directory.index('T'):].index('-')], fontsize = 24)
+    try:
+        plt.title(directory[directory.index('T'):directory.index('T')+directory[directory.index('T'):].index('-')], fontsize = 24)
+    except:
+        plt.title(directory, fontsize = 24)
     ax.dist = 11
     plt.savefig(directory + '/anisotropy.pdf')
     plt.clf()
-    print "Figure saved as", directory + "/anisotropy.pdf"
+    print("Figure saved as", directory + "/anisotropy.pdf")
     return anisotropy
 
 
@@ -260,7 +263,7 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData):
     fileName = './mobility.pdf'
     plt.savefig(fileName)
     plt.clf()
-    print "Figure saved as " + fileName
+    print("Figure saved as " + fileName)
 
     plt.plot(tempData, anisotropyData, c = 'r')
     fileName = './anisotropy.pdf'
@@ -268,47 +271,55 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData):
     plt.ylabel(r'$\kappa$'+', Arb. U')
     plt.savefig(fileName)
     plt.clf()
-    print "Figure saved as " + fileName
+    print("Figure saved as " + fileName)
 
 
 if __name__ == "__main__":
     sys.path.append('../../code')
     directoryList = []
     for directory in os.listdir(os.getcwd()):
-        if '-T' in directory:
+        if ('py' not in directory) and ('pdf' not in directory) and ('store' not in directory):
             directoryList.append(directory)
     tempData = []
     mobilityData = []
     anisotropyData = []
+    combinedPlots = True
     for directory in directoryList:
-        tempData.append(getTempVal(directory))
-        with open(directory + '/KMCResults.pickle', 'r') as pickleFile:
+        try:
+            tempData.append(getTempVal(directory))
+        except:
+            print("No temp data found in morphology name, skipping combined plots")
+            combinedPlots = False
+        with open(directory + '/KMCResults.pickle', 'rb') as pickleFile:
             carrierData = pickle.load(pickleFile)
-        print "Carrier Data obtained"
-        print "Obtaining mean squared displacements..."
+        print("Carrier Data obtained")
+        print("Obtaining mean squared displacements...")
         carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getData(carrierData)
-        print "MSDs obtained"
-        print "Loading chromophoreList..."
+        print("MSDs obtained")
+        print("Loading chromophoreList...")
         AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle('./' + directory + '/' + directory + '.pickle')
-        print "ChromophoreList obtained"
+        print("ChromophoreList obtained")
         # Create the first figure that will be replotted each time
         plt.figure()
         anisotropy = plotAnisotropy(carrierData, directory, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']])
         #plotHeatMap(carrierHistory, directory)
         # READ IN THE MAIN CHROMOPHORELIST PICKLE FILE TO DO THIS
-        print "Loading chromophoreList..."
+        print("Loading chromophoreList...")
         AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle('./' + directory + '/' + directory + '.pickle')
-        print "ChromophoreList obtained"
+        print("ChromophoreList obtained")
         if carrierHistory is not None:
-            print "Determining carrier hopping connections..."
+            print("Determining carrier hopping connections...")
             plotConnections(chromophoreList, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']], carrierHistory, directory)
         times, MSDs = helperFunctions.parallelSort(times, MSDs)
-        print "Calculating MSD..."
+        print("Calculating MSD...")
         mobility, mobError = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory)
-        print "----------====================----------"
-        print "Mobility for", directory, "= %.2E +- %.2E cm^{2} V^{-1} s^{-1}" % (mobility, mobError)
-        print "----------====================----------"
+        print("----------====================----------")
+        print("Mobility for", directory, "= %.2E +- %.2E cm^{2} V^{-1} s^{-1}" % (mobility, mobError))
+        print("----------====================----------")
         anisotropyData.append(anisotropy)
         mobilityData.append([mobility, mobError])
-    print "Plotting temperature progression..."
-    plotTemperatureProgression(tempData, mobilityData, anisotropyData)
+    print("Plotting temperature progression...")
+    if combinedPlots is True:
+        plotTemperatureProgression(tempData, mobilityData, anisotropyData)
+    else:
+        print("Temperature Progression not possible (probably due to no temperature specified). Cancelling...")
