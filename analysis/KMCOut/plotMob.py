@@ -221,6 +221,11 @@ def plotAnisotropy(carrierData, directory, simDims):
         colours.append('b')
     anisotropy = calculateAnisotropy(xvals, yvals, zvals)
     print("Anisotropy calculated as", anisotropy)
+    # Reduce number of plot markers
+    if len(xvals) > 1000:
+        xvals = xvals[0:len(xvals):len(xvals)//1000]
+        yvals = yvals[0:len(yvals):len(yvals)//1000]
+        zvals = zvals[0:len(zvals):len(zvals)//1000]
     plt.scatter(xvals, yvals, zs = zvals, c = colours, s = 20)
     plt.scatter(0, 0, zs = 0, c = 'r', s = 50)
     ax.set_xlabel('X (nm)', fontsize = 20, labelpad = 40)
@@ -290,8 +295,11 @@ if __name__ == "__main__":
         except:
             print("No temp data found in morphology name, skipping combined plots")
             combinedPlots = False
-        with open(directory + '/KMCResults.pickle', 'rb') as pickleFile:
-            carrierData = pickle.load(pickleFile)
+        try:
+            with open(directory + '/KMCResults.pickle', 'rb') as pickleFile:
+                carrierData = pickle.load(pickleFile)
+        except:
+            continue
         print("Carrier Data obtained")
         print("Obtaining mean squared displacements...")
         carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getData(carrierData)
