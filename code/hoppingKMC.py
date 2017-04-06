@@ -63,6 +63,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         print("Cleaning up...")
         # Delete any unneeded files
         sp.Popen("rm -f " + outputDir + "/KMCResults_*", shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
+        sp.Popen("rm -f " + outputDir + "/KMCslot_*", shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
     sp.Popen("rm -f " + outputDir + "/KMCData*", shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
 
