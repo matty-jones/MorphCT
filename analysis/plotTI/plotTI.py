@@ -5,7 +5,6 @@ import numpy as np
 import csv
 sys.path.append('../../code')
 import helperFunctions
-
 from scipy.optimize import curve_fit
 
 elementaryCharge = 1.60217657E-19 # C
@@ -35,15 +34,14 @@ def gaussFit(data):
     n = len(data)
     mean = np.mean(data)
     std = np.std(data)
-    print "\n"
-    print "Delta Eij stats: mean =", mean, "std =", std
+    print("\n")
+    print("Delta Eij stats: mean =", mean, "std =", std)
     hist, binEdges = np.histogram(data, bins=100)
     fitArgs, fitConv = curve_fit(gaussian, binEdges[:-1], hist, p0=[1, mean, std])
     return binEdges, fitArgs
 
 
 def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
-
     if mode == 'HOMO':
         plt.hist(yvals, 20)
         plt.ylabel('Frequency')
@@ -182,7 +180,7 @@ def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
 
     plt.savefig(saveDir+'/'+fileName)
     plt.clf()
-    print "Figure saved as", saveDir+"/"+fileName
+    print("Figure saved as", saveDir+"/"+fileName)
 
 
 def findIndex(string, character):
@@ -207,14 +205,14 @@ def calculateHopRate(lambdaij, Tij, deltaEij, T):
 if __name__ == "__main__":
     tempDirs = []
     for fileName in os.listdir(os.getcwd()):
-        if fileName[0] == 'T':
+        if ('py' not in fileName) and ('pdf' not in fileName) and ('store' not in fileName):
             tempDirs.append(fileName)
     plt.figure()
     for tempDir in tempDirs:
         for fileName in os.listdir(os.getcwd() + '/' + tempDir):
             if "pickle" in fileName:
                 mainMorphologyPickleName = os.getcwd() + '/' + tempDir + '/' + fileName
-        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(mainMorphologyPickleName)
+        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(mainMorphologyPickleName)
         HOMOLevels = []
         LUMOLevels = []
         bandgap = []
@@ -242,9 +240,15 @@ if __name__ == "__main__":
         plotHist(tempDir, bandgap, 'Bandgap')
 
         CGIDToMolID = {}
-        for molID, molDict in enumerate(CGToAAIDMaster):
-            for CGID in molDict.keys():
-                CGIDToMolID[CGID] = molID
+        # Edit for when CGToAAIDMaster doesn't exist (every chromophore is its own molecule)
+        try:
+            for molID, molDict in enumerate(CGToAAIDMaster):
+                for CGID in list(molDict.keys()):
+                    CGIDToMolID[CGID] = molID
+        except TypeError:
+            for index, chromo in enumerate(chromophoreList):
+                for CGID in chromo.CGIDs:
+                    CGIDToMolID[CGID] = chromo.ID
         interChainHop = []
         intraChainHop = []
         interChainTI = []
@@ -281,5 +285,5 @@ if __name__ == "__main__":
         plotHist(tempDir, intraChainTITrim, 'intraChainTITrim')
         plotHist(tempDir, interChainTITrim, 'interChainTITrim')
 
-        print len(intraChainHop), len(interChainHop)
+        print("Intra-chain hops =", len(intraChainHop), "Inter-chain hops =", len(interChainHop))
         plotHist(tempDir, intraChainHop, 'hopMix', xvals=interChainHop)
