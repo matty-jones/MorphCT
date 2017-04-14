@@ -18,10 +18,6 @@ hbar = 1.05457173E-34 # m^{2} kg s^{-1}
 
 class carrier:
     def __init__(self, chromophoreList, parameterDict, chromoID, lifetime, carrierNo, AAMorphologyDict):
-        if parameterDict['recordCarrierHistory'] is True:
-            self.carrierHistoryMatrix = lil_matrix((len(chromophoreList), len(chromophoreList)), dtype = int)
-        else:
-            self.carrierHistoryMatrix = None
         self.ID = carrierNo
         self.image = [0, 0, 0]
         self.initialChromophore = chromophoreList[chromoID]
@@ -33,10 +29,18 @@ class carrier:
         self.T = parameterDict['systemTemperature']
         self.lifetime = lifetime
         self.currentTime = 0.0
+        self.holeHistoryMatrix = None
+        self.electronHistoryMatrix = None
         if self.currentChromophore.species == 'Donor':
+            self.carrierType = 'Hole'
             self.lambdaij = parameterDict['reorganisationEnergyDonor']
+            if parameterDict['recordCarrierHistory'] is True:
+                self.holeHistoryMatrix = lil_matrix((len(chromophoreList), len(chromophoreList)), dtype = int)
         elif self.currentChromophore.species == 'Acceptor':
+            self.carrierType = 'Electron'
             self.lambdaij = parameterDict['reorganisationEnergyAcceptor']
+            if parameterDict['recordCarrierHistory'] is True:
+                self.electronHistoryMatrix = lil_matrix((len(chromophoreList), len(chromophoreList)), dtype = int)
         self.noHops = 0
         self.simDims = [[-AAMorphologyDict['lx'] / 2.0, AAMorphologyDict['lx'] / 2.0], [-AAMorphologyDict['ly'] / 2.0, AAMorphologyDict['ly'] / 2.0], [-AAMorphologyDict['lz'] / 2.0, AAMorphologyDict['lz'] / 2.0]]
         self.displacement = None
@@ -123,12 +127,6 @@ class carrier:
             self.carrierHistoryMatrix[initialID, destinationID] += 1
 
 
-class saveCarrier:
-    def __init__(self, **kwargs):#ID, image, initialPosn, finalPosn, lifetime, currentTime, noHops, displacement):
-        for key, value in kwargs.items():
-            self.__dict__[key] = value
-
-
 class terminationSignal:
     killSent = False
     def __init__(self):
@@ -138,6 +136,7 @@ class terminationSignal:
     def catchKill(self, signum, frame):
         self.killSent = True
 
+
 class Terminate(Exception):
     '''This class is raised to terminate a KMC simulation'''
     def __init__(self, string):
@@ -145,6 +144,7 @@ class Terminate(Exception):
 
     def __str__(self):
         return self.string
+
 
 def savePickle(saveData, savePickleName):
     with open(savePickleName, 'wb+') as pickleFile:
@@ -160,7 +160,7 @@ def calculateDisplacement(initialPosition, finalPosition, finalImage, simDims):
 
 
 def initialiseSaveData(nChromos, seed):
-    return {'seed': seed, 'ID': [], 'image': [], 'lifetime': [], 'currentTime': [], 'noHops': [], 'displacement': [], 'carrierHistoryMatrix': lil_matrix((nChromos, nChromos), dtype = int), 'initialPosition': [], 'finalPosition': []}
+    return {'seed': seed, 'ID': [], 'image': [], 'lifetime': [], 'currentTime': [], 'noHops': [], 'displacement': [], 'holeHistoryMatrix': lil_matrix((nChromos, nChromos), dtype = int), 'electronHistoryMatrix': lil_matrix((nChromos, nChromos), dtype = int), 'initialPosition': [], 'finalPosition': [], 'carrierType':[]}
 
 
 if __name__ == '__main__':
@@ -171,7 +171,7 @@ if __name__ == '__main__':
         overwrite = bool(sys.argv[3])
     except:
         pass
-    # Load `jobsToRun' which is a list of tuples that contains the [carrier.ID, carrier.lifetime]
+    # Load `jobsToRun' which is a list, where each element contains the [carrier.ID, carrier.lifetime, carrier.carrierType]
     pickleFileName = KMCDirectory + '/KMCData_%02d.pickle' % (CPURank)
     with open(pickleFileName, 'rb') as pickleFile:
         jobsToRun = pickle.load(pickleFile)
@@ -202,14 +202,23 @@ if __name__ == '__main__':
     R.seed(seed)
     # Save the pickle as a list of `saveCarrier' instances that contain the bare minimum
     saveData = initialiseSaveData(len(chromophoreList), seed)
+    if parameterDict['recordCarrierHistory'] is False:
+        saveData['holeHistoryMatrix'] = None
+        saveData['electronHistoryMatrix'] = None
     t0 = T.time()
     saveTime = T.time()
     saveSlot = 'slot1'
     try:
-        for jobNumber, [carrierNo, lifetime] in enumerate(jobsToRun):
+        for jobNumber, [carrierNo, lifetime, carrierType] in enumerate(jobsToRun):
             t1 = T.time()
             # Find a random position to start the carrier in
-            startChromoID = R.randint(0, len(chromophoreList) - 1)
+            while True:
+                startChromoID = R.randint(0, len(chromophoreList) - 1)
+                if (carrierType == 'Electron') and (chromophoreList[startChromoID].species != 'Acceptor'):
+                    continue
+                elif (carrierType == 'Hole') and (chromophoreList[startChromoID].species != 'Donor'):
+                    continue
+                break
             # Create the carrier instance
             thisCarrier = carrier(chromophoreList, parameterDict, startChromoID, lifetime, carrierNo, AAMorphologyDict)
             terminateSimulation = False
@@ -224,18 +233,18 @@ if __name__ == '__main__':
             simDims = thisCarrier.simDims
             thisCarrier.displacement = calculateDisplacement(initialPosition, finalPosition, finalImage, simDims)
             # Now the calculations are completed, create a barebones class containing the save data
-            importantData = ['ID', 'image', 'lifetime', 'currentTime', 'noHops', 'displacement']
+            importantData = ['ID', 'image', 'lifetime', 'currentTime', 'noHops', 'displacement', 'carrierType']
             for name in importantData:
                 saveData[name].append(thisCarrier.__dict__[name])
             # Update the carrierHistoryMatrix
             if parameterDict['recordCarrierHistory'] is True:
-                saveData['carrierHistoryMatrix'] += thisCarrier.carrierHistoryMatrix
-            else:
-                saveData['carrierHistoryMatrix'] = None
+                if thisCarrier.carrierType == 'Hole':
+                    saveData['holeHistoryMatrix'] += thisCarrier.carrierHistoryMatrix
+                elif thisCarrier.carrierType == 'Electron':
+                    saveData['electronHistoryMatrix'] += thisCarrier.carrierHistoryMatrix
             # Then add in the initial and final positions
             saveData['initialPosition'].append(initialPosition)
             saveData['finalPosition'].append(finalPosition)
-            #saveData.append(saveCarrier(**dataToSave))
             t2 = T.time()
             elapsedTime = float(t2) - float(t1)
             if elapsedTime < 60:

@@ -22,9 +22,12 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     simulationTimes = parameterDict['simulationTimes']
     carrierList = []
     # Create the carrierList which contains the information that the singleCore program needs to run its jobs
-    for carrierNo in range(parameterDict['numberOfCarriersPerSimulationTime']):
+    for carrierNo in range(parameterDict['numberOfHolesPerSimulationTime']):
         for lifetime in simulationTimes:
-            carrierList.append([carrierNo, lifetime])
+            carrierList.append([carrierNo, lifetime, 'Hole'])
+    for carrierNo in range(parameterDict['numberOfElectronsPerSimulationTime']):
+        for lifetime in simulationTimes:
+            carrierList.append([carrierNo, lifetime, 'Electron'])
     # The carrierList is now like the ORCAJobsList, so split it over each procID
     procIDs = parameterDict['procIDs']
     outputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/KMC'
