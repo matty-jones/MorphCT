@@ -28,6 +28,7 @@ def getData(carrierData):
     totalDataPointsAveragedOver = 0
     squaredDisps = {}
     actualTimes = {}
+    carrierTypes = {}
     for carrierIndex, displacement in enumerate(carrierData['displacement']):
         if (carrierData['currentTime'][carrierIndex] > carrierData['lifetime'][carrierIndex] * 2) or (carrierData['currentTime'][carrierIndex] < carrierData['lifetime'][carrierIndex] / 2.0) or (carrierData['noHops'][carrierIndex] == 1):
             totalDataPoints += 1
@@ -39,6 +40,7 @@ def getData(carrierData):
         else:
             squaredDisps[carrierKey].append((carrierData['displacement'][carrierIndex] * 1E-10) ** 2)  # Carrier displacement is in angstroems, convert to metres
             actualTimes[carrierKey].append(carrierData['currentTime'][carrierIndex])
+        # Also keep track of whether each carrier is a hole or an electron
         totalDataPointsAveragedOver += 1
         totalDataPoints += 1
     times = []
@@ -91,12 +93,21 @@ def plotConnections(chromophoreList, simExtent, carrierHistory, directory):
             if value > 0:
                 coords1 = chromophoreList[chromo1].posn
                 coords2 = chromophoreList[chromo2].posn
-                #ax.scatter(coords1[0], coords1[1], coords1[2], c = 'k', s = '5')
-                #ax.scatter(coords2[0], coords2[1], coords2[2], c = 'k', s = '5')
-                line = [coords2[0] - coords1[0], coords2[1] - coords1[1], coords2[2] - coords2[1]]
-                if (np.abs(coords2[0] - coords1[0]) < simExtent[0] / 2.0) and (np.abs(coords2[1] - coords1[1]) < simExtent[1] / 2.0) and (np.abs(coords2[2] - coords1[2]) < simExtent[2] / 2.0):
-                    colourIntensity = np.log(value) / normalizeTo
-                    ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = plt.cm.jet(colourIntensity), linewidth = 0.5)
+                # Only plot connections between chromophores in the same image
+                plotConnection = True
+                for neighbour in chromophoreList[chromo1].neighbours:
+                    if neighbour[0] != chromophoreList[chromo2].ID:
+                        continue
+                    if neighbour[1] != [0, 0, 0]:
+                        plotConnection = False
+                        break
+                if plotConnection is True:
+                    #ax.scatter(coords1[0], coords1[1], coords1[2], c = 'k', s = '5')
+                    #ax.scatter(coords2[0], coords2[1], coords2[2], c = 'k', s = '5')
+                    line = [coords2[0] - coords1[0], coords2[1] - coords1[1], coords2[2] - coords2[1]]
+                    if (np.abs(coords2[0] - coords1[0]) < simExtent[0] / 2.0) and (np.abs(coords2[1] - coords1[1]) < simExtent[1] / 2.0) and (np.abs(coords2[2] - coords1[2]) < simExtent[2] / 2.0):
+                        colourIntensity = np.log(value) / normalizeTo
+                        ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = plt.cm.jet(colourIntensity), linewidth = 0.5)
     fileName = '3d.pdf'
     plt.savefig(directory + '/' + fileName)
     print("Figure saved as", directory + "/" + fileName)
