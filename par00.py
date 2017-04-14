@@ -10,13 +10,13 @@ overwriteCurrentData = True
 
 # ---=== Execution Modules ===---
 
-executeFinegraining = True
-executeMolecularDynamics = True
+executeFinegraining = False
+executeMolecularDynamics = False
 executeExtractMolecules = False
 executeObtainChromophores = True
 executeZINDO = True
 executeCalculateTransferIntegrals = True
-executeCalculateMobility = True
+executeCalculateMobility = False
 
 # ---=== Fine Graining Parameters ===---
 
@@ -119,7 +119,8 @@ targetDoSSTDLUMO = 0.1
 # ---=== Kinetic Monte Carlo Parameters ===---
 
 systemTemperature = 290
-numberOfCarriersPerSimulationTime = 100
+numberOfHolesPerSimulationTime = 1000
+numberOfElectronsPerSimulationTime = 1000
 hopLimit = 0
 simulationTimes = [1.00e-10]
 recordCarrierHistory = True
