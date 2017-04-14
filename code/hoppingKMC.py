@@ -1,4 +1,5 @@
 import os
+import glob
 import sys
 import numpy as np
 import random as R
@@ -62,9 +63,12 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         print("Complete data written to", outputDir + "/KMCResults.pickle.")
         print("Cleaning up...")
         # Delete any unneeded files
-        sp.Popen("rm -f " + outputDir + "/KMCResults_*", shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
-        sp.Popen("rm -f " + outputDir + "/KMCslot_*", shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
-    sp.Popen("rm -f " + outputDir + "/KMCData*", shell = True, stdout = open(os.devnull, 'wb'), stderr = open(os.devnull, 'wb')).communicate()
+        for fileName in glob.glob(outputDir + '/KMCResults_*'):
+            os.remove(fileName)
+        for fileName in glob.glob(outputDir + '/KMCslot_*'):
+            os.remove(fileName)
+    for fileName in glob.glob(outputDir + '/KMCData*'):
+        os.remove(fileName)
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
 
 if __name__ == "__main__":
