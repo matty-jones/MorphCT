@@ -123,8 +123,10 @@ class carrier:
         # Increment the hop counter
         self.noHops += 1
         # Now update the sparse history matrix
-        if self.carrierHistoryMatrix is not None:
-            self.carrierHistoryMatrix[initialID, destinationID] += 1
+        if (self.carrierType == 'Hole') and (self.holeHistoryMatrix is not None):
+            self.holeHistoryMatrix[initialID, destinationID] += 1
+        elif (self.carrierType == 'Electron') and (self.electronHistoryMatrix is not None):
+            self.electronHistoryMatrix[initialID, destinationID] += 1
 
 
 class terminationSignal:
@@ -239,9 +241,9 @@ if __name__ == '__main__':
             # Update the carrierHistoryMatrix
             if parameterDict['recordCarrierHistory'] is True:
                 if thisCarrier.carrierType == 'Hole':
-                    saveData['holeHistoryMatrix'] += thisCarrier.carrierHistoryMatrix
+                    saveData['holeHistoryMatrix'] += thisCarrier.holeHistoryMatrix
                 elif thisCarrier.carrierType == 'Electron':
-                    saveData['electronHistoryMatrix'] += thisCarrier.carrierHistoryMatrix
+                    saveData['electronHistoryMatrix'] += thisCarrier.electronHistoryMatrix
             # Then add in the initial and final positions
             saveData['initialPosition'].append(initialPosition)
             saveData['finalPosition'].append(finalPosition)
