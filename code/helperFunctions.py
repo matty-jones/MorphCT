@@ -351,12 +351,12 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
                     if ('.' in splitLine[i][quotationLoc[0] + 1:quotationLoc[1]]):
                         # Catch float in the value (excludes the = and quotation marks)
                         if ('<box' in line):
-                            AtomDictionary[splitLine[i][:equalsLoc[0]]] = float(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]]) * sigma
+                            AtomDictionary[splitLine[i][:equalsLoc[0]]] = float(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
                         else:
                             AtomDictionary[splitLine[i][:equalsLoc[0]]] = float(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
                     else:
                         if ('<box' in line):
-                            AtomDictionary[splitLine[i][:equalsLoc[0]]] = int(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]]) * sigma
+                            AtomDictionary[splitLine[i][:equalsLoc[0]]] = int(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
                         else:
                             AtomDictionary[splitLine[i][:equalsLoc[0]]] = int(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
             elif ('<position' in line):
@@ -412,10 +412,10 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
                     # Remove the "\n"
                     splitLine[-1] = splitLine[-1][:-1]
                     if (len(splitLine) == 1):
-                        AtomDictionary[recordType].append(float(splitLine[0]) * sigma)
+                        AtomDictionary[recordType].append(float(splitLine[0]))
                         continue
                     for i in range(len(splitLine)):
-                        splitLine[i] = float(splitLine[i]) * sigma
+                        splitLine[i] = float(splitLine[i])
                     AtomDictionary[recordType].append(splitLine)
                 elif (recordType == 'mass') or (recordType == 'diameter') or (recordType == 'charge'):
                     # Write to dictionary as floats
@@ -455,6 +455,8 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
                     for i in range(1, len(splitLine)):
                         splitLine[i] = int(splitLine[i])
                     AtomDictionary[recordType].append(splitLine)
+    if sigma != 1.0:
+        AtomDictionary = scale(AtomDictionary, sigma)
     return AtomDictionary
 
 
