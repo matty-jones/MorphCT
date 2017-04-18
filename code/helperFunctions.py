@@ -593,8 +593,11 @@ def writeMorphologyXMLETree(inputDictionary, outputFile):
     print("XML file written to", str(outputFile) + "!")
 
 
-def writeMorphologyXML(inputDictionary, outputFile):
-    # First, need to check the positions of the atoms to ensure that everything is correctly contained inside the box
+def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0):
+    # Firstly, scale everything by the inverse of the provided sigma value
+    if sigma != 1.0:
+        inputDictionary = scale(inputDictionary, 1.0 / sigma)
+    # Now need to check the positions of the atoms to ensure that everything is correctly contained inside the box
     print("Checking wrapped positions before writing XML...")
     inputDictionary = checkWrappedPositions(inputDictionary)
     # inputDictionary['position'], inputDictionary['image'] = pbc.shift_pbc(inputDictionary['position'], [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']])

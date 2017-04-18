@@ -138,4 +138,4 @@ if __name__ == "__main__":
         hydrogenPositions = calculateHydrogenPositions(morphologyDict, hydrogensToAdd)
         morphologyDict = addHydrogensToMorph(morphologyDict, hydrogenPositions)
         morphologyDict = helperFunctions.addWrappedPositions(morphologyDict)
-        helperFunctions.writeMorphologyXML(morphologyDict, inputFile.replace('.xml','_AA.xml'))
+        helperFunctions.writeMorphologyXML(morphologyDict, inputFile.replace('.xml','_AA.xml'), sigma = sigmaVal)
