@@ -5,37 +5,6 @@ sys.path.append('../../code')
 import helperFunctions
 
 
-def hydrogenIndices(morphologyDict):
-    '''A function to determine the atomic indices to add hydrogens to.
-    If a carbon atom has 2 bonded neighbours then add a hydrogen in a
-    sensible position.'''
-    bondList = morphologyDict['bond']
-    atomsToAddTo = {}
-    numberOfBonds = {}
-    for bond in bondList:
-        type1 = morphologyDict['type'][bond[1]]
-        type2 = morphologyDict['type'][bond[2]]
-        if (type1[0] == 'C') and (type2[0] == 'C'):
-            if str(bond[1]) not in numberOfBonds:
-                numberOfBonds[str(bond[1])] = []
-            if str(bond[2]) not in numberOfBonds:
-                numberOfBonds[str(bond[2])] = []
-            numberOfBonds[str(bond[1])].append(morphologyDict['unwrapped_position'][bond[2]])
-            numberOfBonds[str(bond[2])].append(morphologyDict['unwrapped_position'][bond[1]])
-        elif (type1[0] == 'S'):
-            if str(bond[2] not in numberOfBonds):
-                numberOfBonds[str(bond[2])] = []
-            numberOfBonds[str(bond[2])].append(morphologyDict['unwrapped_position'][bond[1]])
-        elif (type2[0] == 'S'):
-            if str(bond[1] not in numberOfBonds):
-                numberOfBonds[str(bond[1])] = []
-            numberOfBonds[str(bond[1])].append(morphologyDict['unwrapped_position'][bond[2]])
-    for atomIndex, bondedPosns in numberOfBonds.items():
-        if len(bondedPosns) == 2:
-            atomsToAddTo[int(atomIndex)] = bondedPosns
-    return atomsToAddTo
-
-
 def calculateHydrogenPositions(morphologyDict, hydrogensToAdd):
     '''This function calculates the position of the hydrogen based
     on the number and positions of the other bonded species, and
@@ -57,67 +26,68 @@ def calculateHydrogenPositions(morphologyDict, hydrogensToAdd):
         # Skip if we don't have to add hydrogens to the current atom's type
         if atomType not in hydrogensToAdd.keys():
             continue
-        # Skip if the current atom does not have the right number of bonds
-        if numberOfBonds[atomID][0] != hydrogensToAdd[atomType][0]:
-            continue
-        # Otherwise, we need to add hydrogensToAdd[atomType][1] hydrogens to this atom
-        currentAtomPosn = morphologyDict['unwrapped_position'][atomID]
-        # First get the vector to the average position of the bonded neighbours
-        averagePositionOfBondedAtoms = np.array([0.0, 0.0, 0.0])
-        for bondedAtom in numberOfBonds[atomID][1]:
-            bondVector = np.array(morphologyDict['unwrapped_position'][bondedAtom]) - currentAtomPosn
-            bondVector /= np.linalg.norm(bondVector)
-            averagePositionOfBondedAtoms += bondVector
-        [x, y, z] = currentAtomPosn + (-1.06 * (averagePositionOfBondedAtoms / np.linalg.norm(averagePositionOfBondedAtoms)))
-        if hydrogensToAdd[atomType][1] == 1:
-            # Easy, this is the perylene code
-            # Simply reverse the bonded vector and make it the hydrogen position at a distance of 1.06 angstroems
-            hydrogenPositions.append([int(atomID), np.array([x, y, z])])
-        # Initial position for all hydrogens
-        elif hydrogensToAdd[atomType][1] == 2:
-            # As above (to get the right plane), but then rotated +(109.5/2) degrees and -(109.5/2) degrees around the bonding axis
-            rotationAxis = np.array(morphologyDict['unwrapped_position'][numberOfBonds[atomID][1][0]]) - np.array(morphologyDict['unwrapped_position'][numberOfBonds[atomID][1][-1]])
-            rotationAxis /= np.linalg.norm(rotationAxis)
-            # Rotation matrix calculations from: http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
-            # The array that describes the 3D rotation of (x, y, z) around the point (a, b, c) through
-            # the unit axis <u, v, w> by the angle theta is given by:
-            # [ (a(v^2 + w^2) - u(bv + cw - ux - vy - wz))(1 - cos(theta)) + x*cos(theta) + (-cv + bw - wy + vz)sin(theta),
-            #   (b(u^2 + w^2) - v(au + cw - ux - vy - wz))(1 - cos(theta)) + y*cos(theta) + (cu - aw + wx - uz)sin(theta),
-            #   (c(u^2 + v^2) - w(au + bv - ux - vy - wz))(1 - cos(theta)) + z*cos(theta) + (-bu + av - vx + uy)sin(theta) ]
-            [a, b, c] = currentAtomPosn
-            [u, v, w] = rotationAxis
-            for theta in [(109.5 / 2.0) * (np.pi / 180.0), -(109.5 / 2.0) * (np.pi / 180.0)]:
-                newPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
-                               (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (y * np.cos(theta)) + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
-                               (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
-                hydrogenPositions.append([int(atomID), newPosition])
-        elif hydrogensToAdd[atomType][1] == 3:
-            # As for one (to get the right side of the bonded atom), rotate the first one up by 70.5 (180 - 109.5) and then rotate around by 109.5 degrees for the other two
-            # The first hydrogen can be rotated around any axis perpendicular to the only bond present
-            axisToBond = currentAtomPosn - np.array(morphologyDict['unwrapped_position'][numberOfBonds[atomID][1][0]])
-            # Now find one of the set of vectors [i, j, k] perpendicular to this one so we can place the first hydrogen.
-            # Do this by setting i = j = 1 and solve for k (given that currentAtomPosn[0]*i + currentAtomPosn[1]*j + currentAtomPosn[2]*k = 0)
-            firstHydrogenRotationAxis = np.array([1, 1, -(axisToBond[0] + axisToBond[1])/axisToBond[2]])
-            firstHydrogenRotationAxis /= np.linalg.norm(firstHydrogenRotationAxis)
-
-            [a, b, c] = currentAtomPosn
-            [u, v, w] = firstHydrogenRotationAxis
-            # First hydrogen
-            theta = 70.5 * np.pi/180.0
-            newPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
-                               (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (y * np.cos(theta)) + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
-                               (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
-            hydrogenPositions.append([int(atomID), newPosition])
-            # Second and third hydrogens
-            # Rotate these from the newPosition +/-120 degrees around the vector axisToBond from the position currentAtomPosn - axisToBond
-            [x, y, z] = newPosition
-            [a, b, c] = currentAtomPosn + (np.cos(theta) * axisToBond)
-            [u, v, w] = ((np.cos(theta) * axisToBond) / np.linalg.norm(np.cos(theta) * axisToBond))
-            for theta in [120 * (np.pi / 180.0), -120 * (np.pi / 180.0)]:
-                newHydrogenPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
+        for bondDefinition in hydrogensToAdd[atomType]:
+            # Skip if the current atom does not have the right number of bonds
+            if numberOfBonds[atomID][0] != bondDefinition[0]:
+                continue
+            # Otherwise, we need to add hydrogensToAdd[atomType][1] hydrogens to this atom
+            currentAtomPosn = morphologyDict['unwrapped_position'][atomID]
+            # First get the vector to the average position of the bonded neighbours
+            averagePositionOfBondedAtoms = np.array([0.0, 0.0, 0.0])
+            for bondedAtom in numberOfBonds[atomID][1]:
+                bondVector = np.array(morphologyDict['unwrapped_position'][bondedAtom]) - currentAtomPosn
+                bondVector /= np.linalg.norm(bondVector)
+                averagePositionOfBondedAtoms += bondVector
+            [x, y, z] = currentAtomPosn + (-1.06 * (averagePositionOfBondedAtoms / np.linalg.norm(averagePositionOfBondedAtoms)))
+            if bondDefinition[1] == 1:
+                # Easy, this is the perylene code
+                # Simply reverse the bonded vector and make it the hydrogen position at a distance of 1.06 angstroems
+                hydrogenPositions.append([int(atomID), np.array([x, y, z])])
+            # Initial position for all hydrogens
+            elif bondDefinition[1] == 2:
+                # As above (to get the right plane), but then rotated +(109.5/2) degrees and -(109.5/2) degrees around the bonding axis
+                rotationAxis = np.array(morphologyDict['unwrapped_position'][numberOfBonds[atomID][1][0]]) - np.array(morphologyDict['unwrapped_position'][numberOfBonds[atomID][1][-1]])
+                rotationAxis /= np.linalg.norm(rotationAxis)
+                # Rotation matrix calculations from: http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
+                # The array that describes the 3D rotation of (x, y, z) around the point (a, b, c) through
+                # the unit axis <u, v, w> by the angle theta is given by:
+                # [ (a(v^2 + w^2) - u(bv + cw - ux - vy - wz))(1 - cos(theta)) + x*cos(theta) + (-cv + bw - wy + vz)sin(theta),
+                #   (b(u^2 + w^2) - v(au + cw - ux - vy - wz))(1 - cos(theta)) + y*cos(theta) + (cu - aw + wx - uz)sin(theta),
+                #   (c(u^2 + v^2) - w(au + bv - ux - vy - wz))(1 - cos(theta)) + z*cos(theta) + (-bu + av - vx + uy)sin(theta) ]
+                [a, b, c] = currentAtomPosn
+                [u, v, w] = rotationAxis
+                for theta in [(109.5 / 2.0) * (np.pi / 180.0), -(109.5 / 2.0) * (np.pi / 180.0)]:
+                    newPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
                                    (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (y * np.cos(theta)) + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
                                    (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
-                hydrogenPositions.append([int(atomID), newHydrogenPosition])
+                    hydrogenPositions.append([int(atomID), newPosition])
+            elif bondDefinition[1] == 3:
+                # As for one (to get the right side of the bonded atom), rotate the first one up by 70.5 (180 - 109.5) and then rotate around by 109.5 degrees for the other two
+                # The first hydrogen can be rotated around any axis perpendicular to the only bond present
+                axisToBond = currentAtomPosn - np.array(morphologyDict['unwrapped_position'][numberOfBonds[atomID][1][0]])
+                # Now find one of the set of vectors [i, j, k] perpendicular to this one so we can place the first hydrogen.
+                # Do this by setting i = j = 1 and solve for k (given that currentAtomPosn[0]*i + currentAtomPosn[1]*j + currentAtomPosn[2]*k = 0)
+                firstHydrogenRotationAxis = np.array([1, 1, -(axisToBond[0] + axisToBond[1])/axisToBond[2]])
+                firstHydrogenRotationAxis /= np.linalg.norm(firstHydrogenRotationAxis)
+
+                [a, b, c] = currentAtomPosn
+                [u, v, w] = firstHydrogenRotationAxis
+                # First hydrogen
+                theta = 70.5 * np.pi/180.0
+                newPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
+                                   (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (y * np.cos(theta)) + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
+                                   (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
+                hydrogenPositions.append([int(atomID), newPosition])
+                # Second and third hydrogens
+                # Rotate these from the newPosition +/-120 degrees around the vector axisToBond from the position currentAtomPosn - axisToBond
+                [x, y, z] = newPosition
+                [a, b, c] = currentAtomPosn + (np.cos(theta) * axisToBond)
+                [u, v, w] = ((np.cos(theta) * axisToBond) / np.linalg.norm(np.cos(theta) * axisToBond))
+                for theta in [120 * (np.pi / 180.0), -120 * (np.pi / 180.0)]:
+                    newHydrogenPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
+                                       (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (y * np.cos(theta)) + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
+                                       (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
+                    hydrogenPositions.append([int(atomID), newHydrogenPosition])
     return hydrogenPositions
 
 
@@ -140,15 +110,22 @@ def addHydrogensToMorph(morphologyDict, hydrogenPositions):
 if __name__ == "__main__":
     # This dictionary has keys of the atom type, and values where the first element is the number of bonds required for us to add a hydrogen to the atom and the second element of the value defines how many hydrogens to add to said atom.
     # ---==== PCBM ====---
-    print("Using data for PCBM")
-    hydrogensToAdd = {'CHA':[2, 1], # If the atom type is CHA and has only 2 bonds, add 1 hydrogen
-                      'CH2':[2, 2], # If the atom type is CH2 and has only 2 bonds, add 2 hydrogens
-                      'CE':[1, 3]}  # If the atom type is CE and has only one bond, add 3 hydrogens
-    sigmaVal = 1.0
+    #print("Using data for PCBM")
+    #hydrogensToAdd = {'CHA':[[2, 1]], # If the atom type is CHA and has only 2 bonds, add 1 hydrogen
+    #                  'CH2':[[2, 2]], # If the atom type is CH2 and has only 2 bonds, add 2 hydrogens
+    #                  'CE':[[1, 3]]}  # If the atom type is CE and has only one bond, add 3 hydrogens
+    #sigmaVal = 1.0
     ## ---==== PERYLENE/PERYLOTHIOPHENE ====---
     #print("Using data for Perylene/Perylothiophene")
-    #hydrogensToAdd = {'C':[2, 1]}
+    #hydrogensToAdd = {'C':[[2, 1]]}
     #sigmaVal = 3.8
+    # ---==== BDT-TPD ====---
+    print("Using data for BDT-TPD")
+    hydrogensToAdd = {'CS':[[2, 1]],
+                      'C!':[[2, 1]],
+                      'CT':[[2, 2],[1, 3]],
+                      'CP':[[2, 1]]}
+    sigmaVal = 3.905
 
     print("THIS FUNCTION IS SET UP TO USE A DICTIONARY TO DEFINE HOW MANY HYDROGENS TO ADD TO BONDS OF A SPECIFIC TYPE WITH A CERTAIN NUMBER OF BONDS")
     print(hydrogensToAdd)
