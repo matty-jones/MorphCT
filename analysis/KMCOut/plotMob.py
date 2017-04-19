@@ -266,7 +266,7 @@ def getTempVal(string):
     return tempVal
 
 
-def plotTemperatureProgression(tempData, mobilityData, anisotropyData):
+def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierType):
     plt.gcf()
     xvals = tempData
     yvals = list(np.array(mobilityData)[:,0])
@@ -277,13 +277,13 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData):
     plt.xlim([1.4, 2.6])
     plt.semilogy(xvals, yvals, c = 'b')
     plt.errorbar(xvals, yvals, xerr = 0, yerr = yerrs)
-    fileName = './mobility.pdf'
+    fileName = './mobility' + carrierType + '.pdf'
     plt.savefig(fileName)
     plt.clf()
     print("Figure saved as " + fileName)
 
     plt.plot(tempData, anisotropyData, c = 'r')
-    fileName = './anisotropy.pdf'
+    fileName = './anisotropy' + carrierType + '.pdf'
     plt.xlabel('T, Arb. U')
     plt.ylabel(r'$\kappa$'+', Arb. U')
     plt.savefig(fileName)
