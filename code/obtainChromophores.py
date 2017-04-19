@@ -35,11 +35,24 @@ class chromophore:
             # so the list needs to be flattened afterwards.
             electronicallyActiveAAIDs = [AAID for AAIDs in [flattenedCGToAAIDMaster[CGID] for CGID in electronicallyActiveCGSites] for AAID in AAIDs]
         else:
-            # No fine-graining has been performed, so assign the electronic species of all atoms in the molecule as the only provided value, or raise an error if multiple species have been defined
-            electronicallyActiveCGSites = chromophoreCGSites
-            electronicallyActiveAAIDs = chromophoreCGSites
+            # No fine-graining has been performed, by MorphCT, so we know that the input morphology is already atomistic.
             if len(parameterDict['CGSiteSpecies']) == 1:
+                # If the morphology contains only a single type of electronic species, then the parameterDict['CGSiteSpecies'] should only have one entry, and we can set all chromophores to be this species.
+                electronicallyActiveCGSites = chromophoreCGSites
+                electronicallyActiveAAIDs = chromophoreCGSites
                 self.species = list(parameterDict['CGSiteSpecies'].values())[0]
+            elif (len(parameterDict['CGSiteSpecies']) == 0) and (len(parameterDict['AARigidBodySpecies']) > 0):
+                # If the CGSiteSpecies have not been specified, then look to the AARigidBodySpecies dictionary to determine which rigid bodies are donors and which are acceptors
+                electronicallyActiveAAIDs = []
+                for AAID in chromophoreCGSites:
+                    if AAMorphologyDict['body'][AAID] != -1:
+                        electronicallyActiveAAIDs.append(AAID)
+                electronicallyActiveCGSites = copy.deepcopy(electronicallyActiveAAIDs)
+                # Now work out what the species is:
+                for species, rigidBodies in parameterDict['AARigidBodySpecies'].items():
+                    if AAMorphologyDict['body'][electronicallyActiveCGSites[0]] in rigidBodies:
+                        self.species = species
+                        break
             else:
                 raise SystemError("Multiple electronic species defined, but no way to map them without a coarse-grained morphology (no CG morph has been given)")
             self.AAIDs = chromophoreCGSites
@@ -151,18 +164,31 @@ def calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, pa
     return chromophoreInstances
 
 
-def calculateChromophoresAA(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims):
+def calculateChromophoresAA(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims, rigidBodies = None):
+    # If rigidBodies == None:
     # This function works in the same way as the coarse-grained version above, except 
     # this one iterates through the AA bonds instead. This is FAR SLOWER and so shouldn't
     # be done, except in the case where the coarse-grained morphology does not exist 
     # (because we started with an atomistic morphology and are only interested in running
     # KMC on it)
+    # If rigidBodies == AAMorphologyDict['body']:
+    # This function uses the rigid bodies specified in parameterDict['AARigidBodySpecies'],
+    # and those which have not been specified by iterating through the AA bond list, to determine
+    # the chromophores in the system. This is the slowest way to calculate chromophores, but is
+    # useful for systems such as BDT-TPD, where there are multiple chromophores of differing
+    # species present in the same molecule. As above, this code will only run if an atomistic
+    # morphology has been input to MorphCT. If it is coarse-grained, the CG-based "calculateChromophore"
+    # function will be used, and will also be a lot faster.
+    # The parameterDict['AARigidBodySpecies'] is a dictionary with two keys, 'donor' or 'acceptor'.
+    # Each element in the value list corresponds to a new chromophore. These aren't the only atoms
+    # that belong to this chromophore, however - there might be a bunch of aliphatic/flexible
+    # atoms that are connected, so we need to make sure that we add those too.
     print("Determining chromophores in the system...")
     bondedAtoms = helperFunctions.obtainBondedList(AAMorphologyDict['bond'])
     chromophoreList = [i for i in range(len(AAMorphologyDict['type']))]
     for AASiteID, chromophoreID in enumerate(chromophoreList):
         AASiteType = AAMorphologyDict['type'][AASiteID]
-        chromophoreList = updateChromophoresAA(AASiteID, chromophoreList, bondedAtoms, parameterDict)
+        chromophoreList = updateChromophoresAA(AASiteID, chromophoreList, bondedAtoms, parameterDict, rigidBodies)
     chromophoreData = {}
     for atomID, chromoID in enumerate(chromophoreList):
         if chromoID not in list(chromophoreData.keys()):
@@ -216,24 +242,28 @@ def updateChromophores(atomID, chromophoreList, bondedAtoms, CGTypeList, typesIn
     return chromophoreList, typesInThisChromophore
 
 
-def updateChromophoresAA(atomID, chromophoreList, bondedAtoms, parameterDict):
+def updateChromophoresAA(atomID, chromophoreList, bondedAtoms, parameterDict, rigidBodies = None):
     # This version of the update chromophores function does not check for CG site types, instead
     # just adding all bonded atoms. Therefore it should only be used in the case of already-atomistic
     # morphologies (no CG morph specified) containing ONLY small molecules
     try:
         for bondedAtom in bondedAtoms[atomID]:
+            if rigidBodies is not None:
+                # Skip if the bonded atom belongs to a different rigid body
+                if ((rigidBodies[bondedAtom] != -1) and (rigidBodies[atomID] != -1)) and (rigidBodies[bondedAtom] != rigidBodies[atomID]):
+                    continue
             # If the atomID of the bonded atom is larger than that of the current one,
             # update the bonded atom's ID to the current one's to put it in this chromophore,
             # then iterate through all of the bonded atom's neighbours
             if chromophoreList[bondedAtom] > chromophoreList[atomID]:
                 chromophoreList[bondedAtom] = chromophoreList[atomID]
-                chromophoreList = updateChromophoresAA(bondedAtom, chromophoreList, bondedAtoms, parameterDict)
+                chromophoreList = updateChromophoresAA(bondedAtom, chromophoreList, bondedAtoms, parameterDict, rigidBodies)
             # If the atomID of the current atom is larger than that of the bonded one,
             # update the current atom's ID to the bonded one's to put it in this chromophore,
             # then iterate through all of the current atom's neighbours
             elif chromophoreList[bondedAtom] < chromophoreList[atomID]:
                 chromophoreList[atomID] = chromophoreList[bondedAtom]
-                chromophoreList = updateChromophoresAA(atomID, chromophoreList, bondedAtoms, parameterDict)
+                chromophoreList = updateChromophoresAA(atomID, chromophoreList, bondedAtoms, parameterDict, rigidBodies)
             # Else: both the current and the bonded atom are already known to be in this
             # chromophore, so we don't have to do anything else.
     except KeyError:
@@ -330,9 +360,14 @@ def plotChromoNeighbours(chromophore, chromophoreList, simDims):
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
     simDims = [[-AAMorphologyDict['lx'] / 2.0, AAMorphologyDict['lx'] / 2.0], [-AAMorphologyDict['ly'] / 2.0, AAMorphologyDict['ly'] / 2.0], [-AAMorphologyDict['lz'] / 2.0, AAMorphologyDict['lz'] / 2.0]]
     if len(parameterDict['CGToTemplateDirs']) > 0:
+        # Normal operation using the coarse-grained morphology
         chromophoreList = calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims)
-    else:
+    elif (len(parameterDict['CGSiteSpecies']) == 1) and (len(parameterDict['AARigidBodySpecies']) == 0):
+        # Small molecule system with only one electronic species
         chromophoreList = calculateChromophoresAA(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims)
+    else:
+        # Other system, with electronically active species specified as rigid bodies using AARigidBodySpecies in parameter file
+        chromophoreList = calculateChromophoresAA(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims, rigidBodies=AAMorphologyDict['body'])
     chromophoreList = determineNeighbours(chromophoreList, parameterDict, simDims)
     # Now we have updated the chromophoreList, rewrite the pickle with this new information.
     #### SANITY CHECK  ####
