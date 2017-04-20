@@ -294,9 +294,12 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierTy
 if __name__ == "__main__":
     sys.path.append('../../code')
     directoryList = []
-    for directory in os.listdir(os.getcwd()):
-        if ('py' not in directory) and ('pdf' not in directory) and ('store' not in directory):
-            directoryList.append(directory)
+    if len(sys.argv) == 1:
+        for directory in os.listdir(os.getcwd()):
+            if ('py' not in directory) and ('pdf' not in directory) and ('store' not in directory):
+                directoryList.append(directory)
+    else:
+        directoryList = [sys.argv[1]]
     tempData = []
     holeMobilityData = []
     holeAnisotropyData = []
