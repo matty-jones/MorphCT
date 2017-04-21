@@ -43,7 +43,6 @@ def gaussFit(data, materialType):
     return binEdges, fitArgs
 
 
-########## NEED TO UPDATE THIS FUNCTION WITH THE NEW MODES BELOW
 def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
     if mode == 'HOMO':
         plt.hist(yvals, 20, color = ['b'])

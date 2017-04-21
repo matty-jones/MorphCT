@@ -84,7 +84,7 @@ class morphology:
                     print("Atom types belonging the molecule described by", repr(CGSites)+":")
                     printMol = False
                 print(initialAtom, "--->", finalAtoms[index])
-        print("Adding molecules to the system...")
+        print("Adding", len(moleculeIDs), "molecules to the system...")
         for moleculeNumber in range(len(moleculeIDs)):
             print("Adding molecule number", moleculeNumber, "\r", end=' ')
             sys.stdout.flush()
