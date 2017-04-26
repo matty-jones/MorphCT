@@ -83,7 +83,7 @@ def writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPosns, termina
     for index, atomID in enumerate(AAIDs):
         # Cut the integer bit off the atomType. To allow atom types like Ca and Br, where the atom is defined by one upper- and one lower-case letter, use iter to return the first element of the list of upper case letters and the first element of the list of lower case letters in the atom type (if any) and .join them together.
         atomType = AAMorphologyDict['type'][atomID]
-        allAtomTypes.append(next(iter([char for char in atomType if char.isupper()], '')) + next(iter([char for char in atomType if char.islower()], '')))
+        allAtomTypes.append(next(iter([char for char in atomType if char.isupper()]), '') + next(iter([char for char in atomType if char.islower()]), ''))
         # Include a fix to allow atom types like Ca and Br, where the atom is defined by one upper and one lower-case letter
         allAtomTypes.append(''.join([i for i in AAMorphologyDict['type'][atomID] if i.isalpha()]))
 
