@@ -82,7 +82,7 @@ def writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPosns, termina
     # Format the atom positions ready for ORCA
     for index, atomID in enumerate(AAIDs):
         # Cut the integer bit off the atomType
-        allAtomTypes.append(''.join([i for i in AAMorphologyDict['type'][atomID] if not i.isdigit()]))
+        allAtomTypes.append(''.join([i for i in AAMorphologyDict['type'][atomID] if i.isalpha()]))
         # Add in the correct periodic images to the position
         allPositions.append(AAMorphologyDict['unwrapped_position'][atomID] + np.array([(images[index][i] * [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']][i]) for i in range(3)]))
     # Now add in the terminating Hydrogens if necessary
