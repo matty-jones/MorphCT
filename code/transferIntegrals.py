@@ -418,6 +418,8 @@ def scaleEnergies(chromophoreList, parameterDict):
                 newDeviation = parameterDict['targetDoSSTDHOMO'] * sigma
                 # Work out the change in energy to be applied to meet this target energy level
                 deltaE = (avHOMO + newDeviation) - chromo.HOMO
+            else:
+                continue
             # Apply the energy level displacement
             chromo.HOMO_1 += deltaE
             chromo.HOMO += deltaE
@@ -432,6 +434,8 @@ def scaleEnergies(chromophoreList, parameterDict):
                 newDeviation = parameterDict['targetDoSSTDLUMO'] * sigma
                 # Work out the change in energy to be applied to meet this target energy level
                 deltaE = (avLUMO + newDeviation) - chromo.LUMO
+            else:
+                continue
             # Apply the energy level displacement
             chromo.HOMO_1 += deltaE
             chromo.HOMO += deltaE
