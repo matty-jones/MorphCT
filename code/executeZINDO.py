@@ -109,42 +109,64 @@ def writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPosns, termina
 
 
 def terminateMonomers(chromophore, parameterDict, AAMorphologyDict):
-    # Get the connections to the terminating groups from the parXX.py
-    terminatingBonds = [bond for bond in parameterDict['moleculeTerminatingConnections']]
-    # Remap these terminating bonds based on the new type mapping
-    for bondNo, bond in enumerate(terminatingBonds):
-        newTypeName = ""
-        for typeName in bond[1].split('-'):
-            # Should be able to use any of the CG types to work out which mappings are relevant, so just ask for the first one
-            # Get the new type for each element of the bond name
-            newTypeName += parameterDict['newTypeMappings'][chromophore.CGTypes[0]][typeName]
-            newTypeName += '-'
-        # Then update the bond
-        terminatingBonds[bondNo][1] = newTypeName[:-1]
-    # Remove any termination connections that already exist (i.e. terminating unit at the end of the molecule)
-    popList = []
-    for bondNo, bond in enumerate(terminatingBonds):
-        if bond[1] in np.array(np.array(chromophore.bonds)[:, 0]):
-            popList.append(bondNo)
-    for index in sorted(popList, reverse=True):
-        terminatingBonds.pop(index)
-    # Because we didn't reorder the AAID list at any point, the integer in terminatingBond[2] should correspond
-    # to the correct AAID in chromo.AAIDs
-    AAIDsToAttachTo = [chromophore.AAIDs[index] for index in map(int, list(np.array(terminatingBonds)[:, 2]))]
-    # Now work out the positions of any bonded atoms for each of these terminating atoms to work out where we
-    # should put the hydrogen
-    newHydrogenPositions = []
-    for terminatingAtomID in AAIDsToAttachTo:
-        # To do this, find the relative positions of the bonded atoms...
-        thisAtomPosition = AAMorphologyDict['unwrapped_position'][terminatingAtomID]
-        averagePositionOfBondedAtoms = np.array([0.0, 0.0, 0.0])
-        for bond in chromophore.bonds:
-            if (bond[1] == terminatingAtomID):
-                averagePositionOfBondedAtoms += np.array(AAMorphologyDict['unwrapped_position'][bond[2]]) - np.array(thisAtomPosition)
-            elif (bond[2] == terminatingAtomID):
-                averagePositionOfBondedAtoms += np.array(AAMorphologyDict['unwrapped_position'][bond[1]]) - np.array(thisAtomPosition)
-        # ... then reverse that vector and whack on a hydrogen 1.06 A away in that direction
-        newHydrogenPositions.append(thisAtomPosition + (- averagePositionOfBondedAtoms / np.linalg.norm(averagePositionOfBondedAtoms) * 1.06))
+    if len(parameterDict['CGToTemplateFiles'].keys()) > 0:
+        # A CG -> AA template has been provided, so only certain CG groups need terminating and we have to use this information in the parameter file to work out where to put the terminating hydrogens
+        # Get the connections to the terminating groups from the parXX.py
+        terminatingBonds = [bond for bond in parameterDict['moleculeTerminatingConnections']]
+        # Remap these terminating bonds based on the new type mapping
+        for bondNo, bond in enumerate(terminatingBonds):
+            newTypeName = ""
+            for typeName in bond[1].split('-'):
+                # Should be able to use any of the CG types to work out which mappings are relevant, so just ask for the first one
+                # Get the new type for each element of the bond name
+                newTypeName += parameterDict['newTypeMappings'][chromophore.CGTypes[0]][typeName]
+                newTypeName += '-'
+            # Then update the bond
+            terminatingBonds[bondNo][1] = newTypeName[:-1]
+        # Remove any termination connections that already exist (i.e. terminating unit at the end of the molecule)
+        popList = []
+        for bondNo, bond in enumerate(terminatingBonds):
+            if bond[1] in np.array(np.array(chromophore.bonds)[:, 0]):
+                popList.append(bondNo)
+        for index in sorted(popList, reverse=True):
+            terminatingBonds.pop(index)
+        # Because we didn't reorder the AAID list at any point, the integer in terminatingBond[2] should correspond
+        # to the correct AAID in chromo.AAIDs
+        AAIDsToAttachTo = [chromophore.AAIDs[index] for index in map(int, list(np.array(terminatingBonds)[:, 2]))]
+        # Now work out the positions of any bonded atoms for each of these terminating atoms to work out where we
+        # should put the hydrogen
+        newHydrogenPositions = []
+        for terminatingAtomID in AAIDsToAttachTo:
+            # To do this, find the relative positions of the bonded atoms...
+            thisAtomPosition = AAMorphologyDict['unwrapped_position'][terminatingAtomID]
+            averagePositionOfBondedAtoms = np.array([0.0, 0.0, 0.0])
+            for bond in chromophore.bonds:
+                if (bond[1] == terminatingAtomID):
+                    averagePositionOfBondedAtoms += np.array(AAMorphologyDict['unwrapped_position'][bond[2]]) - np.array(thisAtomPosition)
+                elif (bond[2] == terminatingAtomID):
+                    averagePositionOfBondedAtoms += np.array(AAMorphologyDict['unwrapped_position'][bond[1]]) - np.array(thisAtomPosition)
+            # ... then reverse that vector and whack on a hydrogen 1.06 A away in that direction
+            newHydrogenPositions.append(thisAtomPosition + (- averagePositionOfBondedAtoms / np.linalg.norm(averagePositionOfBondedAtoms) * 1.06))
+    else:
+        # No CG morphology, so we will use the UA -> AA code definition of which atoms need to have hydrogens added to them.
+        newHydrogenPositions = []
+        for atomIndexChromo, atomIndexMorph in enumerate(chromophore.AAIDs):
+            atomType = AAMorphologyDict['type'][atomIndexMorph]
+            if atomType not in parameterDict['moleculeTerminatingConnections'].keys():
+                continue
+            bondedAAIDs = []
+            # Iterate over all termination connections defined for this atomType (in case we are trying to do something mega complicated)
+            for connectionInfo in parameterDict['moleculeTerminatingConnections'][atomType]:
+                for [bondName, AAID1, AAID2] in chromophore.bonds:
+                    if AAID1 == atomIndexMorph:
+                        if AAID2 not in bondedAAIDs:
+                            bondedAAIDs.append(AAID2)
+                    elif AAID2 == atomIndexMorph:
+                        if AAID1 not in bondedAAIDs:
+                            bondedAAIDs.append(AAID1)
+                if len(bondedAAIDs) != connectionInfo[0]:
+                    continue
+                newHydrogenPositions += helperFunctions.getTerminatingPositions(AAMorphologyDict['unwrapped_position'][atomIndexMorph], [AAMorphologyDict['unwrapped_position'][bondedAAID] for bondedAAID in bondedAAIDs], 1)
     # Return terminatingGroups (positions of those hydrogens to be added to the ORCA input)
     return newHydrogenPositions
 

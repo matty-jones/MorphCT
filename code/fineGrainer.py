@@ -43,12 +43,13 @@ class morphology:
             # Write the XML file and create the pickle
             print("Writing XML file...")
             AAFileName = './outputFiles/' + self.morphologyName + '/morphology/' + self.morphologyName + '.xml'
+            atomisticMorphology = helperFunctions.addUnwrappedPositions(self.CGDictionary)
             # Now write the morphology XML
-            helperFunctions.writeMorphologyXML(self.CGDictionary, AAFileName)
+            helperFunctions.writeMorphologyXML(atomisticMorphology, AAFileName)
             # And finally write the pickle with the CGDictionary as both the input and output morphologies
             pickleLocation = './outputFiles/' + self.morphologyName + '/code/' + self.morphologyName + '.pickle'
-            helperFunctions.writePickle((self.CGDictionary, None, None, self.parameterDict, self.chromophoreList), pickleLocation)
-            return self.CGDictionary, None, None, self.parameterDict, self.chromophoreList
+            helperFunctions.writePickle((atomisticMorphology, None, None, self.parameterDict, self.chromophoreList), pickleLocation)
+            return atomisticMorphology, None, None, self.parameterDict, self.chromophoreList
 
         # Create a ghost particle dictionary to be added at the end of the morphology.
         # This way, we don't mess up the order of atoms later on when trying to split

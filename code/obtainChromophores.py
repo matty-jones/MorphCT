@@ -69,8 +69,13 @@ class chromophore:
             # self.terminate = True if any of the CGTypes in this chromophore are defined as having termination conditions in the parameter file
             self.terminate = any(CGType in CGTypes for CGType in [connection[0] for connection in parameterDict['moleculeTerminatingConnections']])
         else:
-            # Small molecules in atomistic morphology therefore no terminations needed
-            self.terminate = False
+            if len(parameterDict['moleculeTerminatingConnections'].keys()) == 0:
+                # Small molecules in atomistic morphology therefore no terminations needed
+                self.terminate = False
+            else:
+                # No CG morphology, but terminations have been specified, so we're dealing with a polymer
+                AATypes = set([AAMorphologyDict['type'][AAID] for AAID in self.AAIDs])
+                self.terminate = any(AAType in AATypes for AAType in [connection for connection in parameterDict['moleculeTerminatingConnections']])
         # Now to create a load of placeholder parameters to update later when we have the full list/energy levels
         # The self.neighbours list contains one element for each chromophore within parameterDict['maximumHopDistance']
         # of this one (including periodic boundary conditions). Its format is [[neighbour1ID, relativeImageOfNeighbour1],...]

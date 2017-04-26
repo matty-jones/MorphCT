@@ -244,6 +244,68 @@ def addDiameters(inputDictionary):
     return inputDictionary
 
 
+def getTerminatingPositions(currentAtomPosn, bondedAtomPositions, numberOfUnitsToAdd):
+    # Given a currentAtomPosn and several bondedAtomPositions we can add numberOfUnitsToAdd different terminating units to the currentAtom through a series of geometric checks.
+    # First get the vector to the average position of the bonded neighbours
+    hydrogenPositions = []
+    averagePositionOfBondedAtoms = np.array([0.0, 0.0, 0.0])
+    for bondedAtomPosn in bondedAtomPositions:
+        bondVector = np.array(bondedAtomPosn) - currentAtomPosn
+        bondVector /= np.linalg.norm(bondVector)
+        averagePositionOfBondedAtoms += bondVector
+    [x, y, z] = currentAtomPosn + (-1.06 * (averagePositionOfBondedAtoms / np.linalg.norm(averagePositionOfBondedAtoms)))
+    if numberOfUnitsToAdd == 1:
+        # Easy, this is the perylene code
+        # Simply reverse the bonded vector and make it the hydrogen position at a distance of 1.06 angstroems
+        hydrogenPositions.append(np.array([x, y, z]))
+    # Initial position for all hydrogens
+    elif numberOfUnitsToAdd == 2:
+        # As above (to get the right plane), but then rotated +(109.5/2) degrees and -(109.5/2) degrees around the bonding axis
+        rotationAxis = np.array(bondedAtomPositions[0]) - np.array(bondedAtomPositions[-1])
+        rotationAxis /= np.linalg.norm(rotationAxis)
+        # Rotation matrix calculations from: http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
+        # The array that describes the 3D rotation of (x, y, z) around the point (a, b, c) through
+        # the unit axis <u, v, w> by the angle theta is given by:
+        # [ (a(v^2 + w^2) - u(bv + cw - ux - vy - wz))(1 - cos(theta)) + x*cos(theta) + (-cv + bw - wy + vz)sin(theta),
+        #   (b(u^2 + w^2) - v(au + cw - ux - vy - wz))(1 - cos(theta)) + y*cos(theta) + (cu - aw + wx - uz)sin(theta),
+        #   (c(u^2 + v^2) - w(au + bv - ux - vy - wz))(1 - cos(theta)) + z*cos(theta) + (-bu + av - vx + uy)sin(theta) ]
+        [a, b, c] = currentAtomPosn
+        [u, v, w] = rotationAxis
+        for theta in [(109.5 / 2.0) * (np.pi / 180.0), -(109.5 / 2.0) * (np.pi / 180.0)]:
+            newPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
+                           (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (y * np.cos(theta)) + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
+                           (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
+            hydrogenPositions.append(newPosition)
+    elif numberOfUnitsToAdd == 3:
+        # As for one (to get the right side of the bonded atom), rotate the first one up by 70.5 (180 - 109.5) and then rotate around by 109.5 degrees for the other two
+        # The first hydrogen can be rotated around any axis perpendicular to the only bond present
+        axisToBond = currentAtomPosn - np.array(bondedAtomPositions[0])
+        # Now find one of the set of vectors [i, j, k] perpendicular to this one so we can place the first hydrogen.
+        # Do this by setting i = j = 1 and solve for k (given that currentAtomPosn[0]*i + currentAtomPosn[1]*j + currentAtomPosn[2]*k = 0)
+        firstHydrogenRotationAxis = np.array([1, 1, -(axisToBond[0] + axisToBond[1])/axisToBond[2]])
+        firstHydrogenRotationAxis /= np.linalg.norm(firstHydrogenRotationAxis)
+
+        [a, b, c] = currentAtomPosn
+        [u, v, w] = firstHydrogenRotationAxis
+        # First hydrogen
+        theta = 70.5 * np.pi/180.0
+        newPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
+                           (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (y * np.cos(theta)) + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
+                           (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
+        hydrogenPositions.append(newPosition)
+        # Second and third hydrogens
+        # Rotate these from the newPosition +/-120 degrees around the vector axisToBond from the position currentAtomPosn - axisToBond
+        [x, y, z] = newPosition
+        [a, b, c] = currentAtomPosn + (np.cos(theta) * axisToBond)
+        [u, v, w] = ((np.cos(theta) * axisToBond) / np.linalg.norm(np.cos(theta) * axisToBond))
+        for theta in [120 * (np.pi / 180.0), -120 * (np.pi / 180.0)]:
+            newHydrogenPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
+                               (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (y * np.cos(theta)) + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
+                               (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
+            hydrogenPositions.append(newHydrogenPosition)
+    return hydrogenPositions
+
+
 def addTerminatingHydrogen(inputDictionary, terminatingConnection, terminatingUnit=[['H1', 0, 0, 0]], terminatingUnitBonds=None):
     '''This function takes a runHoomd.py input dictionary, and the atom that the terminating unit is bonded to'''
     # Examine the current bonds on the terminating connection
