@@ -111,7 +111,6 @@ def plotConnections(chromophoreList, simExtent, carrierHistory, directory, carri
     plt.savefig(directory + '/' + fileName)
     print("Figure saved as", directory + "/" + fileName)
     plt.clf()
-    #plt.show()
 
 
 def calcMobility(linFitX, linFitY, avTimeError, avMSDError):
@@ -255,6 +254,7 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType):
         plt.title(carrierType + ' transport for:' + directory, fontsize = 24)
     ax.dist = 11
     plt.savefig(directory + '/anisotropy' + carrierType + '.pdf')
+    plt.show()
     plt.clf()
     print("Figure saved as", directory + "/anisotropy" + carrierType + ".pdf")
     return anisotropy
@@ -319,17 +319,27 @@ if __name__ == "__main__":
             continue
         print("Carrier Data obtained")
         # Now need to split up the carrierData into both electrons and holes
-        carrierDataHoles = {'carrierHistoryMatrix': carrierData['holeHistoryMatrix'], 'seed': carrierData['seed']}
-        carrierDataElectrons = {'carrierHistoryMatrix': carrierData['electronHistoryMatrix'], 'seed': carrierData['seed']}
+        # If only one carrier type has been given, call the carriers holes and skip the electron calculations
         listVariables = ['currentTime', 'ID', 'noHops', 'displacement', 'lifetime', 'finalPosition', 'image', 'initialPosition']
-        for listVar in listVariables:
-            carrierDataHoles[listVar] = []
-            carrierDataElectrons[listVar] = []
-            for carrierIndex, chargeType in enumerate(carrierData['carrierType']):
-                if chargeType == 'Hole':
+        try:
+            carrierDataHoles = {'carrierHistoryMatrix': carrierData['holeHistoryMatrix'], 'seed': carrierData['seed']}
+            carrierDataElectrons = {'carrierHistoryMatrix': carrierData['electronHistoryMatrix'], 'seed': carrierData['seed']}
+            for listVar in listVariables:
+                carrierDataHoles[listVar] = []
+                carrierDataElectrons[listVar] = []
+                for carrierIndex, chargeType in enumerate(carrierData['carrierType']):
+                    if chargeType == 'Hole':
+                        carrierDataHoles[listVar].append(carrierData[listVar][carrierIndex])
+                    elif chargeType == 'Electron':
+                        carrierDataElectrons[listVar].append(carrierData[listVar][carrierIndex])
+        except:
+            print("Multiple charge carriers not found, assuming donor material and holes only")
+            carrierDataHoles = {'carrierHistoryMatrix': carrierData['carrierHistoryMatrix'], 'seed': carrierData['seed']}
+            carrierDataElectrons = None
+            for listVar in listVariables:
+                carrierDataHoles[listVar] = []
+                for carrierIndex, carrierID in enumerate(carrierData['ID']):
                     carrierDataHoles[listVar].append(carrierData[listVar][carrierIndex])
-                elif chargeType == 'Electron':
-                    carrierDataElectrons[listVar].append(carrierData[listVar][carrierIndex])
 
         print("Loading chromophoreList...")
         AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle('./' + directory + '/' + directory + '.pickle')
@@ -337,10 +347,10 @@ if __name__ == "__main__":
 #### NOW DO ALL OF THE BELOW BUT FOR ELECTRONS AND HOLES SEPARATELY
         completeCarrierTypes = []
         completeCarrierData = []
-        if len(carrierDataHoles['ID']) > 0:
+        if carrierDataHoles is not None:
             completeCarrierTypes.append('Hole')
             completeCarrierData.append(carrierDataHoles)
-        if len(carrierDataElectrons['ID']) > 0:
+        if carrierDataElectrons is not None:
             completeCarrierTypes.append('Electron')
             completeCarrierData.append(carrierDataElectrons)
         for carrierTypeIndex, carrierData in enumerate(completeCarrierData):
@@ -367,10 +377,6 @@ if __name__ == "__main__":
             elif completeCarrierTypes[carrierTypeIndex] == 'Electron':
                 electronAnisotropyData.append(anisotropy)
                 electronMobilityData.append([mobility, mobError])
-
-
-
-
 
     print("Plotting temperature progression...")
     if combinedPlots is True:

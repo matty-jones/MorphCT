@@ -274,7 +274,7 @@ if __name__ == "__main__":
     plt.figure()
     for tempDir in tempDirs:
         for fileName in os.listdir(os.getcwd() + '/' + tempDir):
-            if "pickle" in fileName:
+            if ("pickle" in fileName) and (tempDir in fileName):
                 mainMorphologyPickleName = os.getcwd() + '/' + tempDir + '/' + fileName
         AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(mainMorphologyPickleName)
         HOMOLevels = []
@@ -413,3 +413,11 @@ if __name__ == "__main__":
 
         plotHist(tempDir, donorIntraChainHop, 'DonorHopMix', xvals=donorInterChainHop)
         plotHist(tempDir, acceptorIntraChainHop, 'AcceptorHopMix', xvals=acceptorInterChainHop)
+
+
+        if len(HOMOLevels) > 0:
+            print("DONOR HOMO LEVEL =", np.average(HOMOLevels), "+/-", np.std(HOMOLevels)/np.sqrt(len(HOMOLevels)))
+            print("DONOR BANDGAP =", np.average(donorBandgap), "+/-", np.std(donorBandgap)/np.sqrt(len(donorBandgap)))
+        if len(LUMOLevels) > 0:
+            print("ACCEPTOR LUMO LEVEL =", np.average(LUMOLevels), "+/-", np.std(LUMOLevels)/np.sqrt(len(LUMOLevels)))
+            print("ACCEPTOR BANDGAP =", np.average(acceptorBandgap), "+/-", np.std(acceptorBandgap)/np.sqrt(len(acceptorBandgap)))
