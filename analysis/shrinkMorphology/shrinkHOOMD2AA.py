@@ -85,7 +85,7 @@ if __name__ == "__main__":
         temperature = fileName[hyphenLocs[3]+1:hyphenLocs[4]][1:]  # HARD CODED for the standard Jankowski naming nomenclature
 
         hoomd.md.integrate.mode_standard(dt=0.0001);
-        integrator = hoomd.md.integrate.nvt(group=all, tau=1.0, kT=tmperature)
+        integrator = hoomd.md.integrate.nvt(group=all, tau=1.0, kT=temperature)
 
         run_time = 1e7
 
