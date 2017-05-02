@@ -78,7 +78,7 @@ if __name__ == "__main__":
         system = hoomd.deprecated.init.read_xml(filename=fileName)
         getFFCoeffs(FFFileName)
 
-        groupAll = hoomd.group.all()
+        all = hoomd.group.all()
 
         # Get the initial temperature of the simulation
         hyphenLocs = helperFunctions.findIndex(fileName, '-')
