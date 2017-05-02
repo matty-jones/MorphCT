@@ -83,15 +83,14 @@ if __name__ == "__main__":
         # Get the initial temperature of the simulation
         hyphenLocs = helperFunctions.findIndex(fileName, '-')
         temperature = fileName[hyphenLocs[3]+1:hyphenLocs[4]][1:]  # HARD CODED for the standard Jankowski naming nomenclature
-        exit()
 
-        hoomd.md.integrate.mode_standard(dt=0.001);
+        hoomd.md.integrate.mode_standard(dt=0.0001);
         integrator = hoomd.md.integrate.nvt(group=all, tau=1.0, kT=tmperature)
 
-        run_time = 1e6
+        run_time = 1e7
 
-        hoomd.dump.dcd(filename="trajectory.dcd", period=int(run_time/100), overwrite=True)
-        hoomd.analyze.log(filename='mylog.log', quantities=['potential_energy'],
+        hoomd.dump.dcd(filename=fileName + ".dcd", period=int(run_time/500), overwrite=True)
+        hoomd.analyze.log(filename=fileName + '.log', quantities=['potential_energy'],
                             period=int(run_time/1000), header_prefix='#', overwrite=True)
 
         # Get the initial box size dynamically
