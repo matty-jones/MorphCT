@@ -74,18 +74,25 @@ if __name__ == "__main__":
             filesToRun.append(fileName)
 
     for fileName in filesToRun:
+        # Remove rigid bodies because HOOMD2 deals with them in a non-simple way
+        morphDictionary = helperFunctions.loadMorphologyXML(fileName)
+        morphDictionary = makeHOOMD2RigidBodies(morphDictionary)
+        helperFunctions.writeMorphologyXML(morphDictionary, './temp.xml')
+
         hoomd.context.initialize("")
-        system = hoomd.deprecated.init.read_xml(filename=fileName)
+        system = hoomd.deprecated.init.read_xml(filename='./temp.xml')
         getFFCoeffs(FFFileName)
 
-        all = hoomd.group.all()
+        allAtoms = hoomd.group.all()
+        rigidAtoms = hoomd.group.rigid()
+        nonRigidAtoms = hoomd.group.nonrigid()
 
         # Get the initial temperature of the simulation
         hyphenLocs = helperFunctions.findIndex(fileName, '-')
         temperature = fileName[hyphenLocs[3]+1:hyphenLocs[4]][1:]  # HARD CODED for the standard Jankowski naming nomenclature
 
         hoomd.md.integrate.mode_standard(dt=0.0001);
-        integrator = hoomd.md.integrate.nvt(group=all, tau=1.0, kT=temperature)
+        integrator = hoomd.md.integrate.nvt(group=allAtoms, tau=1.0, kT=temperature)
 
         run_time = 1e7
 
