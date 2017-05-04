@@ -660,7 +660,7 @@ def writeMorphologyXMLETree(inputDictionary, outputFile):
 def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0):
     # Firstly, scale everything by the inverse of the provided sigma value
     if sigma != 1.0:
-        inputDictionary = scale(inputDictionary, 1.0 / sigma)
+        inputDictionary = scale(inputDictionary, sigma)
     # Now need to check the positions of the atoms to ensure that everything is correctly contained inside the box
     print("Checking wrapped positions before writing XML...")
     inputDictionary = checkWrappedPositions(inputDictionary)
