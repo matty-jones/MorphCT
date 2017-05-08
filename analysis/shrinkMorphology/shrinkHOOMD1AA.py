@@ -95,6 +95,6 @@ if __name__ == "__main__":
     initialMorphology = helperFunctions.loadMorphologyXML(fileName)
     update.box_resize(L = variant.linear_interp([(0, initialMorphology['lx']), (run_time, 85.18963051)]))  # HARD CODED for the ordered P3HT morphology volume size (atomistic, no scaling)
     run(run_time)
-    dump.xml(group=allGroup, filename="postshrink_" + fileName, all=True)
+    dump.xml(filename="postshrink_" + fileName, all=True)
     run(run_time)
-    dump.xml(group=allGroup, filename="posteql_" + fileName, all=True)
+    dump.xml(filename="posteql_" + fileName, all=True)
