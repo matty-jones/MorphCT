@@ -66,38 +66,35 @@ def getFFCoeffs(FFName):
 if __name__ == "__main__":
     FFFileName = 'FFP3HT.xml'
     filesToRun = []
-    for fileName in os.listdir():
-        if ('.xml' in fileName) and ('post' not in fileName) and ('FF' not in fileName):
-            filesToRun.append(fileName)
+    fileName = sys.argv[1]
 
-    for fileName in filesToRun:
-        # Remove rigid bodies because HOOMD2 deals with them in a non-simple way
+    print("RUNNING", fileName)
 
-        system = init.read_xml(filename=fileName)
-        getFFCoeffs(FFFileName)
+    system = init.read_xml(filename=fileName)
+    getFFCoeffs(FFFileName)
 
-        allGroup = group.all()
-        rigidGroup = group.rigid()
-        nonRigidGroup = group.nonrigid()
+    allGroup = group.all()
+    rigidGroup = group.rigid()
+    nonRigidGroup = group.nonrigid()
 
-        # Get the initial temperature of the simulation
-        hyphenLocs = helperFunctions.findIndex(fileName, '-')
-        temperature = fileName[hyphenLocs[3]+1:hyphenLocs[4]][1:]  # HARD CODED for the standard Jankowski naming nomenclature
+    # Get the initial temperature of the simulation
+    hyphenLocs = helperFunctions.findIndex(fileName, '-')
+    temperature = fileName[hyphenLocs[3]+1:hyphenLocs[4]][1:]  # HARD CODED for the standard Jankowski naming nomenclature
 
-        integrate.mode_standard(dt=0.0001);
-        rigidIntegrator = integrate.nvt_rigid(group=rigidGroup, T=temperature, tau=1.0)
-        nonRigidIntegrator = integrate.nvt(group=nonRigidGroup, T=temperature, tau=1.0)
+    integrate.mode_standard(dt=0.001);
+    rigidIntegrator = integrate.nvt_rigid(group=rigidGroup, T=temperature, tau=1.0)
+    nonRigidIntegrator = integrate.nvt(group=nonRigidGroup, T=temperature, tau=1.0)
 
-        run_time = 1e7
+    run_time = 1e6
 
-        dump.dcd(filename=fileName + ".dcd", period=int(run_time/500), overwrite=True)
-        analyze.log(filename=fileName + '.log', quantities=['potential_energy'],
-                    period=int(run_time/1000), header_prefix='#', overwrite=True)
+    dump.dcd(filename=fileName.replace(".xml", ".dcd"), overwrite=True, period=int(run_time/500))
+    analyze.log(filename=fileName.replace(".xml", ".log"), quantities=['potential_energy'],
+                period=int(run_time/1000), header_prefix='#', overwrite=True)
 
-        # Get the initial box size dynamically
-        initialMorphology = helperFunctions.loadMorphologyXML(fileName)
-        update.box_resize(L = variant.linear_interp([(0, initialMorphology['lx']), (run_time, 28.39654350281)]))  # HARD CODED for the ordered P3HT morphology volume size
-        run(run_time)
-        dump.xml(group=all, filename="postshrink_" + fileName, all=True)
-        run(run_time)
-        dump.xml(group=all, filename="posteql_" + fileName, all=True)
+    # Get the initial box size dynamically
+    initialMorphology = helperFunctions.loadMorphologyXML(fileName)
+    update.box_resize(L = variant.linear_interp([(0, initialMorphology['lx']), (run_time, 85.18963051)]))  # HARD CODED for the ordered P3HT morphology volume size (atomistic, no scaling)
+    run(run_time)
+    dump.xml(filename="postshrink_" + fileName, all=True)
+    run(run_time)
+    dump.xml(filename="posteql_" + fileName, all=True)
