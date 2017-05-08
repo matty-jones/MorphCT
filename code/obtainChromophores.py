@@ -69,9 +69,13 @@ class chromophore:
             # self.terminate = True if any of the CGTypes in this chromophore are defined as having termination conditions in the parameter file
             self.terminate = any(CGType in CGTypes for CGType in [connection[0] for connection in parameterDict['moleculeTerminatingConnections']])
         else:
-            if len(parameterDict['moleculeTerminatingConnections'].keys()) == 0:
-                # Small molecules in atomistic morphology therefore no terminations needed
-                self.terminate = False
+            try:
+                if len(parameterDict['moleculeTerminatingConnections'].keys()) == 0:
+                    # Small molecules in atomistic morphology therefore no terminations needed
+                    self.terminate = False
+            except AttributeError:
+                if len(parameterDict['moleculeTerminatingConnections']) == 0:
+                    self.terminate = False
             else:
                 # No CG morphology, but terminations have been specified, so we're dealing with a polymer
                 AATypes = set([AAMorphologyDict['type'][AAID] for AAID in self.AAIDs])

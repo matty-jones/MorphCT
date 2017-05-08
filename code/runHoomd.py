@@ -333,7 +333,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     if 'final_' + parameterDict['morphology'] not in currentFiles:
         # Now all phases are complete, remove the ghost particles from the system
         print("Removing ghost particles to create final output...")
-        removeGhostParticles(parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/' + outputFile, finalXMLName)
+        removeGhostParticles(parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/' + outputFile, finalXMLName, sigma = sScale)
     # Finally, update the pickle file with the most recent and realistic
     # AAMorphologyDict so that we can load it again further along the pipeline
     AAMorphologyDict = helperFunctions.loadMorphologyXML(finalXMLName)
@@ -346,7 +346,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
 
 
-def removeGhostParticles(lastPhaseXML, outputFileName):
+def removeGhostParticles(lastPhaseXML, outputFileName, sigma = 1.0):
     # Remove all the ghost particles from the morphology for the final output
     finalMorphology = helperFunctions.loadMorphologyXML(lastPhaseXML)
     # Determine the atomIDs for each particle beginning with the letters 'X'
@@ -377,7 +377,7 @@ def removeGhostParticles(lastPhaseXML, outputFileName):
         for constraintNo in constraintsToRemove:
             finalMorphology[key].pop(constraintNo)
     # Output the final morphology
-    helperFunctions.writeMorphologyXML(finalMorphology, outputFileName)
+    helperFunctions.writeMorphologyXML(finalMorphology, outputFileName, sigma)
 
 
 if __name__ == "__main__":
