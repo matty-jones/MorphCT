@@ -81,11 +81,11 @@ if __name__ == "__main__":
     hyphenLocs = helperFunctions.findIndex(fileName, '-')
     temperature = fileName[hyphenLocs[3]+1:hyphenLocs[4]][1:]  # HARD CODED for the standard Jankowski naming nomenclature
 
-    integrate.mode_standard(dt=0.0001);
+    integrate.mode_standard(dt=0.001);
     rigidIntegrator = integrate.nvt_rigid(group=rigidGroup, T=temperature, tau=1.0)
     nonRigidIntegrator = integrate.nvt(group=nonRigidGroup, T=temperature, tau=1.0)
 
-    run_time = 1e7
+    run_time = 1e6
 
     dump.dcd(filename=fileName.replace(".xml", ".dcd"), overwrite=True, period=int(run_time/500))
     analyze.log(filename=fileName.replace(".xml", ".log"), quantities=['potential_energy'],
@@ -95,6 +95,6 @@ if __name__ == "__main__":
     initialMorphology = helperFunctions.loadMorphologyXML(fileName)
     update.box_resize(L = variant.linear_interp([(0, initialMorphology['lx']), (run_time, 85.18963051)]))  # HARD CODED for the ordered P3HT morphology volume size (atomistic, no scaling)
     run(run_time)
-    dump.xml(group=all, filename="postshrink_" + fileName, all=True)
+    dump.xml(group=allGroup, filename="postshrink_" + fileName, all=True)
     run(run_time)
-    dump.xml(group=all, filename="posteql_" + fileName, all=True)
+    dump.xml(group=allGroup, filename="posteql_" + fileName, all=True)
