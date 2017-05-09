@@ -1188,8 +1188,12 @@ def writeToFile(logFile, stringList, mode='logFile'):
 
 def loadPickle(pickleLocation):
     print("Loading Pickle from", str(pickleLocation) + "...")
-    with open(pickleLocation, 'rb') as pickleFile:
-        objects = pickle.load(pickleFile)
+    try:
+        with open(pickleLocation, 'rb') as pickleFile:
+                objects = pickle.load(pickleFile)
+    except UnicodeDecodeError:  # Python 2/3 fix
+        with open(pickleLocation, 'rb') as pickleFile:
+            objects = pickle.load(pickleFile, encoding='latin1')
     print("Pickle loaded successfully!")
     return objects[0], objects[1], objects[2], objects[3], objects[4]
 

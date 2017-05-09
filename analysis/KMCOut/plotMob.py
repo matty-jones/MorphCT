@@ -86,7 +86,7 @@ def plotConnections(chromophoreList, simExtent, carrierHistory, directory, carri
     ax = p3.Axes3D(fig)
     # Find a good normalisation factor
     carrierHistory = carrierHistory.toarray()
-    normalizeTo = np.log(np.max(carrierHistory))
+    normalizeTo = np.max(carrierHistory)
     for chromo1, row in enumerate(carrierHistory):
         for chromo2, value in enumerate(row):
             if value > 0:
@@ -105,8 +105,9 @@ def plotConnections(chromophoreList, simExtent, carrierHistory, directory, carri
                     #ax.scatter(coords2[0], coords2[1], coords2[2], c = 'k', s = '5')
                     line = [coords2[0] - coords1[0], coords2[1] - coords1[1], coords2[2] - coords2[1]]
                     if (np.abs(coords2[0] - coords1[0]) < simExtent[0] / 2.0) and (np.abs(coords2[1] - coords1[1]) < simExtent[1] / 2.0) and (np.abs(coords2[2] - coords1[2]) < simExtent[2] / 2.0):
-                        colourIntensity = np.log(value) / normalizeTo
-                        ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = plt.cm.jet(colourIntensity), linewidth = 0.5)
+                        #colourIntensity = value / normalizeTo
+                        colourIntensity = np.log10(value) / np.log10(normalizeTo)
+                        ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = plt.cm.Blues(colourIntensity), linewidth = 0.5)
     fileName = '3d' + carrierType + '.pdf'
     plt.savefig(directory + '/' + fileName)
     print("Figure saved as", directory + "/" + fileName)
@@ -254,7 +255,7 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType):
         plt.title(carrierType + ' transport for:' + directory, fontsize = 24)
     ax.dist = 11
     plt.savefig(directory + '/anisotropy' + carrierType + '.pdf')
-    plt.show()
+    #plt.show()
     plt.clf()
     print("Figure saved as", directory + "/anisotropy" + carrierType + ".pdf")
     return anisotropy
@@ -315,7 +316,11 @@ if __name__ == "__main__":
         try:
             with open(directory + '/KMCResults.pickle', 'rb') as pickleFile:
                 carrierData = pickle.load(pickleFile)
+        except UnicodeDecodeError:
+            with open(directory + '/KMCResults.pickle', 'rb') as pickleFile:
+                carrierData = pickle.load(pickleFile, encoding='latin1')
         except:
+            print(sys.exc_info()[0])
             continue
         print("Carrier Data obtained")
         # Now need to split up the carrierData into both electrons and holes
@@ -334,7 +339,10 @@ if __name__ == "__main__":
                         carrierDataElectrons[listVar].append(carrierData[listVar][carrierIndex])
         except:
             print("Multiple charge carriers not found, assuming donor material and holes only")
-            carrierDataHoles = {'carrierHistoryMatrix': carrierData['carrierHistoryMatrix'], 'seed': carrierData['seed']}
+            try:
+                carrierDataHoles = {'carrierHistoryMatrix': carrierData['carrierHistoryMatrix'], 'seed': carrierData['seed']}
+            except KeyError:
+                carrierDataHoles = {'carrierHistoryMatrix': carrierData['carrierHistoryMatrix'], 'seed': 0}
             carrierDataElectrons = None
             for listVar in listVariables:
                 carrierDataHoles[listVar] = []
@@ -347,10 +355,10 @@ if __name__ == "__main__":
 #### NOW DO ALL OF THE BELOW BUT FOR ELECTRONS AND HOLES SEPARATELY
         completeCarrierTypes = []
         completeCarrierData = []
-        if carrierDataHoles is not None:
+        if (carrierDataHoles is not None) and (len(carrierDataHoles['ID']) > 0):
             completeCarrierTypes.append('Hole')
             completeCarrierData.append(carrierDataHoles)
-        if carrierDataElectrons is not None:
+        if (carrierDataElectrons is not None) and (len(carrierDataElectrons['ID']) > 0):
             completeCarrierTypes.append('Electron')
             completeCarrierData.append(carrierDataElectrons)
         for carrierTypeIndex, carrierData in enumerate(completeCarrierData):

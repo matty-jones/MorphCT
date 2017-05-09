@@ -35,7 +35,7 @@ class chromophore:
             # so the list needs to be flattened afterwards.
             electronicallyActiveAAIDs = [AAID for AAIDs in [flattenedCGToAAIDMaster[CGID] for CGID in electronicallyActiveCGSites] for AAID in AAIDs]
         else:
-            # No fine-graining has been performed, by MorphCT, so we know that the input morphology is already atomistic.
+            # No fine-graining has been performed by MorphCT, so we know that the input morphology is already atomistic.
             if len(parameterDict['CGSiteSpecies']) == 1:
                 # If the morphology contains only a single type of electronic species, then the parameterDict['CGSiteSpecies'] should only have one entry, and we can set all chromophores to be this species.
                 electronicallyActiveCGSites = chromophoreCGSites
