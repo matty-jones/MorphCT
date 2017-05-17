@@ -177,6 +177,7 @@ def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
         plt.ylabel('Frequency')
         plt.xlabel('Donor Hopping Rate (s' + r'$^{-1}$' + ')')
         plt.xlim([1,1E18])
+        plt.xticks([1E0, 1E3, 1E6, 1E9, 1E12, 1E15, 1E18])
         #plt.ylim([0,8000])
         plt.legend(loc = 2, prop = {'size':18})
         plt.gca().set_xscale('log')
@@ -237,6 +238,7 @@ def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
         plt.ylabel('Frequency')
         plt.xlabel('Acceptor Hopping Rate (s' + r'$^{-1}$' + ')')
         plt.xlim([1,1E18])
+        plt.xticks([1E0, 1E3, 1E6, 1E9, 1E12, 1E15, 1E18])
         #plt.ylim([0,8000])
         plt.legend(loc = 2, prop = {'size':18})
         plt.gca().set_xscale('log')
@@ -264,6 +266,54 @@ def calculateHopRate(lambdaij, Tij, deltaEij, T):
     # Semiclassical Marcus Hopping Rate Equation
     kij = ((2 * np.pi) / hbar) * (Tij ** 2) * np.sqrt(1.0 / (4 * lambdaij * np.pi * kB * T)) * np.exp(-((deltaEij + lambdaij)**2) / (4 * lambdaij * kB * T))
     return kij
+
+
+def splitMolecules(inputDictionary):
+    # Split the full morphology into individual molecules
+    moleculeAAIDs = []
+    moleculeLengths = []
+    # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
+    bondedAtoms = helperFunctions.obtainBondedList(inputDictionary['bond'])
+    moleculeList = [i for i in range(len(inputDictionary['type']))]
+    # Recursively add all atoms in the neighbour list to this molecule
+    for molID in range(len(moleculeList)):
+        moleculeList = updateMolecule(molID, moleculeList, bondedAtoms)
+    # Create a dictionary of the molecule data
+    moleculeData = {}
+    for atomID in range(len(inputDictionary['type'])):
+        if moleculeList[atomID] not in moleculeData:
+            moleculeData[moleculeList[atomID]] = [atomID]
+        else:
+            moleculeData[moleculeList[atomID]].append(atomID)
+    # Return the list of AAIDs and the lengths of the molecules
+    for moleculeID in list(moleculeData.keys()):
+        moleculeAAIDs.append(sorted(moleculeData[moleculeID]))
+        moleculeLengths.append(len(moleculeData[moleculeID]))
+    return moleculeAAIDs, moleculeLengths
+
+
+def updateMolecule(atomID, moleculeList, bondedAtoms):
+    # Recursively add all neighbours of atom number atomID to this molecule
+    try:
+        for bondedAtom in bondedAtoms[atomID]:
+            # If the moleculeID of the bonded atom is larger than that of the current one,
+            # update the bonded atom's ID to the current one's to put it in this molecule,
+            # then iterate through all of the bonded atom's neighbours
+            if moleculeList[bondedAtom] > moleculeList[atomID]:
+                moleculeList[bondedAtom] = moleculeList[atomID]
+                moleculeList = updateMolecule(bondedAtom, moleculeList, bondedAtoms)
+            # If the moleculeID of the current atom is larger than that of the bonded one,
+            # update the current atom's ID to the bonded one's to put it in this molecule,
+            # then iterate through all of the current atom's neighbours
+            elif moleculeList[bondedAtom] < moleculeList[atomID]:
+                moleculeList[atomID] = moleculeList[bondedAtom]
+                moleculeList = updateMolecule(atomID, moleculeList, bondedAtoms)
+            # Else: both the current and the bonded atom are already known to be in this
+            # molecule, so we don't have to do anything else.
+    except KeyError:
+        # This means that there are no bonded CG sites (i.e. it's a single molecule)
+        pass
+    return moleculeList
 
 
 if __name__ == "__main__":
@@ -325,30 +375,47 @@ if __name__ == "__main__":
             plotHist(tempDir, acceptorDeltaEij, 'AcceptorDeltaEij', gaussBins=acceptorBinEdges, fitArgs=acceptorFitArgs)
             plotHist(tempDir, acceptorBandgap, 'AcceptorBandgap')
 
+        print("Determining molecule IDs...")
         CGIDToMolID = {}
-        # Edit for when CGToAAIDMaster doesn't exist (every chromophore is its own molecule)
-        try:
+        if CGToAAIDMaster is not None:
+            # Normal operation with a CGMorphology defined (fine-graining was performed)
             for molID, molDict in enumerate(CGToAAIDMaster):
                 for CGID in list(molDict.keys()):
                     CGIDToMolID[CGID] = molID
-        except TypeError:
+        elif (len(parameterDict['CGSiteSpecies']) == 1) and (len(parameterDict['AARigidBodySpecies']) == 0):
+            print("Small-molecule system detected, assuming each chromophore is its own molecule...")
+            # When CGMorphology doesn't exist, and no rigid body species have been specified, then 
+            # every chromophore is its own molecule)
             for index, chromo in enumerate(chromophoreList):
                 for CGID in chromo.CGIDs:
                     CGIDToMolID[CGID] = chromo.ID
+        else:
+            # No CGMorphology, but not small molecules either, so determine molecules based on bonds
+            print("Polymeric system detected, determining molecules based on AA bonds (slow calculation)...")
+            moleculeAAIDs, moleculeLengths = splitMolecules(AAMorphologyDict)
+            for index, moleculeAAIDList in enumerate(moleculeAAIDs):
+                for AAID in moleculeAAIDList:
+                    CGIDToMolID[AAID] = index
         donorInterChainHop = []
         donorIntraChainHop = []
         donorInterChainTI = []
         donorIntraChainTI = []
         donorInterChainTITrim = []
         donorIntraChainTITrim = []
-        donorLambdaij = parameterDict['reorganisationEnergyDonor'] * elementaryCharge
         acceptorInterChainHop = []
         acceptorIntraChainHop = []
         acceptorInterChainTI = []
         acceptorIntraChainTI = []
         acceptorInterChainTITrim = []
         acceptorIntraChainTITrim = []
-        acceptorLambdaij = parameterDict['reorganisationEnergyAcceptor'] * elementaryCharge
+        try:
+            if parameterDict['reorganisationEnergyDonor'] is not None:
+                donorLambdaij = parameterDict['reorganisationEnergyDonor'] * elementaryCharge
+            if parameterDict['reorganisationEnergyAcceptor'] is not None:
+                acceptorLambdaij = parameterDict['reorganisationEnergyAcceptor'] * elementaryCharge
+        except KeyError: # Old MorphCT fix
+            print("Only one reorganisation energy found, assuming donor and continuing")
+            donorLambdaij = parameterDict['reorganisationEnergy'] * elementaryCharge
         T = 290
         for chromophore in chromophoreList:
             mol1ID = CGIDToMolID[chromophore.CGIDs[0]]
@@ -389,7 +456,6 @@ if __name__ == "__main__":
                             acceptorInterChainTI.append(chromophore.neighboursTI[index])
                             if chromophore.neighboursTI[index] != 0:
                                 acceptorInterChainTITrim.append(chromophore.neighboursTI[index])
-
         if len(HOMOLevels) > 0:
             if len(donorIntraChainHop) > 0:
                 plotHist(tempDir, donorIntraChainHop, 'DonorIntraChainHop')
@@ -400,6 +466,7 @@ if __name__ == "__main__":
                 plotHist(tempDir, donorInterChainTI, 'DonorInterChainTI')
                 plotHist(tempDir, donorInterChainTITrim, 'DonorInterChainTITrim')
             print("Donor intra-chain hops =", len(donorIntraChainHop), "Donor inter-chain hops =", len(donorInterChainHop))
+            plotHist(tempDir, donorIntraChainHop, 'DonorHopMix', xvals=donorInterChainHop)
         if len(LUMOLevels) > 0:
             if len(acceptorIntraChainHop) > 0:
                 plotHist(tempDir, acceptorIntraChainHop, 'AcceptorIntraChainHop')
@@ -410,9 +477,7 @@ if __name__ == "__main__":
                 plotHist(tempDir, acceptorInterChainTI, 'AcceptorInterChainTI')
                 plotHist(tempDir, acceptorInterChainTITrim, 'AcceptorInterChainTITrim')
             print("Acceptor intra-chain hops =", len(acceptorIntraChainHop), "Acceptor inter-chain hops =", len(acceptorInterChainHop))
-
-        plotHist(tempDir, donorIntraChainHop, 'DonorHopMix', xvals=donorInterChainHop)
-        plotHist(tempDir, acceptorIntraChainHop, 'AcceptorHopMix', xvals=acceptorInterChainHop)
+            plotHist(tempDir, acceptorIntraChainHop, 'AcceptorHopMix', xvals=acceptorInterChainHop)
 
 
         if len(HOMOLevels) > 0:
@@ -421,3 +486,4 @@ if __name__ == "__main__":
         if len(LUMOLevels) > 0:
             print("ACCEPTOR LUMO LEVEL =", np.average(LUMOLevels), "+/-", np.std(LUMOLevels)/np.sqrt(len(LUMOLevels)))
             print("ACCEPTOR BANDGAP =", np.average(acceptorBandgap), "+/-", np.std(acceptorBandgap)/np.sqrt(len(acceptorBandgap)))
+        print("\n")
