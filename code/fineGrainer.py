@@ -46,7 +46,8 @@ class morphology:
             atomisticMorphology = helperFunctions.addUnwrappedPositions(self.CGDictionary)
             # Now write the morphology XML
             helperFunctions.writeMorphologyXML(atomisticMorphology, AAFileName)
-            # And finally write the pickle with the CGDictionary as both the input and output morphologies
+            # And finally write the pickle with the CGDictionary as None (to indicate to MorphCT that no
+            # fine-graining has taken place), but the other parameters assigned as required.
             pickleLocation = './outputFiles/' + self.morphologyName + '/code/' + self.morphologyName + '.pickle'
             helperFunctions.writePickle((atomisticMorphology, None, None, self.parameterDict, self.chromophoreList), pickleLocation)
             return atomisticMorphology, None, None, self.parameterDict, self.chromophoreList

@@ -255,7 +255,7 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType):
         plt.title(carrierType + ' transport for:' + directory, fontsize = 24)
     ax.dist = 11
     plt.savefig(directory + '/anisotropy' + carrierType + '.pdf')
-    #plt.show()
+    plt.show()
     plt.clf()
     print("Figure saved as", directory + "/anisotropy" + carrierType + ".pdf")
     return anisotropy
@@ -297,7 +297,7 @@ if __name__ == "__main__":
     directoryList = []
     if len(sys.argv) == 1:
         for directory in os.listdir(os.getcwd()):
-            if ('py' not in directory) and ('pdf' not in directory) and ('store' not in directory):
+            if ('py' not in directory) and ('pdf' not in directory) and ('store' not in directory) and ('Store' not in directory):
                 directoryList.append(directory)
     else:
         directoryList = [sys.argv[1]]
@@ -308,6 +308,7 @@ if __name__ == "__main__":
     electronAnisotropyData = []
     combinedPlots = True
     for directory in directoryList:
+        print("\n")
         try:
             tempData.append(getTempVal(directory))
         except:

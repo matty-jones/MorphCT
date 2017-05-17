@@ -115,17 +115,23 @@ if __name__ == "__main__":
     #                  'CH2':[[2, 2]], # If the atom type is CH2 and has only 2 bonds, add 2 hydrogens
     #                  'CE':[[1, 3]]}  # If the atom type is CE and has only one bond, add 3 hydrogens
     #sigmaVal = 1.0
-    ## ---==== PERYLENE/PERYLOTHIOPHENE ====---
-    #print("Using data for Perylene/Perylothiophene")
-    #hydrogensToAdd = {'C':[[2, 1]]}
-    #sigmaVal = 3.8
-    # ---==== BDT-TPD ====---
-    print("Using data for BDT-TPD")
-    hydrogensToAdd = {'CS':[[2, 1]],
-                      'C!':[[2, 1]],
-                      'CT':[[2, 2],[1, 3]],
-                      'CP':[[2, 1]]}
-    sigmaVal = 3.905
+    # ---==== PCBM ====---
+    #print("Using data for PCBM")
+    #hydrogensToAdd = {'CHA':[[2, 1]],
+    #                  'CH2':[[2, 2]],
+    #                  'CE':[[1, 3]]}
+    #sigmaVal = 3.75
+    # ---==== PERYLENE/PERYLOTHIOPHENE ====---
+    print("Using data for Perylene/Perylothiophene")
+    hydrogensToAdd = {'C':[[2, 1]]}
+    sigmaVal = 3.8
+    ## ---==== BDT-TPD ====---
+    #print("Using data for BDT-TPD")
+    #hydrogensToAdd = {'CS':[[2, 1]],
+    #                  'C!':[[2, 1]],
+    #                  'CT':[[2, 2],[1, 3]],
+    #                  'CP':[[2, 1]]}
+    #sigmaVal = 3.905
 
     print("THIS FUNCTION IS SET UP TO USE A DICTIONARY TO DEFINE HOW MANY HYDROGENS TO ADD TO BONDS OF A SPECIFIC TYPE WITH A CERTAIN NUMBER OF BONDS")
     print(hydrogensToAdd)
@@ -138,4 +144,4 @@ if __name__ == "__main__":
         hydrogenPositions = calculateHydrogenPositions(morphologyDict, hydrogensToAdd)
         morphologyDict = addHydrogensToMorph(morphologyDict, hydrogenPositions)
         morphologyDict = helperFunctions.addWrappedPositions(morphologyDict)
-        helperFunctions.writeMorphologyXML(morphologyDict, inputFile.replace('.xml','_AA.xml'), sigma = sigmaVal)
+        helperFunctions.writeMorphologyXML(morphologyDict, inputFile.replace('.xml','_AA.xml'))#, sigma = sigmaVal)
