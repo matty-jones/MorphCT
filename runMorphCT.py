@@ -16,7 +16,8 @@ except:
 import obtainChromophores
 import executeZINDO
 import transferIntegrals
-import hoppingKMC
+import mobilityKMC
+import deviceKMC
 
 
 class simulation:
@@ -28,7 +29,8 @@ class simulation:
         # Obtain the slurm job ID (if there is one)
         self.slurmJobID = self.getSlurmID()
         # Parse the parameter file to get more useful file locations
-        self.inputMorphologyFile = self.inputDir+'/'+self.morphology
+        self.inputMorphologyFile = self.inputMorphDir + '/' + self.morphology
+        self.inputDeviceFile = self.inputDeviceDir + '/' + self.deviceMorphology
         self.outputDirectory = self.outputDir+'/'+self.morphology[:-4]
         # Add all the parameters to the parameterDict, which will be used to send everything between classes
         for key, value in self.__dict__.items():
@@ -77,8 +79,12 @@ class simulation:
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = transferIntegrals.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
             print("---=== DETERMINATION COMPLETED ===---")
         if self.executeCalculateMobility is True:
-            print("---=== EXECUTING KINETIC MONTE CARLO SIMULATIONS... ===---")
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hoppingKMC.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
+            print("---=== EXECUTING KINETIC MONTE CARLO MOBILITY SIMULATIONS... ===---")
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = mobilityKMC.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
+            print("---=== EXECUTION COMPLETED ===---")
+        if self.executeDeviceSimulation is True:
+            print("---=== EXECUTING KINETIC MONTE CARLO DEVICE SIMULATIONS... ===---")
+            deviceKMC.execute(parameterDict, chromophoreList)
             print("---=== EXECUTION COMPLETED ===---")
         exit()
 
