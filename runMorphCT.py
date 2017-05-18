@@ -31,7 +31,8 @@ class simulation:
         # Parse the parameter file to get more useful file locations
         self.inputMorphologyFile = self.inputMorphDir + '/' + self.morphology
         self.inputDeviceFile = self.inputDeviceDir + '/' + self.deviceMorphology
-        self.outputDirectory = self.outputDir+'/'+self.morphology[:-4]
+        self.outputMorphologyDirectory = self.outputMorphDir + '/' + self.morphology[:-4]
+        self.outputDeviceDirectory = self.outputDeviceDir + '/' + self.deviceMorphology
         # Add all the parameters to the parameterDict, which will be used to send everything between classes
         for key, value in self.__dict__.items():
             if key in ['os', 'sys']:
@@ -44,7 +45,7 @@ class simulation:
         if self.executeFinegraining is False:
         # Load any previous data to allow us to run individual phases
             try:
-                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict, chromophoreList = helperFunctions.loadPickle(self.outputDirectory+'/code/'+self.morphology[:-4]+'.pickle')
+                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict, chromophoreList = helperFunctions.loadPickle(self.outputMorphologyDirectory+'/code/'+self.morphology[:-4]+'.pickle')
                 # Load in any parameters from the previousParameterDict that have not been already defined in the new parameterDict (e.g. CGTypeMappings):
                 for key, previousValue in previousParameterDict.items():
                     if key not in list(parameterDict.keys()):
@@ -117,17 +118,19 @@ class simulation:
         # Then, make sure that all the required directories are in place
         # TODO: Remove the helperFunctions that mess around with the directory structure, do it all here instead.
         for directoryToMake in ['chromophores/inputORCA/single', 'chromophores/inputORCA/pair','chromophores/outputORCA/single', 'chromophores/outputORCA/pair', 'KMC', 'molecules', 'morphology', 'code']:
-            print('mkdir -p ' + self.outputDirectory + '/' + directoryToMake)
+            print('mkdir -p ' + self.outputMorphologyDirectory + '/' + directoryToMake)
             # Make sure that the mkdir command has finished before moving on
-            os.makedirs(self.outputDirectory + '/' + directoryToMake, exist_ok=True)
+            os.makedirs(self.outputMorphologyDirectory + '/' + directoryToMake, exist_ok=True)
+        print('mkdir -p ' + self.outputDeviceDirectory + '/' + deviceMorphology)
+        os.makedirs(self.outputDeviceDirectory + '/' + deviceMorphology, exist_ok=True)
 
 
     def copyCode(self):
         print("Copying code...")
         codeDir = os.getcwd()+'/code'
-        print('cp '+codeDir+'/*.py '+self.outputDirectory+'/code/')
-        print('cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputDirectory+'/code/')
-        shutil.copy(os.getcwd() + '/' + self.parameterFile, self.outputDirectory + '/code')
+        print('cp '+codeDir+'/*.py '+self.outputMorphologyDirectory+'/code/')
+        print('cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputMorphologyDirectory+'/code/')
+        shutil.copy(os.getcwd() + '/' + self.parameterFile, self.outputMorphologyDirectory + '/code')
         for fileName in glob.glob(codeDir + '/*.py'):
-            shutil.copy(fileName, self.outputDirectory+'/code/')
-        shutil.copy(os.getcwd()+'/'+self.parameterFile, self.outputDirectory+'/code/')
+            shutil.copy(fileName, self.outputMorphologyDirectory+'/code/')
+        shutil.copy(os.getcwd()+'/'+self.parameterFile, self.outputMorphologyDirectory+'/code/')
