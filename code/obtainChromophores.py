@@ -2,14 +2,6 @@ import numpy as np
 import sys
 import helperFunctions
 import copy
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-try:
-    import mpl_toolkits.mplot3d.axes3d as p3
-except ImportError:
-    print("Could not import 3D plotting engine, calling the plotMolecule3D function will result in an error!")
-    pass
 
 
 class chromophore:
@@ -328,42 +320,6 @@ def determineNeighbours(chromophoreList, parameterDict, simDims):
         #     plotChromoNeighbours(chromophore1, chromophoreList, simDims)
     print("")
     return chromophoreList
-
-
-def plotChromoNeighbours(chromophore, chromophoreList, simDims):
-    fig = plt.figure()
-    ax = p3.Axes3D(fig)
-    ax.scatter(chromophore.posn[0], chromophore.posn[1], chromophore.posn[2], s=50, c='r')
-#    for chromophore in chromophoreList:
-#        position = chromophore.posn
-#        for axis in range(3):
-#            while position[axis] >= simDims[axis][1]:
-#                position[axis] -= simDims[axis][1] - simDims[axis][0]
-#            while position[axis] <= simDims[axis][0]:
-#                position[axis] += simDims[axis][1] - simDims[axis][0]
-#        ax.scatter(position[0], position[1], position[2], s = 5, c = 'k')
-    print("PLOTTING")
-    print(simDims)
-    for neighbour in chromophore.neighbours:
-        neighbourID = neighbour[0]
-        neighbourImage = neighbour[1]
-        neighbourChromo = chromophoreList[neighbourID]
-        if neighbourChromo.ID != neighbourID:
-            raise SystemError("WRONG CHROMO")
-        neighbourPosn = copy.deepcopy(neighbourChromo.posn)
-        for axis in range(3):
-            simLength = simDims[axis][1] - simDims[axis][0]
-            neighbourPosn[axis] += neighbourImage[axis] * simLength
-        print(neighbourID, neighbourChromo.posn, neighbourImage, neighbourPosn)
-        ax.scatter(neighbourPosn[0], neighbourPosn[1], neighbourPosn[2], s=50, c='b')
-        ax.scatter(neighbourChromo.posn[0], neighbourChromo.posn[1], neighbourChromo.posn[2], s=50, c='g')
-    # Finally, draw box
-    ax.set_xlim(1.1 * np.array(simDims[0]))
-    ax.set_ylim(1.1 * np.array(simDims[1]))
-    ax.set_zlim(1.1 * np.array(simDims[2]))
-    plt.savefig('./test.pdf')
-    plt.show()
-    exit()
 
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):

@@ -6,14 +6,7 @@ import random as R
 from scipy.sparse import lil_matrix
 import pickle
 import subprocess as sp
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 import helperFunctions
-try:
-    import mpl_toolkits.mplot3d.axes3d as p3
-except ImportError:
-    print("Could not import 3D plotting engine, calling the plotCarrier subroutine will result in an error!")
 
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
