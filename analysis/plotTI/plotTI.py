@@ -382,7 +382,7 @@ if __name__ == "__main__":
             for molID, molDict in enumerate(CGToAAIDMaster):
                 for CGID in list(molDict.keys()):
                     CGIDToMolID[CGID] = molID
-        elif (len(parameterDict['CGSiteSpecies']) == 1) and (len(parameterDict['AARigidBodySpecies']) == 0):
+        elif (len(parameterDict['CGSiteSpecies']) == 1) and (('AARigidBodySpecies' not in parameterDict) or (len(parameterDict['AARigidBodySpecies']) == 0)):   # The not in is a catch for the old PAH systems
             print("Small-molecule system detected, assuming each chromophore is its own molecule...")
             # When CGMorphology doesn't exist, and no rigid body species have been specified, then 
             # every chromophore is its own molecule)
