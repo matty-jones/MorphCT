@@ -76,6 +76,7 @@ class chromophore:
         # The self.neighbours list contains one element for each chromophore within parameterDict['maximumHopDistance']
         # of this one (including periodic boundary conditions). Its format is [[neighbour1ID, relativeImageOfNeighbour1],...]
         self.neighbours = []
+        self.dissociationNeighbours = []
         # The molecular orbitals of this chromophore have not yet been calculated, but they will simply be floats.
         self.HOMO = None
         self.HOMO_1 = None
@@ -281,9 +282,11 @@ def determineNeighbours(chromophoreList, parameterDict, simDims):
             # Skip if chromo2 is chromo1
             if chromophore1.ID == chromophore2.ID:
                 continue
+
             # Skip if chromo2 is a different electroactive species to chromo1
             if chromophore1.species != chromophore2.species:
                 continue
+
             deltaPosn = chromophore2.posn - chromophore1.posn
             relativeImageOfChromo2 = [0, 0, 0]
             # Consider periodic boundary conditions
@@ -301,15 +304,21 @@ def determineNeighbours(chromophoreList, parameterDict, simDims):
                 # Only add the neighbours if they haven't already been added so far
                 chromo1NeighbourIDs = [neighbourData[0] for neighbourData in chromophore1.neighbours]
                 chromo2NeighbourIDs = [neighbourData[0] for neighbourData in chromophore2.neighbours]
+                chromo1DissociationNeighbourIDs = [neighbourData[0] for neighbourData in chromophore1.dissociationNeighbours]
+                chromo2DissociationNeighbourIDs = [neighbourData[0] for neighbourData in chromophore2.dissociationNeighbours]
                 # Also, make the deltaE and the Tij lists as long as the neighbour lists for easy access later
-                if chromophore2.ID not in chromo1NeighbourIDs:
+                if (chromophore1.species == chromophore2.species) and (chromophore2.ID not in chromo1NeighbourIDs):
                     chromophore1.neighbours.append([chromophore2.ID, relativeImageOfChromo2])
                     chromophore1.neighboursDeltaE.append(None)
                     chromophore1.neighboursTI.append(None)
-                if chromophore1.ID not in chromo2NeighbourIDs:
+                elif (chromophore1.species != chromophore2.species) and (chromophore2.ID not in chromo2DissociationNeighbourIDs):
+                    chromophore1.dissociationNeighbours.append([chromophore2.ID, relativeImageOfChromo2])
+                if (chromophore1.species == chromophore2.species) and (chromophore1.ID not in chromo2NeighbourIDs):
                     chromophore2.neighbours.append([chromophore1.ID, list(-np.array(relativeImageOfChromo2))])
                     chromophore2.neighboursDeltaE.append(None)
                     chromophore2.neighboursTI.append(None)
+                elif (chromophore1.species != chromophore2.species) and (chromophore1.ID not in chromo1DissociationNeighbourIDs):
+                    chromophore2.dissociationNeighbours.append([chromophore1.ID, relativeImageOfChromo1])
         # DEBUG TESTING
         # if chromophore1.ID == 1961:
         #     print ""
