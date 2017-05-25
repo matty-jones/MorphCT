@@ -313,7 +313,7 @@ def determineNeighbours(chromophoreList, parameterDict, simDims):
                     chromophore2.neighboursDeltaE.append(None)
                     chromophore2.neighboursTI.append(None)
                 elif (chromophore1.species != chromophore2.species) and (chromophore1.ID not in chromo1DissociationNeighbourIDs):
-                    chromophore2.dissociationNeighbours.append([chromophore1.ID, relativeImageOfChromo1])
+                    chromophore2.dissociationNeighbours.append([chromophore1.ID, list(-np.array(relativeImageOfChromo2))])
         # DEBUG TESTING
         # if chromophore1.ID == 1961:
         #     print ""
