@@ -282,11 +282,6 @@ def determineNeighbours(chromophoreList, parameterDict, simDims):
             # Skip if chromo2 is chromo1
             if chromophore1.ID == chromophore2.ID:
                 continue
-
-            # Skip if chromo2 is a different electroactive species to chromo1
-            if chromophore1.species != chromophore2.species:
-                continue
-
             deltaPosn = chromophore2.posn - chromophore1.posn
             relativeImageOfChromo2 = [0, 0, 0]
             # Consider periodic boundary conditions
