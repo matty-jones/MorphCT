@@ -71,6 +71,12 @@ class chromophoreDataContainer:
     def returnClosestChromophoreToPosition(self, devicePosition, desiredPosition):
         closestChromoID = None
         closestDistance = 1E99
+        try:
+            deviceMoietyType = self.deviceArray[tuple(devicePosition)]
+        except IndexError:
+            # There is no device position that exists at these coordinates, and so we have a hop taking place that leaves the active layer
+            # TODO THIS IS WHERE I GOT UP TO BEFORE EVAN
+
         for chromophore in moietyDictionary[deviceMoietyType].chromophoreList:
             separation = helperFunctions.calculateSeparation(desiredPosition, chromophore.posn)
             if separation < closestDistance:
@@ -468,10 +474,9 @@ def execute(parameterDict):
             hoppingCarrier.calculateBehaviour()
             if hoppingCarrier.hopTime is not None:
                 heapq.heappush(eventQueue, (hoppingCarrier.hopTime, 'carrierHop', hoppingCarrier))
-            else:
-                # The carrier has become stuck (this should only be possible if we've crossed a device cell boundary and dropped the carrier on a chromophore with no corrections).
-                # The best way to deal with this is to not queue it up, but leave it in the carrier dictionary so that it still affects the energetic landscape and can be recombined with.
-                # Otherwise it will just sit here for the rest of the simulation and not do anything. Not sure if I like that.
+            # Else: The carrier has become stuck (this should only be possible if we've crossed a device cell boundary and dropped the carrier on a chromophore with no corrections).
+            # The best way to deal with this is to not queue it up, but leave it in the carrier dictionary so that it still affects the energetic landscape and can be recombined with.
+            # Otherwise it will just sit here for the rest of the simulation and not do anything. Not sure if I like that.
 
         elif nextEvent[1] == 'recombine':
             raise SystemError("No recombine yet")
