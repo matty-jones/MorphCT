@@ -15,6 +15,11 @@ if __name__ == "__main__":
         AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
         simDims = [[-AAMorphologyDict['lx']/2.0, AAMorphologyDict['lx']/2.0], [-AAMorphologyDict['ly']/2.0, AAMorphologyDict['ly']/2.0], [-AAMorphologyDict['lx']/2.0, AAMorphologyDict['lz']/2.0]]
         for chromo1 in chromophoreList:
+            # Create the dissociation neighbours list if this chromophore does not have one, then populate it
+            try:
+                chromo1.dissociationNeighbours
+            except:
+                chromo1.dissociationNeighbours = []
             for chromo2 in chromophoreList:
                 if chromo1.ID == chromo2.ID:
                     continue
@@ -44,5 +49,3 @@ if __name__ == "__main__":
                         if chromo1.ID not in chromo2NeighbourIDs:
                             chromo2.dissociationNeighbours.append([chromo1.ID, list(-np.array(relativeImageOfChromo2))])
         helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleFile)
-
-
