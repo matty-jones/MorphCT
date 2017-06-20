@@ -53,6 +53,14 @@ The intention of this code is to:
     *The `templates` directory contains blank versions of all the files required to make MorphCT run. For instance, `parTemplate.py` is a blank `parXX.py` file that `generateParameterFile.py` reads in and modifies in order to generate a new MorphCT job. `template.inp` is the blank ZINDO/S input file for the ORCA simulation suite, which is used to perform the electronic structure calculations. `sample.sh` is a SLURM script which can be used to send MorphCT jobs to a cluster. Finally, `template.xml` is a blank HOOMD XML file, which is populated with the atomistic morphology after the relaxed atomic positions have been determined.
     Within this directory, the user should place their atomistic templates corresponding to the coarse-grained morphologies in the inputCGMorphs directory. An example has been provided in the repository and explained in [Example - P3HT Simulation](#example).*
 
+For convenience, the MorphCT home directory also contains two conda environment files: `hoomd1.yml` and `hoomd2.yml`. When activated, these environment files download all of the prerequisite python3 modules for MorphCT. In general, only `hoomd1.yml` is required, as MorphCT is written for HOOMD 1.3. The `hoomd2.yml` includes the latest conda build of HOOMD which can be used with some analysis scripts, but is otherwise unused due to the difficulty in characterising and manipulating rigid bodies.
+
+To install the environment file, first ensure that [Miniconda](https://conda.io/miniconda.html) is located on the machine being used, and that the `PYTHONPATH` environment variable is set to use Miniconda's instance of python.
+
+From the MorphCT home directory, the environment can be set-up with `conda env create -f hoomd1.yml`. This only has to be done once per machine, as it will install all of the python modules that MorphCT needs to function correctly.
+
+Finally, activate the environment with `source activate hoomd1.3`. Note that the environment will need to be active in order to run MorphCT, so ensure that any new terminal windows and submission scripts correctly activate the environment.
+
 ---
 
 # General Code Comments #
