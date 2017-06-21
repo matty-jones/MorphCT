@@ -173,12 +173,13 @@ class exciton:
 
     def calculateHopRate(self, rij, deltaEij):
         # Foerster Transport Hopping Rate Equation
+        preFactor = 1E-4       # Bit of a bodge to try and get the mean-free paths of the excitons more in line with the 5nm of experiment. Possible citation: 10.3390/ijms131217019 (they don't do the simulation they just point out some limitations of FRET which assumes point-dipoles which doesn't necessarily work in all cases)
         if deltaEij <= 0:
             boltzmannFactor = 1
         else:
             boltzmannFactor = np.exp(-(elementaryCharge * deltaEij)/(kB * self.T))
 
-        kFRET = (1/self.lifetimeParameter) * (self.rF / rij)**6 * boltzmannFactor
+        kFRET = preFactor * (1/self.lifetimeParameter) * (self.rF / rij)**6 * boltzmannFactor
         return kFRET
 
     def determineHopTime(self, rate):
@@ -712,32 +713,44 @@ def execute(parameterDict):
 
     print("Plotting Exciton Characteristics")
     plt.figure()
-    plt.hist(dissExcitonDisp, bins=10)
-    plt.title('dissExcitonDisp')
+    plt.hist(dissExcitonDisp, bins=15)
+    plt.title('Displacement until Dissociation')
+    plt.xlabel('Displacement, nm')
+    plt.ylabel('Frequency, Arb. U.')
     plt.savefig('./dissExcitonDisp.pdf')
     plt.clf()
 
-    plt.hist(dissExcitonTime, bins=10)
-    plt.title('dissExcitonTime')
+    plt.hist(np.array(dissExcitonTime) * 1E9, bins=15)
+    plt.title('Time until Dissociation')
+    plt.xlabel('Time, ns')
+    plt.ylabel('Frequency, Arb. U.')
     plt.savefig('./dissExcitonTime.pdf')
     plt.clf()
 
-    plt.hist(recExcitonDisp, bins=10)
-    plt.title('recExcitonDisp')
+    plt.hist(recExcitonDisp, bins=15)
+    plt.title('Displacement until Recombination')
+    plt.xlabel('Displacement, nm')
+    plt.ylabel('Frequency, Arb. U.')
     plt.savefig('./recExcitonDisp.pdf')
     plt.clf()
 
-    plt.hist(recExcitonTime, bins=10)
-    plt.title('recExcitonTime')
+    plt.hist(np.array(recExcitonTime) * 1E10, bins=15)
+    plt.title('Time until Recombination')
+    plt.xlabel('Time, ns')
+    plt.ylabel('Frequency, Arb. U.')
     plt.savefig('./recExcitonTime.pdf')
     plt.clf()
 
-    plt.hist(numberOfHops, bins=10)
+    plt.hist(numberOfHops, bins=15)
     plt.title('numberOfHops')
     plt.savefig('./numberOfExcitonHops.pdf')
     plt.clf()
 
     print("XDE =", numberOfDissociations/parameterDict['minimumNumberOfPhotoinjections'])
+    print("Mean/SD DissDisp =", np.mean(dissExcitonDisp), "+-", np.std(dissExcitonDisp)/np.sqrt(len(dissExcitonDisp)))
+    print("Mean/SD DissTime =", np.mean(dissExcitonTime), "+-", np.std(dissExcitonTime)/np.sqrt(len(dissExcitonTime)))
+    print("Mean/SD RecDisp =", np.mean(recExcitonDisp), "+-", np.std(recExcitonDisp)/np.sqrt(len(recExcitonDisp)))
+    print("Mean/SD RecTime =", np.mean(recExcitonTime), "+-", np.std(recExcitonTime)/np.sqrt(len(recExcitonTime)))
 
     #plotConnections(excitonPath, chromophoreData.returnChromophoreList([1,8,6]), morphologyData.returnAAMorphology([1,8,6]))
 
