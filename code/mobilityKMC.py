@@ -23,7 +23,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
             carrierList.append([carrierNo, lifetime, 'Electron'])
     # The carrierList is now like the ORCAJobsList, so split it over each procID
     procIDs = parameterDict['procIDs']
-    outputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/KMC'
+    outputDir = parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/KMC'
     jobsList = [carrierList[i:i + (int(np.ceil(len(carrierList) / len(procIDs)))) + 1] for i in range(0, len(carrierList), int(np.ceil(len(carrierList)/float(len(procIDs)))))]
     print("Writing job pickles for each CPU...")
     runningJobs = []

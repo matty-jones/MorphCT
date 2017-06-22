@@ -128,16 +128,25 @@ class simulation:
                 # Make sure that the mkdir command has finished before moving on
                 os.makedirs(self.outputMorphologyDirectory + '/' + directoryToMake, exist_ok=True)
         if self.deviceMorphology is not None:
-            print('mkdir -p ' + self.outputDeviceDirectory + '/' + self.deviceMorphology)
-            os.makedirs(self.outputDeviceDirectory + '/' + self.deviceMorphology, exist_ok=True)
+            for deviceDirectoryToMake in ['code', 'KMC']:
+                print('mkdir -p ' + self.outputDeviceDirectory + '/' + deviceDirectoryToMake)
+                os.makedirs(self.outputDeviceDirectory + '/' + deviceDirectoryToMake, exist_ok=True)
 
 
     def copyCode(self):
         print("Copying code...")
         codeDir = os.getcwd()+'/code'
-        print('cp '+codeDir+'/*.py '+self.outputMorphologyDirectory+'/code/')
-        print('cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputMorphologyDirectory+'/code/')
-        shutil.copy(os.getcwd() + '/' + self.parameterFile, self.outputMorphologyDirectory + '/code')
-        for fileName in glob.glob(codeDir + '/*.py'):
-            shutil.copy(fileName, self.outputMorphologyDirectory+'/code/')
-        shutil.copy(os.getcwd()+'/'+self.parameterFile, self.outputMorphologyDirectory+'/code/')
+        if self.deviceMorphology is None:
+            print('cp '+codeDir+'/*.py '+self.outputMorphologyDirectory+'/code/')
+            print('cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputMorphologyDirectory+'/code/')
+            shutil.copy(os.getcwd() + '/' + self.parameterFile, self.outputMorphologyDirectory + '/code')
+            for fileName in glob.glob(codeDir + '/*.py'):
+                shutil.copy(fileName, self.outputMorphologyDirectory+'/code/')
+            shutil.copy(os.getcwd() + '/' + self.parameterFile, self.outputMorphologyDirectory + '/code/')
+        else:
+            print('cp '+codeDir+'/*.py '+self.outputDeviceDirectory+'/code/')
+            print('cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputDeviceDirectory+'/code/')
+            shutil.copy(os.getcwd() + '/' + self.parameterFile, self.outputDeviceDirectory + '/code')
+            for fileName in glob.glob(codeDir + '/*.py'):
+                shutil.copy(fileName, self.outputDeviceDirectory+'/code/')
+            shutil.copy(os.getcwd() + '/' + self.parameterFile, self.outputDeviceDirectory + '/code/')
