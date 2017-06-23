@@ -223,7 +223,6 @@ class carrier:
             self.carrierType = ELECTRON
             self.lambdaij = parameterDict['reorganisationEnergyAcceptor']
         self.relativePermittivity = parameterDict['relativePermittivity']
-        self.calculateBehaviour()
 
     def calculateBehaviour(self):
         [self.destinationChromophore, self.hopTime, self.destinationImage] = self.calculateHop()
@@ -259,13 +258,12 @@ class carrier:
             # Ignore any hops with a NoneType transfer integral (usually due to an ORCA error)
             if transferIntegral is None:
                 continue
-            # TODO Need to include the additional deltaEij terms here
             destinationChromophore = globalChromophoreData.returnChromophoreList(self.currentDevicePosn)[self.currentChromophore.neighbours[neighbourIndex][0]]
             # Need to determine the relative image between the two (recorded in obtainChromophores) to check if the carrier is hopping out of this morphology cell and into an adjacent one
             neighbourRelativeImage = self.currentChromophore.neighbours[neighbourIndex][1]
             deltaEij = self.calculatePotential(destinationChromophore, neighbourRelativeImage, self.currentChromophore.neighboursDeltaE[neighbourIndex])
-            # All of the energies are in eV currently, so convert them to J
-            hopRate = self.calculateHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge)
+            # All of the energies (EXCEPT EIJ WHICH IS ALREADY IN J) are in eV currently, so convert them to J
+            hopRate = self.calculateHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij)
             hopTime = self.determineHopTime(hopRate)
             # Keep track of the chromophoreID and the corresponding tau
             hopTimes.append([destinationChromophore, hopTime, neighbourRelativeImage])
@@ -322,47 +320,51 @@ class carrier:
     def calculatePotential(self, destinationChromophore, neighbourRelativeImage, chromoEij):
         global globalCarrierDict
 
-        # The potential will be calculated in eV
+        # The potential will be calculated in J
         currentAbsolutePosition = np.array(self.currentDevicePosn)*parameterDict['morphologyCellSize'] + (np.array(self.currentChromophore.posn) * 1E-10)
-        destinationZ = (np.array(self.currentDevicePosn) + np.array(neighbourRelativeImage))*parameterDict['morphologyCellSize'] + (np.array(destinationChromophore.posn) * 1E-10)[2]
+        destinationZ = ((np.array(self.currentDevicePosn) + np.array(neighbourRelativeImage))*parameterDict['morphologyCellSize'] + (np.array(destinationChromophore.posn) * 1E-10))[2]
         zSep = destinationZ - currentAbsolutePosition[2]
-        charge = (2 * self.carrierType) - 1
+        charge = elementaryCharge * ((2 * self.carrierType) - 1)
         totalPotential = (zSep * currentFieldValue * charge) + (chromoEij * charge)
         # Coulombic component!
         coulombicPotential = 0.0
         coulombConstant = 1.0 / (4 * np.pi * epsilonNought * self.relativePermittivity)
-        for carrier in globalCarrierDict:
+        for carrier in globalCarrierDict.values():
             # Each carrier feels coulombic effects from every other carrier in the system, along with the image charges induced in the top and bottom contacts, AND the image charges induced by the image charges.
             # The image charges are needed in order to keep the contacts as perfect metals (i.e. no internal electric field)
             # Check papers from Chris Groves and Ben Lyons for more details.
+            # TODO I can't work out how image charges work (and whether their effect is negligible anyway) so for now I'm just ignoring them
             carrierPosn = np.array(carrier.currentDevicePosn)*parameterDict['morphologyCellSize'] + (np.array(carrier.currentChromophore.posn) * 1E-10)
             if carrier.ID != self.ID:
                 # Only consider the current carrier if it is not us!
-                separation = np.linalg.norm(currentAboslutePosition - carrierPosn)
-                coulombicPotential += ((2 * self.carrierType) - 1) * (coulombConstant / separation)
-            # Now consider the image charges and the images of the images.
-            # First do the top image charge
-            deviceZSize = globalChromophoreData.deviceArray.shape[2] * parameterDict['morphologyCellSize']
-            topImagePosn = copy.deepcopy(carrierPosn)
-            topImagePosn[2] = deviceZSize + (deviceZSize - carrierPosn[2])
-            separation = np.linalg.norm(currentAbsolutePosition - topImagePosn)
-            coulombicPotential -= ((2 * self.carrierType) - 1) * (coulombConstant / separation)
-            # Now do the bottom image charge
-            bottomImagePosn = copy.deepcopy(carrierPosn)
-            bottomImagePosn[2] = - carrierPosn[2]
-            separation = np.linalg.norm(currentAbsolutePosition - bottomImagePosn)
-            coulombicPotential -= ((2 * self.carrierType) - 1) * (coulombConstant / separation)
-            # Now do the top image of the bottom image charge
-            topImageOfBottomImagePosn = copy.deepcopy(carrierPosn)
-            topImageOfBottomImagePosn[2] = (2 * deviceZSize) + carrierPosn[2]
-            separation = np.linalg.norm(currentAbsolutePosition - topImageOfBottomImagePosn)
-            coulombicPotential -= ((2 * self.carrierType) -1 ) * (coulombConstant / separation)
-            # And finally the bottom image of the top image charge
-            bottomImageOfTopImagePosn = copy.deepcopy(carrierPosn)
-            bottomImageOfTopImagePosn[2] = - (deviceZSize + (deviceZSize - carrierPosn[2]))
-            separation = np.linalg.norm(currentAbsolutePosition - bottomImageOfTopImagePosn)
-            coulombicPotential -= ((2 * self.carrierType) - 1) * (coulombConstant / separation)
-        print(coulombicPotential, zSep * currentFieldValue * charge, chromoEij * charge)
+                separation = np.linalg.norm(currentAbsolutePosition - carrierPosn)
+                # TODO If separation < 1E-9, create a recombination event here in the carriers
+                coulombicPotential += coulombConstant * ((elementaryCharge * ((2 * self.carrierType) - 1)) * (elementaryCharge * ((2 * carrier.carrierType) - 1)) / separation)
+            ## Now consider the image charges and the images of the images.
+            ## First do the top image charge
+            #deviceZSize = globalChromophoreData.deviceArray.shape[2] * parameterDict['morphologyCellSize']
+            #topImagePosn = copy.deepcopy(carrierPosn)
+            #topImagePosn[2] = deviceZSize + (deviceZSize - carrierPosn[2])
+            #separation = np.linalg.norm(currentAbsolutePosition - topImagePosn)
+            #coulombicPotential -= ((2 * self.carrierType) - 1) * (coulombConstant / separation)
+            ## Now do the bottom image charge
+            #bottomImagePosn = copy.deepcopy(carrierPosn)
+            #bottomImagePosn[2] = - carrierPosn[2]
+            #separation = np.linalg.norm(currentAbsolutePosition - bottomImagePosn)
+            #coulombicPotential -= ((2 * self.carrierType) - 1) * (coulombConstant / separation)
+            ## Now do the top image of the bottom image charge
+            #topImageOfBottomImagePosn = copy.deepcopy(carrierPosn)
+            #topImageOfBottomImagePosn[2] = (2 * deviceZSize) + carrierPosn[2]
+            #separation = np.linalg.norm(currentAbsolutePosition - topImageOfBottomImagePosn)
+            #coulombicPotential -= ((2 * self.carrierType) -1 ) * (coulombConstant / separation)
+            ## And finally the bottom image of the top image charge
+            #bottomImageOfTopImagePosn = copy.deepcopy(carrierPosn)
+            #bottomImageOfTopImagePosn[2] = - (deviceZSize + (deviceZSize - carrierPosn[2]))
+            #separation = np.linalg.norm(currentAbsolutePosition - bottomImageOfTopImagePosn)
+            #coulombicPotential -= ((2 * self.carrierType) - 1) * (coulombConstant / separation)
+        #print(currentAbsolutePosition)
+        #print(currentAbsolutePosition[2], destinationZ, zSep)
+        #print(coulombicPotential, zSep * currentFieldValue * charge, chromoEij * charge)
         raise SystemError("CHECK MAGNITUDES BEFORE CONTINUING")
         totalPotential += coulombicPotential
         return totalPotential
@@ -440,7 +442,7 @@ def plotConnections(excitonPath, chromophoreList, AADict):
     print("Figure saved as ./" + fileName)
 
 
-def execute(deviceArray, chromophoreData, morphologyData, parameterDict):
+def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal):
     # ---=== PROGRAMMER'S NOTE ===---
     # This `High Resolution' version of the code will permit chromophore-based hopping through the device, rather than just approximating the distribution. We have the proper resolution there, let's just use it!
     # ---=========================---
@@ -451,6 +453,16 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict):
 
     globalChromophoreData = chromophoreData
     globalMorphologyData = morphologyData
+    # Given a voltage, the field value corresponding to it = ((bandgap - el_inj_barrier - ho_inj_barrier) / z-extent) 
+    currentFieldValue = (
+        # Bandgap:
+        ((parameterDict['acceptorLUMO'] - parameterDict['donorHOMO']) -
+        # Electron Inject Barrier:
+        (parameterDict['acceptorLUMO'] - parameterDict['cathodeWorkFunction']) -
+        # Hole Inject Barrier:
+        (parameterDict['anodeWorkFunction'] - parameterDict['donorHOMO'])) /
+        # Z-extent:
+        (deviceArray.shape[2] * parameterDict['morphologyCellSize']))
 
     # DEBUG
     #morphCellSizes = []
@@ -543,13 +555,17 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict):
                     print("EVENT: Exciton Dissociating!")
                     numberOfDissociations += 1
                     numberOfHops.append(injectedExciton.numberOfHops)
+                    # Create the carrier instances, but don't yet calculate their behaviour (need to add them to the carrier list before we can calculate the energetics)
+                    # Also add the carriers to the carrier dictionary for when we need to calc deltaE in the device
                     injectedElectron = carrier(carrierIndex, globalTime, injectedExciton.currentDevicePosn, injectedExciton.electronChromophore, 'Exciton', parameterDict)
                     globalCarrierDict[carrierIndex] = injectedElectron
                     carrierIndex += 1
                     injectedHole = carrier(carrierIndex, globalTime, injectedExciton.currentDevicePosn, injectedExciton.holeChromophore, 'Exciton', parameterDict)
-                    # Add the hole to the carrier list for when we need to calc deltaE in the device
                     globalCarrierDict[carrierIndex] = injectedHole
                     carrierIndex += 1
+                    # Now determine the behaviour of both carriers
+                    injectedElectron.calculateBehaviour()
+                    injectedHole.calculateBehaviour()
                     # Now add both carriers' next hops to the KMC queue
                     heapq.heappush(eventQueue, (injectedElectron.hopTime, 'carrierHop', injectedElectron))
                     heapq.heappush(eventQueue, (injectedHole.hopTime, 'carrierHop', injectedHole))
@@ -600,14 +616,17 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict):
                     numberOfHops.append(injectedExciton.numberOfHops)
                     # Plop an electron down on the electronChromophore of the dissociating exciton
                     injectedElectron = carrier(carrierIndex, globalTime, hoppingExciton.currentDevicePosn, hoppingExciton.electronChromophore, 'Exciton', parameterDict)
+                    carrierIndex += 1
                     # Add the electron to the carrier list for when we need to calc deltaE in the device
                     globalCarrierDict[carrierIndex] = injectedElectron
-                    carrierIndex += 1
                     # Plop a hole down on the holeChromophore of the dissociating exciton
                     injectedHole = carrier(carrierIndex, globalTime, hoppingExciton.currentDevicePosn, hoppingExciton.holeChromophore, 'Exciton', parameterDict)
+                    carrierIndex += 1
                     # Add the hole to the carrier list for when we need to calc deltaE in the device
                     globalCarrierDict[carrierIndex] = injectedHole
-                    carrierIndex += 1
+                    # Now determine the behaviour of both carriers
+                    injectedElectron.calculateBehaviour()
+                    injectedHole.calculateBehaviour()
                     # Now add both carriers' next hops to the KMC queue
                     print(injectedElectron.hopTime)
                     print(injectedHole.hopTime)
@@ -754,4 +773,5 @@ if __name__ == "__main__":
         #helperFunctions.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinity..."])
 
     # Begin the simulation
-    execute(deviceArray, chromophoreData, morphologyData, parameterDict)
+    for voltageVal in jobsToRun:
+        execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal)
