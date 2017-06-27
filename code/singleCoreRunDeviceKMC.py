@@ -354,6 +354,18 @@ class carrier:
         return totalPotential
 
 
+class injectSite:
+    def __init__(self, devicePosn, chromophore, injectRate, electrode):
+        self.devicePosn = devicePosn
+        self.chromophore = chromophore
+        self.injectRate = injectRate
+        self.electrode = electrode
+        self.injectTime = self.calculateInjectTime()
+
+    def calculateInjectTime(self):
+        return determineHopTime(injectRate)
+
+
 def plotHopDistance(distribution):
     plt.figure()
     plt.hist(distribution)
@@ -382,11 +394,6 @@ def calculatePhotoinjectionRate(parameterDict, deviceShape):
     return rate
 
 
-def calculateDarkInjectionRate(parameterDict, deviceShape):
-    # No Dark current just yet - it'll be hard to determine
-    return 1E99
-
-
 def decrementTime(eventQueue, eventTime):
     global globalTime
     # A function that increments the global time by whatever the time this event is, and
@@ -394,8 +401,6 @@ def decrementTime(eventQueue, eventTime):
     globalTime += eventTime
     eventQueue = [(event[0] - eventTime, event[1], event[2]) for event in eventQueue]
     return eventQueue
-
-
 
 
 def plotConnections(excitonPath, chromophoreList, AADict):
@@ -426,13 +431,10 @@ def plotConnections(excitonPath, chromophoreList, AADict):
     print("Figure saved as ./" + fileName)
 
 
-def calculateDarkCurrentInjectRates(deviceArray, carrierIndex, parameterDict):
-    injectOptions = []
+def calculateDarkCurrentInjectRates(deviceArray, parameterDict):
+    injectQueue = []
     # Get the device shape so that we know which cells to inject into
     deviceShape = deviceArray.shape
-    # Create a pair of "dummy carriers" so that we can calculate the hopping rate and append the injectOptions list
-    dummyHole = carrier(0, 0, None, None, None, parameterDict)
-    dummyElectron = carrier(0, 0, None, None, None, parameterDict)
     # Calculate the important energy levels
     bandgap = parameterDict['acceptorLUMO'] - parameterDict['donorHOMO']
     electronInjectBarrier = parameterDict['acceptorLUMO'] - parameterDict['cathodeWorkFunction']
@@ -443,27 +445,68 @@ def calculateDarkCurrentInjectRates(deviceArray, carrierIndex, parameterDict):
         for yVal in range(deviceShape[1]):
             injectChromophores = []
             AAMorphology = globalMorphologyData.returnAAMorphology([xVal, yVal, zVal])
-            for chromophore in globalChromophoreData.returnChromophoreList([xVal, yVal, zVal]):
+            morphologyChromophores = globalChromophoreData.returnChromophoreList([xVal, yVal, zVal])
+            for chromophore in morphologyChromophores:
                 # Find all chromophores that are within the bottom nanometer (10 Ang) of the device cell
                 if chromophore.posn[2] <= -(AAMorphology['lz'] / 2.0) + 10:
                     injectChromophores.append(chromophore)
             for chromophore in injectChromophores:
                 if chromophore.species == 'Donor':
+                    # Injecting a hole from the cathode (easy)
+                    deltaE = elementaryCharge * (holeInjectBarrier + (chromophore.HOMO - parameterDict['donorHOMO']))
+                else:
+                    # Injecting an electron from the cathode (hard)
                     deltaE = elementaryCharge * (bandgap - holeInjectBarrier - (chromophore.HOMO - parameterDict['donorHOMO']))
-                    estimatedTransferIntegral = np.average(chromophore.neighboursTI)
-                    injectedHole = carrier(carrierIndex, globalTime, None, None, 'Cathode', parameterDict)
-                    carrierIndex += 1
-                    injectedHole.calculateInjectHop(chromophore, deltaE, estimatedTransferIntegral)
+                estimatedTransferIntegral = estimateTransferIntegral(chromophore, morphologyChromophores, -(AAMorphology['lz'] / 2.0))
+                injectRate = calculateMarcusHopRate(parameterDict['reorganisationEnergyDonor'] * elementaryCharge, estimatedTransferIntegral, deltaE, parameterDict['systemTemperature'])
+                injection = injectSite([xVal, yVal, zVal], chromophore, injectRate, 'Cathode')
+                heapq.heappush(injectQueue, (injection.injectTime, injection))
+    # Now consider top electrode (anode):
+    zVal = deviceShape[2]
+    for xVal in range(deviceShape[0]):
+        for yVal in range(deviceShape[1]):
+            injectChromophores = []
+            AAMorphology = globalMorphologyData.returnAAMorphology([xVal, yVal, zVal])
+            morphologyChromophores = globalChromophoreData.returnChromophoreList([xVal, yVal, zVal])
+            for chromophore in morphologyChromophores:
+                # Find all chromophores that are within the top nanometer (10 Ang) of the device cell
+                if chromophore.posn[2] >= (AAMorphology['lz'] / 2.0) - 10:
+                    injectChromophores.append(chromophore)
+            for chromophore in injectChromophores:
+                if chromophore.species == 'Donor':
+                    # Injecting a hole from the anode (hard)
+                    deltaE = elementaryCharge * (-electronInjectBarrier + bandgap + (chromophore.LUMO - parameterDict['acceptorLUMO']))
+                else:
+                    # Injecting an electron from the anode (easy)
+                    deltaE = elementaryCharge * (electronInjectBarrier - (chromophore.LUMO - parameterDict['acceptorLUMO']))
+                estimatedTransferIntegral = estimateTransferIntegral(chromophore, morphologyChromophores, -(AAMorphology['lz'] / 2.0))
+                injectRate = calculateMarcusHopRate(parameterDict['reorganisationEnergyAcceptor'] * elementaryCharge, estimatedTransferIntegral, deltaE, parameterDict['systemTemperature'])
+                injection = injectSite([xVal, yVal, zVal], chromophore, injectRate, 'Anode')
+                heapq.heappush(injectQueue, (injection.injectTime, injection))
+    return injectQueue
 
-    return injectOptions, carrierIndex
 
-
-    print("[1, 6, 6]", deviceArray[1, 6, 6], "should be 0")
-    print("[3, 2, 7]", deviceArray[3, 2, 7], "should be 1")
-    print("[5, 1, 4]", deviceArray[5, 1, 4], "should be 2")
-    print("[0, 0, 0]", deviceArray[0, 0, 0], "should be 3")
-    print("[4, 3, 2]", deviceArray[4, 3, 2], "should be 4")
-    exit()
+def estimateTransferIntegral(chromophore, chromophoreList, startingZPosn):
+    # Fits a straight line to a particular chromophore's neighbour transfer integrals as a function of separation, then interpolates this trend for a given startingZPosn to estimate the TI given a particular separation.
+    # This is important for calculating an estimated TI for dark-current injected carriers from an electrode to a particular chromophore, which can be a variable-range hop to any chromophore within 1nm of the electrode
+    separations = []
+    transferIntegrals = []
+    currentPosn = copy.deepcopy(chromophore.posn)
+    currentPosn[2] = startingZPosn
+    for index, chromo in enumerate(chromophore.neighbours):
+        chromoID = chromo[0]
+        separation = np.linalg.norm(currentPosn - chromophoreList[chromoID].posn)
+        separations.append(separation)
+        transferIntegrals.append(chromophore.neighboursTI[index])
+    fit = np.polyfit(separations, transferIntegrals, 1)
+    interpolatedTI = (fit[0] * startingZPosn) + fit[1]
+    if interpolatedTI < 0:
+        print("Chromo Neighbours =", chromophore.neighboursTI)
+        print("Separations =", separations)
+        print("Transfer Integrals =", transferIntegrals)
+        print("Interpolated TI =", interpolatedTI)
+        raise SystemError("INTERPOLATION FAIL")
+    return interpolatedTI
 
 
 def calculateMarcusHopRate(lambdaij, Tij, deltaEij, T):
@@ -474,7 +517,7 @@ def calculateMarcusHopRate(lambdaij, Tij, deltaEij, T):
 
 def calculateFRETHopRate(prefactor, lifetimeParameter, rij, deltaEij):
     # Foerster Transport Hopping Rate Equation
-    # The prefactor included here is a bit of a bodge to try and get the mean-free paths of the excitons more in line with the 5nm of experiment. Possible citation: 10.3390/ijms131217019 (they don't do the simulation they just point out some limitations of FRET which assumes point-dipoles which doesn't necessarily work in all cases)
+    # The prefactor included here is a bit of a bodge to try and get the mean-free paths of the excitons more in line with the 5nm of experiment. Possible citation: 10.3390/ijms131217019 (they do not do the simulation they just point out some limitations of FRET which assumes point-dipoles which does not necessarily work in all cases)
     if deltaEij <= 0:
         boltzmannFactor = 1
     else:
@@ -489,7 +532,7 @@ def determineHopTime(self, rate):
     if rate != 0:
         while True:
             x = R.random()
-            # Ensure that we don't get exactly 0.0 or 1.0, which would break our logarithm
+            # Ensure that we do not get exactly 0.0 or 1.0, which would break our logarithm
             if (x != 0.0) and (x != 1.0):
                 break
         tau = - np.log(x) / rate
@@ -497,7 +540,6 @@ def determineHopTime(self, rate):
         # If rate == 0, then make the hopping time extremely long
         tau = 1E99
     return tau
-
 
 
 def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal):
@@ -532,9 +574,9 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     # Need to initalise a bunch of variables
     eventQueue = []
     photoinjectionRate = calculatePhotoinjectionRate(parameterDict, deviceArray.shape)
-    darkInjectionRate = calculateDarkInjectionRate(parameterDict, deviceArray.shape)
     outputCurrentDensity = []
     numberOfPhotoinjections = 0
+    numberOfDarkinjections = 0
     excitonIndex = 0
     carrierIndex = 0
     outputCurrentConverged = False
@@ -561,8 +603,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
 
 
     # As the morphology is not changing, we can calculate the dark inject rates at the beginning and then not have to do it again
-    darkInjectRates, carrierIndex = calculateDarkCurrentInjectRates(deviceArray, carrierIndex, parameterDict)
-
+    darkInjectQueue = calculateDarkCurrentInjectRates(deviceArray, parameterDict)
 
 
     print("\n\n ---=== MAIN KMC LOOP START ===---\n\n")
@@ -596,10 +637,21 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
             heapq.heappush(eventQueue, (photoinjectionTime, 'photo', None))
             numberOfPhotoinjections += 1
             # Dark Injection:
-            # TODO
+            # The darkInjectQueue is already ordered based on the most likely injection to occur next.
+            # Queue up this dark injection in the main KMC queue. However, because there's not anything stopping us from
+            # reinjecting to this site later on, recalculate a new injection time for this site and queue it back up
+            # in the darkInjectQueue
+            nextDarkInject = darkInjectQueue.pop(0)
+            # Decrement the dark inject queue
+            decrementTime(darkInjectQueue, nextDarkInject.injectTime)
+            # Now requeue this inject site
+            newDarkInject = copy.deepcopy(nextDarkInject).calculateInjectTime()
+            heap.heappush(darkInjectQueue, (newDarkInject.injectTime, newDarkInject))
+            # And finally, push this injection to the main KMC queue
+            heapq.heappush(eventQueue, (nextDarkInject.injectTime, 'dark', nextDarkInject))
 
-
-        #print("Event Queue Before Selection =", eventQueue)
+        print("Event Queue Before Selection =", eventQueue)
+        raise SystemError("CHECK DARK INJECTION LOOKS SENSIBLE")
 
         # Now find out what the next event is
         nextEvent = heapq.heappop(eventQueue)
@@ -652,7 +704,22 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
             numberOfPhotoinjections += 1
 
         elif nextEvent[1] == 'dark':
-            raise SystemError("No dark injection yet")
+            injectSite = nextEvent[2]
+            print("EVENT: Dark Current injection #" + str(numberOfDarkinjections), "into", injectSite.devicePosn, "(which has type", repr(deviceArray[tuple(injectSite.devicePosn)]) + ")", "after", KMCIterations, "iterations")
+            if injectSite.chromophore.species == 'Donor':
+                # Inject a hole
+                injectedCarrier = carrier(carrierIndex, globalTime, injectSite.devicePosn, injectSite.chromophore, injectSite.electrode, parameterDict)
+                globalCarrierDict[carrierIndex] = injectedCarrier
+                carrierIndex += 1
+            else:
+                # Inject an electron
+                injectedCarrier = carrier(carrierIndex, globalTime, injectSite.devicePosn, injectSite.chromophore, injectSite.electrode, parameterDict)
+                globalCarrierDict[carrierIndex] = injectedCarrier
+                carrierIndex += 1
+            # Determine the carrier's next hop and queue it
+            injectedCarrier.calculateBehaviour()
+            heapq.heappush(eventQueue, (injectedCarrier.hopTime, 'carrierHop', injectedCarrier))
+            numberOfDarkinjections += 1
 
         elif nextEvent[1] == 'excitonHop':
             ## DEBUG CODE USED TO PLOT THE EXCITON ROUTE WITHIN A SINGLE CELL TO FIX THE PBCs
