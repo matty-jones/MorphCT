@@ -36,9 +36,10 @@ class morphologyMoiety:
 
 class chromophoreDataContainer:
     # A helper class that contains all of the chromophore data for ease of access from anywhere
-    def __init__(self, deviceArray, moietyDictionary):
+    def __init__(self, deviceArray, moietyDictionary, wrapxy):
         self.deviceArray = deviceArray
         self.moietyDictionary = moietyDictionary
+        self.wrapxy = wrapxy
 
     def returnChromophoreList(self, devicePosition):
         deviceMoietyType = self.deviceArray[tuple(devicePosition)]
@@ -64,19 +65,23 @@ class chromophoreDataContainer:
                     # Leaving out of the top of the device
                     print("Leaving out of top of device")
                     return 'Top'
-                else:
+                elif self.wrapxy:
                     # Bring it in on the reverse side
                     devicePosition[axisNo] = 0
                     #print("Axis", axisNo, "out of bounds, setting new devicePosition to", devicePosition)
+                else:
+                    return 'Out of Bounds'
             if val < 0:
                 if axisNo == 2:
                     # Leaving out of the bottom of the device
                     print("Leaving out of bottom of device")
                     return 'Bottom'
-                else:
+                elif self.wrapxy:
                     # Bring it in on the reverse side
                     devicePosition[axisNo] = self.deviceArray.shape[axisNo] - 1
                     #print("Axis", axisNo, "out of bounds, setting new devicePosition to", devicePosition)
+                else:
+                    return 'Out of Bounds'
         deviceMoietyType = self.deviceArray[tuple(devicePosition)]
         for chromophore in self.moietyDictionary[deviceMoietyType].chromophoreList:
             separation = helperFunctions.calculateSeparation(desiredPosition, chromophore.posn)
@@ -96,6 +101,9 @@ class morphologyDataContainer:
     def returnAAMorphology(self, devicePosition):
         deviceMoietyType = self.deviceArray[tuple(devicePosition)]
         return self.moietyDictionary[deviceMoietyType].AAMorphologyDict
+
+    def returnDeviceMoietyType(self, devicePosition):
+        return self.deviceArray[tuple(devicePosition)]
 
 
 def loadDeviceMorphology(parameterDict):
@@ -126,7 +134,7 @@ def execute(parameterDict):
     deviceArray, moietyDictionary = loadDeviceMorphology(parameterDict)
 
     # Initialise the helperClass to obtain all of the chromophoreData required, allowing it be accessed globally
-    chromophoreData = chromophoreDataContainer(deviceArray, moietyDictionary)
+    chromophoreData = chromophoreDataContainer(deviceArray, moietyDictionary, parameterDict['wrapDeviceXY'])
     morphologyData = morphologyDataContainer(deviceArray, moietyDictionary)
 
     # Write these classes out to a pickle file so that they can be loaded by the child processes later
