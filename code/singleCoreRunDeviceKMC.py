@@ -90,31 +90,6 @@ class exciton:
             return True
         return False
 
-    def calculateHopRate(self, rij, deltaEij):
-        # Foerster Transport Hopping Rate Equation
-        # The prefactor included here is a bit of a bodge to try and get the mean-free paths of the excitons more in line with the 5nm of experiment. Possible citation: 10.3390/ijms131217019 (they don't do the simulation they just point out some limitations of FRET which assumes point-dipoles which doesn't necessarily work in all cases)
-        if deltaEij <= 0:
-            boltzmannFactor = 1
-        else:
-            boltzmannFactor = np.exp(-(elementaryCharge * deltaEij)/(kB * self.T))
-
-        kFRET = self.prefactor * (1/self.lifetimeParameter) * (self.rF / rij)**6 * boltzmannFactor
-        return kFRET
-
-    def determineHopTime(self, rate):
-        # Use the KMC algorithm to determine the wait time to this hop
-        if rate != 0:
-            while True:
-                x = R.random()
-                # Ensure that we don't get exactly 0.0 or 1.0, which would break our logarithm
-                if (x != 0.0) and (x != 1.0):
-                    break
-            tau = - np.log(x) / rate
-        else:
-            # If rate == 0, then make the hopping time extremely long
-            tau = 1E99
-        return tau
-
     def calculateHop(self):
         # First thing's first, if the current global time is > creationTime + lifeTime then this exciton recombined before the hop so we need to remove it from the system
         if globalTime > (self.creationTime + self.recombinationTime):
@@ -155,8 +130,8 @@ class exciton:
             #    print(neighbourID, neighbourPosn, neighbourUnwrappedPosn, neighbourImage, neighbourRelativeImage, rij)
             # Note, separations are recorded in angstroems, so spin this down to metres.
             # Additionally, all of the energies are in eV currently, so convert them to J
-            hopRate = self.calculateHopRate(rij, deltaEij * elementaryCharge)
-            hopTime = self.determineHopTime(hopRate)
+            hopRate = calculateFRETHopRate(self.prefactor, self.lifetimeParameter, rij, deltaEij * elementaryCharge)
+            hopTime = determineHopTime(hopRate)
             # Keep track of the destination chromophore ID, the corresponding tau, and the relative image (to see if we're hopping over a boundary)
             hopTimes.append([globalChromophoreData.returnChromophoreList(self.currentDevicePosn)[self.currentChromophore.neighbours[neighbourIndex][0]], hopTime, neighbourRelativeImage])
         # Sort by ascending hop time
@@ -236,29 +211,10 @@ class carrier:
         except:
             [self.destinationChromophore, self.hopTime, self.destinationImage] = [None, None, None]
 
-    def calculateHopRate(self, lambdaij, Tij, deltaEij):
-        # Semiclassical Marcus Hopping Rate Equation
-        kij = ((2 * np.pi) / hbar) * (Tij ** 2) * np.sqrt(1.0 / (4 * lambdaij * np.pi * kB * self.T)) * np.exp(-((deltaEij + lambdaij)**2) / (4 * lambdaij * kB * self.T))
-        return kij
-
-    def determineHopTime(self, rate):
-        # Use the KMC algorithm to determine the wait time to this hop
-        if rate != 0:
-            while True:
-                x = R.random()
-                # Ensure that we don't get exactly 0.0 or 1.0, which would break our logarithm
-                if (x != 0.0) and (x != 1.0):
-                    break
-            tau = - np.log(x) / rate
-        else:
-            # If rate == 0, then make the hopping time extremely long
-            tau = 1E99
-        return tau
-
     def calculateInjectHop(self, destinationChromophore, deltaE, transferIntegral):
         self.destinationChromophore = copy.deepcopy(destinationChromophore)
-        hoppingRate = self.calculateHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaE)
-        self.hopTime = self.determineHopTime(hoppingRate)
+        hoppingRate = calculateMarcusHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaE, self.T)
+        self.hopTime = determineHopTime(hoppingRate)
         self.destinationImage = [0, 0, 0]
 
     def calculateHop(self):
@@ -274,8 +230,8 @@ class carrier:
             neighbourRelativeImage = self.currentChromophore.neighbours[neighbourIndex][1]
             deltaEij = self.calculatePotential(destinationChromophore, neighbourRelativeImage, self.currentChromophore.neighboursDeltaE[neighbourIndex])
             # All of the energies (EXCEPT EIJ WHICH IS ALREADY IN J) are in eV currently, so convert them to J
-            hopRate = self.calculateHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij)
-            hopTime = self.determineHopTime(hopRate)
+            hopRate = calculateMarcusHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij, self.T)
+            hopTime = determineHopTime(hopRate)
             # Keep track of the chromophoreID and the corresponding tau
             hopTimes.append([destinationChromophore, hopTime, neighbourRelativeImage])
         # Sort by ascending hop time
@@ -509,6 +465,38 @@ def calculateDarkCurrentInjectRates(deviceArray, carrierIndex, parameterDict):
     print("[4, 3, 2]", deviceArray[4, 3, 2], "should be 4")
     exit()
 
+
+def calculateMarcusHopRate(lambdaij, Tij, deltaEij, T):
+    # Semiclassical Marcus Hopping Rate Equation
+    kij = ((2 * np.pi) / hbar) * (Tij ** 2) * np.sqrt(1.0 / (4 * lambdaij * np.pi * kB * T)) * np.exp(-((deltaEij + lambdaij)**2) / (4 * lambdaij * kB * T))
+    return kij
+
+
+def calculateFRETHopRate(prefactor, lifetimeParameter, rij, deltaEij):
+    # Foerster Transport Hopping Rate Equation
+    # The prefactor included here is a bit of a bodge to try and get the mean-free paths of the excitons more in line with the 5nm of experiment. Possible citation: 10.3390/ijms131217019 (they don't do the simulation they just point out some limitations of FRET which assumes point-dipoles which doesn't necessarily work in all cases)
+    if deltaEij <= 0:
+        boltzmannFactor = 1
+    else:
+        boltzmannFactor = np.exp(-(elementaryCharge * deltaEij)/(kB * self.T))
+
+    kFRET = prefactor * (1/lifetimeParameter) * (self.rF / rij)**6 * boltzmannFactor
+    return kFRET
+
+
+def determineHopTime(self, rate):
+    # Use the KMC algorithm to determine the wait time to this hop
+    if rate != 0:
+        while True:
+            x = R.random()
+            # Ensure that we don't get exactly 0.0 or 1.0, which would break our logarithm
+            if (x != 0.0) and (x != 1.0):
+                break
+        tau = - np.log(x) / rate
+    else:
+        # If rate == 0, then make the hopping time extremely long
+        tau = 1E99
+    return tau
 
 
 
