@@ -11,6 +11,7 @@ try:
     import mpl_toolkits.mplot3d as p3
 except ImportError:
     print("Could not import 3D plotting engine, calling the plotDeviceComponents function will result in an error!")
+from scipy.optimize import curve_fit
 
 import helperFunctions
 
@@ -205,6 +206,10 @@ class carrier:
             self.carrierType = ELECTRON
             self.lambdaij = parameterDict['reorganisationEnergyAcceptor']
         self.relativePermittivity = parameterDict['relativePermittivity']
+        if parameterDict['recordCarrierHistory'] is True:
+            self.history = [[self.initialDevicePosn, initialChromophore.posn]]
+        else:
+            self.history = None
 
     def calculateBehaviour(self):
         try:
@@ -292,6 +297,8 @@ class carrier:
                 self.currentChromophore = newChromophore
             #else:
             #    print("Crossing a boundary to a different chromophore species. Das ist verboten, discarding the hop")
+        if self.history is not None:
+            self.history.append([self.currentDevicePosn, self.currentChromophore.posn])
 
     def calculatePotential(self, destinationChromophore, neighbourRelativeImage, chromoEij):
         global globalCarrierDict
@@ -590,6 +597,70 @@ def determineHopTime(rate):
     return tau
 
 
+def plotEventTimeDistribution(eventTimes):
+    gaussBins, fitArgs = gaussFit(eventTimes)
+    gaussY = gaussian(gaussBins[:-1], *fitArgs)
+    fig = plt.figure()
+    plt.hist(eventTimes, bins = np.logspace(-18, -6, 40))
+    plt.gca().set_xscale('log')
+    plt.xlabel(r'$\mathrm{\tau}$ (s)')
+    plt.ylabel('Freq (Arb. U.)')
+    plt.xticks(np.logspace(-18, -6, 7))
+    plt.savefig('./EventTimeDist.pdf')
+    print('Event time distribution saved as ./EventTimeDist.pdf')
+
+def gaussian(x, a, x0, sigma):
+    return a*np.exp(-(x-x0)**2/(2*sigma**2))
+
+def gaussFit(data):
+    n = len(data)
+    mean = np.mean(data)
+    std = np.std(data)
+    print("Gaussfit stats: mean =", mean, "std =", std)
+    hist, binEdges = np.histogram(data, bins=100)
+    try:
+        fitArgs, fitConv = curve_fit(gaussian, binEdges[:-1], hist, p0=[1, mean, std])
+    except RuntimeError:
+        return None, None
+    return binEdges, fitArgs
+
+
+def plot3DTrajectory(carriersToPlot, parameterDict, deviceArray):
+    fig = plt.figure()
+    ax = p3.Axes3D(fig)
+    [xLen, yLen, zLen] = np.array(deviceArray.shape) * parameterDict['morphologyCellSize']
+    # Draw boxlines
+    # Varying X
+    ax.plot([0, xLen], [0, 0], [0, 0], c = 'k', linewidth = 1.0)
+    ax.plot([0, xLen], [yLen, yLen], [0, 0], c = 'k', linewidth = 1.0)
+    ax.plot([0, xLen], [0, 0], [zLen, zLen], c = 'k', linewidth = 1.0)
+    ax.plot([0, xLen], [yLen, yLen], [zLen, zLen], c = 'k', linewidth = 1.0)
+    # Varying Y
+    ax.plot([0, 0], [0, yLen], [0, 0], c = 'k', linewidth = 1.0)
+    ax.plot([xLen, xLen], [0, yLen], [0, 0], c = 'k', linewidth = 1.0)
+    ax.plot([0, 0], [0, yLen], [zLen, zLen], c = 'k', linewidth = 1.0)
+    ax.plot([xLen, xLen], [0, yLen], [zLen, zLen], c = 'k', linewidth = 1.0)
+    # Varying Z
+    ax.plot([0, 0], [0, 0], [0, zLen], c = 'k', linewidth = 1.0)
+    ax.plot([0, 0], [yLen, yLen], [0, zLen], c = 'k', linewidth = 1.0)
+    ax.plot([xLen, xLen], [0, 0], [0, zLen], c = 'k', linewidth = 1.0)
+    ax.plot([xLen, xLen], [yLen, yLen], [0, zLen], c = 'k', linewidth = 1.0)
+
+    colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
+    for index, carrier in enumerate(carriersToPlot):
+        color = colors[index%7]
+        for index, hop in enumerate(carrier.history[:-1]):
+            currentPosn = (np.array(hop[0]) * parameterDict['morphologyCellSize']) + np.array(hop[1])
+            nextHop = carrier.history[index + 1]
+            nextPosn = (np.array(nextHop[0]) * parameterDict['morphologyCellSize']) + np.array(nextHop[1])
+            ax.plot([currentPosn[0], nextPosn[0]], [currentPosn[1], nextPosn[1]], [currentPosn[2], nextPosn[2]], c = color, linewidth = 0.5)
+    fileName = '3d_trajectory.pdf'
+    plt.savefig('./' + fileName)
+    print("Figure saved as ./" + fileName)
+    plt.show()
+    plt.close()
+
+
 def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal):
     # ---=== PROGRAMMER'S NOTE ===---
     # This `High Resolution' version of the code will permit chromophore-based hopping through the device, rather than just approximating the distribution. We have the proper resolution there, let's just use it!
@@ -613,6 +684,9 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
         (deviceArray.shape[2] * parameterDict['morphologyCellSize']))
 
     # DEBUG
+    slowestEvent = 0
+    fastestEvent = 1E99
+    eventTimes = []
     #morphCellSizes = []
     #for moietyType in morphologyData.moietyDictionary.keys():
     #    morphCellSizes.append(morphologyData.moietyDictionary[moietyType].AAMorphologyDict['lx'])
@@ -637,8 +711,6 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     convExtractions = []
     convGradients = []
 
-
-
     # DEBUG
     dissExcitonDisp = []
     dissExcitonTime = []
@@ -649,251 +721,270 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     numberOfRecombinations = 0
     KMCIterations = 0
 
-
     # As the morphology is not changing, we can calculate the dark inject rates at the beginning and then not have to do it again
     darkInjectQueue = calculateDarkCurrentInjectRates(deviceArray, parameterDict)
 
-
     print("\n\n ---=== MAIN KMC LOOP START ===---\n\n")
     # Main KMC loop
-    while True:
-        KMCIterations += 1
-        #print("\rGlobal Time =", globalTime, "Queue =", eventQueue)
-        # TODO Check whether the output current has converged, after we have had sufficient photoinjections
-        # To check convergence, create a datapoint every time 5% of the parameter-file-determined photoinjections
-        # have been completed. This datapoint is the numberOfExtractions as a function of time. When the required number of
-        # photoinjections has been completed, start performing linear regression on the dataset and set outputCurrentConverged
-        # when the numberOfExtractions saturates.
-        if numberOfPhotoinjections >= (previousCheck + checkConvEvery):
-            # Regardless of how many photoinjections we have, add to the convergence datasets every 5% of the minimum required
-            convGlobalTime.append(globalTime)
-            convExtractions.append(numberOfExtractions)
-            if numberOfPhotoinjections > parameterDict['minimumNumberOfPhotoinjections']:
-                # If we've gone over the minimum, then perform the convergence check to see if the output current has converged
-                # TODO Check convergence, but for now, let's just see what the curve looks like
+    # Put this in a try-except to plot on keyboardInterrupt
+    try:
+        while True:
+            KMCIterations += 1
+            #print("\rGlobal Time =", globalTime, "Queue =", eventQueue)
+            # TODO Check whether the output current has converged, after we have had sufficient photoinjections
+            # To check convergence, create a datapoint every time 5% of the parameter-file-determined photoinjections
+            # have been completed. This datapoint is the numberOfExtractions as a function of time. When the required number of
+            # photoinjections has been completed, start performing linear regression on the dataset and set outputCurrentConverged
+            # when the numberOfExtractions saturates.
+            if numberOfPhotoinjections >= (previousCheck + checkConvEvery):
+                # Regardless of how many photoinjections we have, add to the convergence datasets every 5% of the minimum required
+                convGlobalTime.append(globalTime)
+                convExtractions.append(numberOfExtractions)
+                if numberOfPhotoinjections > parameterDict['minimumNumberOfPhotoinjections']:
+                    # If we've gone over the minimum, then perform the convergence check to see if the output current has converged
+                    # TODO Check convergence, but for now, let's just see what the curve looks like
+                    break
+
+            if outputCurrentConverged is True:
                 break
 
-        if outputCurrentConverged is True:
-            break
+            if len(eventQueue) == 0:
+                # Either the simulation has just started, or everything just recombined/left the device
+                # Therefore, queue up one photoinjection and one dark current injection to get us rolling.
+                # These are the only available kinetic starting points for the simulation. Everything else stems from these.
+                # Photoinjection
+                photoinjectionTime = -np.log(R.random()) / photoinjectionRate
+                heapq.heappush(eventQueue, (photoinjectionTime, 'photo', None))
+                numberOfPhotoinjections += 1
+                # Dark Injection:
+                # The darkInjectQueue is already ordered based on the most likely injection to occur next.
+                # Queue up this dark injection in the main KMC queue. However, because there's not anything stopping us from
+                # reinjecting to this site later on, recalculate a new injection time for this site and queue it back up
+                # in the darkInjectQueue
+                # In some cases (like the test morphology), carriers can't be injected with a rate > 1, and so the darkInjectQueue
+                # is empty. This catches that and effectively deactivates dark current if it can't happen.
+                if len(darkInjectQueue) > 0:
+                    nextDarkInject = darkInjectQueue.pop(0)
+                    # Decrement the dark inject queue
+                    decrementTime(darkInjectQueue, nextDarkInject.injectTime)
+                    # Now requeue this inject site
+                    newDarkInject = copy.deepcopy(nextDarkInject).calculateInjectTime()
+                    heap.heappush(darkInjectQueue, (newDarkInject.injectTime, newDarkInject))
+                    # And finally, push this injection to the main KMC queue
+                    heapq.heappush(eventQueue, (nextDarkInject.injectTime, 'dark', nextDarkInject))
 
-        if len(eventQueue) == 0:
-            # Either the simulation has just started, or everything just recombined/left the device
-            # Therefore, queue up one photoinjection and one dark current injection to get us rolling.
-            # These are the only available kinetic starting points for the simulation. Everything else stems from these.
-            # Photoinjection
-            photoinjectionTime = -np.log(R.random()) / photoinjectionRate
-            heapq.heappush(eventQueue, (photoinjectionTime, 'photo', None))
-            numberOfPhotoinjections += 1
-            # Dark Injection:
-            # The darkInjectQueue is already ordered based on the most likely injection to occur next.
-            # Queue up this dark injection in the main KMC queue. However, because there's not anything stopping us from
-            # reinjecting to this site later on, recalculate a new injection time for this site and queue it back up
-            # in the darkInjectQueue
-            # In some cases (like the test morphology), carriers can't be injected with a rate > 1, and so the darkInjectQueue
-            # is empty. This catches that and effectively deactivates dark current if it can't happen.
-            if len(darkInjectQueue) > 0:
-                nextDarkInject = darkInjectQueue.pop(0)
-                # Decrement the dark inject queue
-                decrementTime(darkInjectQueue, nextDarkInject.injectTime)
-                # Now requeue this inject site
-                newDarkInject = copy.deepcopy(nextDarkInject).calculateInjectTime()
+            # Now find out what the next event is
+            nextEvent = heapq.heappop(eventQueue)
+            # Increment the global time and decrement all of the other times in the queue
+            #print("Event Queue after event has been popped", eventQueue)
+            eventQueue = decrementTime(eventQueue, nextEvent[0])
+            #print("Event Queue after time has been decremented", eventQueue)
+
+            # DEBUG
+            if nextEvent[0] > slowestEvent:
+                slowestEvent = nextEvent[0]
+            if nextEvent[0] < fastestEvent:
+                fastestEvent = nextEvent[0]
+            eventTimes.append(nextEvent[0])
+
+
+            # Execute the next behaviour (being sure to recalculate rates for any new particles that have appeared)
+            if nextEvent[1] == 'photo':
+                # Complete the event by injecting an exciton
+                # First find an injection location. For now, this will just be somewhere random in the system
+                randomDevicePosition = [R.randint(0, x-1) for x in deviceArray.shape]
+                print("EVENT: Photoinjection #" + str(numberOfPhotoinjections), "into", randomDevicePosition, "(which has type", repr(deviceArray[tuple(randomDevicePosition)]) + ")", "after", KMCIterations, "iterations")
+                injectedExciton = exciton(excitonIndex, globalTime, randomDevicePosition, parameterDict)
+                if (injectedExciton.canDissociate is True) or (injectedExciton.hopTime is None):
+                    # Injected onto either a dissociation site or a trap site
+                    if injectedExciton.canDissociate is True:
+                        print("EVENT: Exciton Dissociating immediately")
+                        numberOfDissociations += 1
+                        numberOfHops.append(injectedExciton.numberOfHops)
+                        # Create the carrier instances, but don't yet calculate their behaviour (need to add them to the carrier list before we can calculate the energetics)
+                        # Also add the carriers to the carrier dictionary for when we need to calc deltaE in the device
+                        injectedElectron = carrier(carrierIndex, globalTime, injectedExciton.currentDevicePosn, injectedExciton.electronChromophore, 'Exciton', parameterDict)
+                        globalCarrierDict[carrierIndex] = injectedElectron
+                        carrierIndex += 1
+                        injectedHole = carrier(carrierIndex, globalTime, injectedExciton.currentDevicePosn, injectedExciton.holeChromophore, 'Exciton', parameterDict)
+                        globalCarrierDict[carrierIndex] = injectedHole
+                        carrierIndex += 1
+                        # Now determine the behaviour of both carriers, and add their next hops to the KMC queue
+                        injectedElectron.calculateBehaviour()
+                        if injectedElectron.hopTime is not None:
+                            heapq.heappush(eventQueue, (injectedElectron.hopTime, 'carrierHop', injectedElectron))
+                        injectedHole.calculateBehaviour()
+                        if injectedHole.hopTime is not None:
+                            heapq.heappush(eventQueue, (injectedHole.hopTime, 'carrierHop', injectedHole))
+                    else:
+                        # Injected onto a site with no connections, so this exciton will eventually die
+                        print("EVENT: Exciton Recombining immediately")
+                        numberOfRecombinations += 1
+                        numberOfHops.append(injectedExciton.numberOfHops)
+                else:
+                    # Hopping permitted, push the exciton to the queue.
+                    # Push the exciton to the queue
+                    heapq.heappush(eventQueue, (injectedExciton.hopTime, 'excitonHop', injectedExciton))
+                    # Increment the exciton counter
+                    excitonIndex += 1
+                # A photoinjection has just occured, so now queue up a new one
+                photoinjectionTime = -np.log(R.random()) / photoinjectionRate
+                heapq.heappush(eventQueue, (photoinjectionTime, 'photo', None))
+                numberOfPhotoinjections += 1
+
+            elif nextEvent[1] == 'dark':
+                injectSite = nextEvent[2]
+                print("EVENT: Dark Current injection #" + str(numberOfDarkinjections), "into", injectSite.devicePosn, "(which has type", repr(deviceArray[tuple(injectSite.devicePosn)]) + ")", "after", KMCIterations, "iterations")
+                if injectSite.chromophore.species == 'Donor':
+                    # Inject a hole
+                    injectedCarrier = carrier(carrierIndex, globalTime, injectSite.devicePosn, injectSite.chromophore, injectSite.electrode, parameterDict)
+                    globalCarrierDict[carrierIndex] = injectedCarrier
+                    carrierIndex += 1
+                else:
+                    # Inject an electron
+                    injectedCarrier = carrier(carrierIndex, globalTime, injectSite.devicePosn, injectSite.chromophore, injectSite.electrode, parameterDict)
+                    globalCarrierDict[carrierIndex] = injectedCarrier
+                    carrierIndex += 1
+                # Requeue the inject site
+                newDarkInject = copy.deepcopy(injectSite).calculateInjectTime()
                 heap.heappush(darkInjectQueue, (newDarkInject.injectTime, newDarkInject))
-                # And finally, push this injection to the main KMC queue
-                heapq.heappush(eventQueue, (nextDarkInject.injectTime, 'dark', nextDarkInject))
+                # Determine the carrier's next hop and queue it
+                injectedCarrier.calculateBehaviour()
+                if injectedCarrier.hopTime is not None:
+                    heapq.heappush(eventQueue, (injectedCarrier.hopTime, 'carrierHop', injectedCarrier))
+                numberOfDarkinjections += 1
 
-        # Now find out what the next event is
-        nextEvent = heapq.heappop(eventQueue)
-        # Increment the global time and decrement all of the other times in the queue
-        #print("Event Queue after event has been popped", eventQueue)
-        eventQueue = decrementTime(eventQueue, nextEvent[0])
-        #print("Event Queue after time has been decremented", eventQueue)
+            elif nextEvent[1] == 'excitonHop':
+                ## DEBUG CODE USED TO PLOT THE EXCITON ROUTE WITHIN A SINGLE CELL TO FIX THE PBCs
+                #print("EVENT: Exciton Hopping in device coordinates", nextEvent[2].currentDevicePosn, "(type =", deviceArray[tuple(nextEvent[2].currentDevicePosn)], ") from chromophore", nextEvent[2].currentChromophore.ID, "to chromophore", nextEvent[2].destinationChromophore.ID)
+                #excitonPath.append(nextEvent[2].currentChromophore.ID)
+                #excitonTime.append(globalTime - nextEvent[2].creationTime)
+                #chromoList = chromophoreData.returnChromophoreList(nextEvent[2].currentDevicePosn)
+                #currentChromoPosn = chromoList[nextEvent[2].currentChromophore.ID].posn
+                #destinationChromoPosn = chromoList[nextEvent[2].destinationChromophore.ID].posn
+                #excitonDisp.append(helperFunctions.calculateSeparation(currentChromoPosn, destinationChromoPosn))
+                #if len(excitonTime) == 1000:
+                #    break
 
-        # Execute the next behaviour (being sure to recalculate rates for any new particles that have appeared)
-        if nextEvent[1] == 'photo':
-            # Complete the event by injecting an exciton
-            # First find an injection location. For now, this will just be somewhere random in the system
-            randomDevicePosition = [R.randint(0, x-1) for x in deviceArray.shape]
-            print("EVENT: Photoinjection #" + str(numberOfPhotoinjections), "into", randomDevicePosition, "(which has type", repr(deviceArray[tuple(randomDevicePosition)]) + ")", "after", KMCIterations, "iterations")
-            injectedExciton = exciton(excitonIndex, globalTime, randomDevicePosition, parameterDict)
-            if (injectedExciton.canDissociate is True) or (injectedExciton.hopTime is None):
-                # Injected onto either a dissociation site or a trap site
-                if injectedExciton.canDissociate is True:
-                    print("EVENT: Exciton Dissociating immediately")
-                    numberOfDissociations += 1
-                    numberOfHops.append(injectedExciton.numberOfHops)
-                    # Create the carrier instances, but don't yet calculate their behaviour (need to add them to the carrier list before we can calculate the energetics)
-                    # Also add the carriers to the carrier dictionary for when we need to calc deltaE in the device
-                    injectedElectron = carrier(carrierIndex, globalTime, injectedExciton.currentDevicePosn, injectedExciton.electronChromophore, 'Exciton', parameterDict)
-                    globalCarrierDict[carrierIndex] = injectedElectron
-                    carrierIndex += 1
-                    injectedHole = carrier(carrierIndex, globalTime, injectedExciton.currentDevicePosn, injectedExciton.holeChromophore, 'Exciton', parameterDict)
-                    globalCarrierDict[carrierIndex] = injectedHole
-                    carrierIndex += 1
-                    # Now determine the behaviour of both carriers, and add their next hops to the KMC queue
-                    injectedElectron.calculateBehaviour()
-                    if injectedElectron.hopTime is not None:
-                        heapq.heappush(eventQueue, (injectedElectron.hopTime, 'carrierHop', injectedElectron))
-                    injectedHole.calculateBehaviour()
-                    if injectedHole.hopTime is not None:
-                        heapq.heappush(eventQueue, (injectedHole.hopTime, 'carrierHop', injectedHole))
+                hoppingExciton = nextEvent[2]
+                hoppingExciton.performHop()
+                if hoppingExciton.removedTime is None:
+                    # As long as this exciton hasn't just been removed, recalculate its behaviour
+                    hoppingExciton.calculateBehaviour()
+                # At this point, dissociate the exciton or remove it from the system if needed.
+                if (hoppingExciton.canDissociate is True) or (hoppingExciton.hopTime is None):
+                    # Exciton needs to be removed. As we've already popped it from the queue, we just need to not queue it up again.
+                    if hoppingExciton.canDissociate is True:
+                        print("EVENT: Exciton Dissociating", "after", KMCIterations, "iterations")
+                        numberOfDissociations += 1
+                        numberOfHops.append(injectedExciton.numberOfHops)
+                        # Create the carrier instances, but don't yet calculate their behaviour (need to add them to the carrier list before we can calculate the energetics)
+                        # Also add the carriers to the carrier dictionary for when we need to calc deltaE in the device
+                        # Plop an electron down on the electronChromophore of the dissociating exciton, and a hole on the holeChromophore
+                        injectedElectron = carrier(carrierIndex, globalTime, hoppingExciton.currentDevicePosn, hoppingExciton.electronChromophore, 'Exciton', parameterDict)
+                        globalCarrierDict[carrierIndex] = injectedElectron
+                        carrierIndex += 1
+                        injectedHole = carrier(carrierIndex, globalTime, hoppingExciton.currentDevicePosn, hoppingExciton.holeChromophore, 'Exciton', parameterDict)
+                        globalCarrierDict[carrierIndex] = injectedHole
+                        carrierIndex += 1
+                        # Now determine the behaviour of both carriers, and add their next hops to the KMC queue
+                        injectedElectron.calculateBehaviour()
+                        if injectedElectron.hopTime is not None:
+                            heapq.heappush(eventQueue, (injectedElectron.hopTime, 'carrierHop', injectedElectron))
+                        injectedHole.calculateBehaviour()
+                        if injectedHole.hopTime is not None:
+                            heapq.heappush(eventQueue, (injectedHole.hopTime, 'carrierHop', injectedHole))
+                    else:
+                        print("EVENT: Exciton Recombining", "after", KMCIterations, "iterations")
+                        numberOfRecombinations += 1
+                        numberOfHops.append(injectedExciton.numberOfHops)
+                        #pass
+                        #input("Pause...")
+                    # DEBUG
+                    # Calculate the initial position and final positions and append the excitonDisp with the separation
+                    initialPos = np.array(hoppingExciton.initialDevicePosn)*parameterDict['morphologyCellSize'] + (np.array(hoppingExciton.initialChromophore.posn) * 1E-10)
+                    finalPos = np.array(hoppingExciton.currentDevicePosn)*parameterDict['morphologyCellSize'] + (np.array(hoppingExciton.currentChromophore.posn) * 1E-10)
+                    if hoppingExciton.canDissociate is True:
+                        dissExcitonDisp.append(helperFunctions.calculateSeparation(initialPos, finalPos) / 1E-9)
+                        dissExcitonTime.append(hoppingExciton.recombinationTime)
+                    else:
+                        recExcitonDisp.append(helperFunctions.calculateSeparation(initialPos, finalPos) / 1E-9)
+                        recExcitonTime.append(hoppingExciton.recombinationTime)
+                    # END DEBUG
                 else:
-                    # Injected onto a site with no connections, so this exciton will eventually die
-                    print("EVENT: Exciton Recombining immediately")
+                    heapq.heappush(eventQueue, (hoppingExciton.hopTime, 'excitonHop', injectedExciton))
+
+            elif nextEvent[1] == 'carrierHop':
+                hoppingCarrier = nextEvent[2]
+                # Check that the carrier is still in the carrier dictionary. If it's not, then it has already been removed from the system and we can safely ignore it
+                if hoppingCarrier.ID not in globalCarrierDict.keys():
+                    continue
+                #print(hoppingCarrier.carrierType, hoppingCarrier.currentChromophore.species, hoppingCarrier.destinationChromophore.species, hoppingCarrier.currentDevicePosn, "type:", globalMorphologyData.returnDeviceMoietyType(hoppingCarrier.currentDevicePosn))
+                #input("Check this is right. CarrierType = 0 is electron, 1 is hole")
+                hoppingCarrier.performHop()
+                if hoppingCarrier.removedTime is None:
+                    # As long as this carrier hasn't just been removed, recalculate its behaviour
+                    hoppingCarrier.calculateBehaviour()
+                if hoppingCarrier.hopTime is None:
+                    # Carrier is either trapped with no eligible hops or has just been extracted
+                    if hoppingCarrier.removedTime is not None:
+                        # Carrier has been extracted, so remove it from the carriers dictionary
+                        globalCarrierDict.pop(hoppingCarrier.ID)
+                    # Else: Carrier is trapped, so we'll just leave it there so it affects the Coulombic landscape
+                else:
+                    # Normal carrier hop, so requeue this carrier
+                    heapq.heappush(eventQueue, (hoppingCarrier.hopTime, 'carrierHop', hoppingCarrier))
+                # Check if we're eligible to recombine
+                if (hoppingCarrier.recombining is True) and (hoppingCarrier.ID not in recombiningCarrierIDs) and (hoppingCarrier.recombiningWith not in recombiningCarrierIDs):
+                    recombiningCarrierIDs.append(hoppingCarrier.ID)
+                    recombiningCarrierIDs.append(hoppingCarrier.recombiningWith)
+                    recombinationTime = -np.log(R.random()) / parameterDict['recombinationRate']
+                    heapq.heappush(eventQueue, (recombinationTime, 'recombine', hoppingCarrier))
+
+            elif nextEvent[1] == 'recombine':
+                print(eventQueue)
+                print("EVENT: Carrier Recombination Check", "after", KMCIterations, "iterations")
+                # A recombination event is about to occur. At this point, we should check if the carrier and its recombination partner are still in range.
+                carrier1 = nextEvent[2]
+                carrier1Posn = np.array(carrier1.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier1.currentChromophore.posn) * 1E-10)
+                carrier2 = globalCarrierDict[carrier1.recombiningWith]
+                carrier2Posn = np.array(carrier2.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier2.currentChromophore.posn) * 1E-10)
+                separation = np.linalg.norm(carrier2Posn - carrier1Posn)
+                recombiningCarrierIDs.remove(carrier1.ID)
+                recombiningCarrierIDs.remove(carrier2.ID)
+                if separation <= parameterDict['coulombCaptureRadius']:
+                    print(separation, "<=", parameterDict['coulombCaptureRadius'])
+                    print("EVENT: Carrier Recombination Succeeded", "after", KMCIterations, "iterations")
+                    # Carriers are in range, so recombine them
+                    carrier1.removedTime = globalTime
+                    carrier2.removedTime = globalTime
                     numberOfRecombinations += 1
-                    numberOfHops.append(injectedExciton.numberOfHops)
-            else:
-                # Hopping permitted, push the exciton to the queue.
-                # Push the exciton to the queue
-                heapq.heappush(eventQueue, (injectedExciton.hopTime, 'excitonHop', injectedExciton))
-                # Increment the exciton counter
-                excitonIndex += 1
-            # A photoinjection has just occured, so now queue up a new one
-            photoinjectionTime = -np.log(R.random()) / photoinjectionRate
-            heapq.heappush(eventQueue, (photoinjectionTime, 'photo', None))
-            numberOfPhotoinjections += 1
-
-        elif nextEvent[1] == 'dark':
-            injectSite = nextEvent[2]
-            print("EVENT: Dark Current injection #" + str(numberOfDarkinjections), "into", injectSite.devicePosn, "(which has type", repr(deviceArray[tuple(injectSite.devicePosn)]) + ")", "after", KMCIterations, "iterations")
-            if injectSite.chromophore.species == 'Donor':
-                # Inject a hole
-                injectedCarrier = carrier(carrierIndex, globalTime, injectSite.devicePosn, injectSite.chromophore, injectSite.electrode, parameterDict)
-                globalCarrierDict[carrierIndex] = injectedCarrier
-                carrierIndex += 1
-            else:
-                # Inject an electron
-                injectedCarrier = carrier(carrierIndex, globalTime, injectSite.devicePosn, injectSite.chromophore, injectSite.electrode, parameterDict)
-                globalCarrierDict[carrierIndex] = injectedCarrier
-                carrierIndex += 1
-            # Requeue the inject site
-            newDarkInject = copy.deepcopy(injectSite).calculateInjectTime()
-            heap.heappush(darkInjectQueue, (newDarkInject.injectTime, newDarkInject))
-            # Determine the carrier's next hop and queue it
-            injectedCarrier.calculateBehaviour()
-            if injectedCarrier.hopTime is not None:
-                heapq.heappush(eventQueue, (injectedCarrier.hopTime, 'carrierHop', injectedCarrier))
-            numberOfDarkinjections += 1
-
-        elif nextEvent[1] == 'excitonHop':
-            ## DEBUG CODE USED TO PLOT THE EXCITON ROUTE WITHIN A SINGLE CELL TO FIX THE PBCs
-            #print("EVENT: Exciton Hopping in device coordinates", nextEvent[2].currentDevicePosn, "(type =", deviceArray[tuple(nextEvent[2].currentDevicePosn)], ") from chromophore", nextEvent[2].currentChromophore.ID, "to chromophore", nextEvent[2].destinationChromophore.ID)
-            #excitonPath.append(nextEvent[2].currentChromophore.ID)
-            #excitonTime.append(globalTime - nextEvent[2].creationTime)
-            #chromoList = chromophoreData.returnChromophoreList(nextEvent[2].currentDevicePosn)
-            #currentChromoPosn = chromoList[nextEvent[2].currentChromophore.ID].posn
-            #destinationChromoPosn = chromoList[nextEvent[2].destinationChromophore.ID].posn
-            #excitonDisp.append(helperFunctions.calculateSeparation(currentChromoPosn, destinationChromoPosn))
-            #if len(excitonTime) == 1000:
-            #    break
-
-            hoppingExciton = nextEvent[2]
-            hoppingExciton.performHop()
-            if hoppingExciton.removedTime is None:
-                # As long as this exciton hasn't just been removed, recalculate its behaviour
-                hoppingExciton.calculateBehaviour()
-            # At this point, dissociate the exciton or remove it from the system if needed.
-            if (hoppingExciton.canDissociate is True) or (hoppingExciton.hopTime is None):
-                # Exciton needs to be removed. As we've already popped it from the queue, we just need to not queue it up again.
-                if hoppingExciton.canDissociate is True:
-                    print("EVENT: Exciton Dissociating", "after", KMCIterations, "iterations")
-                    numberOfDissociations += 1
-                    numberOfHops.append(injectedExciton.numberOfHops)
-                    # Create the carrier instances, but don't yet calculate their behaviour (need to add them to the carrier list before we can calculate the energetics)
-                    # Also add the carriers to the carrier dictionary for when we need to calc deltaE in the device
-                    # Plop an electron down on the electronChromophore of the dissociating exciton, and a hole on the holeChromophore
-                    injectedElectron = carrier(carrierIndex, globalTime, hoppingExciton.currentDevicePosn, hoppingExciton.electronChromophore, 'Exciton', parameterDict)
-                    globalCarrierDict[carrierIndex] = injectedElectron
-                    carrierIndex += 1
-                    injectedHole = carrier(carrierIndex, globalTime, hoppingExciton.currentDevicePosn, hoppingExciton.holeChromophore, 'Exciton', parameterDict)
-                    globalCarrierDict[carrierIndex] = injectedHole
-                    carrierIndex += 1
-                    # Now determine the behaviour of both carriers, and add their next hops to the KMC queue
-                    injectedElectron.calculateBehaviour()
-                    if injectedElectron.hopTime is not None:
-                        heapq.heappush(eventQueue, (injectedElectron.hopTime, 'carrierHop', injectedElectron))
-                    injectedHole.calculateBehaviour()
-                    if injectedHole.hopTime is not None:
-                        heapq.heappush(eventQueue, (injectedHole.hopTime, 'carrierHop', injectedHole))
+                    globalCarrierDict.pop(carrier1.ID)
+                    globalCarrierDict.pop(carrier2.ID)
                 else:
-                    print("EVENT: Exciton Recombining", "after", KMCIterations, "iterations")
-                    numberOfRecombinations += 1
-                    numberOfHops.append(injectedExciton.numberOfHops)
-                    #pass
-                    #input("Pause...")
-                # DEBUG
-                # Calculate the initial position and final positions and append the excitonDisp with the separation
-                initialPos = np.array(hoppingExciton.initialDevicePosn)*parameterDict['morphologyCellSize'] + (np.array(hoppingExciton.initialChromophore.posn) * 1E-10)
-                finalPos = np.array(hoppingExciton.currentDevicePosn)*parameterDict['morphologyCellSize'] + (np.array(hoppingExciton.currentChromophore.posn) * 1E-10)
-                if hoppingExciton.canDissociate is True:
-                    dissExcitonDisp.append(helperFunctions.calculateSeparation(initialPos, finalPos) / 1E-9)
-                    dissExcitonTime.append(hoppingExciton.recombinationTime)
-                else:
-                    recExcitonDisp.append(helperFunctions.calculateSeparation(initialPos, finalPos) / 1E-9)
-                    recExcitonTime.append(hoppingExciton.recombinationTime)
-                # END DEBUG
-            else:
-                heapq.heappush(eventQueue, (hoppingExciton.hopTime, 'excitonHop', injectedExciton))
+                    print(separation, ">", parameterDict['coulombCaptureRadius'])
+                    print("EVENT: Carrier Recombination Failed", "after", KMCIterations, "iterations")
+                    # Carriers are no longer in range, so the recombination fails. Update their recombination flags
+                    carrier1.recombining = False
+                    carrier1.recombiningWith = None
+                    carrier2.recombining = False
+                    carrier2.recombiningWith = None
 
-        elif nextEvent[1] == 'carrierHop':
-            hoppingCarrier = nextEvent[2]
-            # Check that the carrier is still in the carrier dictionary. If it's not, then it has already been removed from the system and we can safely ignore it
-            if hoppingCarrier.ID not in globalCarrierDict.keys():
-                continue
-            #print(hoppingCarrier.carrierType, hoppingCarrier.currentChromophore.species, hoppingCarrier.destinationChromophore.species, hoppingCarrier.currentDevicePosn, "type:", globalMorphologyData.returnDeviceMoietyType(hoppingCarrier.currentDevicePosn))
-            #input("Check this is right. CarrierType = 0 is electron, 1 is hole")
-            hoppingCarrier.performHop()
-            if hoppingCarrier.removedTime is None:
-                # As long as this carrier hasn't just been removed, recalculate its behaviour
-                hoppingCarrier.calculateBehaviour()
-            if hoppingCarrier.hopTime is None:
-                # Carrier is either trapped with no eligible hops or has just been extracted
-                if hoppingCarrier.removedTime is not None:
-                    # Carrier has been extracted, so remove it from the carriers dictionary
-                    globalCarrierDict.pop(hoppingCarrier.ID)
-                # Else: Carrier is trapped, so we'll just leave it there so it affects the Coulombic landscape
             else:
-                # Normal carrier hop, so requeue this carrier
-                heapq.heappush(eventQueue, (hoppingCarrier.hopTime, 'carrierHop', hoppingCarrier))
-            # Check if we're eligible to recombine
-            if (hoppingCarrier.recombining is True) and (hoppingCarrier.ID not in recombiningCarrierIDs) and (hoppingCarrier.recombiningWith not in recombiningCarrierIDs):
-                recombiningCarrierIDs.append(hoppingCarrier.ID)
-                recombiningCarrierIDs.append(hoppingCarrier.recombiningWith)
-                recombinationTime = -np.log(R.random()) / parameterDict['recombinationRate']
-                heapq.heappush(eventQueue, (recombinationTime, 'recombine', hoppingCarrier))
+                print(eventQueue)
+                raise SystemError("New Event is next in queue")
 
-        elif nextEvent[1] == 'recombine':
-            print(eventQueue)
-            print("EVENT: Carrier Recombination Check", "after", KMCIterations, "iterations")
-            # A recombination event is about to occur. At this point, we should check if the carrier and its recombination partner are still in range.
-            carrier1 = nextEvent[2]
-            carrier1Posn = np.array(carrier1.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier1.currentChromophore.posn) * 1E-10)
-            carrier2 = globalCarrierDict[carrier1.recombiningWith]
-            carrier2Posn = np.array(carrier2.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier2.currentChromophore.posn) * 1E-10)
-            separation = np.linalg.norm(carrier2Posn - carrier1Posn)
-            recombiningCarrierIDs.remove(carrier1.ID)
-            recombiningCarrierIDs.remove(carrier2.ID)
-            if separation <= parameterDict['coulombCaptureRadius']:
-                print(separation, "<=", parameterDict['coulombCaptureRadius'])
-                print("EVENT: Carrier Recombination Succeeded", "after", KMCIterations, "iterations")
-                # Carriers are in range, so recombine them
-                carrier1.removedTime = globalTime
-                carrier2.removedTime = globalTime
-                numberOfRecombinations += 1
-                globalCarrierDict.pop(carrier1.ID)
-                globalCarrierDict.pop(carrier2.ID)
-            else:
-                print(separation, ">", parameterDict['coulombCaptureRadius'])
-                print("EVENT: Carrier Recombination Failed", "after", KMCIterations, "iterations")
-                # Carriers are no longer in range, so the recombination fails. Update their recombination flags
-                carrier1.recombining = False
-                carrier1.recombiningWith = None
-                carrier2.recombining = False
-                carrier2.recombiningWith = None
-
+    except KeyboardInterrupt:
+        print("DURING THIS RUN:")
+        print("Slowest Event Considered =", slowestEvent)
+        print("Fastest Event Considered =", fastestEvent)
+        plotEventTimeDistribution(eventTimes)
+        if parameterDict['recordCarrierHistory'] is True:
+            print("Plotting 3D carrier trajectories before exiting...")
+            plot3DTrajectory(globalCarrierDict.values(), parameterDict, deviceArray)
+            exit()
         else:
-            print(eventQueue)
-            raise SystemError("New Event is next in queue")
-
+            exit()
     ### THE FOLLOWING CODE WAS USED TO GENERATE THE ANALYSIS DATA USED IN THE MATTYSUMMARIES EXCITON DYNAMICS STUFF
     #print("Plotting Exciton Characteristics")
     #plt.figure()
@@ -904,7 +995,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     #plt.savefig('./dissExcitonDisp.pdf')
     #plt.clf()
 
-    #plt.hist(np.array(dissExcitonTime) * 1E9, bins=15)
+    #plt.hist(np.array(dissExcitonTime) * 1E9, bins=15
     #plt.title('Time until Dissociation')
     #plt.xlabel('Time, ns')
     #plt.ylabel('Frequency, Arb. U.')
