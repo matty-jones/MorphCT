@@ -2,6 +2,7 @@ import os
 import sys
 import copy
 import random as R
+import time as T
 import numpy as np
 import heapq
 import pickle
@@ -32,6 +33,7 @@ globalTime = 0               # The total simulation time that is required/update
 globalCarrierDict = {}       # A dictionary of all carriers in the system for the potential/recombination calculations
 currentFieldValue = 0        # The field value calculated from the voltage this child process was given
 numberOfExtractions = 0      # The total number of charges that have hopped out of the device through the `correct' contact
+KMCIterations = 0
 
 
 class exciton:
@@ -251,6 +253,8 @@ class carrier:
 
     def performHop(self):
         global numberOfExtractions
+        global KMCIterations
+        global globalTime
         initialID = self.currentChromophore.ID
         destinationID = self.destinationChromophore.ID
         initialPosition = self.currentChromophore.posn
@@ -286,9 +290,9 @@ class carrier:
                             numberOfExtractions -= 1
                     # Else (injected from cathode), number of extractions doesn't change.
                 if self.carrierType == ELECTRON:
-                    print('EVENT: Electron Left Device! New number of extractions:', numberOfExtractions)
+                    print('EVENT: Electron Left Device! New number of extractions:', numberOfExtractions, "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
                 else:
-                    print('EVENT: Hole Left Device! New number of extractions:', numberOfExtractions)
+                    print('EVENT: Hole Left Device! New number of extractions:', numberOfExtractions, "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
             elif newChromophore == 'Out of Bounds':
                 # Trying to cross a periodic boundary. Das ist verboten, discarding the hop
                 pass
@@ -628,7 +632,8 @@ def gaussFit(data):
 def plot3DTrajectory(carriersToPlot, parameterDict, deviceArray):
     fig = plt.figure()
     ax = p3.Axes3D(fig)
-    [xLen, yLen, zLen] = np.array(deviceArray.shape) * parameterDict['morphologyCellSize']
+    [xLen, yLen, zLen] = 1E10 * (np.array(deviceArray.shape) * parameterDict['morphologyCellSize'])
+    # The conversion is needed to get the box in ang
     # Draw boxlines
     # Varying X
     ax.plot([0, xLen], [0, 0], [0, 0], c = 'k', linewidth = 1.0)
@@ -647,12 +652,13 @@ def plot3DTrajectory(carriersToPlot, parameterDict, deviceArray):
     ax.plot([xLen, xLen], [yLen, yLen], [0, zLen], c = 'k', linewidth = 1.0)
 
     colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
-    for index, carrier in enumerate(carriersToPlot):
-        color = colors[index%7]
-        for index, hop in enumerate(carrier.history[:-1]):
-            currentPosn = (np.array(hop[0]) * parameterDict['morphologyCellSize']) + np.array(hop[1])
-            nextHop = carrier.history[index + 1]
-            nextPosn = (np.array(nextHop[0]) * parameterDict['morphologyCellSize']) + np.array(nextHop[1])
+    for carrierNo, carrier in enumerate(carriersToPlot):
+        color = colors[carrierNo%7]
+        for hopIndex, hop in enumerate(carrier.history[:-1]):
+            # Note that conversion factors are needed as hop[0] * morphCellSize is in m, and hop[1] is in ang.
+            currentPosn = (1E10 * (np.array(hop[0]) * parameterDict['morphologyCellSize'])) + np.array(hop[1])
+            nextHop = carrier.history[hopIndex + 1]
+            nextPosn = (1E10 * (np.array(nextHop[0]) * parameterDict['morphologyCellSize'])) + np.array(nextHop[1])
             ax.plot([currentPosn[0], nextPosn[0]], [currentPosn[1], nextPosn[1]], [currentPosn[2], nextPosn[2]], c = color, linewidth = 0.5)
     fileName = '3d_trajectory.pdf'
     plt.savefig('./' + fileName)
@@ -669,6 +675,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     global globalMorphologyData
     global globalTime
     global currentFieldValue
+    global KMCIterations
 
     globalChromophoreData = chromophoreData
     globalMorphologyData = morphologyData
@@ -719,12 +726,12 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     numberOfHops = []
     numberOfDissociations = 0
     numberOfRecombinations = 0
-    KMCIterations = 0
 
     # As the morphology is not changing, we can calculate the dark inject rates at the beginning and then not have to do it again
     darkInjectQueue = calculateDarkCurrentInjectRates(deviceArray, parameterDict)
 
     print("\n\n ---=== MAIN KMC LOOP START ===---\n\n")
+    t0 = T.time()
     # Main KMC loop
     # Put this in a try-except to plot on keyboardInterrupt
     try:
@@ -793,7 +800,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 # Complete the event by injecting an exciton
                 # First find an injection location. For now, this will just be somewhere random in the system
                 randomDevicePosition = [R.randint(0, x-1) for x in deviceArray.shape]
-                print("EVENT: Photoinjection #" + str(numberOfPhotoinjections), "into", randomDevicePosition, "(which has type", repr(deviceArray[tuple(randomDevicePosition)]) + ")", "after", KMCIterations, "iterations")
+                print("EVENT: Photoinjection #" + str(numberOfPhotoinjections), "into", randomDevicePosition, "(which has type", repr(deviceArray[tuple(randomDevicePosition)]) + ")", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
                 injectedExciton = exciton(excitonIndex, globalTime, randomDevicePosition, parameterDict)
                 if (injectedExciton.canDissociate is True) or (injectedExciton.hopTime is None):
                     # Injected onto either a dissociation site or a trap site
@@ -834,7 +841,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
 
             elif nextEvent[1] == 'dark':
                 injectSite = nextEvent[2]
-                print("EVENT: Dark Current injection #" + str(numberOfDarkinjections), "into", injectSite.devicePosn, "(which has type", repr(deviceArray[tuple(injectSite.devicePosn)]) + ")", "after", KMCIterations, "iterations")
+                print("EVENT: Dark Current injection #" + str(numberOfDarkinjections), "into", injectSite.devicePosn, "(which has type", repr(deviceArray[tuple(injectSite.devicePosn)]) + ")", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
                 if injectSite.chromophore.species == 'Donor':
                     # Inject a hole
                     injectedCarrier = carrier(carrierIndex, globalTime, injectSite.devicePosn, injectSite.chromophore, injectSite.electrode, parameterDict)
@@ -875,7 +882,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 if (hoppingExciton.canDissociate is True) or (hoppingExciton.hopTime is None):
                     # Exciton needs to be removed. As we've already popped it from the queue, we just need to not queue it up again.
                     if hoppingExciton.canDissociate is True:
-                        print("EVENT: Exciton Dissociating", "after", KMCIterations, "iterations")
+                        print("EVENT: Exciton Dissociating", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
                         numberOfDissociations += 1
                         numberOfHops.append(injectedExciton.numberOfHops)
                         # Create the carrier instances, but don't yet calculate their behaviour (need to add them to the carrier list before we can calculate the energetics)
@@ -895,7 +902,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         if injectedHole.hopTime is not None:
                             heapq.heappush(eventQueue, (injectedHole.hopTime, 'carrierHop', injectedHole))
                     else:
-                        print("EVENT: Exciton Recombining", "after", KMCIterations, "iterations")
+                        print("EVENT: Exciton Recombining", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
                         numberOfRecombinations += 1
                         numberOfHops.append(injectedExciton.numberOfHops)
                         #pass
@@ -943,7 +950,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
 
             elif nextEvent[1] == 'recombine':
                 print(eventQueue)
-                print("EVENT: Carrier Recombination Check", "after", KMCIterations, "iterations")
+                print("EVENT: Carrier Recombination Check", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
                 # A recombination event is about to occur. At this point, we should check if the carrier and its recombination partner are still in range.
                 carrier1 = nextEvent[2]
                 carrier1Posn = np.array(carrier1.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier1.currentChromophore.posn) * 1E-10)
@@ -954,7 +961,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 recombiningCarrierIDs.remove(carrier2.ID)
                 if separation <= parameterDict['coulombCaptureRadius']:
                     print(separation, "<=", parameterDict['coulombCaptureRadius'])
-                    print("EVENT: Carrier Recombination Succeeded", "after", KMCIterations, "iterations")
+                    print("EVENT: Carrier Recombination Succeeded", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
                     # Carriers are in range, so recombine them
                     carrier1.removedTime = globalTime
                     carrier2.removedTime = globalTime
@@ -963,7 +970,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     globalCarrierDict.pop(carrier2.ID)
                 else:
                     print(separation, ">", parameterDict['coulombCaptureRadius'])
-                    print("EVENT: Carrier Recombination Failed", "after", KMCIterations, "iterations")
+                    print("EVENT: Carrier Recombination Failed", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
                     # Carriers are no longer in range, so the recombination fails. Update their recombination flags
                     carrier1.recombining = False
                     carrier1.recombiningWith = None
@@ -975,10 +982,17 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 raise SystemError("New Event is next in queue")
 
     except KeyboardInterrupt:
-        print("DURING THIS RUN:")
-        print("Slowest Event Considered =", slowestEvent)
-        print("Fastest Event Considered =", fastestEvent)
-        plotEventTimeDistribution(eventTimes)
+        time = T.time() - t0
+        print("Run terminated after", KMCIterations, "iterations (globalTime =", str(globalTime) + ") after", time, "seconds")
+        print("Number of Photoinjections =", numberOfPhotoinjections)
+        print("Number of Dark Injections =", numberOfDarkinjections)
+        print("Number of Dissociations =", numberOfDissociations)
+        print("Number of Recombinations =", numberOfRecombinations)
+        print("Number of Extractions =", numberOfExtractions)
+        #print("DURING THIS RUN:")
+        #print("Slowest Event Considered =", slowestEvent)
+        #print("Fastest Event Considered =", fastestEvent)
+        #plotEventTimeDistribution(eventTimes)
         if parameterDict['recordCarrierHistory'] is True:
             print("Plotting 3D carrier trajectories before exiting...")
             plot3DTrajectory(globalCarrierDict.values(), parameterDict, deviceArray)
@@ -1046,6 +1060,13 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     #plt.plot(convGlobalTime, convExtractions)
     #plt.savefig('./convergence.pdf')
     #return
+    time = T.time() - t0
+    print("Run completed after", KMCIterations, "iterations (globalTime =", str(globalTime) + ") after", time, "seconds")
+    print("Number of Photoinjections =", numberOfPhotoinjections)
+    print("Number of Dark Injections =", numberOfDarkinjections)
+    print("Number of Dissociations =", numberOfDissociations)
+    print("Number of Recombinations =", numberOfRecombinations)
+    print("Number of Extractions =", numberOfExtractions)
 
 
 if __name__ == "__main__":
