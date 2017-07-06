@@ -343,22 +343,22 @@ class carrier:
             topImagePosn = copy.deepcopy(carrierPosn)
             topImagePosn[2] = deviceZSize + (deviceZSize - carrierPosn[2])
             separation = np.linalg.norm(currentAbsolutePosition - topImagePosn)
-            coulombicPotential -= ((2 * self.carrierType) - 1) * (coulombConstant / separation)
+            coulombicPotential -= ((2 * carrier.carrierType) - 1) * (coulombConstant / separation)
             # Now do the bottom image charge
             bottomImagePosn = copy.deepcopy(carrierPosn)
             bottomImagePosn[2] = - carrierPosn[2]
             separation = np.linalg.norm(currentAbsolutePosition - bottomImagePosn)
-            coulombicPotential -= ((2 * self.carrierType) - 1) * (coulombConstant / separation)
+            coulombicPotential -= ((2 * carrier.carrierType) - 1) * (coulombConstant / separation)
             # Now do the top image of the bottom image charge
             topImageOfBottomImagePosn = copy.deepcopy(carrierPosn)
             topImageOfBottomImagePosn[2] = (2 * deviceZSize) + carrierPosn[2]
             separation = np.linalg.norm(currentAbsolutePosition - topImageOfBottomImagePosn)
-            coulombicPotential -= ((2 * self.carrierType) -1 ) * (coulombConstant / separation)
+            coulombicPotential -= ((2 * carrier.carrierType) -1 ) * (coulombConstant / separation)
             # And finally the bottom image of the top image charge
             bottomImageOfTopImagePosn = copy.deepcopy(carrierPosn)
             bottomImageOfTopImagePosn[2] = - (deviceZSize + (deviceZSize - carrierPosn[2]))
             separation = np.linalg.norm(currentAbsolutePosition - bottomImageOfTopImagePosn)
-            coulombicPotential -= ((2 * self.carrierType) - 1) * (coulombConstant / separation)
+            coulombicPotential -= ((2 * carrier.carrierType) - 1) * (coulombConstant / separation)
         #print(currentAbsolutePosition)
         #print(currentAbsolutePosition[2], destinationZ, zSep)
         #print("Coulombic Potential =", coulombicPotential)
@@ -368,17 +368,17 @@ class carrier:
         return totalPotential
 
 
-class injectSite:
-    def __init__(self, devicePosn, chromophore, injectRate, electrode):
-        self.devicePosn = devicePosn
-        self.chromophore = chromophore
-        self.injectRate = injectRate
-        self.electrode = electrode
-        self.calculateInjectTime()
-
-    def calculateInjectTime(self):
-        #self.injectTime = float(1.0 / self.injectRate)
-        self.injectTime = determineEventTau(self.injectRate, 'dark-injection')
+#class injectSite:
+#    def __init__(self, devicePosn, chromophore, injectRate, electrode):
+#        self.devicePosn = devicePosn
+#        self.chromophore = chromophore
+#        self.injectRate = injectRate
+#        self.electrode = electrode
+#        self.calculateInjectTime()
+#
+#    def calculateInjectTime(self):
+#        self.injectTime = np.float64(1.0 / self.injectRate)
+#        #self.injectTime = determineEventTau(self.injectRate, 'dark-injection')
 
 
 def plotHopDistance(distribution):
@@ -461,26 +461,27 @@ def calculateDarkCurrentInjectRates(deviceArray, parameterDict):
     holeInjectBarrier = parameterDict['anodeWorkFunction'] - parameterDict['donorHOMO']
     validCathodeInjSites = 0
     validAnodeInjSites = 0
-    injectRates = []
+    injectRatesData = []
     # Consider electron-injecting electrode (cathode) at bottom of device first:
     zVal = 0
     for xVal in range(deviceShape[0]):
         for yVal in range(deviceShape[1]):
-            injectChromophores = []
+            cathodeInjectChromophores = []
             AAMorphology = globalMorphologyData.returnAAMorphology([xVal, yVal, zVal])
             morphologyChromophores = globalChromophoreData.returnChromophoreList([xVal, yVal, zVal])
             for chromophore in morphologyChromophores:
                 # Find all chromophores that are within the bottom 10 Ang of the device cell
                 if (chromophore.posn[2] <= -(AAMorphology['lz'] / 2.0) + 10) and (sum(1 for _ in filter(None.__ne__, chromophore.neighboursDeltaE)) > 0):
-                    injectChromophores.append([chromophore, 1E-10 * (chromophore.posn[2] - (-AAMorphology['lz'] / 2.0))])
+                    cathodeInjectChromophores.append([chromophore, 1E-10 * (chromophore.posn[2] - (-(AAMorphology['lz'] / 2.0)))])
                     validCathodeInjSites += 1
-            for [chromophore, separation] in injectChromophores:
+            for [chromophore, separation] in cathodeInjectChromophores:
                 if chromophore.species == 'Acceptor':
                     # Injecting an electron from the cathode (easy)
                     #print("EASY INJECT", electronInjectBarrier, "+", chromophore.LUMO - parameterDict['acceptorLUMO'])
                     #print("Chromo LUMO =", chromophore.LUMO)
                     #print("Target LUMO =", parameterDict['acceptorLUMO'])
-                    deltaE = elementaryCharge * (electronInjectBarrier - (chromophore.LUMO - parameterDict['acceptorLUMO']))
+                    deltaE = elementaryCharge * (electronInjectBarrier)
+                    #deltaE = elementaryCharge * (electronInjectBarrier - (chromophore.LUMO - parameterDict['acceptorLUMO']))
                     #print("Easy ELECTRON Inject from Cathode =", deltaE / elementaryCharge)
                     #input("PAUSE...")
                 else:
@@ -491,51 +492,52 @@ def calculateDarkCurrentInjectRates(deviceArray, parameterDict):
                     # Here, we make the assumption that the energy difference between the chromophore and literature HOMOs
                     # would be the same as the energy difference between the chromophore and literature LUMOs for injection
                     # (this is because we don't record the Donor LUMO or the Acceptor HOMO)
-                    deltaE = elementaryCharge * (bandgap - electronInjectBarrier - (chromophore.HOMO - parameterDict['donorHOMO']))
+                    deltaE = elementaryCharge * (bandgap - electronInjectBarrier)
+                    #deltaE = elementaryCharge * (bandgap - electronInjectBarrier - (chromophore.HOMO - parameterDict['donorHOMO']))
                     #print("Difficult HOLE inject from Cathode =", deltaE / elementaryCharge)
                     #input("PAUSE...")
+                #print("CATHODE DELTA E", deltaE, chromophore.species)
                 injectRate = calculateMillerAbrahamsHopRate(parameterDict['MAPrefactor'], separation, parameterDict['MALocalisationRadius'], deltaE, parameterDict['systemTemperature'])
                 #print("CATHODE", injectRate)
-                injectRates.append(injectRate)
-                injection = injectSite([xVal, yVal, zVal], chromophore, injectRate, 'Cathode')
-                heapq.heappush(injectQueue, (injection.injectTime, 'dark', injection))
+                injectRatesData.append([injectRate, chromophore])
     # Now consider hole-injecting electrode at top of device (anode):
+    #input("PAUSE...")
     zVal = deviceShape[2]-1
     for xVal in range(deviceShape[0]):
         for yVal in range(deviceShape[1]):
-            injectChromophores = []
+            anodeInjectChromophores = []
             AAMorphology = globalMorphologyData.returnAAMorphology([xVal, yVal, zVal])
             morphologyChromophores = globalChromophoreData.returnChromophoreList([xVal, yVal, zVal])
             estimatedTransferIntegral = estimateTransferIntegral(morphologyChromophores) * elementaryCharge
             for chromophore in morphologyChromophores:
                 # Find all chromophores that are within the top nanometer 10 Ang of the device cell
                 if (chromophore.posn[2] >= (AAMorphology['lz'] / 2.0) - 10) and (sum(1 for _ in filter(None.__ne__, chromophore.neighboursDeltaE)) > 0):
-                    injectChromophores.append([chromophore, 1E-10 * ((AAMorphology['lz'] / 2.0) - chromophore.posn[2])])
+                    anodeInjectChromophores.append([chromophore, 1E-10 * ((AAMorphology['lz'] / 2.0) - chromophore.posn[2])])
                     validAnodeInjSites += 1
-            for [chromophore, separation] in injectChromophores:
+            for [chromophore, separation] in anodeInjectChromophores:
                 if chromophore.species == 'Acceptor':
                     # Injecting an electron from the anode (hard)
-                    deltaE = elementaryCharge * (bandgap - holeInjectBarrier - (chromophore.LUMO - parameterDict['acceptorLUMO']))
+                    deltaE = elementaryCharge * (bandgap - holeInjectBarrier)
+                    #deltaE = elementaryCharge * (bandgap - holeInjectBarrier - (chromophore.LUMO - parameterDict['acceptorLUMO']))
                     #print("Hard ELECTRON Inject from Anode =", deltaE / elementaryCharge)
                 else:
                     # Injecting a hole from the anode (easy)
-                    deltaE = elementaryCharge * (holeInjectBarrier + (chromophore.HOMO - parameterDict['donorHOMO']))
+                    deltaE = elementaryCharge * (holeInjectBarrier)
+                    #deltaE = elementaryCharge * (holeInjectBarrier + (chromophore.HOMO - parameterDict['donorHOMO']))
                     #print("Easy HOLE Inject from Anode =", deltaE / elementaryCharge)
+                #print("ANODE DELTA E", deltaE, chromophore.species)
                 injectRate = calculateMillerAbrahamsHopRate(parameterDict['MAPrefactor'], separation, parameterDict['MALocalisationRadius'], deltaE, parameterDict['systemTemperature'])
-                injectRates.append(injectRate)
-                #print("ANODE", injectRate)
-                injection = injectSite([xVal, yVal, zVal], chromophore, injectRate, 'Anode')
-                heapq.heappush(injectQueue, (injection.injectTime, 'dark', injection))
+                injectRatesData.append([injectRate, chromophore])
     #plt.figure()
     #plt.hist(injectRates, bins = np.logspace(9, 12, 30))
     #plt.gca().set_xscale('log')
-    print("Valide Cathode Injection Sites =", validCathodeInjSites)
-    print("Valide Anode Injection Sites =", validAnodeInjSites)
+    #print("Valide Cathode Injection Sites =", validCathodeInjSites)
+    #print("Valide Anode Injection Sites =", validAnodeInjSites)
     #print("Mean =", np.mean(injectRates), "STD =", np.std(injectRates))
     #print("Max =", max(injectRates), "Min =", min(injectRates))
     #plt.show()
     #exit()
-    return injectQueue
+    return injectRatesData
 
 
 def estimateTransferIntegral(chromophoreList):
@@ -579,9 +581,9 @@ def estimateTransferIntegral(chromophoreList):
 
 
 def calculateMillerAbrahamsHopRate(prefactor, separation, radius, deltaEij, T):
-    kij = prefactor * np.exp(-2 * separation / radius)
+    kij = prefactor * np.exp(-2 * separation/radius)
     if deltaEij > 0:
-        kij *= np.exp(-(deltaEij * elementaryCharge) / (kB * T))
+        kij *= np.exp(-deltaEij / (kB * T))
     #print("kij =", kij)
     #print("prefactor =", prefactor)
     #print("separation =", separation)
@@ -632,7 +634,7 @@ def determineEventTau(rate, eventType):
                     print("Permitting the event anyway with the next random number.")
             x = R.random()
             # Ensure that we do not get exactly 0.0 or 1.0, which would break our logarithm
-            if (x < 0.001) or (x > 0.999):
+            if (x == 0) or (x == 1):
                 continue
             tau = - np.log(x) / rate
             if ((tau > fastestEventAllowed) and (tau < slowestEventAllowed)) or (counter == 100):
@@ -778,16 +780,16 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     numberOfRecombinations = 0
 
     # As the morphology is not changing, we can calculate the dark inject rates at the beginning and then not have to do it again
-    darkInjectQueue = calculateDarkCurrentInjectRates(deviceArray, parameterDict)
+    darkInjectRatesData = calculateDarkCurrentInjectRates(deviceArray, parameterDict)
 
-    darkTimes = [x[0] for x in darkInjectQueue]
-    print("Dark injection stats:")
-    print("Mean =", np.mean(darkTimes), "STD =", np.std(darkTimes), "Min =", min(darkTimes), "Max =", max(darkTimes))
-    #plt.figure()
-    #plt.hist(darkTimes, bins = np.logspace(-18, -6, 30))
-    #plt.gca().set_xscale('log')
-    #plt.show()
-    #exit()
+    darkInjectRateDist = [_[0] for _ in darkInjectRatesData]
+    print("Dark injection rate stats:")
+    print("Mean =", np.mean(darkInjectRateDist), "STD =", np.std(darkInjectRateDist), "Min =", min(darkInjectRateDist), "Max =", max(darkInjectRateDist))
+    plt.figure()
+    plt.hist(darkInjectRateDist, bins = np.logspace(2, 10, 20))
+    plt.gca().set_xscale('log')
+    plt.show()
+    exit()
 
     print("\n\n ---=== MAIN KMC LOOP START ===---\n\n")
     t0 = T.time()
@@ -829,15 +831,8 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 # in the darkInjectQueue
                 # In some cases (like the test morphology), carriers can't be injected with a rate > 1, and so the darkInjectQueue
                 # is empty. This catches that and effectively deactivates dark current if it can't happen.
-                if len(darkInjectQueue) > 0:
-                    nextDarkInject = heapq.heappop(darkInjectQueue)
-                    nextDarkInjectTime = nextDarkInject[0]
-                    nextDarkInjectSite = nextDarkInject[2]
-                    # Decrement the dark inject queue
-                    darkInjectQueue = decrementTime(darkInjectQueue, nextDarkInjectTime)
-                    # This site will be requeued for further dark injection after the carrier has hopped away from it.
-                    # And finally, push this injection to the main KMC queue
-                    heapq.heappush(eventQueue, (nextDarkInjectTime, 'dark', nextDarkInjectSite))
+                nextDarkInject = R.choice(darkInjectRatesData)
+                heapq.heappush(eventQueue, (nextDarkInject[0], 'dark', nextDarkInject[1]))
 
             # Now find out what the next event is
             nextEvent = heapq.heappop(eventQueue)
