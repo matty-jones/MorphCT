@@ -38,7 +38,7 @@ class MDPhase:
         self.system = init.read_xml(filename=inputFile)
         # Determine the required groups so we can use the correct integrator each time
         self.rigidGroup, self.nonRigidGroup, self.integrationTypes = self.getIntegrationGroups()
-        self.outputLogFileName = self.outputDir + '/' + self.morphology[:-4] + '/morphology/energies_' + self.morphology[:-4] + '.log'
+        self.outputLogFileName = self.outputMorphDir + '/' + self.morphology[:-4] + '/morphology/energies_' + self.morphology[:-4] + '.log'
         # Determine which quantities should be logged during the simulation phase
         self.logQuantities = ['temperature', 'pressure', 'volume', 'potential_energy', 'kinetic_energy', 'bond_' + self.bondType + '_energy', 'angle_' + self.angleType + '_energy', 'dihedral_' + self.dihedralType + '_energy']
         # Set the bond coefficients
@@ -299,7 +299,7 @@ def scaleMorphology(initialMorphology, parameterDict, sScale, eScale):
     print("Scaling morphology by sigma =", str(1 / sScale) + "...")
     if sScale != 1.0:
         helperFunctions.scale(initialMorphology, sScale)
-    helperFunctions.writeMorphologyXML(initialMorphology, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/phase0_' + parameterDict['morphology'])
+    helperFunctions.writeMorphologyXML(initialMorphology, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/phase0_' + parameterDict['morphology'])
 
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
@@ -308,7 +308,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     # the distances and energies are normalised to the strongest pair interaction
     # and the diameter of the largest atom (makes it easier on HOOMDs calculations
     # and ensures that T = 1.0 is an interesting temperature threshold)
-    currentFiles = os.listdir(parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology')
+    currentFiles = os.listdir(parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology')
     sScale, eScale = obtainScaleFactors(parameterDict)
     # Only scale the morphology if it hasn't been already
     if (parameterDict['overwriteCurrentData'] is False) and ('phase0_' + parameterDict['morphology'] in currentFiles):
@@ -317,7 +317,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         scaleMorphology(AAMorphologyDict, parameterDict, sScale, eScale)
     # Reset logfile
     try:
-        os.remove(parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/energies_' + parameterDict['morphology'][:-4] + '.log')
+        os.remove(parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/energies_' + parameterDict['morphology'][:-4] + '.log')
     except OSError:
         pass
     # Perform each molecular dynamics phase as specified in the parXX.py
@@ -328,12 +328,12 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
             if parameterDict['overwriteCurrentData'] is False:
                 print(outputFile, "already exists. Skipping...")
                 continue
-        MDPhase(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, phaseNo, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/' + inputFile, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/' + outputFile, sScale, eScale).optimiseStructure()
-    finalXMLName = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/final_' + parameterDict['morphology']
+        MDPhase(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, phaseNo, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/' + inputFile, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/' + outputFile, sScale, eScale).optimiseStructure()
+    finalXMLName = parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/final_' + parameterDict['morphology']
     if 'final_' + parameterDict['morphology'] not in currentFiles:
         # Now all phases are complete, remove the ghost particles from the system
         print("Removing ghost particles to create final output...")
-        removeGhostParticles(parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/' + outputFile, finalXMLName, sigma = sScale)
+        removeGhostParticles(parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/' + outputFile, finalXMLName, sigma = sScale)
     # Finally, update the pickle file with the most recent and realistic
     # AAMorphologyDict so that we can load it again further along the pipeline
     AAMorphologyDict = helperFunctions.loadMorphologyXML(finalXMLName)
@@ -342,7 +342,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     # Add in the unwrapped positions
     AAMorphologyDict = helperFunctions.addUnwrappedPositions(AAMorphologyDict)
     # Write the pickle file
-    helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle')
+    helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle')
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
 
 

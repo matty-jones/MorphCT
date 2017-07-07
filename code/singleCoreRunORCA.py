@@ -18,9 +18,9 @@ if __name__ == '__main__':
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile, '/')[-1] + 1:]
     orcaDir = os.getenv('ORCA_BIN', str(os.getcwd()) + '/ORCA')
     orcaPath = orcaDir + '/orca'
-    inputDir = os.getcwd() + '/outputFiles/' + morphologyName + '/chromophores/inputORCA'
+    inputDir = morphologyFile + '/chromophores/inputORCA'
     logFile = inputDir.replace('/inputORCA', '/ORCAlog_' + str(CPURank) + '.log')
-    outputDir = os.getcwd() + '/outputFiles/' + morphologyName + '/chromophores/outputORCA'
+    outputDir = morphologyFile + '/chromophores/outputORCA'
     pickleFileName = inputDir.replace('inputORCA', 'ORCAJobs.pickle')
     with open(pickleFileName, 'rb') as pickleFile:
         jobsList = pickle.load(pickleFile)

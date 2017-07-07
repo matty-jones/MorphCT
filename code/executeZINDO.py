@@ -17,7 +17,7 @@ def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
         else:
             terminatingGroupPositions = None
             terminatingGroupImages = None
-        writeOrcaInp(AAMorphologyDict, chromophore.AAIDs, [chromophore.image] * len(chromophore.AAIDs), terminatingGroupPositions, terminatingGroupImages, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + chromophore.orcaInput)
+        writeOrcaInp(AAMorphologyDict, chromophore.AAIDs, [chromophore.image] * len(chromophore.AAIDs), terminatingGroupPositions, terminatingGroupImages, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + chromophore.orcaInput)
     print("")
     # Determine how many pairs there are first:
     numberOfPairs = 0
@@ -54,10 +54,10 @@ def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
                 terminatingGroupImages1 = [[0, 0, 0] for i in range(len(terminatingGroupPositions1))]
                 terminatingGroupImages2 = [chromophore2Transformation for i in range(len(terminatingGroupPositions2))]
                 # Write the dimer input file
-                writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPositions1 + terminatingGroupPositions2, terminatingGroupImages1 + terminatingGroupImages2, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + inputName)
+                writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPositions1 + terminatingGroupPositions2, terminatingGroupImages1 + terminatingGroupImages2, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + inputName)
             else:
                 # Write the dimer input file
-                writeOrcaInp(AAMorphologyDict, AAIDs, images, None, None, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + inputName)
+                writeOrcaInp(AAMorphologyDict, AAIDs, images, None, None, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + inputName)
     print("")
 
 
@@ -209,7 +209,7 @@ def getORCAJobs(inputDir, procIDs):
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
     createInputFiles(chromophoreList, AAMorphologyDict, parameterDict)
-    inputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/inputORCA'
+    inputDir = parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/inputORCA'
     procIDs = parameterDict['procIDs']
     jobsList = getORCAJobs(inputDir, procIDs)
     numberOfInputs = sum([len(ORCAFilesToRun) for ORCAFilesToRun in jobsList])
@@ -225,8 +225,8 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         runningJobs = []
         # Open the required processes to execute the ORCA jobs
         for CPURank, jobs in enumerate(jobsList):
-            print('python ' + os.getcwd() + '/code/singleCoreRunORCA.py ' + parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + ' ' + str(CPURank) + ' &')
-            runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunORCA.py', parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4], str(CPURank)]))
+            print('python ' + os.getcwd() + '/code/singleCoreRunORCA.py ' + parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + ' ' + str(CPURank) + ' &')
+            runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunORCA.py', parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4], str(CPURank)]))
         # Wait for all jobs to complete
         [p.wait() for p in runningJobs]
         # Delete the job pickle

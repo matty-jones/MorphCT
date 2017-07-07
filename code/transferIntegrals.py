@@ -144,7 +144,7 @@ def rerunFails(failedChromoFiles, parameterDict):
     print(failedChromoFiles)
     print("There were", len(list(failedChromoFiles.keys())), "failed jobs.")
     procIDs = parameterDict['procIDs']
-    outputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4]
+    outputDir = parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4]
     popList = []
     # Firstly, modify the input files to see if numerical tweaks make ORCA happier
     for failedFile, failedData in failedChromoFiles.items():
@@ -221,7 +221,7 @@ def calculateTI(orbitalSplitting, deltaE):
 
 
 def updateSingleChromophoreList(chromophoreList, parameterDict):
-    orcaOutputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/outputORCA/'
+    orcaOutputDir = parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/outputORCA/'
     # NOTE: This can possibly be done by recursively iterating through the neighbourlist of each chromophore, but I
     # imagine Python will whinge about the levels of recursion, so for now I'll just go through every chromophore twice.
     # Firstly, set the energy levels for each single chromophore, rerunning them if they fail.
@@ -272,7 +272,7 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
 def updatePairChromophoreList(chromophoreList, parameterDict):
     # Now that all the single chromophore energy levels are done, iterate through again and check the neighbours,
     # rerunning the pair file if it failed (which it won't have done because all my chromophores are delicious now).
-    orcaOutputDir = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/outputORCA/'
+    orcaOutputDir = parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/outputORCA/'
     failedPairChromos = {}
     for chromoLocation, chromophore in enumerate(chromophoreList):
         neighbourIDs = [neighbourData[0] for neighbourData in chromophore.neighbours]
@@ -445,7 +445,7 @@ def scaleEnergies(chromophoreList, parameterDict):
 
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
-    pickleName = parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle'
+    pickleName = parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle'
     # First, check that we need to examine the single chromophores
     runSingles = False
     if parameterDict['overwriteCurrentData'] is False:

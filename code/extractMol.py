@@ -75,7 +75,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         # Use the moleculeAAIDs for each molecule to create a writeable molecule dictionary
         moleculeDict = obtainMoleculeDict(AAMorphologyDict, moleculeAAIDs)
         # Write the molecule dictionary
-        helperFunctions.writeMorphologyXML(moleculeDict, parameterDict['outputDir'] + '/' + parameterDict['morphology'][:-4] + '/molecules/mol_%04d.xml' % (moleculeNo))
+        helperFunctions.writeMorphologyXML(moleculeDict, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/molecules/mol_%04d.xml' % (moleculeNo))
 
 
 if __name__ == "__main__":

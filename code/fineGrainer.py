@@ -42,13 +42,13 @@ class morphology:
             print("No CG to AA data found in parameter file - the morphology is already fine-grained! Skipping this module...")
             # Write the XML file and create the pickle
             print("Writing XML file...")
-            AAFileName = './outputFiles/' + self.morphologyName + '/morphology/' + self.morphologyName + '.xml'
+            AAFileName = self.outputMorphDir + '/' + self.morphologyName + '/morphology/' + self.morphologyName + '.xml'
             atomisticMorphology = helperFunctions.addUnwrappedPositions(self.CGDictionary)
             # Now write the morphology XML
             helperFunctions.writeMorphologyXML(atomisticMorphology, AAFileName)
             # And finally write the pickle with the CGDictionary as None (to indicate to MorphCT that no
             # fine-graining has taken place), but the other parameters assigned as required.
-            pickleLocation = './outputFiles/' + self.morphologyName + '/code/' + self.morphologyName + '.pickle'
+            pickleLocation = self.outputMorphDir + '/' + self.morphologyName + '/code/' + self.morphologyName + '.pickle'
             helperFunctions.writePickle((atomisticMorphology, None, None, self.parameterDict, self.chromophoreList), pickleLocation)
             return atomisticMorphology, None, None, self.parameterDict, self.chromophoreList
 
@@ -129,7 +129,7 @@ class morphology:
         print("\n")
         # Now write the XML file and create the pickle
         print("Writing XML file...")
-        AAFileName = './outputFiles/' + self.morphologyName + '/morphology/' + self.morphologyName + '.xml'
+        AAFileName = self.outputMorphDir + '/' + self.morphologyName + '/morphology/' + self.morphologyName + '.xml'
         # Replace the `positions' with the `unwrapped_positions' ready for writing
         AAMorphologyDict = helperFunctions.replaceWrappedPositions(AAMorphologyDict)
         # Update the additionalConstraints that we put in by checking all of the constraints have the correct names before writing
@@ -137,7 +137,7 @@ class morphology:
         # Now write the morphology XML
         helperFunctions.writeMorphologyXML(AAMorphologyDict, AAFileName)
         # And finally write the pickle
-        pickleLocation = './outputFiles/' + self.morphologyName + '/code/' + self.morphologyName + '.pickle'
+        pickleLocation = self.outputMorphDir + '/' + self.morphologyName + '/code/' + self.morphologyName + '.pickle'
         helperFunctions.writePickle((AAMorphologyDict, self.CGDictionary, CGToAAIDMaster, self.parameterDict, self.chromophoreList), pickleLocation)
         return AAMorphologyDict, self.CGDictionary, CGToAAIDMaster, self.parameterDict, self.chromophoreList
 
