@@ -368,17 +368,17 @@ class carrier:
         return totalPotential
 
 
-#class injectSite:
-#    def __init__(self, devicePosn, chromophore, injectRate, electrode):
-#        self.devicePosn = devicePosn
-#        self.chromophore = chromophore
-#        self.injectRate = injectRate
-#        self.electrode = electrode
-#        self.calculateInjectTime()
-#
-#    def calculateInjectTime(self):
-#        self.injectTime = np.float64(1.0 / self.injectRate)
-#        #self.injectTime = determineEventTau(self.injectRate, 'dark-injection')
+class injectSite:
+    def __init__(self, devicePosn, chromophore, injectRate, electrode):
+        self.devicePosn = devicePosn
+        self.chromophore = chromophore
+        self.injectRate = injectRate
+        self.electrode = electrode
+        self.calculateInjectTime()
+
+    def calculateInjectTime(self):
+        #self.injectTime = np.float64(1.0 / self.injectRate)
+        self.injectTime = determineEventTau(self.injectRate, self.electrode + '-injection')
 
 
 def plotHopDistance(distribution):
@@ -446,13 +446,12 @@ def plotConnections(excitonPath, chromophoreList, AADict):
     print("Figure saved as ./" + fileName)
 
 
-def calculateDarkCurrentInjectRates(deviceArray, parameterDict):
+def calculateDarkCurrentInjections(deviceArray, parameterDict):
     # NOTE Had a nightmare with Marcus hopping here, and I'm not convinced it makes sense to have hops from metals
     # be described wrt reorganisation energies and transfer integrals. Instead, I'm going to use a more generic
     # MA hopping methodology here. This therefore needs a prefactor, which is defined in the parameter file.
     # This is another variable to calibrate, but for now I've set it such that we get a reasonable hopping rate
     # for dark-injection hops (somewhere in the middle of our normal hopping-rate distribution (i.e. ~1E12))
-    injectQueue = []
     # Get the device shape so that we know which cells to inject into
     deviceShape = deviceArray.shape
     # Calculate the important energy levels
@@ -461,7 +460,10 @@ def calculateDarkCurrentInjectRates(deviceArray, parameterDict):
     holeInjectBarrier = parameterDict['anodeWorkFunction'] - parameterDict['donorHOMO']
     validCathodeInjSites = 0
     validAnodeInjSites = 0
-    injectRatesData = []
+    cathodeInjectRatesData = []
+    anodeInjectRatesData = []
+    cathodeInjectWaitTimes = []
+    anodeInjectWaitTimes = []
     # Consider electron-injecting electrode (cathode) at bottom of device first:
     zVal = 0
     for xVal in range(deviceShape[0]):
@@ -499,7 +501,11 @@ def calculateDarkCurrentInjectRates(deviceArray, parameterDict):
                 #print("CATHODE DELTA E", deltaE, chromophore.species)
                 injectRate = calculateMillerAbrahamsHopRate(parameterDict['MAPrefactor'], separation, parameterDict['MALocalisationRadius'], deltaE, parameterDict['systemTemperature'])
                 #print("CATHODE", injectRate)
-                injectRatesData.append([injectRate, chromophore])
+                cathodeInjectRatesData.append(injectRate)
+                # Create inject site object
+                site = injectSite([xVal, yVal, zVal], chromophore, injectRate, 'cathode')
+                injectTime = site.injectTime
+                heapq.heappush(cathodeInjectWaitTimes, (injectTime, 'cathode-injection', site))
     # Now consider hole-injecting electrode at top of device (anode):
     #input("PAUSE...")
     zVal = deviceShape[2]-1
@@ -527,7 +533,11 @@ def calculateDarkCurrentInjectRates(deviceArray, parameterDict):
                     #print("Easy HOLE Inject from Anode =", deltaE / elementaryCharge)
                 #print("ANODE DELTA E", deltaE, chromophore.species)
                 injectRate = calculateMillerAbrahamsHopRate(parameterDict['MAPrefactor'], separation, parameterDict['MALocalisationRadius'], deltaE, parameterDict['systemTemperature'])
-                injectRatesData.append([injectRate, chromophore])
+                anodeInjectRatesData.append(injectRate)
+                # Create inject site object
+                site = injectSite([xVal, yVal, zVal], chromophore, injectRate, 'anode')
+                injectTime = site.injectTime
+                heapq.heappush(anodeInjectWaitTimes, (injectTime, 'anode-injection', site))
     #plt.figure()
     #plt.hist(injectRates, bins = np.logspace(9, 12, 30))
     #plt.gca().set_xscale('log')
@@ -537,7 +547,19 @@ def calculateDarkCurrentInjectRates(deviceArray, parameterDict):
     #print("Max =", max(injectRates), "Min =", min(injectRates))
     #plt.show()
     #exit()
-    return injectRatesData
+    cathodeInjectRate = np.mean(cathodeInjectRatesData)
+    anodeInjectRate = np.mean(anodeInjectRatesData)
+    return cathodeInjectRate, anodeInjectRate, cathodeInjectWaitTimes, anodeInjectWaitTimes
+
+
+def getNextDarkEvent(queue, electrode):
+    # A function that pops the next event from a queue (cathode or anode injection queues), decrements the time, requeues the injectSite with a new time, pushes to the queue and returns the next event and the updated queue
+    nextEvent = heapq.heappop(queue)
+    queue = decrementTime(queue, nextEvent[0])
+    requeuedEvent = copy.deepcopy(nextEvent[2])
+    requeuedEvent.calculateInjectTime()
+    heapq.heappush(queue, (requeuedEvent.injectTime, electrode + '-injection', requeuedEvent))
+    return nextEvent, queue
 
 
 def estimateTransferIntegral(chromophoreList):
@@ -757,7 +779,8 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     photoinjectionRate = calculatePhotoinjectionRate(parameterDict, deviceArray.shape)
     outputCurrentDensity = []
     numberOfPhotoinjections = 0
-    numberOfDarkinjections = 0
+    numberOfCathodeInjections = 0
+    numberOfAnodeInjections = 0
     excitonIndex = 0
     carrierIndex = 0
     outputCurrentConverged = False
@@ -779,17 +802,17 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     numberOfDissociations = 0
     numberOfRecombinations = 0
 
-    # As the morphology is not changing, we can calculate the dark inject rates at the beginning and then not have to do it again
-    darkInjectRatesData = calculateDarkCurrentInjectRates(deviceArray, parameterDict)
+    # As the morphology is not changing, we can calculate the dark inject rates and locations at the beginning and then not have to do it again, just re-queue up the injectSites as we use them by calling site(calculateInjectTime)
+    cathodeInjectRate, anodeInjectRate, cathodeInjectQueue, anodeInjectQueue = calculateDarkCurrentInjections(deviceArray, parameterDict)
 
-    darkInjectRateDist = [_[0] for _ in darkInjectRatesData]
-    print("Dark injection rate stats:")
-    print("Mean =", np.mean(darkInjectRateDist), "STD =", np.std(darkInjectRateDist), "Min =", min(darkInjectRateDist), "Max =", max(darkInjectRateDist))
-    plt.figure()
-    plt.hist(darkInjectRateDist, bins = np.logspace(2, 10, 20))
-    plt.gca().set_xscale('log')
-    plt.show()
-    exit()
+    #darkInjectRateDist = [_[0] for _ in darkInjectRatesData]
+    #print("Dark injection rate stats:")
+    #print("Mean =", np.mean(darkInjectRateDist), "STD =", np.std(darkInjectRateDist), "Min =", min(darkInjectRateDist), "Max =", max(darkInjectRateDist))
+    #plt.figure()
+    #plt.hist(darkInjectRateDist, bins = np.logspace(2, 10, 20))
+    #plt.gca().set_xscale('log')
+    #plt.show()
+    #exit()
 
     print("\n\n ---=== MAIN KMC LOOP START ===---\n\n")
     t0 = T.time()
@@ -825,14 +848,25 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 heapq.heappush(eventQueue, (photoinjectionTime, 'photo', None))
                 numberOfPhotoinjections += 1
                 # Dark Injection:
-                # The darkInjectQueue is already ordered based on the most likely injection to occur next.
-                # Queue up this dark injection in the main KMC queue. However, because there's not anything stopping us from
-                # reinjecting to this site later on, recalculate a new injection time for this site and queue it back up
-                # in the darkInjectQueue
-                # In some cases (like the test morphology), carriers can't be injected with a rate > 1, and so the darkInjectQueue
-                # is empty. This catches that and effectively deactivates dark current if it can't happen.
-                nextDarkInject = R.choice(darkInjectRatesData)
-                heapq.heappush(eventQueue, (nextDarkInject[0], 'dark', nextDarkInject[1]))
+                # We now split up dark injection to be separate between the anode and the cathode, to ensure detail balance.
+                # We will use the cathodeInjectRate (the mean of the distribution) and the anodeInjectRate to determine when to perform the injection
+                # Then, we will pop the first event of the cathodeInjectWaitTimes and anodeInjectWaitTimes as required, executing it IMMEDIATELY and decrementing the time in the rest of the queue.
+                # Then, we can re-queue the inject site.
+                # This means that the wait times in cathodeInjectWaitTimes and anodeInjectWaitTimes are actually only used to determine the order of the chromophores onto which we inject from each electrode, and do not increment the globalTime.
+                # The global time is incremented according to cathodeInjectionTime and anodeInjectionTime instead.
+                # First, deal with the cathode injection
+                cathodeInjectionTime = determineEventTau(cathodeInjectRate, 'cathode-injection')
+                # Sort out the cathodeInjectQueue by getting the next inject site, and requeueing it with a new time to update the queue.
+                nextCathodeEvent, cathodeInjectQueue = getNextDarkEvent(cathodeInjectQueue, 'cathode')
+                # Now push the cathode event to the main queue
+                heapq.heappush(eventQueue, (cathodeInjectionTime, 'cathode-injection', nextCathodeEvent[2]))
+
+                # Now, deal with the anode injection
+                anodeInjectionTime = determineEventTau(anodeInjectRate, 'anode-injection')
+                # Sort out the anodeInjectQueue by popping the next inject site, decrementing the queue and re-queueing the inject site
+                nextAnodeEvent, anodeInjectQueue = getNextDarkEvent(anodeInjectQueue, 'anode')
+                # Now push the anode event to the main queue
+                heapq.heappush(eventQueue, (anodeInjectionTime, 'anode-injection', nextAnodeEvent[2]))
 
             # Now find out what the next event is
             nextEvent = heapq.heappop(eventQueue)
@@ -893,9 +927,13 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 heapq.heappush(eventQueue, (photoinjectionTime, 'photo', None))
                 numberOfPhotoinjections += 1
 
-            elif nextEvent[1] == 'dark':
+            elif (nextEvent[1] == 'cathode-injection') or (nextEvent[1] == 'anode-injection'):
                 injectSite = nextEvent[2]
-                print("EVENT: Dark Current injection #" + str(numberOfDarkinjections), "into", injectSite.devicePosn, "(which has type", repr(deviceArray[tuple(injectSite.devicePosn)]) + ")", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                if injectSite.electrode == 'cathode':
+                    numberOfInjections = numberOfCathodeInjections
+                else:
+                    numberOfInjections = numberOfAnodeInjections
+                print("EVENT: Dark Current injection from the " + str(injectSite.electrode) + " #" + str(numberOfInjections), "into", injectSite.devicePosn, "(which has type", repr(deviceArray[tuple(injectSite.devicePosn)]) + ")", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
                 if injectSite.chromophore.species == 'Donor':
                     # Inject a hole
                     injectedCarrier = carrier(carrierIndex, globalTime, injectSite.devicePosn, injectSite.chromophore, injectSite.electrode, parameterDict, injectedOntoSite = injectSite)
@@ -906,13 +944,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     injectedCarrier = carrier(carrierIndex, globalTime, injectSite.devicePosn, injectSite.chromophore, injectSite.electrode, parameterDict, injectedOntoSite = injectSite)
                     globalCarrierDict[carrierIndex] = injectedCarrier
                     carrierIndex += 1
-                # Now add the next dark current injection to the main KMC queue
-                nextDarkInject = heapq.heappop(darkInjectQueue)
-                nextDarkInjectTime = nextDarkInject[0]
-                nextDarkInjectSite = nextDarkInject[2]
-                darkInjectQueue = decrementTime(darkInjectQueue, nextDarkInjectTime)
-                heapq.heappush(eventQueue, (nextDarkInjectTime, 'dark', nextDarkInjectSite))
-                # Determine the carrier's next hop and queue it
+                # Determine the injected carrier's next hop and queue it
                 injectedCarrier.calculateBehaviour()
                 #DEBUG
                 if injectedCarrier.hopTime > 1:
@@ -924,7 +956,16 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     exit()
                 if injectedCarrier.hopTime is not None:
                     heapq.heappush(eventQueue, (injectedCarrier.hopTime, 'carrierHop', injectedCarrier))
-                numberOfDarkinjections += 1
+
+                # Now determine the next DC event and queue it
+                if injectsite.electrode == 'cathode':
+                    nextCathodeEvent, cathodeInjectQueue = getNextDarkEvent(cathodeInjectQueue, 'cathode')
+                    heapq.heappush(eventQueue, (cathodeInjectionTime, 'cathode-injection', nextCathodeEvent))
+                    numberOfCathodeInjections += 1
+                if injectsite.electrode == 'anode':
+                    nextAnodeEvent, anodeInjectQueue = getNextDarkEvent(anodeInjectQueue, 'anode')
+                    heapq.heappush(eventQueue, (anodeInjectionTime, 'anode-injection', nextAnodeEvent))
+                    numberOfAnodeInjections += 1
 
             elif nextEvent[1] == 'excitonHop':
                 ## DEBUG CODE USED TO PLOT THE EXCITON ROUTE WITHIN A SINGLE CELL TO FIX THE PBCs
@@ -1059,7 +1100,8 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
         time = T.time() - t0
         print("Run terminated after", KMCIterations, "iterations (globalTime =", str(globalTime) + ") after", time, "seconds")
         print("Number of Photoinjections =", numberOfPhotoinjections)
-        print("Number of Dark Injections =", numberOfDarkinjections)
+        print("Number of Cathode Injections =", numberOfCathodeInjections)
+        print("Number of Anode Injections =", numberOfAnodeInjections)
         print("Number of Dissociations =", numberOfDissociations)
         print("Number of Recombinations =", numberOfRecombinations)
         print("Number of Extractions =", numberOfExtractions)
@@ -1137,7 +1179,8 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     time = T.time() - t0
     print("Run completed after", KMCIterations, "iterations (globalTime =", str(globalTime) + ") after", time, "seconds")
     print("Number of Photoinjections =", numberOfPhotoinjections)
-    print("Number of Dark Injections =", numberOfDarkinjections)
+    print("Number of Cathode Injections =", numberOfCathodeInjections)
+    print("Number of Anode Injections =", numberOfAnodeInjections)
     print("Number of Dissociations =", numberOfDissociations)
     print("Number of Recombinations =", numberOfRecombinations)
     print("Number of Extractions =", numberOfExtractions)
