@@ -317,9 +317,8 @@ class carrier:
         coulombConstant = 1.0 / (4 * np.pi * epsilonNought * self.relativePermittivity)
         for carrier in globalCarrierDict.values():
             # Each carrier feels coulombic effects from every other carrier in the system, along with the image charges induced in the top and bottom contacts, AND the image charges induced by the image charges.
-            # The image charges are needed in order to keep the contacts as perfect metals (i.e. no internal electric field)
-            # Check papers from Chris Groves and Ben Lyons for more details.
-            # TODO I can't work out how image charges work (and whether their effect is negligible anyway) so for now I'm just ignoring them
+            # The image charges are needed in order to keep a constant field at the interface, correcting for the non-periodic Neumann-like boundary conditions
+            # Check papers from Chris Groves (Marsh, Groves and Greenham2007 and beyond), Ben Lyons (2011/2012), and van der Holst (2011) for more details.
             carrierPosn = np.array(carrier.currentDevicePosn)*parameterDict['morphologyCellSize'] + (np.array(carrier.currentChromophore.posn) * 1E-10)
             if carrier.ID != self.ID:
                 # Only consider the current carrier if it is not us!
@@ -338,27 +337,30 @@ class carrier:
                          carrier.recombining = True
                          carrier.recombiningWith = self.ID
             # Now consider the image charges and the images of the images.
+            # Direct images have the opposing charge to the actual carrier, so the potential contains (+q * -q), or -(q**2)
+            # Images of the images have the opposing charge to the image of the carrier, which is the same charge as the actual carrier
+            # Therefore, images of images are either (+q * +q) or (-q * -q) = +(q**2)
             # First do the top image charge
             deviceZSize = globalChromophoreData.deviceArray.shape[2] * parameterDict['morphologyCellSize']
             topImagePosn = copy.deepcopy(carrierPosn)
             topImagePosn[2] = deviceZSize + (deviceZSize - carrierPosn[2])
             separation = np.linalg.norm(currentAbsolutePosition - topImagePosn)
-            coulombicPotential -= ((2 * carrier.carrierType) - 1) * (coulombConstant / separation)
+            coulombicPotential -= (elementaryCharge**2) * (coulombConstant / separation)
             # Now do the bottom image charge
             bottomImagePosn = copy.deepcopy(carrierPosn)
             bottomImagePosn[2] = - carrierPosn[2]
             separation = np.linalg.norm(currentAbsolutePosition - bottomImagePosn)
-            coulombicPotential -= ((2 * carrier.carrierType) - 1) * (coulombConstant / separation)
+            coulombicPotential -= (elementaryCharge**2) * (coulombConstant / separation)
             # Now do the top image of the bottom image charge
             topImageOfBottomImagePosn = copy.deepcopy(carrierPosn)
             topImageOfBottomImagePosn[2] = (2 * deviceZSize) + carrierPosn[2]
             separation = np.linalg.norm(currentAbsolutePosition - topImageOfBottomImagePosn)
-            coulombicPotential -= ((2 * carrier.carrierType) -1 ) * (coulombConstant / separation)
+            coulombicPotential += (elementaryCharge**2) * (coulombConstant / separation)
             # And finally the bottom image of the top image charge
             bottomImageOfTopImagePosn = copy.deepcopy(carrierPosn)
             bottomImageOfTopImagePosn[2] = - (deviceZSize + (deviceZSize - carrierPosn[2]))
             separation = np.linalg.norm(currentAbsolutePosition - bottomImageOfTopImagePosn)
-            coulombicPotential -= ((2 * carrier.carrierType) - 1) * (coulombConstant / separation)
+            coulombicPotential += (elementaryCharge**2) * (coulombConstant / separation)
         #print(currentAbsolutePosition)
         #print(currentAbsolutePosition[2], destinationZ, zSep)
         #print("Coulombic Potential =", coulombicPotential)
@@ -665,6 +667,7 @@ def determineEventTau(rate, eventType):
                 counter += 1
     else:
         # If rate == 0, then make the event wait time extremely long
+        raise SystemError("RATE == 0")
         tau = 1E99
     return tau
 
@@ -958,11 +961,11 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     heapq.heappush(eventQueue, (injectedCarrier.hopTime, 'carrierHop', injectedCarrier))
 
                 # Now determine the next DC event and queue it
-                if injectsite.electrode == 'cathode':
+                if injectSite.electrode == 'cathode':
                     nextCathodeEvent, cathodeInjectQueue = getNextDarkEvent(cathodeInjectQueue, 'cathode')
                     heapq.heappush(eventQueue, (cathodeInjectionTime, 'cathode-injection', nextCathodeEvent))
                     numberOfCathodeInjections += 1
-                if injectsite.electrode == 'anode':
+                if injectSite.electrode == 'anode':
                     nextAnodeEvent, anodeInjectQueue = getNextDarkEvent(anodeInjectQueue, 'anode')
                     heapq.heappush(eventQueue, (anodeInjectionTime, 'anode-injection', nextAnodeEvent))
                     numberOfAnodeInjections += 1
@@ -1053,15 +1056,15 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     recombiningCarrierIDs.append(hoppingCarrier.recombiningWith)
                     recombinationTime = determineEventTau(parameterDict['recombinationRate'], 'carrier-recombination')
                     heapq.heappush(eventQueue, (recombinationTime, 'recombine', hoppingCarrier))
-                # If this carrier was injected, requeue this injection site in the darkInjectQueue to allow another injection
-                # Only re-queueing up the dark inject site after the carrier has hopped prevents double injection onto the same
-                # chromophore, by waiting until the carrier hops away first.
-                # TODO, what if the carrier hops to a chromophore that was about to be injected into? We don't check for this, so
-                # could still get double occupancy!
-                if hoppingCarrier.injectedOntoSite is not None:
-                    newDarkInject = copy.deepcopy(injectSite)
-                    newDarkInject.calculateInjectTime()
-                    heapq.heappush(darkInjectQueue, (newDarkInject.injectTime, 'dark', newDarkInject))
+                ## If this carrier was injected, requeue this injection site in the darkInjectQueue to allow another injection
+                ## Only re-queueing up the dark inject site after the carrier has hopped prevents double injection onto the same
+                ## chromophore, by waiting until the carrier hops away first.
+                ## TODO, what if the carrier hops to a chromophore that was about to be injected into? We don't check for this, so
+                ## could still get double occupancy!
+                #if hoppingCarrier.injectedOntoSite is not None:
+                #    newDarkInject = copy.deepcopy(injectSite)
+                #    newDarkInject.calculateInjectTime()
+                #    heapq.heappush(darkInjectQueue, (newDarkInject.injectTime, 'dark', newDarkInject))
 
             elif nextEvent[1] == 'recombine':
                 print(eventQueue)
