@@ -291,9 +291,9 @@ class carrier:
                             numberOfExtractions -= 1
                     # Else (injected from cathode), number of extractions doesn't change.
                 if self.carrierType == ELECTRON:
-                    print('EVENT: Electron Left Device! New number of extractions:', numberOfExtractions, "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                    print("EVENT: Electron Left Device! New number of extractions", numberOfExtractions, "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
                 else:
-                    print('EVENT: Hole Left Device! New number of extractions:', numberOfExtractions, "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                    print("EVENT: Hole Left Device! New number of extractions:", numberOfExtractions, "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
             elif newChromophore == 'Out of Bounds':
                 # Trying to cross a periodic boundary. Das ist verboten, discarding the hop
                 pass
@@ -422,7 +422,7 @@ def decrementTime(eventQueue, eventTime):
     return eventQueue
 
 
-def plotConnections(excitonPath, chromophoreList, AADict):
+def plotConnections(excitonPath, chromophoreList, AADict, outputDir):
     # A complicated function that shows connections between carriers in 3D that carriers prefer to hop between.
     # Connections that are frequently used are highlighted in black, whereas rarely used connections are more white.
     fig = plt.figure()
@@ -444,10 +444,10 @@ def plotConnections(excitonPath, chromophoreList, AADict):
     for corner1 in corners:
         for corner2 in corners:
             ax.plot([corner1[0], corner2[0]], [corner1[1], corner2[1]], [corner1[2], corner2[2]], color = 'k')
-    fileName = '3d_exciton.pdf'
+    fileName = outputDir + '3d_exciton.pdf'
     plt.show()
-    plt.savefig('./' + fileName)
-    print("Figure saved as ./" + fileName)
+    plt.savefig(fileName)
+    print("Figure saved as " + fileName)
 
 
 def calculateDarkCurrentInjections(deviceArray, parameterDict):
@@ -673,17 +673,21 @@ def determineEventTau(rate, eventType):
     return tau
 
 
-def plotEventTimeDistribution(eventTimes):
-    gaussBins, fitArgs = gaussFit(eventTimes)
-    gaussY = gaussian(gaussBins[:-1], *fitArgs)
+def plotEventTimeDistribution(eventLog, outputDir, fastest, slowest):
+    #gaussBins, fitArgs = gaussFit(eventTimes)
+    #gaussY = gaussian(gaussBins[:-1], *fitArgs)
     fig = plt.figure()
-    plt.hist(eventTimes, bins = np.logspace(-18, -6, 40))
+    plt.hist([eventLog[_] for _ in eventLog.keys()], bins=np.logspace(int(np.floor(np.log10(fastest))), int(np.ceil(np.log10(slowest))), 10), color=['r', 'g', 'c', 'm', 'b', 'y'], label=eventLog.keys(), linewidth=0)
+    plt.legend(loc = 1, prop = {'size':6})
     plt.gca().set_xscale('log')
+    plt.gca().set_yscale('log')
     plt.xlabel(r'$\mathrm{\tau}$ (s)')
+    plt.title('Device KMC Event Distribution')
     plt.ylabel('Freq (Arb. U.)')
-    plt.xticks(np.logspace(-18, -6, 7))
-    plt.savefig('./EventTimeDist.pdf')
-    print('Event time distribution saved as ./EventTimeDist.pdf')
+    plt.xticks([1E-16, 1E-14, 1E-12, 1E-10, 1E-8, 1E-6])
+    fileName = outputDir + 'EventTimeDist.pdf'
+    plt.savefig(fileName)
+    print('Event time distribution saved as ' + fileName)
 
 
 def gaussian(x, a, x0, sigma):
@@ -703,7 +707,7 @@ def gaussFit(data):
     return binEdges, fitArgs
 
 
-def plot3DTrajectory(carriersToPlot, parameterDict, deviceArray):
+def plot3DTrajectory(carriersToPlot, parameterDict, deviceArray, outputDir):
     fig = plt.figure()
     ax = p3.Axes3D(fig)
     [xLen, yLen, zLen] = 1E10 * (np.array(deviceArray.shape) * parameterDict['morphologyCellSize'])
@@ -734,8 +738,8 @@ def plot3DTrajectory(carriersToPlot, parameterDict, deviceArray):
             nextHop = carrier.history[hopIndex + 1]
             nextPosn = (1E10 * (np.array(nextHop[0]) * parameterDict['morphologyCellSize'])) + np.array(nextHop[1])
             ax.plot([currentPosn[0], nextPosn[0]], [currentPosn[1], nextPosn[1]], [currentPosn[2], nextPosn[2]], c = color, linewidth = 0.5)
-    fileName = '3d_trajectory.pdf'
-    plt.savefig('./' + fileName)
+    fileName = outputDir + '3d_trajectory.pdf'
+    plt.savefig(fileName)
     print("Figure saved as ./" + fileName)
     plt.show()
     plt.close()
@@ -769,6 +773,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
         (parameterDict['anodeWorkFunction'] - parameterDict['donorHOMO'])) /
         # Z-extent:
         (deviceArray.shape[2] * parameterDict['morphologyCellSize']))
+    outputFiguresDir = parameterDict['outputDeviceDir'] + '/' + parameterDict['deviceMorphology'] + '/figures/'
 
     # DEBUG
     slowestEvent = 0
@@ -808,6 +813,9 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     numberOfDissociations = 0
     numberOfRecombinations = 0
     eventLog = {'photo':[], 'cathode-injection':[], 'anode-injection':[], 'excitonHop':[], 'carrierHop':[], 'recombine':[]}
+    alreadyPrinted = False
+    outputPrintStatement = False
+
 
     # As the morphology is not changing, we can calculate the dark inject rates and locations at the beginning and then not have to do it again, just re-queue up the injectSites as we use them by calling site(calculateInjectTime)
     cathodeInjectRate, anodeInjectRate, cathodeInjectQueue, anodeInjectQueue = calculateDarkCurrentInjections(deviceArray, parameterDict)
@@ -876,8 +884,14 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 heapq.heappush(eventQueue, (anodeInjectionTime, 'anode-injection', nextAnodeEvent[2]))
 
             t1 = T.time()
-            if int(t1 - t0)%10:
-                print("Current runtime =", str(int(t1-t0))+"s, with", len(eventQueue), "events currently in the queue and", len(carriers.keys()), "carriers currently in the system. Currently completed", KMCIterations, "iterations and simulated", globalTime, "s.")
+            if int(t1 - t0)%10 == 0:
+                outputPrintStatement = True
+            else:
+                outputPrintStatement = False
+                alreadyPrinted = False
+            if outputPrintStatement and not alreadyPrinted:
+                print("Current runtime =", str(int(t1-t0))+"s, with", len(eventQueue), "events currently in the queue and", len(globalCarrierDict.keys()), "carriers currently in the system. Currently completed", KMCIterations, "iterations and simulated", globalTime, "s.")
+                alreadyPrinted = True
 
 
             # Now find out what the next event is
@@ -893,6 +907,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
             if nextEvent[0] < fastestEvent:
                 fastestEvent = nextEvent[0]
             eventTimes.append(nextEvent[0])
+            eventLog[nextEvent[1]].append(nextEvent[0])
 
 
             # Execute the next behaviour (being sure to recalculate rates for any new particles that have appeared)
@@ -1120,10 +1135,10 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
         #print("DURING THIS RUN:")
         #print("Slowest Event Considered =", slowestEvent)
         #print("Fastest Event Considered =", fastestEvent)
-        #plotEventTimeDistribution(eventTimes)
+        plotEventTimeDistribution(eventLog, outputFiguresDir, fastestEvent, slowestEvent)
         if parameterDict['recordCarrierHistory'] is True:
             print("Plotting 3D carrier trajectories before exiting...")
-            plot3DTrajectory(globalCarrierDict.values(), parameterDict, deviceArray)
+            plot3DTrajectory(globalCarrierDict.values(), parameterDict, deviceArray, outputFiguresDir)
             exit()
         else:
             exit()
@@ -1134,33 +1149,33 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     #plt.title('Displacement until Dissociation')
     #plt.xlabel('Displacement, nm')
     #plt.ylabel('Frequency, Arb. U.')
-    #plt.savefig('./dissExcitonDisp.pdf')
+    #plt.savefig(outputFiguresDir + 'dissExcitonDisp.pdf')
     #plt.clf()
 
     #plt.hist(np.array(dissExcitonTime) * 1E9, bins=15
     #plt.title('Time until Dissociation')
     #plt.xlabel('Time, ns')
     #plt.ylabel('Frequency, Arb. U.')
-    #plt.savefig('./dissExcitonTime.pdf')
+    #plt.savefig(outputFiguresDir + 'dissExcitonTime.pdf')
     #plt.clf()
 
     #plt.hist(recExcitonDisp, bins=15)
     #plt.title('Displacement until Recombination')
     #plt.xlabel('Displacement, nm')
     #plt.ylabel('Frequency, Arb. U.')
-    #plt.savefig('./recExcitonDisp.pdf')
+    #plt.savefig(outputFiguresDir + 'recExcitonDisp.pdf')
     #plt.clf()
 
     #plt.hist(np.array(recExcitonTime) * 1E10, bins=15)
     #plt.title('Time until Recombination')
     #plt.xlabel('Time, ns')
     #plt.ylabel('Frequency, Arb. U.')
-    #plt.savefig('./recExcitonTime.pdf')
+    #plt.savefig(outputFiguresDir + 'recExcitonTime.pdf')
     #plt.clf()
 
     #plt.hist(numberOfHops, bins=15)
     #plt.title('numberOfHops')
-    #plt.savefig('./numberOfExcitonHops.pdf')
+    #plt.savefig(outputFiguresDir + 'numberOfExcitonHops.pdf')
     #plt.clf()
 
     #print("XDE =", numberOfDissociations/parameterDict['minimumNumberOfPhotoinjections'])
@@ -1169,7 +1184,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     #print("Mean/SD RecDisp =", np.mean(recExcitonDisp), "+-", np.std(recExcitonDisp)/np.sqrt(len(recExcitonDisp)))
     #print("Mean/SD RecTime =", np.mean(recExcitonTime), "+-", np.std(recExcitonTime)/np.sqrt(len(recExcitonTime)))
 
-    #plotConnections(excitonPath, chromophoreData.returnChromophoreList([1,8,6]), morphologyData.returnAAMorphology([1,8,6]))
+    #plotConnections(excitonPath, chromophoreData.returnChromophoreList([1,8,6]), morphologyData.returnAAMorphology([1,8,6]), outputFiguresDir)
 
     #print("Plotting the MSD of the exciton")
     #plt.figure()
@@ -1181,12 +1196,12 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     #xFit = np.linspace(0, max(excitonTime), 100)
     #yFit = [(xVal*fit[0] + fit[1]) for xVal in xFit]
     #plt.plot(xFit, yFit, c='b')
-    #plt.savefig('./excitonMSD.pdf')
+    #plt.savefig(outputFiguresDir + 'excitonMSD.pdf')
 
     #print("Plotting the extraction data as a function of simulation time")
     #plt.figure()
     #plt.plot(convGlobalTime, convExtractions)
-    #plt.savefig('./convergence.pdf')
+    #plt.savefig(outputFiguresDir + 'convergence.pdf')
     #return
     time = T.time() - t0
     print("Run completed after", KMCIterations, "iterations (globalTime =", str(globalTime) + ") after", time, "seconds")

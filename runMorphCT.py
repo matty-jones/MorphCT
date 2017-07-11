@@ -128,7 +128,7 @@ class simulation:
                 # Make sure that the mkdir command has finished before moving on
                 os.makedirs(self.outputMorphologyDirectory + '/' + directoryToMake, exist_ok=True)
         if self.deviceMorphology is not None:
-            for deviceDirectoryToMake in ['code', 'KMC']:
+            for deviceDirectoryToMake in ['code', 'KMC', 'figures']:
                 print('mkdir -p ' + self.outputDeviceDirectory + '/' + deviceDirectoryToMake)
                 os.makedirs(self.outputDeviceDirectory + '/' + deviceDirectoryToMake, exist_ok=True)
 
