@@ -237,6 +237,8 @@ class carrier:
             deltaEij = self.calculatePotential(destinationChromophore, neighbourRelativeImage, self.currentChromophore.neighboursDeltaE[neighbourIndex])
             # All of the energies (EXCEPT EIJ WHICH IS ALREADY IN J) are in eV currently, so convert them to J
             hopRate = calculateMarcusHopRate(self.prefactor, self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij, self.T)
+            #print(hopRate, self.prefactor, self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij)
+            #print(self.currentChromophore.ID, "to", destinationChromophore.ID)
             hopTime = determineEventTau(hopRate, 'carrier-hop')
             if hopTime is not None:
                 # Keep track of the chromophoreID and the corresponding tau
@@ -274,7 +276,7 @@ class carrier:
                 # Secondly, work out whether this is a `correct' hop (i.e. hole hopping to anode or electron hopping to cathode) that causes photovoltaic current.
                 if newChromophore == 'Top':
                     # Leaving through top (anode)
-                    if self.injectedFrom != 'Anode':
+                    if self.injectedFrom != 'anode':
                         if self.carrierType == HOLE:
                             numberOfExtractions += 1
                         else:
@@ -282,7 +284,7 @@ class carrier:
                     # Else (injected from anode), number of extractions doesn't change.
                 else:
                     # Leaving through bottom (cathode)
-                    if self.injectedFrom != 'Cathode':
+                    if self.injectedFrom != 'cathode':
                         if self.carrierType == ELECTRON:
                             numberOfExtractions += 1
                         else:
@@ -667,7 +669,6 @@ def determineEventTau(rate, eventType):
                 counter += 1
     else:
         # If rate == 0, then make the event wait time extremely long
-        raise SystemError("RATE == 0")
         tau = 1E99
     return tau
 
@@ -684,8 +685,10 @@ def plotEventTimeDistribution(eventTimes):
     plt.savefig('./EventTimeDist.pdf')
     print('Event time distribution saved as ./EventTimeDist.pdf')
 
+
 def gaussian(x, a, x0, sigma):
     return a*np.exp(-(x-x0)**2/(2*sigma**2))
+
 
 def gaussFit(data):
     n = len(data)
@@ -804,6 +807,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     numberOfHops = []
     numberOfDissociations = 0
     numberOfRecombinations = 0
+    eventLog = {'photo':[], 'cathode-injection':[], 'anode-injection':[], 'excitonHop':[], 'carrierHop':[], 'recombine':[]}
 
     # As the morphology is not changing, we can calculate the dark inject rates and locations at the beginning and then not have to do it again, just re-queue up the injectSites as we use them by calling site(calculateInjectTime)
     cathodeInjectRate, anodeInjectRate, cathodeInjectQueue, anodeInjectQueue = calculateDarkCurrentInjections(deviceArray, parameterDict)
@@ -871,6 +875,11 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 # Now push the anode event to the main queue
                 heapq.heappush(eventQueue, (anodeInjectionTime, 'anode-injection', nextAnodeEvent[2]))
 
+            t1 = T.time()
+            if int(t1 - t0)%10:
+                print("Current runtime =", str(int(t1-t0))+"s, with", len(eventQueue), "events currently in the queue and", len(carriers.keys()), "carriers currently in the system. Currently completed", KMCIterations, "iterations and simulated", globalTime, "s.")
+
+
             # Now find out what the next event is
             nextEvent = heapq.heappop(eventQueue)
             # Increment the global time and decrement all of the other times in the queue
@@ -936,7 +945,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     numberOfInjections = numberOfCathodeInjections
                 else:
                     numberOfInjections = numberOfAnodeInjections
-                print("EVENT: Dark Current injection from the " + str(injectSite.electrode) + " #" + str(numberOfInjections), "into", injectSite.devicePosn, "(which has type", repr(deviceArray[tuple(injectSite.devicePosn)]) + ")", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                print("EVENT: Dark Current injection from the " + str(injectSite.electrode) + " #" + str(numberOfInjections), "into", injectSite.devicePosn, "(which has type", repr(deviceArray[tuple(injectSite.devicePosn)]) + ")", "chromophore number", injectSite.chromophore.ID, "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
                 if injectSite.chromophore.species == 'Donor':
                     # Inject a hole
                     injectedCarrier = carrier(carrierIndex, globalTime, injectSite.devicePosn, injectSite.chromophore, injectSite.electrode, parameterDict, injectedOntoSite = injectSite)
@@ -963,11 +972,11 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 # Now determine the next DC event and queue it
                 if injectSite.electrode == 'cathode':
                     nextCathodeEvent, cathodeInjectQueue = getNextDarkEvent(cathodeInjectQueue, 'cathode')
-                    heapq.heappush(eventQueue, (cathodeInjectionTime, 'cathode-injection', nextCathodeEvent))
+                    heapq.heappush(eventQueue, (cathodeInjectionTime, 'cathode-injection', nextCathodeEvent[2]))
                     numberOfCathodeInjections += 1
                 if injectSite.electrode == 'anode':
                     nextAnodeEvent, anodeInjectQueue = getNextDarkEvent(anodeInjectQueue, 'anode')
-                    heapq.heappush(eventQueue, (anodeInjectionTime, 'anode-injection', nextAnodeEvent))
+                    heapq.heappush(eventQueue, (anodeInjectionTime, 'anode-injection', nextAnodeEvent[2]))
                     numberOfAnodeInjections += 1
 
             elif nextEvent[1] == 'excitonHop':
