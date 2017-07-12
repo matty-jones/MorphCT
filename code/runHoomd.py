@@ -337,8 +337,6 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     # Finally, update the pickle file with the most recent and realistic
     # AAMorphologyDict so that we can load it again further along the pipeline
     AAMorphologyDict = helperFunctions.loadMorphologyXML(finalXMLName)
-    # Perform the unscaling to return us to the angstroem lengthscale
-    AAMorphologyDict = helperFunctions.scale(AAMorphologyDict, 1.0 / sScale)
     # Add in the unwrapped positions
     AAMorphologyDict = helperFunctions.addUnwrappedPositions(AAMorphologyDict)
     # Write the pickle file
