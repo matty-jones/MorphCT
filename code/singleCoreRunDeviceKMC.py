@@ -56,6 +56,10 @@ class exciton:
         self.initialChromophore = globalChromophoreData.returnRandomChromophore(initialPosnDevice)
         self.currentChromophore = copy.deepcopy(self.initialChromophore)
         self.calculateBehaviour()
+        if parameterDict['recordCarrierHistory'] is True:
+            self.history = [[self.initialDevicePosn, self.initialChromophore.posn]]
+        else:
+            self.history = None
 
     def calculateBehaviour(self):
         if globalTime >= self.creationTime + self.recombinationTime:
@@ -187,6 +191,8 @@ class exciton:
                 self.currentChromophore = newChromophore
         self.numberOfHops += 1
         self.canDissociate = self.checkDissociation()
+        if self.history is not None:
+            self.history.append([self.currentDevicePosn, self.currentChromophore.posn])
 
 
 class carrier:
@@ -276,7 +282,7 @@ class carrier:
                 # Secondly, work out whether this is a `correct' hop (i.e. hole hopping to anode or electron hopping to cathode) that causes photovoltaic current.
                 if newChromophore == 'Top':
                     # Leaving through top (anode)
-                    if self.injectedFrom != 'anode':
+                    if self.injectedFrom != 'Anode':
                         if self.carrierType == HOLE:
                             numberOfExtractions += 1
                         else:
@@ -284,7 +290,7 @@ class carrier:
                     # Else (injected from anode), number of extractions doesn't change.
                 else:
                     # Leaving through bottom (cathode)
-                    if self.injectedFrom != 'cathode':
+                    if self.injectedFrom != 'Cathode':
                         if self.carrierType == ELECTRON:
                             numberOfExtractions += 1
                         else:
@@ -507,8 +513,9 @@ def calculateDarkCurrentInjections(deviceArray, parameterDict):
                 #print("CATHODE", injectRate)
                 cathodeInjectRatesData.append(injectRate)
                 # Create inject site object
-                site = injectSite([xVal, yVal, zVal], chromophore, injectRate, 'cathode')
+                site = injectSite([xVal, yVal, zVal], chromophore, injectRate, 'Cathode')
                 injectTime = site.injectTime
+                assert type(injectTime) is np.float64, "InjectTime is not float: %r %r \n %r" % (injectTime, type(injectTime), cathodeInjectWaitTimes)
                 heapq.heappush(cathodeInjectWaitTimes, (injectTime, 'cathode-injection', site))
     # Now consider hole-injecting electrode at top of device (anode):
     #input("PAUSE...")
@@ -539,8 +546,9 @@ def calculateDarkCurrentInjections(deviceArray, parameterDict):
                 injectRate = calculateMillerAbrahamsHopRate(parameterDict['MAPrefactor'], separation, parameterDict['MALocalisationRadius'], deltaE, parameterDict['systemTemperature'])
                 anodeInjectRatesData.append(injectRate)
                 # Create inject site object
-                site = injectSite([xVal, yVal, zVal], chromophore, injectRate, 'anode')
+                site = injectSite([xVal, yVal, zVal], chromophore, injectRate, 'Anode')
                 injectTime = site.injectTime
+                assert type(injectTime) is np.float64, "InjectTime is not float: %r %r \n %r" % (injectTime, type(injectTime), anodeInjectWaitTimes)
                 heapq.heappush(anodeInjectWaitTimes, (injectTime, 'anode-injection', site))
     #plt.figure()
     #plt.hist(injectRates, bins = np.logspace(9, 12, 30))
@@ -562,6 +570,7 @@ def getNextDarkEvent(queue, electrode):
     queue = decrementTime(queue, nextEvent[0])
     requeuedEvent = copy.deepcopy(nextEvent[2])
     requeuedEvent.calculateInjectTime()
+    assert type(requeuedEvent.injectTime) is np.float64, "InjectTime is not float: %r %r \n %r" % (requeuedEvent.injectTime, type(requeuedEvent.injectTime), queue)
     heapq.heappush(queue, (requeuedEvent.injectTime, electrode + '-injection', requeuedEvent))
     return nextEvent, queue
 
@@ -682,7 +691,6 @@ def plotEventTimeDistribution(eventLog, outputDir, fastest, slowest):
     plt.gca().set_xscale('log')
     plt.gca().set_yscale('log')
     plt.xlabel(r'$\mathrm{\tau}$ (s)')
-    plt.title('Device KMC Event Distribution')
     plt.ylabel('Freq (Arb. U.)')
     plt.xticks([1E-16, 1E-14, 1E-12, 1E-10, 1E-8, 1E-6])
     fileName = outputDir + 'EventTimeDist.pdf'
@@ -707,7 +715,25 @@ def gaussFit(data):
     return binEdges, fitArgs
 
 
-def plot3DTrajectory(carriersToPlot, parameterDict, deviceArray, outputDir):
+def plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputDir):
+    combinationsToPlot = {'Cathode':[], 'Anode':[]}
+    popList = []
+    for index, carrier in enumerate(allCarriers):
+        # First add all the excitons
+        if 'rF' in carrier.__dict__:
+            # We know this is an exciton
+            combinationsToPlot[carrier.ID] = [carrier]
+            popList.append(index)
+    for index in sorted(popList, reverse=True):
+        allCarriers.pop(index)
+    for carrier in allCarriers:
+        # Only electrons and holes remaining
+        combinationsToPlot[carrier.injectedFrom].append(carrier)
+    for injectSource, carriers in combinationsToPlot.items():
+        plot3DTrajectory(injectSource, carriers, parameterDict, deviceArray, outputDir)
+
+
+def plot3DTrajectory(injectSource, carriersToPlot, parameterDict, deviceArray, outputDir):
     fig = plt.figure()
     ax = p3.Axes3D(fig)
     [xLen, yLen, zLen] = 1E10 * (np.array(deviceArray.shape) * parameterDict['morphologyCellSize'])
@@ -729,19 +755,29 @@ def plot3DTrajectory(carriersToPlot, parameterDict, deviceArray, outputDir):
     ax.plot([xLen, xLen], [0, 0], [0, zLen], c = 'k', linewidth = 1.0)
     ax.plot([xLen, xLen], [yLen, yLen], [0, zLen], c = 'k', linewidth = 1.0)
 
-    colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
-    for carrierNo, carrier in enumerate(carriersToPlot):
-        color = colors[carrierNo%7]
+    if injectSource is 'Anode':
+        carrierString = 'anode'
+    elif injectSource is 'Cathode':
+        carrierString = 'cathode'
+    else:
+        # Exciton
+        carrierString = 'exciton_' + str(carriersToPlot[0].ID)
+    for carrier in carriersToPlot:
+        if 'rF' in carrier.__dict__:
+            color = 'g'
+        elif carrier.carrierType == ELECTRON:
+            color = 'b'
+        elif carrier.carrierType== HOLE:
+            color = 'r'
         for hopIndex, hop in enumerate(carrier.history[:-1]):
             # Note that conversion factors are needed as hop[0] * morphCellSize is in m, and hop[1] is in ang.
             currentPosn = (1E10 * (np.array(hop[0]) * parameterDict['morphologyCellSize'])) + np.array(hop[1])
             nextHop = carrier.history[hopIndex + 1]
             nextPosn = (1E10 * (np.array(nextHop[0]) * parameterDict['morphologyCellSize'])) + np.array(nextHop[1])
             ax.plot([currentPosn[0], nextPosn[0]], [currentPosn[1], nextPosn[1]], [currentPosn[2], nextPosn[2]], c = color, linewidth = 0.5)
-    fileName = outputDir + '3d_trajectory.pdf'
+    fileName = outputDir + carrierString + '_traj.pdf'
     plt.savefig(fileName)
-    print("Figure saved as ./" + fileName)
-    plt.show()
+    print("Figure saved as " + fileName)
     plt.close()
 
 
@@ -796,6 +832,11 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     carrierIndex = 0
     outputCurrentConverged = False
     recombiningCarrierIDs = []
+
+    if parameterDict['recordCarrierHistory'] is True:
+        allCarriers = []
+
+
 
     # Calculate the convergence characteristics
     checkConvEvery = int(parameterDict['minimumNumberOfPhotoinjections'] / 100)*5
@@ -860,6 +901,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 # These are the only available kinetic starting points for the simulation. Everything else stems from these.
                 # Photoinjection
                 photoinjectionTime = determineEventTau(photoinjectionRate, 'photoinjection')
+                assert type(photoinjectionTime) is np.float64, "PhotoinjectionTime is not float: %r %r \n %r" % (photoinjectionTime, type(photoinjectionTime), eventQueue)
                 heapq.heappush(eventQueue, (photoinjectionTime, 'photo', None))
                 numberOfPhotoinjections += 1
                 # Dark Injection:
@@ -872,15 +914,17 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 # First, deal with the cathode injection
                 cathodeInjectionTime = determineEventTau(cathodeInjectRate, 'cathode-injection')
                 # Sort out the cathodeInjectQueue by getting the next inject site, and requeueing it with a new time to update the queue.
-                nextCathodeEvent, cathodeInjectQueue = getNextDarkEvent(cathodeInjectQueue, 'cathode')
+                nextCathodeEvent, cathodeInjectQueue = getNextDarkEvent(cathodeInjectQueue, 'Cathode')
                 # Now push the cathode event to the main queue
+                assert type(cathodeInjectionTime) is np.float64, "CathodeInjectionTime is not float: %r %r \n %r" % (cathodeInjectionTime, type(cathodeInjectionTime), eventQueue)
                 heapq.heappush(eventQueue, (cathodeInjectionTime, 'cathode-injection', nextCathodeEvent[2]))
 
                 # Now, deal with the anode injection
                 anodeInjectionTime = determineEventTau(anodeInjectRate, 'anode-injection')
                 # Sort out the anodeInjectQueue by popping the next inject site, decrementing the queue and re-queueing the inject site
-                nextAnodeEvent, anodeInjectQueue = getNextDarkEvent(anodeInjectQueue, 'anode')
+                nextAnodeEvent, anodeInjectQueue = getNextDarkEvent(anodeInjectQueue, 'Anode')
                 # Now push the anode event to the main queue
+                assert type(anodeInjectionTime) is np.float64, "AnodeInjectionTime is not float: %r %r \n %r" % (anodeInjectionTime, type(anodeInjectionTime), eventQueue)
                 heapq.heappush(eventQueue, (anodeInjectionTime, 'anode-injection', nextAnodeEvent[2]))
 
             t1 = T.time()
@@ -925,18 +969,20 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         numberOfHops.append(injectedExciton.numberOfHops)
                         # Create the carrier instances, but don't yet calculate their behaviour (need to add them to the carrier list before we can calculate the energetics)
                         # Also add the carriers to the carrier dictionary for when we need to calc deltaE in the device
-                        injectedElectron = carrier(carrierIndex, globalTime, injectedExciton.currentDevicePosn, injectedExciton.electronChromophore, 'Exciton', parameterDict)
+                        injectedElectron = carrier(carrierIndex, globalTime, injectedExciton.currentDevicePosn, injectedExciton.electronChromophore, injectedExciton.ID, parameterDict)
                         globalCarrierDict[carrierIndex] = injectedElectron
                         carrierIndex += 1
-                        injectedHole = carrier(carrierIndex, globalTime, injectedExciton.currentDevicePosn, injectedExciton.holeChromophore, 'Exciton', parameterDict)
+                        injectedHole = carrier(carrierIndex, globalTime, injectedExciton.currentDevicePosn, injectedExciton.holeChromophore, injectedExciton.ID, parameterDict)
                         globalCarrierDict[carrierIndex] = injectedHole
                         carrierIndex += 1
                         # Now determine the behaviour of both carriers, and add their next hops to the KMC queue
                         injectedElectron.calculateBehaviour()
                         if injectedElectron.hopTime is not None:
+                            assert type(injectedElectron.hopTime) is np.float64, "InjectedElectron.hopTime is not float: %r %r \n %r" % (injectedElectron.hopTime, type(injectedElectron.hopTime), eventQueue)
                             heapq.heappush(eventQueue, (injectedElectron.hopTime, 'carrierHop', injectedElectron))
                         injectedHole.calculateBehaviour()
                         if injectedHole.hopTime is not None:
+                            assert type(injectedHole.hopTime) is np.float64, "InjectedHole.hopTime is not float: %r %r \n %r" % (injectedHole.hopTime, type(injectedHole.hopTime), eventQueue)
                             heapq.heappush(eventQueue, (injectedHole.hopTime, 'carrierHop', injectedHole))
                     else:
                         # Injected onto a site with no connections, so this exciton will eventually die
@@ -946,17 +992,19 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 else:
                     # Hopping permitted, push the exciton to the queue.
                     # Push the exciton to the queue
+                    assert type(injectedExciton.hopTime) is np.float64, "injectedExciton.hopTime is not float: %r %r \n %r" % (injectedExciton.hopTime, type(injectedExciton.hopTime), eventQueue)
                     heapq.heappush(eventQueue, (injectedExciton.hopTime, 'excitonHop', injectedExciton))
                     # Increment the exciton counter
                     excitonIndex += 1
                 # A photoinjection has just occured, so now queue up a new one
                 photoinjectionTime = determineEventTau(photoinjectionRate, 'photoinjection')
+                assert type(photoinjectionTime) is np.float64, "PhotoinjectionTime is not float: %r %r \n %r" % (photoinjectionTime, type(photoinjectionTime), eventQueue)
                 heapq.heappush(eventQueue, (photoinjectionTime, 'photo', None))
                 numberOfPhotoinjections += 1
 
             elif (nextEvent[1] == 'cathode-injection') or (nextEvent[1] == 'anode-injection'):
                 injectSite = nextEvent[2]
-                if injectSite.electrode == 'cathode':
+                if injectSite.electrode == 'Cathode':
                     numberOfInjections = numberOfCathodeInjections
                 else:
                     numberOfInjections = numberOfAnodeInjections
@@ -982,15 +1030,18 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     print(injectedCarrier.__dict__)
                     exit()
                 if injectedCarrier.hopTime is not None:
+                    assert type(injectedCarrier.hopTime) is np.float64, "InjectedCarrier.hopTime is not float: %r %r \n %r" % (injectedCarrier.hopTime, type(injectedCarrier.hopTime), eventQueue)
                     heapq.heappush(eventQueue, (injectedCarrier.hopTime, 'carrierHop', injectedCarrier))
 
                 # Now determine the next DC event and queue it
-                if injectSite.electrode == 'cathode':
-                    nextCathodeEvent, cathodeInjectQueue = getNextDarkEvent(cathodeInjectQueue, 'cathode')
+                if injectSite.electrode == 'Cathode':
+                    nextCathodeEvent, cathodeInjectQueue = getNextDarkEvent(cathodeInjectQueue, 'Cathode')
+                    assert type(cathodeInjectionTime) is np.float64, "CathodeInjectionTime is not float: %r %r \n %r" % (cathodeInjectionTime, type(cathodeInjectionTime), eventQueue)
                     heapq.heappush(eventQueue, (cathodeInjectionTime, 'cathode-injection', nextCathodeEvent[2]))
                     numberOfCathodeInjections += 1
-                if injectSite.electrode == 'anode':
-                    nextAnodeEvent, anodeInjectQueue = getNextDarkEvent(anodeInjectQueue, 'anode')
+                if injectSite.electrode == 'Anode':
+                    nextAnodeEvent, anodeInjectQueue = getNextDarkEvent(anodeInjectQueue, 'Anode')
+                    assert type(anodeInjectionTime) is np.float64, "AnodeInjectionTime is not float: %r %r \n %r" % (anodeInjectionTime, type(anodeInjectionTime), eventQueue)
                     heapq.heappush(eventQueue, (anodeInjectionTime, 'anode-injection', nextAnodeEvent[2]))
                     numberOfAnodeInjections += 1
 
@@ -1014,6 +1065,9 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 # At this point, dissociate the exciton or remove it from the system if needed.
                 if (hoppingExciton.canDissociate is True) or (hoppingExciton.hopTime is None):
                     # Exciton needs to be removed. As we've already popped it from the queue, we just need to not queue it up again.
+                    if parameterDict['recordCarrierHistory'] is True:
+                        allCarriers.append(hoppingExciton)
+
                     if hoppingExciton.canDissociate is True:
                         print("EVENT: Exciton Dissociating", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
                         numberOfDissociations += 1
@@ -1021,18 +1075,22 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         # Create the carrier instances, but don't yet calculate their behaviour (need to add them to the carrier list before we can calculate the energetics)
                         # Also add the carriers to the carrier dictionary for when we need to calc deltaE in the device
                         # Plop an electron down on the electronChromophore of the dissociating exciton, and a hole on the holeChromophore
-                        injectedElectron = carrier(carrierIndex, globalTime, hoppingExciton.currentDevicePosn, hoppingExciton.electronChromophore, 'Exciton', parameterDict)
+                        injectedElectron = carrier(carrierIndex, globalTime, hoppingExciton.currentDevicePosn, hoppingExciton.electronChromophore, hoppingExciton.ID, parameterDict)
                         globalCarrierDict[carrierIndex] = injectedElectron
                         carrierIndex += 1
-                        injectedHole = carrier(carrierIndex, globalTime, hoppingExciton.currentDevicePosn, hoppingExciton.holeChromophore, 'Exciton', parameterDict)
+                        injectedHole = carrier(carrierIndex, globalTime, hoppingExciton.currentDevicePosn, hoppingExciton.holeChromophore, hoppingExciton.ID, parameterDict)
                         globalCarrierDict[carrierIndex] = injectedHole
                         carrierIndex += 1
+                        if parameterDict['recordCarrierHistory'] is True:
+                            allCarriers += [injectedElectron, injectedHole]
                         # Now determine the behaviour of both carriers, and add their next hops to the KMC queue
                         injectedElectron.calculateBehaviour()
                         if injectedElectron.hopTime is not None:
+                            assert type(injectedElectron.hopTime) is np.float64, "InjectedElectron.hopTime is not float: %r %r \n %r" % (injectedElectron.hopTime, type(injectedElectron.hopTime), eventQueue)
                             heapq.heappush(eventQueue, (injectedElectron.hopTime, 'carrierHop', injectedElectron))
                         injectedHole.calculateBehaviour()
                         if injectedHole.hopTime is not None:
+                            assert type(injectedHole.hopTime) is np.float64, "InjectedHole.hopTime is not float: %r %r \n %r" % (injectedHole.hopTime, type(injectedHole.hopTime), eventQueue)
                             heapq.heappush(eventQueue, (injectedHole.hopTime, 'carrierHop', injectedHole))
                     else:
                         print("EVENT: Exciton Recombining", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
@@ -1052,6 +1110,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         recExcitonTime.append(hoppingExciton.recombinationTime)
                     # END DEBUG
                 else:
+                    assert type(hoppingExciton.hopTime) is np.float64, "HoppingExciton.hopTime is not float: %r %r \n %r" % (hoppingExciton.hopTime, type(hoppingExciton.hopTime), eventQueue)
                     heapq.heappush(eventQueue, (hoppingExciton.hopTime, 'excitonHop', injectedExciton))
 
             elif nextEvent[1] == 'carrierHop':
@@ -1071,14 +1130,18 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         # Carrier has been extracted, so remove it from the carriers dictionary
                         globalCarrierDict.pop(hoppingCarrier.ID)
                     # Else: Carrier is trapped, so we'll just leave it there so it affects the Coulombic landscape
+                    if parameterDict['recordCarrierHistory'] is True:
+                        allCarriers.append(hoppingCarrier)
                 else:
                     # Normal carrier hop, so requeue this carrier
+                    assert type(hoppingCarrier.hopTime) is np.float64, "HoppingCarrier.hopTime is not float: %r %r \n %r" % (hoppingCarrier.hopTime, type(hoppingCarrier.hopTime), eventQueue)
                     heapq.heappush(eventQueue, (hoppingCarrier.hopTime, 'carrierHop', hoppingCarrier))
                 # Check if we're eligible to recombine
                 if (hoppingCarrier.recombining is True) and (hoppingCarrier.ID not in recombiningCarrierIDs) and (hoppingCarrier.recombiningWith not in recombiningCarrierIDs):
                     recombiningCarrierIDs.append(hoppingCarrier.ID)
                     recombiningCarrierIDs.append(hoppingCarrier.recombiningWith)
                     recombinationTime = determineEventTau(parameterDict['recombinationRate'], 'carrier-recombination')
+                    assert type(recombinationTime) is np.float64, "RecombinationTime is not float: %r %r \n %r" % (recombinationTime, type(recombinationTime), eventQueue)
                     heapq.heappush(eventQueue, (recombinationTime, 'recombine', hoppingCarrier))
                 ## If this carrier was injected, requeue this injection site in the darkInjectQueue to allow another injection
                 ## Only re-queueing up the dark inject site after the carrier has hopped prevents double injection onto the same
@@ -1110,6 +1173,8 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     numberOfRecombinations += 1
                     globalCarrierDict.pop(carrier1.ID)
                     globalCarrierDict.pop(carrier2.ID)
+                    if parameterDict['recordCarrierHistory'] is True:
+                        allCarriers += [carrier1, carrier2]
                 else:
                     print(separation, ">", parameterDict['coulombCaptureRadius'])
                     print("EVENT: Carrier Recombination Failed", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
@@ -1137,11 +1202,8 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
         #print("Fastest Event Considered =", fastestEvent)
         plotEventTimeDistribution(eventLog, outputFiguresDir, fastestEvent, slowestEvent)
         if parameterDict['recordCarrierHistory'] is True:
-            print("Plotting 3D carrier trajectories before exiting...")
-            plot3DTrajectory(globalCarrierDict.values(), parameterDict, deviceArray, outputFiguresDir)
-            exit()
-        else:
-            exit()
+            plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputFiguresDir)
+        exit()
     ### THE FOLLOWING CODE WAS USED TO GENERATE THE ANALYSIS DATA USED IN THE MATTYSUMMARIES EXCITON DYNAMICS STUFF
     #print("Plotting Exciton Characteristics")
     #plt.figure()
@@ -1211,6 +1273,9 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     print("Number of Dissociations =", numberOfDissociations)
     print("Number of Recombinations =", numberOfRecombinations)
     print("Number of Extractions =", numberOfExtractions)
+    plotEventTimeDistribution(eventLog, outputFiguresDir, fastestEvent, slowestEvent)
+    if parameterDict['recordCarrierHistory'] is True:
+        plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputFiguresDir)
 
 
 if __name__ == "__main__":
