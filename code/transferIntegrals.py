@@ -56,7 +56,7 @@ def loadORCAOutput(fileName):
     return HOMO_1, HOMO, LUMO, LUMO_1
 
 
-def modifyORCAFiles(fileName, failedFile, failedCount):
+def modifyORCAFiles(fileName, failedFile, failedCount, chromophoreList):
     if failedCount == 3:
         # Three lots of reruns without any successes, try to turn off SOSCF
         print(str(fileName)+": Three lots of reruns without any success - turning off SOSCF to see if that helps...")
@@ -79,6 +79,11 @@ def modifyORCAFiles(fileName, failedFile, failedCount):
     elif failedCount == 18:
         # SERIOUS PROBLEM
         print(str(fileName)+": Failed to rerun ORCA 18 times, even with all the input file tweaks. Examine the geometry - it is most likely unreasonable.")
+        fileString = fileName[[index for index, char in enumerate(fileName) if char == "/"][-1] + 1:-4]
+        for chromoString in fileString.split('-'):
+            chromoID = int(chromoString)
+            print("AAIDs for chromophore", chromoID)
+            print(chromophoreList[chromoID].AAIDs)
         print("Reverting "+str(fileName)+" back to its original state...")
         revertORCAFiles(failedFile)
         return 1
@@ -139,7 +144,7 @@ def revertORCAFiles(inputFile):
         fileName.writelines(originalLines)
 
 
-def rerunFails(failedChromoFiles, parameterDict):
+def rerunFails(failedChromoFiles, parameterDict, chromophoreList):
     print("")
     print(failedChromoFiles)
     print("There were", len(list(failedChromoFiles.keys())), "failed jobs.")
@@ -149,7 +154,7 @@ def rerunFails(failedChromoFiles, parameterDict):
     # Firstly, modify the input files to see if numerical tweaks make ORCA happier
     for failedFile, failedData in failedChromoFiles.items():
         failedCount = failedData[0]
-        errorCode = modifyORCAFiles(failedFile, outputDir + '/chromophores/inputORCA/' + failedFile.replace('.out', '.inp'), failedCount)
+        errorCode = modifyORCAFiles(failedFile, outputDir + '/chromophores/inputORCA/' + failedFile.replace('.out', '.inp'), failedCount, chromophoreList)
         if errorCode == 1:
             # Don't delete the elements from the list here because we're still trying to iterate over this dict and it cannot change length!
             popList.append(failedFile)
@@ -239,7 +244,7 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
     print("")
     # Rerun any failed ORCA jobs
     while len(failedSingleChromos) > 0:
-        failedSingleChromos = rerunFails(failedSingleChromos, parameterDict)
+        failedSingleChromos = rerunFails(failedSingleChromos, parameterDict, chromophoreList)
         successfulReruns = []
         # Now check all of the files to see if we can update the chromophoreList
         for chromoName, chromoData in failedSingleChromos.items():
@@ -302,7 +307,7 @@ def updatePairChromophoreList(chromophoreList, parameterDict):
                 failedPairChromos[fileName] = [1, chromoLocation, neighbourID]
     print("")
     while len(failedPairChromos) > 0:
-        failedPairChromos = rerunFails(failedPairChromos, parameterDict)
+        failedPairChromos = rerunFails(failedPairChromos, parameterDict, chromophoreList)
         successfulReruns = []
         for fileName, chromoData in failedPairChromos.items():
             print("Checking previously failed", fileName)
