@@ -331,8 +331,6 @@ class carrier:
             if carrier.ID != self.ID:
                 # Only consider the current carrier if it is not us!
                 separation = np.linalg.norm(currentAbsolutePosition - carrierPosn)
-                if separation == 0:
-                    raise SystemError("TWO CARRIERS IN THE SAME SPOT. FIX THIS")
                 coulombicPotential += coulombConstant * ((elementaryCharge * ((2 * self.carrierType) - 1)) * (elementaryCharge * ((2 * carrier.carrierType) - 1)) / separation)
                 # I'm also going to use this opportunity (as we're iterating over all carriers in the system) to see if we're close enough to any to recombine.
                 if self.recombining is False:
@@ -692,10 +690,15 @@ def pushToQueue(queue, event):
     if event[0] == np.float64(1E99):
         print("---=== TRIED TO QUEUE EVENT WITH CRAZY LONG WAIT TIME ===---")
         print("Event =", event)
+        try:
+            event[2].__dict__.pop('history')
+        except KeyError:
+            pass
         print("Instance =", event[2].__dict__)
         try:
             print("Current Chromophore =", event[2].currentChromophore.__dict__)
-        except:
+            print("Destination Chromophore =", event[2].destinationChromophore.__dict__)
+        except AttributeError:
             pass
         print("Terminating...")
         exit()
@@ -777,13 +780,11 @@ def plot3DTrajectory(injectSource, carriersToPlot, parameterDict, deviceArray, o
     ax.plot([xLen, xLen], [0, 0], [0, zLen], c = 'k', linewidth = 1.0)
     ax.plot([xLen, xLen], [yLen, yLen], [0, zLen], c = 'k', linewidth = 1.0)
 
-    if injectSource is 'Anode':
-        carrierString = 'anode'
-    elif injectSource is 'Cathode':
-        carrierString = 'cathode'
+    if (injectSource is 'Anode') or (injectSource is 'Cathode'):
+        carrierString = injectSource
     else:
         # Exciton
-        carrierString = 'exciton_' + str(carriersToPlot[0].ID)
+        carrierString = 'Exciton_' + str(carriersToPlot[0].ID)
     for carrier in carriersToPlot:
         if 'rF' in carrier.__dict__:
             color = 'g'
