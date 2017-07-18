@@ -87,7 +87,6 @@ class chromophore:
         # in self.neighbours for coherence.
         self.neighboursDeltaE = []
         self.neighboursTI = []
-        pass
 
     def getImportantBonds(self, bondList):
         importantBonds = []

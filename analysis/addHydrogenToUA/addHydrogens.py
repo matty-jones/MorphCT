@@ -124,7 +124,7 @@ if __name__ == "__main__":
     # ---==== PERYLENE/PERYLOTHIOPHENE ====---
     print("Using data for Perylene/Perylothiophene")
     hydrogensToAdd = {'C':[[2, 1]]}
-    sigmaVal = 3.8
+    sigmaVal = 3.905
     ## ---==== BDT-TPD ====---
     #print("Using data for BDT-TPD")
     #hydrogensToAdd = {'CS':[[2, 1]],
@@ -136,6 +136,7 @@ if __name__ == "__main__":
     print("THIS FUNCTION IS SET UP TO USE A DICTIONARY TO DEFINE HOW MANY HYDROGENS TO ADD TO BONDS OF A SPECIFIC TYPE WITH A CERTAIN NUMBER OF BONDS")
     print(hydrogensToAdd)
     print("IF THE ABOVE DICTIONARY DOESN'T LOOK RIGHT, PLEASE TERMINATE NOW AND IGNORE ANY OUTPUTS UNTIL THE DICTIONARY HAS BEEN RECTIFIED")
+    print("Additionally, we're using a sigma value of", sigmaVal)
     for inputFile in os.listdir('./'):
         if ('_AA.xml' in inputFile) or ('.xml' not in inputFile):
             continue

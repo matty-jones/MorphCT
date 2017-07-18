@@ -15,6 +15,10 @@ class morphologyMoiety:
         chromophoreListLocation = parameterDict['outputMorphDir'] + '/' + molMorphName + '/code/' + molMorphName + '.pickle'
         self.AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict, self.chromophoreList = helperFunctions.loadPickle(chromophoreListLocation)
         self.carrierType = self.getCarrierType()
+        # Now add the occupation data to the chromophoreLists so that we can prevent double occupation in the simulations
+        # The occupied property is a list that contains the device moiety coordinates where the chromophore is occupied.
+        for index, chromophore in enumerate(self.chromophoreList):
+            chromophore.occupied = []
 
     def getCarrierType(self):
         speciesPresent = []
