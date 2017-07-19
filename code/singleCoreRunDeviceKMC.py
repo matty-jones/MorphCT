@@ -240,10 +240,10 @@ class carrier:
             [self.destinationChromophore, self.hopTime, self.destinationImage] = self.calculateHop()
             destinationImage = list(np.array(self.currentDevicePosn) + np.array(self.destinationImage))
             # In order to get the correct 'occupied' data, we need to perform the wrapping if specified by wrapxy or the forbidding if not
+            outOfBounds = False
             if destinationImage != [0, 0, 0]:
                 # Iterate over the destination image and perform the wrapping if required or constrain the coordinates if not.
                 # Can skip the last element (z-axis) because the carrier will be removed
-                outOfBounds = False
                 for axisNo, val in enumerate(destinationImage[:-1]):
                     if val >= globalChromophoreData.deviceArray.shape[axisNo]:
                         if self.wrapxy:
@@ -284,8 +284,8 @@ class carrier:
         hopTimes = []
         # Obtain the reorganisation energy in J (from eV in the parameter file)
         for neighbourIndex, transferIntegral in enumerate(self.currentChromophore.neighboursTI):
-            # Ignore any hops with a NoneType transfer integral (usually due to an ORCA error)
-            if transferIntegral is None:
+            # Ignore any hops with a NoneType transfer integral (usually due to an ORCA error), or zero
+            if (transferIntegral is None) or (transferIntegral < 1E-10):
                 continue
             destinationChromophore = globalChromophoreData.returnChromophoreList(self.currentDevicePosn)[self.currentChromophore.neighbours[neighbourIndex][0]]
             # Need to determine the relative image between the two (recorded in obtainChromophores) to check if the carrier is hopping out of this morphology cell and into an adjacent one
@@ -298,12 +298,17 @@ class carrier:
             hopTime = determineEventTau(hopRate, 'carrier-hop')
             if hopTime is not None:
                 # Keep track of the chromophoreID and the corresponding tau
-                hopTimes.append([destinationChromophore, hopTime, neighbourRelativeImage])
+                hopTimes.append([destinationChromophore, hopTime, neighbourRelativeImage, self.prefactor, self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij])
         # Sort by ascending hop time
         hopTimes.sort(key = lambda x:x[1])
         # Take the quickest hop
         if len(hopTimes) > 0:
-            return hopTimes[0]
+            if hopTimes[0][1] > 1E98:
+                print(hopTimes[0])
+                print(globalCarrierDict)
+                for ID, carrier in globalCarrierDict.items():
+                    print(ID, carrier.currentDevicePosn, carrier.currentChromophore.ID)
+            return hopTimes[0][:3]
         else:
             # We are trapped here, so just return in order to raise the calculateBehaviour exception
             return []
@@ -763,6 +768,15 @@ def pushToQueue(queue, event):
         except AttributeError:
             pass
         print("Terminating...")
+        for carrier in globalCarrierDict:
+            print(carrier.currentDevicePosn, carrier.currentChromophore.posn)
+        for carrier1 in globalCarrierDict:
+            for carrier2 in globalCarrierDict:
+                if carrier2.ID == carrier1.ID:
+                    continue
+                carrier1posn = (7.8E-9 * np.array(carrier1.currentDevicePosn)) + np.array(carrier1.currentChromophore.posn)
+                carrier2posn = (7.8E-9 * np.array(carrier2.currentDevicePosn)) + np.array(carrier2.currentChromophore.posn)
+                print(carrier1.ID, carrier2.ID, np.linalg.norm(carrier1posn - carrier2posn))
         exit()
     event = tuple(event)
     heapq.heappush(queue, event)
@@ -846,7 +860,7 @@ def plot3DTrajectory(injectSource, carriersToPlot, parameterDict, deviceArray, o
         carrierString = injectSource
     else:
         # Exciton
-        carrierString = 'Exciton_' + str(carriersToPlot[0].ID)
+        carrierString = 'Exciton_%04d' % (carriersToPlot[0].ID)
     for carrier in carriersToPlot:
         if 'rF' in carrier.__dict__:
             color = 'g'
