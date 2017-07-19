@@ -115,16 +115,15 @@ if __name__ == "__main__":
     #                  'CH2':[[2, 2]], # If the atom type is CH2 and has only 2 bonds, add 2 hydrogens
     #                  'CE':[[1, 3]]}  # If the atom type is CE and has only one bond, add 3 hydrogens
     #sigmaVal = 1.0
-    # ---==== PCBM ====---
-    #print("Using data for PCBM")
-    #hydrogensToAdd = {'CHA':[[2, 1]],
-    #                  'CH2':[[2, 2]],
-    #                  'CE':[[1, 3]]}
-    #sigmaVal = 3.75
-    # ---==== PERYLENE/PERYLOTHIOPHENE ====---
-    print("Using data for Perylene/Perylothiophene")
-    hydrogensToAdd = {'C':[[2, 1]]}
+    # ---==== P3HT ====---
+    print("Using data for P3HT")
+    hydrogensToAdd = {'CA':[[2, 1]],
+                      'CT':[[2, 2],[1,3]]}
     sigmaVal = 3.905
+    # ---==== PERYLENE/PERYLOTHIOPHENE ====---
+    #print("Using data for Perylene/Perylothiophene")
+    #hydrogensToAdd = {'C':[[2, 1]]}
+    #sigmaVal = 3.905
     ## ---==== BDT-TPD ====---
     #print("Using data for BDT-TPD")
     #hydrogensToAdd = {'CS':[[2, 1]],
