@@ -77,7 +77,7 @@ if __name__ == "__main__":
         outputFile = './outputCSVs/' + pickleFile.replace('.pickle', '_kij.csv')
         AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle('./inputPickles/'+pickleFile)
         CSVData = []
-        print "Examining chromophores..."
+        print("Examining chromophores...")
         for chromo1 in chromophoreList:
             for index, neighbour in enumerate(chromo1.neighbours):
                 # Only consider pairs X-Y where Y > X
@@ -91,6 +91,6 @@ if __name__ == "__main__":
                 CGIDs2 = chromophoreList[chromo2ID].CGIDs
                 if Kij > 1E5:
                     CSVData.append([str(chromo1.ID), str(chromo2ID), str(Kij), repr(CGIDs1), repr(CGIDs2)])
-        print "Writing CSV file..."
+        print("Writing CSV file...")
         createNewCSV(outputFile, CSVData)
-        print "CSV file written to", str(outputFile)+"!"
+        print("CSV file written to", str(outputFile)+"!")
