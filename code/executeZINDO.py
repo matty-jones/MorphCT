@@ -189,17 +189,18 @@ def getORCAJobs(inputDir, procIDs):
         if fileName[-4:] == '.inp':
             ORCAFilesToRun.append(inputDir + '/pair/' + fileName)
     ORCAFilesToRun.sort()
-    # Do not run any jobs that have already have an output file (and so have at least started to run if not finished)
-    popList = []
-    for jobNo, job in enumerate(ORCAFilesToRun):
-        try:
-            with open(job.replace('inputORCA', 'outputORCA').replace('.inp', '.out'), 'r'):
-                popList.append(jobNo)
-        except IOError:
-            pass
-    popList.sort(reverse=True)
-    for popIndex in popList:
-        ORCAFilesToRun.pop(popIndex)
+    if parameterDict['overwriteCurrentData'] is False:
+        # Do not run any jobs that have already have an output file (and so have at least started to run if not finished)
+        popList = []
+        for jobNo, job in enumerate(ORCAFilesToRun):
+            try:
+                with open(job.replace('inputORCA', 'outputORCA').replace('.inp', '.out'), 'r'):
+                    popList.append(jobNo)
+            except IOError:
+                pass
+        popList.sort(reverse=True)
+        for popIndex in popList:
+            ORCAFilesToRun.pop(popIndex)
     if len(ORCAFilesToRun) == 0:
         return []
     # Create a jobslist for each procID
@@ -214,7 +215,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     jobsList = getORCAJobs(inputDir, procIDs)
     numberOfInputs = sum([len(ORCAFilesToRun) for ORCAFilesToRun in jobsList])
     print("Found", numberOfInputs, "ORCA files to run.")
-    if (numberOfInputs > 0) or (parameterDict['overwriteCurrentData'] is True):
+    if (numberOfInputs > 0):
         # Create pickle file containing the jobs sorted by ProcID to be picked up by singleCoreRunORCA.py
         pickleName = inputDir.replace('inputORCA', 'ORCAJobs.pickle')
         with open(pickleName, 'wb+') as pickleFile:
