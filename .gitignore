@@ -1,5 +1,6 @@
 ./temp/*
 temp/
+*test*
 *.hoomdxml
 *ipynb*
 *par*.py
