@@ -67,7 +67,6 @@ class chromophoreDataContainer:
             if val >= self.deviceArray.shape[axisNo]:
                 if axisNo == 2:
                     # Leaving out of the top of the device
-                    print("Leaving out of top of device")
                     return 'Top'
                 elif self.wrapxy:
                     # Bring it in on the reverse side
@@ -78,7 +77,6 @@ class chromophoreDataContainer:
             if val < 0:
                 if axisNo == 2:
                     # Leaving out of the bottom of the device
-                    print("Leaving out of bottom of device")
                     return 'Bottom'
                 elif self.wrapxy:
                     # Bring it in on the reverse side
