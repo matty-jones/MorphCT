@@ -214,7 +214,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     jobsList = getORCAJobs(inputDir, procIDs)
     numberOfInputs = sum([len(ORCAFilesToRun) for ORCAFilesToRun in jobsList])
     print("Found", numberOfInputs, "ORCA files to run.")
-    if numberOfInputs > 0:
+    if (numberOfInputs > 0) or (parameterDict['overwriteCurrentData'] is True):
         # Create pickle file containing the jobs sorted by ProcID to be picked up by singleCoreRunORCA.py
         pickleName = inputDir.replace('inputORCA', 'ORCAJobs.pickle')
         with open(pickleName, 'wb+') as pickleFile:
