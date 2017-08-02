@@ -62,18 +62,15 @@ class exciton:
             self.history = None
 
     def calculateBehaviour(self):
-        if globalTime >= self.creationTime + self.recombinationTime:
-            # Exciton has run out of time and is now recombining, so set its next hopTime to None
-            [self.destinationChromophore, self.hopTime, self.destinationImage] = [None, None, None]
-            self.removedTime = globalTime
-            return
         # Set a flag to indicate whether exciton can dissociate or not
         self.canDissociate = self.checkDissociation()
         # Dissociate the exciton immediately after creation if it would be created at an interface
         if self.canDissociate is True:
+            print("Self.canDissociate is True. self.currentChromophore.species =", self.currentChromophore.species)
             # Determine all potential dissociation options, randomly select one, plop a hole on the donor and electron on the acceptor, then remove this exciton from the system by updating its removedTime
             if self.currentChromophore.species == 'Donor':
-                holeChromophore = self.currentChromophore
+                print("72", self.currentDevicePosn)
+                holeChromophore = globalChromophoreData.returnSpecificChromophore(self.currentDevicePosn, self.currentChromophore.ID)
                 # The electron chromophore is a randomly selected chromophore of the opposing type that is in range of the current one
                 electronChromophoreID = R.choice(self.currentChromophore.dissociationNeighbours)[0]
                 electronChromophore = globalChromophoreData.returnSpecificChromophore(self.currentDevicePosn, electronChromophoreID)
@@ -81,9 +78,10 @@ class exciton:
                     self.holeChromophore = holeChromophore
                     self.electronChromophore = electronChromophore
                 else:
+                    print("Debug: Cannot dissociate after all. currentDevicePosn =", self.currentDevicePosn, "holeChromophore.occupied =", holeChromophore.occupied, "electronChromophore.occupied =", electronChromophore.occupied)
                     self.canDissociate = False
             elif self.currentChromophore.species == 'Acceptor':
-                electronChromophore = self.currentChromophore
+                electronChromophore = globalChromophoreData.returnSpecificChromophore(self.currentDevicePosn, self.currentChromophore.ID)
                 # The hole chromophore is a randomly selected chromophore of the opposing type that is in range of the current one
                 holeChromophoreID = R.choice(self.currentChromophore.dissociationNeighbours)[0]
                 holeChromophore = globalChromophoreData.returnSpecificChromophore(self.currentDevicePosn, holeChromophoreID)
@@ -91,12 +89,20 @@ class exciton:
                     self.holeChromophore = holeChromophore
                     self.electronChromophore = electronChromophore
                 else:
+                    print("Debug: Cannot dissociate after all. currentDevicePosn =", self.currentDevicePosn, "holeChromophore.occupied =", holeChromophore.occupied, "electronChromophore.occupied =", electronChromophore.occupied)
                     self.canDissociate = False
             if self.canDissociate is True:
                 # Notify execute() that this exciton should not be queued up again by setting self.hopTime == None
                 [self.destinationChromophore, self.hopTime, self.destinationImage] = [None, None, None]
                 self.removeTime = globalTime
-        # Calculate the fastest hop from the current chromophore
+                return
+        # If we're not instantaneously dissociating, check the recombination time
+        if globalTime >= self.creationTime + self.recombinationTime:
+            # Exciton has run out of time and is now recombining, so set its next hopTime to None
+            [self.destinationChromophore, self.hopTime, self.destinationImage] = [None, None, None]
+            self.removedTime = globalTime
+            return
+        # Otherwise, calculate the fastest hop from the current chromophore
         try:
             [self.destinationChromophore, self.hopTime, self.destinationImage] = self.calculateHop()
         except ValueError:
@@ -154,7 +160,7 @@ class exciton:
             hopTime = determineEventTau(hopRate, 'exciton-hop')
             # Keep track of the destination chromophore ID, the corresponding tau, and the relative image (to see if we're hopping over a boundary)
             if hopTime is not None:
-                hopTimes.append([globalChromophoreData.returnChromophoreList(self.currentDevicePosn)[self.currentChromophore.neighbours[neighbourIndex][0]], hopTime, neighbourRelativeImage])
+                hopTimes.append([globalChromophoreData.returnSpecificChromophore(self.currentDevicePosn, self.currentChromophore.neighbours[neighbourIndex][0]), hopTime, neighbourRelativeImage])
         # Sort by ascending hop time
         hopTimes.sort(key = lambda x:x[1])
         # Only want to take the quickest hop if it is NOT going to hop outside the device (top or bottom - i.e. z axis is > shape[2] or < 0)
@@ -237,47 +243,12 @@ class carrier:
 
     def calculateBehaviour(self):
         try:
-            [self.destinationChromophore, self.hopTime, self.destinationImage] = self.calculateHop()
-            destinationImage = list(np.array(self.currentDevicePosn) + np.array(self.destinationImage))
-            # In order to get the correct 'occupied' data, we need to perform the wrapping if specified by wrapxy or the forbidding if not
-            outOfBounds = False
-            if destinationImage != [0, 0, 0]:
-                # Iterate over the destination image and perform the wrapping if required or constrain the coordinates if not.
-                # Can skip the last element (z-axis) because the carrier will be removed
-                for axisNo, val in enumerate(destinationImage[:-1]):
-                    if val >= globalChromophoreData.deviceArray.shape[axisNo]:
-                        if self.wrapxy:
-                            # Bring it in on the reverse side
-                            destinationImage[axisNo] = 0
-                        else:
-                            # Hop will be forbidden so no destination chromophore this time
-                            outOfBounds = True
-                            break
-                    if val < 0:
-                        if self.wrapxy:
-                            # Bring it in on the reverse side
-                            destinationImage[axisNo] = globalChromophoreData.deviceArray.shape[axisNo] - 1
-                        else:
-                            # Hop will be forbidden so no destination chromophore this time
-                            outOfBounds = True
-                            break
-                if outOfBounds is False:
-                    initialPosition = self.currentChromophore.posn
-                    destinationPosition = self.destinationChromophore.posn
-                    deltaPosition = destinationPosition - initialPosition
-                    destinationChromophore = globalChromophoreData.returnClosestChromophoreToPosition(destinationImage, destinationPosition)
-                    if (destinationChromophore == 'Top') or (destinationChromophore == 'Bottom'):
-                        destinationChromophore = None
-            else:
-                destinationChromophore = self.destinationChromophore
-            if (outOfBounds is False) and (destinationChromophore is not None):
-                if (destinationImage in destinationChromophore.occupied):
-                    # Carrier is already present, raise the value error
-                    print("CANNOT HOP HERE, DESTINATION CHROMOPHORE IS ALREADY OCCUPIED")
-                    raise ValueError
-                globalChromophoreData.returnChromophoreList(destinationImage)[destinationChromophore.ID].occupied.append(destinationImage)
+            [self.destinationChromophore, self.hopTime, self.relativeImage, self.destinationImage] = self.calculateHop()
+            # Update the destination chromophore (if it's a chromophore) so that it's marked as occupied
+            if not isinstance(self.destinationChromophore, str):
+                globalChromophoreData.returnSpecificChromophore(self.destinationImage, self.destinationChromophore.ID).occupied.append(self.destinationImage)
         except ValueError:
-            [self.destinationChromophore, self.hopTime, self.destinationImage] = [None, None, None]
+            [self.destinationChromophore, self.hopTime, self.relativeImage, self.destinationImage] = [None, None, None, None]
 
     def calculateHop(self):
         # Determine the hop times to all possible neighbours
@@ -287,10 +258,34 @@ class carrier:
             # Ignore any hops with a NoneType transfer integral (usually due to an ORCA error), or zero
             if (transferIntegral is None) or (transferIntegral < 1E-10):
                 continue
-            destinationChromophore = globalChromophoreData.returnChromophoreList(self.currentDevicePosn)[self.currentChromophore.neighbours[neighbourIndex][0]]
+            neighbourChromophore = globalChromophoreData.returnSpecificChromophore(self.currentDevicePosn, self.currentChromophore.neighbours[neighbourIndex][0])
+            # The destination chromophore will be the actual chromophore we end up on (i.e. not neighbour if we hop across a boundary)
+            destinationChromophore = neighbourChromophore
             # Need to determine the relative image between the two (recorded in obtainChromophores) to check if the carrier is hopping out of this morphology cell and into an adjacent one
             neighbourRelativeImage = self.currentChromophore.neighbours[neighbourIndex][1]
-            deltaEij = self.calculatePotential(destinationChromophore, neighbourRelativeImage, self.currentChromophore.neighboursDeltaE[neighbourIndex])
+            destinationImage = list(np.array(self.currentDevicePosn) + np.array(neighbourRelativeImage))
+            # If we're hopping out of this cell and into a new one, make sure that it's in-range if we're not going to wrap it
+            skipThisNeighbour = False
+            if self.wrapxy is False:
+                # Skip this neighbour if we're going to hop out of the device along the non-electrode axes
+                if neighbourRelativeImage != [0, 0, 0]:
+                    for axisNo, val in enumerate(destinationImage[:-1]):
+                        if (val >= globalChromophoreData.deviceArray.shape[axisNo]) or (val < 0):
+                            skipThisNeighbour = True
+                            break
+                    # Don't need to perform this check if we've already satisfied the first skip condition
+                    if skipThisNeighbour is False:
+                        destinationChromophore = globalChromophoreData.returnClosestChromophoreToPosition(destinationImage, neighbourChromophore.posn)
+                        if destinationChromophore == "Out of Bounds":
+                            continue
+                    else:
+                        continue
+            # Make sure the destination chromophore is of the correct type and is not occupied, if it is a chromophore and not a string (saying 'Top' or 'Bottom' if it's leaving the device)
+            if not isinstance(destinationChromophore, str):
+                if (destinationImage in destinationChromophore.occupied) or (destinationChromophore.species != self.currentChromophore.species):
+                    continue
+            # Otherwise, we're good to go. Calculate the hop as previously (but a hop to the neighbourChromophore)
+            deltaEij = self.calculateDeltaE(neighbourChromophore, neighbourRelativeImage, self.currentChromophore.neighboursDeltaE[neighbourIndex])
             # All of the energies (EXCEPT EIJ WHICH IS ALREADY IN J) are in eV currently, so convert them to J
             hopRate = calculateMarcusHopRate(self.prefactor, self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij, self.T)
             #print(hopRate, self.prefactor, self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij)
@@ -298,7 +293,10 @@ class carrier:
             hopTime = determineEventTau(hopRate, 'carrier-hop')
             if hopTime is not None:
                 # Keep track of the chromophoreID and the corresponding tau
-                hopTimes.append([destinationChromophore, hopTime, neighbourRelativeImage, self.prefactor, self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij])
+                hopTimes.append([destinationChromophore, hopTime, neighbourRelativeImage, destinationImage, self.prefactor, self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij])
+                if hopTime > 1E20:
+                    print("---=== WARNING, EXTREMELY LONG CARRIER HOP ===---")
+                    print(hopTimes[-1])
         # Sort by ascending hop time
         hopTimes.sort(key = lambda x:x[1])
         # Take the quickest hop
@@ -308,7 +306,7 @@ class carrier:
                 print(globalCarrierDict)
                 for ID, carrier in globalCarrierDict.items():
                     print(ID, carrier.currentDevicePosn, carrier.currentChromophore.ID)
-            return hopTimes[0][:3]
+            return hopTimes[0][:4]
         else:
             # We are trapped here, so just return in order to raise the calculateBehaviour exception
             return []
@@ -317,29 +315,13 @@ class carrier:
         global numberOfExtractions
         global KMCIterations
         global globalTime
-        # Unset the occupation status of the current chromophore, as we're about to hop away.
-        # The destination has already been marked as occupied.
-        initialID = self.currentChromophore.ID
-        destinationID = self.destinationChromophore.ID
-        initialPosition = self.currentChromophore.posn
-        destinationPosition = self.destinationChromophore.posn
-        deltaPosition = destinationPosition - initialPosition
-        if self.destinationImage == [0, 0, 0]:
-            # Carrier is not hopping over a boundary, so can simply update its current position
-            # First, update the current chromophore's occupancy. The destination chromophore has already been marked as occupied.
-            self.currentChromophore.occupied.remove(self.currentDevicePosn)
-            self.currentChromophore = self.destinationChromophore
-        else:
-            # We're hopping over a boundary. If the closest chromophore to the destination position in the adjacent device cell is the same type as the one we're currently on, permit the hop with the already-calculated hopTime. Otherwise, ignore this hop.
-            targetDevicePosn = list(np.array(self.currentDevicePosn) + np.array(self.destinationImage))
-            newChromophore = globalChromophoreData.returnClosestChromophoreToPosition(targetDevicePosn, destinationPosition)
-            if (newChromophore == 'Top') or (newChromophore == 'Bottom'):
+        # Unset the current chromophore's occupation status as we're about to hop away.
+        # The destination should have already been updated
+        globalChromophoreData.returnSpecificChromophore(self.currentDevicePosn, self.currentChromophore.ID).occupied.remove(self.currentDevicePosn)
+        if (self.destinationChromophore == 'Top') or (self.destinationChromophore == 'Bottom'):
                 # This carrier is hopping out of the active layer and into the contacts.
-                # Firstly, ensure that it doesn't get queued up again
-                [self.destinationChromophore, self.hopTime, self.destinationImage] = [None, None, None]
-                self.removedTime = globalTime
-                # Secondly, work out whether this is a `correct' hop (i.e. hole hopping to anode or electron hopping to cathode) that causes photovoltaic current.
-                if newChromophore == 'Top':
+                # Firstly, work out whether this is a `correct' hop (i.e. hole hopping to anode or electron hopping to cathode) that causes photovoltaic current.
+                if self.destinationChromophore == 'Top':
                     # Leaving through top (anode)
                     if self.injectedFrom != 'Anode':
                         if self.carrierType == HOLE:
@@ -356,89 +338,35 @@ class carrier:
                             numberOfExtractions -= 1
                     # Else (injected from cathode), number of extractions doesn't change.
                 if self.carrierType == ELECTRON:
-                    print("EVENT: Electron Left Device! New number of extractions", numberOfExtractions, "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                    print("EVENT: Electron Left out of", self.destinationChromophore, "of Device! New number of extractions", numberOfExtractions, "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
                 else:
-                    print("EVENT: Hole Left Device! New number of extractions:", numberOfExtractions, "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
-            elif newChromophore == 'Out of Bounds':
-                # Trying to cross a periodic boundary. Das ist verboten, discarding the hop
-                #print("Out of bounds Carrier hop discarded")
-                pass
-            elif newChromophore.species == self.currentChromophore.species:
-                # Corretly permitted hop. Update the chromophore occupation, and then move the carrier. The destination chromophore is already marked as occupied.
-                #print("In performHop function:", hex(id(self.currentChromophore)), hex(id(globalChromophoreData.returnChromophoreList(self.currentDevicePosn)[self.currentChromophore.ID])))
-                #print(self.currentChromophore.occupied)
-                #print("Trying to remove", self.currentDevicePosn, hex(id(self.currentChromophore)))
-                self.currentChromophore.occupied.remove(self.currentDevicePosn)
-                self.currentDevicePosn = list(np.array(self.currentDevicePosn) + np.array(self.destinationImage))
-                self.currentChromophore = newChromophore
-            #else:
-            #    print("Crossing a boundary to a different chromophore species. Das ist verboten, discarding the hop")
+                    print("EVENT: Hole Left out of", self.destinationChromophore, "of Device! New number of extractions:", numberOfExtractions, "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                # Now ensure that it doesn't get queued up again
+                [self.destinationChromophore, self.hopTime, self.relativeImage, self.destinationImage] = [None, None, None, None]
+                self.removedTime = globalTime
+        else:
+            self.currentDevicePosn = self.destinationImage
+            self.currentChromophore = self.destinationChromophore
         if self.history is not None:
             self.history.append([self.currentDevicePosn, self.currentChromophore.posn])
 
-    def calculatePotential(self, destinationChromophore, neighbourRelativeImage, chromoEij):
-        global globalCarrierDict
-
-        # The potential will be calculated in J
-        currentAbsolutePosition = np.array(self.currentDevicePosn)*parameterDict['morphologyCellSize'] + (np.array(self.currentChromophore.posn) * 1E-10)
-        destinationZ = ((np.array(self.currentDevicePosn) + np.array(neighbourRelativeImage))*parameterDict['morphologyCellSize'] + (np.array(destinationChromophore.posn) * 1E-10))[2]
-        zSep = destinationZ - currentAbsolutePosition[2]
+    def calculateDeltaE(self, destinationChromophore, neighbourRelativeImage, chromoEij):
+        # DeltaEij has 3 main components: 1) the energetic disorder (difference in HOMO/LUMO levels), 
+        # 2) the field within the device, and 3) the Coulombic effect from nearby charges
+        deltaEij = 0.0  # Report this in J
+        # 1) Energetic Disorder
+        deltaEij += (chromoEij * elementaryCharge)
+        # 2) Field within the device
+        currentAbsolutePosition = np.array(self.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(self.currentChromophore.posn) * 1E-10)
+        destinationAbsolutePosition = ((np.array(self.currentDevicePosn) + np.array(neighbourRelativeImage)) * parameterDict['morphologyCellSize'] + (np.array(destinationChromophore.posn) * 1E-10))
+        zSep = destinationAbsolutePosition[2] - currentAbsolutePosition[2]
         charge = elementaryCharge * ((2 * self.carrierType) - 1)
-        totalPotential = (zSep * currentFieldValue * charge) + (chromoEij * charge)
-        # Coulombic component!
-        coulombicPotential = 0.0
-        coulombConstant = 1.0 / (4 * np.pi * epsilonNought * self.relativePermittivity)
-        for carrier in globalCarrierDict.values():
-            # Each carrier feels coulombic effects from every other carrier in the system, along with the image charges induced in the top and bottom contacts, AND the image charges induced by the image charges.
-            # The image charges are needed in order to keep a constant field at the interface, correcting for the non-periodic Neumann-like boundary conditions
-            # Check papers from Chris Groves (Marsh, Groves and Greenham2007 and beyond), Ben Lyons (2011/2012), and van der Holst (2011) for more details.
-            carrierPosn = np.array(carrier.currentDevicePosn)*parameterDict['morphologyCellSize'] + (np.array(carrier.currentChromophore.posn) * 1E-10)
-            if carrier.ID != self.ID:
-                # Only consider the current carrier if it is not us!
-                separation = np.linalg.norm(currentAbsolutePosition - carrierPosn)
-                coulombicPotential += coulombConstant * ((elementaryCharge * ((2 * self.carrierType) - 1)) * (elementaryCharge * ((2 * carrier.carrierType) - 1)) / separation)
-                # I'm also going to use this opportunity (as we're iterating over all carriers in the system) to see if we're close enough to any to recombine.
-                if self.recombining is False:
-                    # Only do this if we're not currently recombining with something
-                    if (separation <= parameterDict['coulombCaptureRadius']) and (self.carrierType != carrier.carrierType):
-                        # If carriers are within 1nm of each other, then assume that they are within the Coulomb capture radius and are about to recombine
-                         self.recombining = True
-                         self.recombiningWith = carrier.ID
-                         # We don't necessarily need to update the carrier.recombining, since all of the behaviour will be determined in the main program by checking hoppingCarrier.recombining, but this is more technically correct.
-                         carrier.recombining = True
-                         carrier.recombiningWith = self.ID
-            # Now consider the image charges and the images of the images.
-            # Direct images have the opposing charge to the actual carrier, so the potential contains (+q * -q), or -(q**2)
-            # Images of the images have the opposing charge to the image of the carrier, which is the same charge as the actual carrier
-            # Therefore, images of images are either (+q * +q) or (-q * -q) = +(q**2)
-            # First do the top image charge
-            deviceZSize = globalChromophoreData.deviceArray.shape[2] * parameterDict['morphologyCellSize']
-            topImagePosn = copy.deepcopy(carrierPosn)
-            topImagePosn[2] = deviceZSize + (deviceZSize - carrierPosn[2])
-            separation = np.linalg.norm(currentAbsolutePosition - topImagePosn)
-            coulombicPotential -= (elementaryCharge**2) * (coulombConstant / separation)
-            # Now do the bottom image charge
-            bottomImagePosn = copy.deepcopy(carrierPosn)
-            bottomImagePosn[2] = - carrierPosn[2]
-            separation = np.linalg.norm(currentAbsolutePosition - bottomImagePosn)
-            coulombicPotential -= (elementaryCharge**2) * (coulombConstant / separation)
-            # Now do the top image of the bottom image charge
-            topImageOfBottomImagePosn = copy.deepcopy(carrierPosn)
-            topImageOfBottomImagePosn[2] = (2 * deviceZSize) + carrierPosn[2]
-            separation = np.linalg.norm(currentAbsolutePosition - topImageOfBottomImagePosn)
-            coulombicPotential += (elementaryCharge**2) * (coulombConstant / separation)
-            # And finally the bottom image of the top image charge
-            bottomImageOfTopImagePosn = copy.deepcopy(carrierPosn)
-            bottomImageOfTopImagePosn[2] = - (deviceZSize + (deviceZSize - carrierPosn[2]))
-            separation = np.linalg.norm(currentAbsolutePosition - bottomImageOfTopImagePosn)
-            coulombicPotential += (elementaryCharge**2) * (coulombConstant / separation)
-        #print(currentAbsolutePosition)
-        #print(currentAbsolutePosition[2], destinationZ, zSep)
-        #print("Coulombic Potential =", coulombicPotential)
-        #print("Shunt =", zSep * currentFieldValue * charge)
-        #print("Chromo =", chromoEij * charge)
-        totalPotential += coulombicPotential
-        return totalPotential
+        deltaEij += (zSep * currentFieldValue * charge)
+        # 3) Difference in Coulombic Potential at dest compared to origin
+        originCoulomb, self.recombining, self.recombiningWith = calculateCoulomb(currentAbsolutePosition, self.ID, self.carrierType, carrierIsRecombining=self.recombining)
+        destinationCoulomb, dummy1, dummy2 = calculateCoulomb(destinationAbsolutePosition, self.ID, self.carrierType)
+        deltaEij += (destinationCoulomb - originCoulomb)
+        return deltaEij
 
 
 class injectSite:
@@ -517,6 +445,64 @@ def plotConnections(excitonPath, chromophoreList, AADict, outputDir):
     plt.show()
     plt.savefig(fileName)
     print("Figure saved as " + fileName)
+
+
+def calculateCoulomb(absolutePosition, selfID, selfCarrierType, carrierIsRecombining=None):
+    global globalCarrierDict
+    coulombicPotential = 0.0
+    coulombConstant = 1.0 / (4 * np.pi * epsilonNought * parameterDict['relativePermittivity'])
+    canRecombineHere = False
+    recombiningWith = None
+    for carrier in globalCarrierDict.values():
+        # Each carrier feels coulombic effects from every other carrier in the system, along with the image charges induced in the top and bottom contacts, AND the image charges induced by the image charges.
+        # The image charges are needed in order to keep a constant field at the interface, correcting for the non-periodic Neumann-like boundary conditions
+        # Check papers from Chris Groves (Marsh, Groves and Greenham2007 and beyond), Ben Lyons (2011/2012), and van der Holst (2011) for more details.
+        carrierPosn = np.array(carrier.currentDevicePosn)*parameterDict['morphologyCellSize'] + (np.array(carrier.currentChromophore.posn) * 1E-10)
+        if carrier.ID != selfID:
+            # Only consider the current carrier if it is not us!
+            separation = np.linalg.norm(absolutePosition - carrierPosn)
+            print("Separation between", selfID, "and", carrier.ID, "=", separation)
+            coulombicPotential += coulombConstant * ((elementaryCharge * ((2 * selfCarrierType) - 1)) * (elementaryCharge * ((2 * carrier.carrierType) - 1)) / separation)
+            # I'm also going to use this opportunity (as we're iterating over all carriers in the system) to see if we're close enough to any to recombine.
+            if carrierIsRecombining is False:
+                # Only do this if we're not currently recombining with something
+                if (separation <= parameterDict['coulombCaptureRadius']) and (selfCarrierType != carrier.carrierType):
+                    # If carriers are within 1nm of each other, then assume that they are within the Coulomb capture radius and are about to recombine
+                     canRecombineHere = True
+                     recombiningWith = carrier.ID
+                     # We don't necessarily need to update the carrier.recombining, since all of the behaviour will be determined in the main program by checking hoppingCarrier.recombining, but just in case, we can update the carrier too as well as self.
+                     carrier.recombining = True
+                     carrier.recombiningWith = selfID
+        # Now consider the image charges and the images of the images.
+        # Direct images have the opposing charge to the actual carrier, so the potential contains (+q * -q), or -(q**2)
+        # Images of the images have the opposing charge to the image of the carrier, which is the same charge as the actual carrier
+        # Therefore, images of images are either (+q * +q) or (-q * -q) = +(q**2)
+        # First do the top image charge
+        deviceZSize = globalChromophoreData.deviceArray.shape[2] * parameterDict['morphologyCellSize']
+        topImagePosn = copy.deepcopy(carrierPosn)
+        topImagePosn[2] = deviceZSize + (deviceZSize - carrierPosn[2])
+        separation = np.linalg.norm(absolutePosition - topImagePosn)
+        print("Separation between", selfID, "and top image charge =", separation)
+        coulombicPotential -= (elementaryCharge**2) * (coulombConstant / separation)
+        # Now do the bottom image charge
+        bottomImagePosn = copy.deepcopy(carrierPosn)
+        bottomImagePosn[2] = - carrierPosn[2]
+        separation = np.linalg.norm(absolutePosition - bottomImagePosn)
+        print("Separation between", selfID, "and bottom image charge =", separation)
+        coulombicPotential -= (elementaryCharge**2) * (coulombConstant / separation)
+        # Now do the top image of the bottom image charge
+        topImageOfBottomImagePosn = copy.deepcopy(carrierPosn)
+        topImageOfBottomImagePosn[2] = (2 * deviceZSize) + carrierPosn[2]
+        separation = np.linalg.norm(absolutePosition - topImageOfBottomImagePosn)
+        print("Separation between", selfID, "and top image of bottom image charge =", separation)
+        coulombicPotential += (elementaryCharge**2) * (coulombConstant / separation)
+        # And finally the bottom image of the top image charge
+        bottomImageOfTopImagePosn = copy.deepcopy(carrierPosn)
+        bottomImageOfTopImagePosn[2] = - (deviceZSize + (deviceZSize - carrierPosn[2]))
+        separation = np.linalg.norm(absolutePosition - bottomImageOfTopImagePosn)
+        print("Separation between", selfID, "and bottom image of top image charge =", separation, "\n")
+        coulombicPotential += (elementaryCharge**2) * (coulombConstant / separation)
+    return coulombicPotential, canRecombineHere, recombiningWith
 
 
 def calculateDarkCurrentInjections(deviceArray, parameterDict):
@@ -727,8 +713,9 @@ def determineEventTau(rate, eventType):
                 if 'hop' in eventType:
                     return None
                 else:
-                    print("Attempted 100 times to obtain a '"+str(eventType)+"'-type event timescale within the tolerances:", fastestEventAllowed, "<= tau <", slowestEventAllowed, "with the given rate", rate, "all without success.")
-                    print("Permitting the event anyway with the next random number.")
+                    if 'injection' not in eventType:
+                        print("Attempted 100 times to obtain a '"+str(eventType)+"'-type event timescale within the tolerances:", fastestEventAllowed, "<= tau <", slowestEventAllowed, "with the given rate", rate, "all without success.")
+                        print("Permitting the event anyway with the next random number.")
             x = R.random()
             # Ensure that we do not get exactly 0.0 or 1.0, which would break our logarithm
             if (x == 0) or (x == 1):
@@ -768,15 +755,15 @@ def pushToQueue(queue, event):
         except AttributeError:
             pass
         print("Terminating...")
-        for carrier in globalCarrierDict:
+        for index, carrier in globalCarrierDict.items():
             print(carrier.currentDevicePosn, carrier.currentChromophore.posn)
-        for carrier1 in globalCarrierDict:
-            for carrier2 in globalCarrierDict:
-                if carrier2.ID == carrier1.ID:
+        for carrier1ID, carrier1 in globalCarrierDict.items():
+            for carrier2ID, carrier2 in globalCarrierDict.items():
+                if carrier1ID >= carrier2ID:
                     continue
-                carrier1posn = (7.8E-9 * np.array(carrier1.currentDevicePosn)) + np.array(carrier1.currentChromophore.posn)
-                carrier2posn = (7.8E-9 * np.array(carrier2.currentDevicePosn)) + np.array(carrier2.currentChromophore.posn)
-                print(carrier1.ID, carrier2.ID, np.linalg.norm(carrier1posn - carrier2posn))
+                carrier1posn = (78 * np.array(carrier1.currentDevicePosn)) + np.array(carrier1.currentChromophore.posn)
+                carrier2posn = (78 * np.array(carrier2.currentDevicePosn)) + np.array(carrier2.currentChromophore.posn)
+                print(carrier1ID, carrier2ID, np.linalg.norm(carrier1posn - carrier2posn))
         exit()
     event = tuple(event)
     heapq.heappush(queue, event)
@@ -1072,8 +1059,8 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         globalCarrierDict[carrierIndex] = injectedHole
                         carrierIndex += 1
                         # Update the injected chromophores to be marked as occupied
-                        injectedExciton.electronChromophore.occupied.append(injectedExciton.currentDevicePosn)
-                        injectedExciton.holeChromophore.occupied.append(injectedExciton.currentDevicePosn)
+                        globalChromophoreData.returnSpecificChromophore(injectedExciton.currentDevicePosn, injectedExciton.electronChromophore.ID).occupied.append(injectedExciton.currentDevicePosn)
+                        globalChromophoreData.returnSpecificChromophore(injectedExciton.currentDevicePosn, injectedExciton.holeChromophore.ID).occupied.append(injectedExciton.currentDevicePosn)
                         # Now determine the behaviour of both carriers, and add their next hops to the KMC queue
                         injectedElectron.calculateBehaviour()
                         if injectedElectron.hopTime is not None:
@@ -1103,26 +1090,30 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     numberOfInjections = numberOfCathodeInjections
                 else:
                     numberOfInjections = numberOfAnodeInjections
-                print("EVENT: Dark Current injection from the " + str(injectSite.electrode) + " #" + str(numberOfInjections), "into", injectSite.devicePosn, "(which has type", repr(deviceArray[tuple(injectSite.devicePosn)]) + ")", "chromophore number", injectSite.chromophore.ID, "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
-                # Inject the carrier
-                injectedCarrier = carrier(carrierIndex, globalTime, injectSite.devicePosn, injectSite.chromophore, injectSite.electrode, parameterDict, injectedOntoSite = injectSite)
-                globalCarrierDict[carrierIndex] = injectedCarrier
-                carrierIndex += 1
-                # Update the chromophore occupation
-                injectSite.chromophore.occupied.append(injectSite.devicePosn)
-                print("UPDATED ON INJECTION =", injectSite.chromophore.occupied, hex(id(injectSite.chromophore)), hex(id(globalChromophoreData.returnChromophoreList(injectSite.devicePosn)[injectSite.chromophore.ID])))
-                # Determine the injected carrier's next hop and queue it
-                injectedCarrier.calculateBehaviour()
-                #DEBUG
-                if injectedCarrier.hopTime > 1:
-                    print("DARK INJECTION LED TO ELECTRON WITH CRAZY HOPTIME")
-                    for carrierFromList in globalCarrierDict.values():
-                        print(carrierFromList.currentDevicePosn, carrierFromList.currentChromophore.posn)
-                    print(injectedCarrier.currentChromophore.ID)
-                    print(injectedCarrier.__dict__)
-                    exit()
-                if injectedCarrier.hopTime is not None:
-                    eventQueue = pushToQueue(eventQueue, (injectedCarrier.hopTime, 'carrierHop', injectedCarrier))
+                injectChromophore = globalChromophoreData.returnSpecificChromophore(injectSite.devicePosn, injectSite.chromophore.ID)
+                if (injectSite.devicePosn not in injectChromophore.occupied):
+                    print("EVENT: Dark Current injection from the " + str(injectSite.electrode) + " #" + str(numberOfInjections), "into", injectSite.devicePosn, "(which has type", repr(deviceArray[tuple(injectSite.devicePosn)]) + ")", "chromophore number", injectSite.chromophore.ID, "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                    # Inject the carrier
+                    injectedCarrier = carrier(carrierIndex, globalTime, injectSite.devicePosn, injectSite.chromophore, injectSite.electrode, parameterDict, injectedOntoSite = injectSite)
+                    globalCarrierDict[carrierIndex] = injectedCarrier
+                    carrierIndex += 1
+                    # Update the chromophore occupation
+                    print("PREVIOUS OCCUPATION =", injectChromophore.occupied)
+                    injectChromophore.occupied.append(injectSite.devicePosn)
+                    print("UPDATED ON INJECTION =", injectChromophore.occupied)
+                    # Determine the injected carrier's next hop and queue it
+                    injectedCarrier.calculateBehaviour()
+                    if (injectedCarrier.hopTime is not None) and (injectedCarrier.hopTime > 1):
+                        print("DARK INJECTION LED TO ELECTRON WITH CRAZY HOPTIME")
+                        for carrierFromList in globalCarrierDict.values():
+                            print(carrierFromList.currentDevicePosn, carrierFromList.currentChromophore.posn)
+                        print(injectedCarrier.currentChromophore.ID)
+                        print(injectedCarrier.__dict__)
+                        exit()
+                    if injectedCarrier.hopTime is not None:
+                        eventQueue = pushToQueue(eventQueue, (injectedCarrier.hopTime, 'carrierHop', injectedCarrier))
+                else:
+                    print("CANNOT INJECT HERE, DESTINATION CHROMOPHORE IS ALREADY OCCUPIED")
 
                 # Now determine the next DC event and queue it
                 if injectSite.electrode == 'Cathode':
@@ -1145,7 +1136,6 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 #excitonDisp.append(helperFunctions.calculateSeparation(currentChromoPosn, destinationChromoPosn))
                 #if len(excitonTime) == 1000:
                 #    break
-
                 hoppingExciton = nextEvent[2]
                 hoppingExciton.performHop()
                 if hoppingExciton.removedTime is None:
@@ -1158,7 +1148,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         allCarriers.append(hoppingExciton)
 
                     if hoppingExciton.canDissociate is True:
-                        print("EVENT: Exciton Dissociating", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                        print("EVENT: Exciton Dissociating after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
                         numberOfDissociations += 1
                         numberOfHops.append(injectedExciton.numberOfHops)
                         # Create the carrier instances, but don't yet calculate their behaviour (need to add them to the carrier list before we can calculate the energetics)
@@ -1171,8 +1161,8 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         globalCarrierDict[carrierIndex] = injectedHole
                         carrierIndex += 1
                         # Update the injected chromophores to be marked as occupied
-                        injectedExciton.electronChromophore.occupied.append(injectedExciton.currentDevicePosn)
-                        injectedExciton.holeChromophore.occupied.append(injectedExciton.currentDevicePosn)
+                        globalChromophoreData.returnSpecificChromophore(hoppingExciton.currentDevicePosn, hoppingExciton.electronChromophore.ID).occupied.append(hoppingExciton.currentDevicePosn)
+                        globalChromophoreData.returnSpecificChromophore(hoppingExciton.currentDevicePosn, hoppingExciton.holeChromophore.ID).occupied.append(hoppingExciton.currentDevicePosn)
                         # Add to the allCarriers list for plotting
                         if parameterDict['recordCarrierHistory'] is True:
                             allCarriers += [injectedElectron, injectedHole]
