@@ -172,7 +172,7 @@ def terminateMonomers(chromophore, parameterDict, AAMorphologyDict):
     return newHydrogenPositions
 
 
-def getORCAJobs(inputDir, procIDs):
+def getORCAJobs(inputDir, parameterDict, procIDs):
     # First delete any previous log files as we're about to start again with the ZINDO/S calculations
     try:
         os.unlink(inputDir.replace('/inputORCA', '/*.log'))
@@ -212,7 +212,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     createInputFiles(chromophoreList, AAMorphologyDict, parameterDict)
     inputDir = parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/inputORCA'
     procIDs = parameterDict['procIDs']
-    jobsList = getORCAJobs(inputDir, procIDs)
+    jobsList = getORCAJobs(inputDir, parameterDict, procIDs)
     numberOfInputs = sum([len(ORCAFilesToRun) for ORCAFilesToRun in jobsList])
     print("Found", numberOfInputs, "ORCA files to run.")
     if (numberOfInputs > 0):
