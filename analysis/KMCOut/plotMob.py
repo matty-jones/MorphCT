@@ -266,16 +266,23 @@ def getTempVal(string):
     return tempVal
 
 
-def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierType):
+def getFrameVal(string):
+    underscoreList = helperFunctions.findIndex(string, '_')
+    tempVal = int(string[:underscoreList[0]])
+    return tempVal
+
+
+def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierType, xLabel):
     plt.gcf()
     xvals = tempData
     yvals = list(np.array(mobilityData)[:,0])
     yerrs = list(np.array(mobilityData)[:,1])
-    plt.xlabel('Temperature, Arb. U')
+    plt.xlabel(xLabel)
     plt.ylabel('Mobility, cm'+r'$^{2}$ '+'V'+r'$^{-1}$'+r's$^{-1}$')
     plt.title('p1-L15-f0.0-P0.1-TX.X-e0.1', fontsize = 24)
-    plt.xlim([1.4, 2.6])
+    #plt.xlim([1.4, 2.6])
     plt.semilogy(xvals, yvals, c = 'b')
+    plt.gca().set_xscale('log')
     plt.errorbar(xvals, yvals, xerr = 0, yerr = yerrs)
     fileName = './mobility' + carrierType + '.pdf'
     plt.savefig(fileName)
@@ -284,7 +291,7 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierTy
 
     plt.plot(tempData, anisotropyData, c = 'r')
     fileName = './anisotropy' + carrierType + '.pdf'
-    plt.xlabel('T, Arb. U')
+    plt.xlabel(xLabel)
     plt.ylabel(r'$\kappa$'+', Arb. U')
     plt.savefig(fileName)
     plt.clf()
@@ -310,9 +317,14 @@ if __name__ == "__main__":
         print("\n")
         try:
             tempData.append(getTempVal(directory))
+            tempXLabel = 'T, Arb. U'
         except:
-            print("No temp data found in morphology name, skipping combined plots")
-            combinedPlots = False
+            try:
+                tempData.append(getFrameVal(directory))
+                tempXLabel = r'$\tau$' + ', Arb. U'
+            except:
+                print("No temp or frame data found in morphology name, skipping combined plots")
+                combinedPlots = False
         try:
             with open(directory + '/KMCResults.pickle', 'rb') as pickleFile:
                 carrierData = pickle.load(pickleFile)
@@ -389,8 +401,8 @@ if __name__ == "__main__":
     print("Plotting temperature progression...")
     if combinedPlots is True:
         if len(holeAnisotropyData) > 0:
-            plotTemperatureProgression(tempData, holeMobilityData, holeAnisotropyData, 'Hole')
+            plotTemperatureProgression(tempData, holeMobilityData, holeAnisotropyData, 'Hole', tempXLabel)
         if len(electronAnisotropyData) > 0:
-            plotTemperatureProgression(tempData, electronMobilityData, electronAnisotropyData, 'Electron')
+            plotTemperatureProgression(tempData, electronMobilityData, electronAnisotropyData, 'Electron', tempXLabel)
     else:
         print("Temperature Progression not possible (probably due to no temperature specified). Cancelling...")
