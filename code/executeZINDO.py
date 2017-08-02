@@ -226,8 +226,8 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         runningJobs = []
         # Open the required processes to execute the ORCA jobs
         for CPURank, jobs in enumerate(jobsList):
-            print('python ' + os.getcwd() + '/code/singleCoreRunORCA.py ' + parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + ' ' + str(CPURank) + ' ' + int(parameterDict['overwriteCurrentData']) + ' &')
-            runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunORCA.py', parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4], str(CPURank), int(parameterDict['overwriteCurrentData'])]))
+            print('python ' + os.getcwd() + '/code/singleCoreRunORCA.py ' + parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + ' ' + str(CPURank) + ' ' + str(int(parameterDict['overwriteCurrentData'])) + ' &')
+            runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunORCA.py', parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4], str(CPURank), str(int(parameterDict['overwriteCurrentData']))]))
         # Wait for all jobs to complete
         [p.wait() for p in runningJobs]
         # Delete the job pickle
