@@ -657,13 +657,14 @@ def writeMorphologyXMLETree(inputDictionary, outputFile):
     print("XML file written to", str(outputFile) + "!")
 
 
-def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0):
+def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0, checkWrappedPosns = True):
     # Firstly, scale everything by the inverse of the provided sigma value
     if sigma != 1.0:
         inputDictionary = scale(inputDictionary, 1.0 / sigma)
     # Now need to check the positions of the atoms to ensure that everything is correctly contained inside the box
-    print("Checking wrapped positions before writing XML...")
-    inputDictionary = checkWrappedPositions(inputDictionary)
+    if checkWrappedPosns is True:
+        print("Checking wrapped positions before writing XML...")
+        inputDictionary = checkWrappedPositions(inputDictionary)
     # inputDictionary['position'], inputDictionary['image'] = pbc.shift_pbc(inputDictionary['position'], [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']])
     # print inputDictionary['image'][:20]
     # raw_input('HALT')
@@ -894,6 +895,28 @@ def scale(inputDictionary, scaleFactor):
     for element in ['lx', 'ly', 'lz']:
         if element in inputDictionary:
             inputDictionary[element] *= scaleFactor
+    return inputDictionary
+
+
+def rotate(inputDictionary, theta, rotateAroundPoint = [0, 0, 0], rotateAroundAxis = [0, 0, 1]):
+    inputDictionary = addUnwrappedPositions(inputDictionary)
+    rotateAroundAxis = list(np.array(rotateAroundAxis) / np.linalg.norm(rotateAroundAxis))
+    # Rotation matrix calculations from: http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
+    # The array that describes the 3D rotation of (x, y, z) around the point (a, b, c) through
+    # the unit axis <u, v, w> by the angle theta is given by:
+    # [ (a(v^2 + w^2) - u(bv + cw - ux - vy - wz))(1 - cos(theta)) + x*cos(theta) + (-cv + bw - wy + vz)sin(theta),
+    #   (b(u^2 + w^2) - v(au + cw - ux - vy - wz))(1 - cos(theta)) + y*cos(theta) + (cu - aw + wx - uz)sin(theta),
+    #   (c(u^2 + v^2) - w(au + bv - ux - vy - wz))(1 - cos(theta)) + z*cos(theta) + (-bu + av - vx + uy)sin(theta) ]
+    # DEFAULT BEHAVIOUR: Rotate the entire dictionary by theta around the z-axis centred at the origin
+    for AAID, [x, y, z] in enumerate(inputDictionary['unwrapped_position']):
+        [a, b, c] = rotateAroundPoint
+        [u, v, w] = rotateAroundAxis
+        newPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
+                       (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (y * np.cos(theta)) + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
+                       (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
+        inputDictionary['unwrapped_position'][AAID] = list(newPosition)
+    # All the images are probably messed up now, so fix that
+    inputDictionary = replaceWrappedPositions(inputDictionary)
     return inputDictionary
 
 
