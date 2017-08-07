@@ -1275,6 +1275,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
 
     except KeyboardInterrupt:
         time = T.time() - t0
+        print("---=== RESULTS FROM CPU RANK", sys.argv[2], "===---")
         print("Run terminated after", KMCIterations, "iterations (globalTime =", str(globalTime) + ") after", time, "seconds")
         print("Number of Photoinjections =", numberOfPhotoinjections)
         print("Number of Cathode Injections =", numberOfCathodeInjections)
@@ -1351,6 +1352,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     #plt.savefig(outputFiguresDir + 'convergence.png')
     #return
     time = T.time() - t0
+    print("---=== RESULTS FROM CPU RANK", sys.argv[2], "===---")
     print("Run completed after", KMCIterations, "iterations (globalTime =", str(globalTime) + ") after", time, "seconds")
     print("Number of Photoinjections =", numberOfPhotoinjections)
     print("Number of Cathode Injections =", numberOfCathodeInjections)
