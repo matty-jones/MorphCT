@@ -12,7 +12,6 @@ try:
     import mpl_toolkits.mplot3d as p3
 except ImportError:
     print("Could not import 3D plotting engine, calling the plotDeviceComponents function will result in an error!")
-from scipy.optimize import curve_fit
 
 import helperFunctions
 
@@ -778,8 +777,6 @@ def pushToQueue(queue, event):
 
 
 def plotEventTimeDistribution(eventLog, outputDir, fastest, slowest):
-    #gaussBins, fitArgs = gaussFit(eventTimes)
-    #gaussY = gaussian(gaussBins[:-1], *fitArgs)
     fig = plt.figure()
     plt.hist([eventLog[_] for _ in eventLog.keys()], bins=np.logspace(int(np.floor(np.log10(fastest))), int(np.ceil(np.log10(slowest))), 10), color=['r', 'g', 'c', 'm', 'b', 'y'], label=eventLog.keys(), linewidth=0)
     plt.legend(loc = 1, prop = {'size':6})
@@ -787,7 +784,7 @@ def plotEventTimeDistribution(eventLog, outputDir, fastest, slowest):
     plt.gca().set_yscale('log')
     plt.xlabel(r'$\mathrm{\tau}$ (s)')
     plt.ylabel('Freq (Arb. U.)')
-    plt.xticks([1E-16, 1E-14, 1E-12, 1E-10, 1E-8, 1E-6])
+    plt.xticks([1E-16, 1E-14, 1E-12, 1E-10, 1E-8, 1E-6, 1E-5, 1E-4])
     fileName = outputDir + 'EventTimeDist.png'
     plt.savefig(fileName)
     print('Event time distribution saved as ' + fileName)
@@ -795,19 +792,6 @@ def plotEventTimeDistribution(eventLog, outputDir, fastest, slowest):
 
 def gaussian(x, a, x0, sigma):
     return a*np.exp(-(x-x0)**2/(2*sigma**2))
-
-
-def gaussFit(data):
-    n = len(data)
-    mean = np.mean(data)
-    std = np.std(data)
-    print("Gaussfit stats: mean =", mean, "std =", std)
-    hist, binEdges = np.histogram(data, bins=100)
-    try:
-        fitArgs, fitConv = curve_fit(gaussian, binEdges[:-1], hist, p0=[1, mean, std])
-    except RuntimeError:
-        return None, None
-    return binEdges, fitArgs
 
 
 def plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputDir):
