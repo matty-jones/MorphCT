@@ -363,9 +363,13 @@ class carrier:
         charge = elementaryCharge * ((2 * self.carrierType) - 1)
         deltaEij += (zSep * currentFieldValue * charge)
         # 3) Difference in Coulombic Potential at dest compared to origin
-        originCoulomb, self.recombining, self.recombiningWith = calculateCoulomb(currentAbsolutePosition, self.ID, self.carrierType, carrierIsRecombining=self.recombining)
+        originCoulomb, recombineFlag, recombineID = calculateCoulomb(currentAbsolutePosition, self.ID, self.carrierType, carrierIsRecombining=self.recombining)
         destinationCoulomb, dummy1, dummy2 = calculateCoulomb(destinationAbsolutePosition, self.ID, self.carrierType)
         deltaEij += (destinationCoulomb - originCoulomb)
+        if (recombineFlag is True) and (self.recombining is False):
+            # Need to update the recombining details
+            self.recombining = recombineFlag
+            self.recombiningWith = recombineID
         return deltaEij
 
 
@@ -441,7 +445,7 @@ def plotConnections(excitonPath, chromophoreList, AADict, outputDir):
     for corner1 in corners:
         for corner2 in corners:
             ax.plot([corner1[0], corner2[0]], [corner1[1], corner2[1]], [corner1[2], corner2[2]], color = 'k')
-    fileName = outputDir + '3d_exciton.pdf'
+    fileName = outputDir + '3d_exciton.png'
     plt.show()
     plt.savefig(fileName)
     print("Figure saved as " + fileName)
@@ -453,55 +457,57 @@ def calculateCoulomb(absolutePosition, selfID, selfCarrierType, carrierIsRecombi
     coulombConstant = 1.0 / (4 * np.pi * epsilonNought * parameterDict['relativePermittivity'])
     canRecombineHere = False
     recombiningWith = None
-    for carrier in globalCarrierDict.values():
+    for carrierID, carrier in globalCarrierDict.items():
         # Each carrier feels coulombic effects from every other carrier in the system, along with the image charges induced in the top and bottom contacts, AND the image charges induced by the image charges.
         # The image charges are needed in order to keep a constant field at the interface, correcting for the non-periodic Neumann-like boundary conditions
         # Check papers from Chris Groves (Marsh, Groves and Greenham2007 and beyond), Ben Lyons (2011/2012), and van der Holst (2011) for more details.
         carrierPosn = np.array(carrier.currentDevicePosn)*parameterDict['morphologyCellSize'] + (np.array(carrier.currentChromophore.posn) * 1E-10)
-        if carrier.ID != selfID:
+        if carrierID != selfID:
             # Only consider the current carrier if it is not us!
             separation = np.linalg.norm(absolutePosition - carrierPosn)
-            print("Separation between", selfID, "and", carrier.ID, "=", separation)
+            #print("Separation between", selfID, "and", carrier.ID, "=", separation)
             coulombicPotential += coulombConstant * ((elementaryCharge * ((2 * selfCarrierType) - 1)) * (elementaryCharge * ((2 * carrier.carrierType) - 1)) / separation)
             # I'm also going to use this opportunity (as we're iterating over all carriers in the system) to see if we're close enough to any to recombine.
             if carrierIsRecombining is False:
                 # Only do this if we're not currently recombining with something
                 if (separation <= parameterDict['coulombCaptureRadius']) and (selfCarrierType != carrier.carrierType):
                     # If carriers are within 1nm of each other, then assume that they are within the Coulomb capture radius and are about to recombine
-                     canRecombineHere = True
-                     recombiningWith = carrier.ID
-                     # We don't necessarily need to update the carrier.recombining, since all of the behaviour will be determined in the main program by checking hoppingCarrier.recombining, but just in case, we can update the carrier too as well as self.
-                     carrier.recombining = True
-                     carrier.recombiningWith = selfID
-        # Now consider the image charges and the images of the images.
-        # Direct images have the opposing charge to the actual carrier, so the potential contains (+q * -q), or -(q**2)
-        # Images of the images have the opposing charge to the image of the carrier, which is the same charge as the actual carrier
-        # Therefore, images of images are either (+q * +q) or (-q * -q) = +(q**2)
-        # First do the top image charge
-        deviceZSize = globalChromophoreData.deviceArray.shape[2] * parameterDict['morphologyCellSize']
-        topImagePosn = copy.deepcopy(carrierPosn)
-        topImagePosn[2] = deviceZSize + (deviceZSize - carrierPosn[2])
-        separation = np.linalg.norm(absolutePosition - topImagePosn)
-        print("Separation between", selfID, "and top image charge =", separation)
-        coulombicPotential -= (elementaryCharge**2) * (coulombConstant / separation)
-        # Now do the bottom image charge
-        bottomImagePosn = copy.deepcopy(carrierPosn)
-        bottomImagePosn[2] = - carrierPosn[2]
-        separation = np.linalg.norm(absolutePosition - bottomImagePosn)
-        print("Separation between", selfID, "and bottom image charge =", separation)
-        coulombicPotential -= (elementaryCharge**2) * (coulombConstant / separation)
-        # Now do the top image of the bottom image charge
-        topImageOfBottomImagePosn = copy.deepcopy(carrierPosn)
-        topImageOfBottomImagePosn[2] = (2 * deviceZSize) + carrierPosn[2]
-        separation = np.linalg.norm(absolutePosition - topImageOfBottomImagePosn)
-        print("Separation between", selfID, "and top image of bottom image charge =", separation)
-        coulombicPotential += (elementaryCharge**2) * (coulombConstant / separation)
-        # And finally the bottom image of the top image charge
-        bottomImageOfTopImagePosn = copy.deepcopy(carrierPosn)
-        bottomImageOfTopImagePosn[2] = - (deviceZSize + (deviceZSize - carrierPosn[2]))
-        separation = np.linalg.norm(absolutePosition - bottomImageOfTopImagePosn)
-        print("Separation between", selfID, "and bottom image of top image charge =", separation, "\n")
-        coulombicPotential += (elementaryCharge**2) * (coulombConstant / separation)
+                    print("CARRIER", selfID, "CLOSE ENOUGH TO RECOMBINE WITH", carrierID)
+                    canRecombineHere = True
+                    recombiningWith = carrierID
+                    # We don't necessarily need to update the carrier.recombining, since all of the behaviour will be determined in the main program by checking hoppingCarrier.recombining, but just in case, we can update the carrier too as well as self.
+                    globalCarrierDict[carrierID].recombining = True
+                    globalCarrierDict[carrierID].recombiningWith = selfID
+        # TODO: NOTE: DEBUG: TURNING OFF IMAGE CHARGES TO SEE IF I CAN WORK OUT WHY EVERYTHING IS FAILING
+        ## Now consider the image charges and the images of the images.
+        ## Direct images have the opposing charge to the actual carrier, so the potential contains (+q * -q), or -(q**2)
+        ## Images of the images have the opposing charge to the image of the carrier, which is the same charge as the actual carrier
+        ## Therefore, images of images are either (+q * +q) or (-q * -q) = +(q**2)
+        ## First do the top image charge
+        #deviceZSize = globalChromophoreData.deviceArray.shape[2] * parameterDict['morphologyCellSize']
+        #topImagePosn = copy.deepcopy(carrierPosn)
+        #topImagePosn[2] = deviceZSize + (deviceZSize - carrierPosn[2])
+        #separation = np.linalg.norm(absolutePosition - topImagePosn)
+        #print("Separation between", selfID, "and top image charge =", separation)
+        #coulombicPotential -= (elementaryCharge**2) * (coulombConstant / separation)
+        ## Now do the bottom image charge
+        #bottomImagePosn = copy.deepcopy(carrierPosn)
+        #bottomImagePosn[2] = - carrierPosn[2]
+        #separation = np.linalg.norm(absolutePosition - bottomImagePosn)
+        #print("Separation between", selfID, "and bottom image charge =", separation)
+        #coulombicPotential -= (elementaryCharge**2) * (coulombConstant / separation)
+        ## Now do the top image of the bottom image charge
+        #topImageOfBottomImagePosn = copy.deepcopy(carrierPosn)
+        #topImageOfBottomImagePosn[2] = (2 * deviceZSize) + carrierPosn[2]
+        #separation = np.linalg.norm(absolutePosition - topImageOfBottomImagePosn)
+        #print("Separation between", selfID, "and top image of bottom image charge =", separation)
+        #coulombicPotential += (elementaryCharge**2) * (coulombConstant / separation)
+        ## And finally the bottom image of the top image charge
+        #bottomImageOfTopImagePosn = copy.deepcopy(carrierPosn)
+        #bottomImageOfTopImagePosn[2] = - (deviceZSize + (deviceZSize - carrierPosn[2]))
+        #separation = np.linalg.norm(absolutePosition - bottomImageOfTopImagePosn)
+        #print("Separation between", selfID, "and bottom image of top image charge =", separation, "\n")
+        #coulombicPotential += (elementaryCharge**2) * (coulombConstant / separation)
     return coulombicPotential, canRecombineHere, recombiningWith
 
 
@@ -531,8 +537,8 @@ def calculateDarkCurrentInjections(deviceArray, parameterDict):
             AAMorphology = globalMorphologyData.returnAAMorphology([xVal, yVal, zVal])
             morphologyChromophores = globalChromophoreData.returnChromophoreList([xVal, yVal, zVal])
             for chromophore in morphologyChromophores:
-                # Find all chromophores that are within the bottom 10 Ang of the device cell
-                if (chromophore.posn[2] <= -(AAMorphology['lz'] / 2.0) + 10) and (len([_ for _ in chromophore.neighboursTI if (_ is not None) and (_ > 1E-5)]) > 0):
+                # Find all chromophores that are between 5 and 10 Ang from the bottom 10 Ang of the device cell
+                if (chromophore.posn[2] <= -(AAMorphology['lz'] / 2.0) + 10) and (chromophore.posn[2] >= -(AAMorphology['lz'] / 2.0) + 5) and (len([_ for _ in chromophore.neighboursTI if (_ is not None) and (_ > 1E-5)]) > 0):
                 #if (chromophore.posn[2] <= -(AAMorphology['lz'] / 2.0) + 10) and (sum(1 for _ in filter(None.__ne__, chromophore.neighboursDeltaE)) > 0):
                     cathodeInjectChromophores.append([chromophore, 1E-10 * (chromophore.posn[2] - (-(AAMorphology['lz'] / 2.0)))])
                     validCathodeInjSites += 1
@@ -576,8 +582,8 @@ def calculateDarkCurrentInjections(deviceArray, parameterDict):
             morphologyChromophores = globalChromophoreData.returnChromophoreList([xVal, yVal, zVal])
             estimatedTransferIntegral = estimateTransferIntegral(morphologyChromophores) * elementaryCharge
             for chromophore in morphologyChromophores:
-                # Find all chromophores that are within the top nanometer 10 Ang of the device cell
-                if (chromophore.posn[2] >= (AAMorphology['lz'] / 2.0) - 10) and (len([_ for _ in chromophore.neighboursTI if (_ is not None) and (_ > 1E-5)]) > 0):
+                # Find all chromophores that are between 5 and 10 Ang from the top of the device cell
+                if (chromophore.posn[2] >= (AAMorphology['lz'] / 2.0) - 10) and (chromophore.posn[2] <= (AAMorphology['lz'] / 2.0) - 5) and (len([_ for _ in chromophore.neighboursTI if (_ is not None) and (_ > 1E-5)]) > 0):
                 #if (chromophore.posn[2] >= (AAMorphology['lz'] / 2.0) - 10) and (sum(1 for _ in filter(None.__ne__, chromophore.neighboursDeltaE)) > 0):
                     anodeInjectChromophores.append([chromophore, 1E-10 * ((AAMorphology['lz'] / 2.0) - chromophore.posn[2])])
                     validAnodeInjSites += 1
@@ -740,10 +746,11 @@ def pushToQueue(queue, event):
         print("Queue =", queue)
         print("Event =", event)
         print("Terminating...")
-        exit()
+        raise KeyboardInterrupt
     if event[0] == np.float64(1E99):
         print("---=== TRIED TO QUEUE EVENT WITH CRAZY LONG WAIT TIME ===---")
         print("Event =", event)
+        print("This carrier has completed", len(event[2].history), "hops.")
         try:
             event[2].__dict__.pop('history')
         except KeyError:
@@ -764,7 +771,7 @@ def pushToQueue(queue, event):
                 carrier1posn = (78 * np.array(carrier1.currentDevicePosn)) + np.array(carrier1.currentChromophore.posn)
                 carrier2posn = (78 * np.array(carrier2.currentDevicePosn)) + np.array(carrier2.currentChromophore.posn)
                 print(carrier1ID, carrier2ID, np.linalg.norm(carrier1posn - carrier2posn))
-        exit()
+        raise KeyboardInterrupt
     event = tuple(event)
     heapq.heappush(queue, event)
     return queue
@@ -781,7 +788,7 @@ def plotEventTimeDistribution(eventLog, outputDir, fastest, slowest):
     plt.xlabel(r'$\mathrm{\tau}$ (s)')
     plt.ylabel('Freq (Arb. U.)')
     plt.xticks([1E-16, 1E-14, 1E-12, 1E-10, 1E-8, 1E-6])
-    fileName = outputDir + 'EventTimeDist.pdf'
+    fileName = outputDir + 'EventTimeDist.png'
     plt.savefig(fileName)
     print('Event time distribution saved as ' + fileName)
 
@@ -861,7 +868,7 @@ def plot3DTrajectory(injectSource, carriersToPlot, parameterDict, deviceArray, o
             nextHop = carrier.history[hopIndex + 1]
             nextPosn = (1E10 * (np.array(nextHop[0]) * parameterDict['morphologyCellSize'])) + np.array(nextHop[1])
             ax.plot([currentPosn[0], nextPosn[0]], [currentPosn[1], nextPosn[1]], [currentPosn[2], nextPosn[2]], c = color, linewidth = 0.5)
-    fileName = outputDir + carrierString + '_traj.pdf'
+    fileName = outputDir + carrierString + '_traj.png'
     plt.savefig(fileName)
     print("Figure saved as " + fileName)
     plt.close()
@@ -895,7 +902,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
         (parameterDict['anodeWorkFunction'] - parameterDict['donorHOMO'])) /
         # Z-extent:
         (deviceArray.shape[2] * parameterDict['morphologyCellSize']))
-    outputFiguresDir = parameterDict['outputDeviceDir'] + '/' + parameterDict['deviceMorphology'] + '/figures/'
+    outputFiguresDir = parameterDict['outputDeviceDir'] + '/' + parameterDict['deviceMorphology'] + '/figures/' + str(voltageVal)
 
     # DEBUG
     slowestEvent = 0
@@ -1289,33 +1296,33 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     #plt.title('Displacement until Dissociation')
     #plt.xlabel('Displacement, nm')
     #plt.ylabel('Frequency, Arb. U.')
-    #plt.savefig(outputFiguresDir + 'dissExcitonDisp.pdf')
+    #plt.savefig(outputFiguresDir + 'dissExcitonDisp.png')
     #plt.clf()
 
     #plt.hist(np.array(dissExcitonTime) * 1E9, bins=15
     #plt.title('Time until Dissociation')
     #plt.xlabel('Time, ns')
     #plt.ylabel('Frequency, Arb. U.')
-    #plt.savefig(outputFiguresDir + 'dissExcitonTime.pdf')
+    #plt.savefig(outputFiguresDir + 'dissExcitonTime.png')
     #plt.clf()
 
     #plt.hist(recExcitonDisp, bins=15)
     #plt.title('Displacement until Recombination')
     #plt.xlabel('Displacement, nm')
     #plt.ylabel('Frequency, Arb. U.')
-    #plt.savefig(outputFiguresDir + 'recExcitonDisp.pdf')
+    #plt.savefig(outputFiguresDir + 'recExcitonDisp.png')
     #plt.clf()
 
     #plt.hist(np.array(recExcitonTime) * 1E10, bins=15)
     #plt.title('Time until Recombination')
     #plt.xlabel('Time, ns')
     #plt.ylabel('Frequency, Arb. U.')
-    #plt.savefig(outputFiguresDir + 'recExcitonTime.pdf')
+    #plt.savefig(outputFiguresDir + 'recExcitonTime.png')
     #plt.clf()
 
     #plt.hist(numberOfHops, bins=15)
     #plt.title('numberOfHops')
-    #plt.savefig(outputFiguresDir + 'numberOfExcitonHops.pdf')
+    #plt.savefig(outputFiguresDir + 'numberOfExcitonHops.png')
     #plt.clf()
 
     #print("XDE =", numberOfDissociations/parameterDict['minimumNumberOfPhotoinjections'])
@@ -1336,12 +1343,12 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     #xFit = np.linspace(0, max(excitonTime), 100)
     #yFit = [(xVal*fit[0] + fit[1]) for xVal in xFit]
     #plt.plot(xFit, yFit, c='b')
-    #plt.savefig(outputFiguresDir + 'excitonMSD.pdf')
+    #plt.savefig(outputFiguresDir + 'excitonMSD.png')
 
     #print("Plotting the extraction data as a function of simulation time")
     #plt.figure()
     #plt.plot(convGlobalTime, convExtractions)
-    #plt.savefig(outputFiguresDir + 'convergence.pdf')
+    #plt.savefig(outputFiguresDir + 'convergence.png')
     #return
     time = T.time() - t0
     print("Run completed after", KMCIterations, "iterations (globalTime =", str(globalTime) + ") after", time, "seconds")
