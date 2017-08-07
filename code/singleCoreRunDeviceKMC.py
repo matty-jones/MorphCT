@@ -858,7 +858,7 @@ def plot3DTrajectory(injectSource, carriersToPlot, parameterDict, deviceArray, o
     plt.close()
 
 
-def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal):
+def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal, logFile):
     # ---=== PROGRAMMER'S NOTE ===---
     # This `High Resolution' version of the code will permit chromophore-based hopping through the device, rather than just approximating the distribution. We have the proper resolution there, let's just use it!
     # ---=========================---
@@ -1336,14 +1336,14 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     #plt.savefig(outputFiguresDir + 'convergence.png')
     #return
     time = T.time() - t0
-    print("---=== RESULTS FROM CPU RANK", sys.argv[2], "===---")
-    print("Run completed after", KMCIterations, "iterations (globalTime =", str(globalTime) + ") after", time, "seconds")
-    print("Number of Photoinjections =", numberOfPhotoinjections)
-    print("Number of Cathode Injections =", numberOfCathodeInjections)
-    print("Number of Anode Injections =", numberOfAnodeInjections)
-    print("Number of Dissociations =", numberOfDissociations)
-    print("Number of Recombinations =", numberOfRecombinations)
-    print("Number of Extractions =", numberOfExtractions)
+    helperFunctions.writeToLogFile(logFile, ["---=== RESULTS FROM CPU RANK", sys.argv[2], "===---")
+    helperFunctions.writeToLogFile(logFile, ["Run completed after", KMCIterations, "iterations (globalTime =", str(globalTime) + ") after", time, "seconds"])
+    helperFunctions.writeToLogFile(logFile, ["Number of Photoinjections = " + str(numberOfPhotoinjections)])
+    helperFunctions.writeToLogFile(logFile, ["Number of Cathode Injections = " + str(numberOfCathodeInjections)])
+    helperFunctions.writeToLogFile(logFile, ["Number of Anode Injections = " + str(numberOfAnodeInjections)])
+    helperFunctions.writeToLogFile(logFile, ["Number of Dissociations = " + str(numberOfDissociations)])
+    helperFunctions.writeToLogFile(logFile, ["Number of Recombinations = " + str(numberOfRecombinations)])
+    helperFunctions.writeToLogFile(logFile, ["Number of Extractions = " + str(numberOfExtractions)])
     plotEventTimeDistribution(eventLog, outputFiguresDir, fastestEvent, slowestEvent)
     if parameterDict['recordCarrierHistory'] is True:
         plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputFiguresDir)
@@ -1370,7 +1370,7 @@ if __name__ == "__main__":
     # Reset the log file
     with open(logFile, 'wb+') as logFileHandle:
         pass
-    print('Found ' + str(len(jobsToRun)) + ' jobs to run.')
+    helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
     #helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
     # Set the affinities for this current process to make sure it's maximising available CPU usage
     currentPID = os.getpid()
@@ -1379,9 +1379,9 @@ if __name__ == "__main__":
         # helperFunctions.writeToFile(logFile, affinityJob[0].split('\n')) #stdOut for affinity set
         # helperFunctions.writeToFile(logFile, affinityJob[1].split('\n')) #stdErr for affinity set
     except OSError:
-        print("Taskset command not found, skipping setting of processor affinity...")
+        helperFunctions.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinity..."])
         #helperFunctions.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinity..."])
 
     # Begin the simulation
     for voltageVal in jobsToRun:
-        execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal)
+        execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal, logFile)
