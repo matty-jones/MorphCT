@@ -1336,7 +1336,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     #plt.savefig(outputFiguresDir + 'convergence.png')
     #return
     time = T.time() - t0
-    helperFunctions.writeToLogFile(logFile, ["---=== RESULTS FROM CPU RANK", sys.argv[2], "===---")
+    helperFunctions.writeToLogFile(logFile, ["---=== RESULTS FROM CPU RANK", sys.argv[2], "===---"])
     helperFunctions.writeToLogFile(logFile, ["Run completed after", KMCIterations, "iterations (globalTime =", str(globalTime) + ") after", time, "seconds"])
     helperFunctions.writeToLogFile(logFile, ["Number of Photoinjections = " + str(numberOfPhotoinjections)])
     helperFunctions.writeToLogFile(logFile, ["Number of Cathode Injections = " + str(numberOfCathodeInjections)])
