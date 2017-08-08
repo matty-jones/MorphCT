@@ -814,7 +814,6 @@ def plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputDir):
     combinationsToPlot = {'Cathode':[], 'Anode':[]}
     popList = []
     for index, carrier in enumerate(allCarriers):
-        print("\n", carrier.__dict__)
         # First add all the excitons
         if 'rF' in carrier.__dict__:
             # We know this is an exciton
@@ -1129,7 +1128,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     # Update the chromophore occupation
                     helperFunctions.writeToFile(logFile, ["PREVIOUS OCCUPATION = " + repr(injectChromophore.occupied)])
                     injectChromophore.occupied.append(injectSite.devicePosn)
-                    helperFunctions.writeToFile(logFile, ["UPDATED ON INJECTION =" + repr(injectChromophore.occupied)])
+                    helperFunctions.writeToFile(logFile, ["UPDATED ON INJECTION = " + repr(injectChromophore.occupied)])
                     # Determine the injected carrier's next hop and queue it
                     injectedCarrier.calculateBehaviour()
                     if (injectedCarrier.hopTime is not None) and (injectedCarrier.hopTime > 1):
@@ -1428,7 +1427,7 @@ if __name__ == "__main__":
         # Reset the log file
         with open(logFile, 'wb+') as logFileHandle:
             pass
-    helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
+    helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run:', repr(jobsToRun)])
     #helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
     # Set the affinities for this current process to make sure it's maximising available CPU usage
     currentPID = os.getpid()

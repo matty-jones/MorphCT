@@ -94,7 +94,6 @@ class simulation:
                 print("---=== EXECUTION COMPLETED ===---")
         exit()
 
-
     def getSlurmID(self):
         # Use Squeue to determine the current slurm job number
         try:
@@ -128,9 +127,18 @@ class simulation:
                 # Make sure that the mkdir command has finished before moving on
                 os.makedirs(self.outputMorphologyDirectory + '/' + directoryToMake, exist_ok=True)
         elif self.deviceMorphology is not None:
+            if self.overwriteCurrentData is True:
+                print('rm -r ' + self.outputDeviceDirectory + '/')
+                shutil.rmtree(self.outputDeviceDirectory + '/')
             for deviceDirectoryToMake in ['code', 'KMC', 'figures']:
-                print('mkdir -p ' + self.outputDeviceDirectory + '/' + deviceDirectoryToMake)
-                os.makedirs(self.outputDeviceDirectory + '/' + deviceDirectoryToMake, exist_ok=True)
+                if deviceDirectoryToMake == 'figures':
+                    for potentialVal in self.voltageSweep:
+                        directory = deviceDirectoryToMake + '/' + str(potentialVal)
+                        print('mkdir -p ' + self.outputDeviceDirectory + '/' + directory)
+                        os.makedirs(self.outputDeviceDirectory + '/' + directory, exist_ok=True)
+                else:
+                    print('mkdir -p ' + self.outputDeviceDirectory + '/' + deviceDirectoryToMake)
+                    os.makedirs(self.outputDeviceDirectory + '/' + deviceDirectoryToMake, exist_ok=True)
 
 
     def copyCode(self):
