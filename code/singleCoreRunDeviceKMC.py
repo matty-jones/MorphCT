@@ -65,10 +65,10 @@ class exciton:
         self.canDissociate = self.checkDissociation()
         # Dissociate the exciton immediately after creation if it would be created at an interface
         if self.canDissociate is True:
-            print("Self.canDissociate is True. self.currentChromophore.species =", self.currentChromophore.species)
+            helperFunctions.writeToFile(logFile, ["self.canDissociate is True. self.currentChromophore.species = " +
+                                                  str(self.currentChromophore.species)])
             # Determine all potential dissociation options, randomly select one, plop a hole on the donor and electron on the acceptor, then remove this exciton from the system by updating its removedTime
             if self.currentChromophore.species == 'Donor':
-                print("72", self.currentDevicePosn)
                 holeChromophore = globalChromophoreData.returnSpecificChromophore(self.currentDevicePosn, self.currentChromophore.ID)
                 # The electron chromophore is a randomly selected chromophore of the opposing type that is in range of the current one
                 electronChromophoreID = R.choice(self.currentChromophore.dissociationNeighbours)[0]
@@ -77,7 +77,10 @@ class exciton:
                     self.holeChromophore = holeChromophore
                     self.electronChromophore = electronChromophore
                 else:
-                    print("Debug: Cannot dissociate after all. currentDevicePosn =", self.currentDevicePosn, "holeChromophore.occupied =", holeChromophore.occupied, "electronChromophore.occupied =", electronChromophore.occupied)
+                    helperFunctions.writeToFile(logFile, ["Debug: Cannot dissociate after all. currentDevicePosn = " +
+                                                          repr(self.currentDevicePosn) + " holeChromophore.occupied = " +
+                                                          str(holeChromophore.occupied) + "electronChromophore.occupied = " +
+                                                          str(electronChromophore.occupied)])
                     self.canDissociate = False
             elif self.currentChromophore.species == 'Acceptor':
                 electronChromophore = globalChromophoreData.returnSpecificChromophore(self.currentDevicePosn, self.currentChromophore.ID)
@@ -88,7 +91,10 @@ class exciton:
                     self.holeChromophore = holeChromophore
                     self.electronChromophore = electronChromophore
                 else:
-                    print("Debug: Cannot dissociate after all. currentDevicePosn =", self.currentDevicePosn, "holeChromophore.occupied =", holeChromophore.occupied, "electronChromophore.occupied =", electronChromophore.occupied)
+                    helperFunctions.writeToFile(logFile, ["Debug: Cannot dissociate after all. currentDevicePosn = " +
+                                                          repr(self.currentDevicePosn) + " holeChromophore.occupied = " +
+                                                          str(holeChromophore.occupied) + "electronChromophore.occupied = " +
+                                                          str(electronChromophore.occupied)])
                     self.canDissociate = False
             if self.canDissociate is True:
                 # Notify execute() that this exciton should not be queued up again by setting self.hopTime == None
@@ -294,17 +300,16 @@ class carrier:
                 # Keep track of the chromophoreID and the corresponding tau
                 hopTimes.append([destinationChromophore, hopTime, neighbourRelativeImage, destinationImage, self.prefactor, self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij])
                 if hopTime > 1E20:
-                    print("---=== WARNING, EXTREMELY LONG CARRIER HOP ===---")
-                    print(hopTimes[-1])
+                    helperFunctions.writeToFile(logFile, ["---=== WARNING, EXTREMELY LONG CARRIER HOP ===---", repr(hopTimes[-1])])
         # Sort by ascending hop time
         hopTimes.sort(key = lambda x:x[1])
         # Take the quickest hop
         if len(hopTimes) > 0:
             if hopTimes[0][1] > 1E98:
-                print(hopTimes[0])
-                print(globalCarrierDict)
+                helperFunctions.writeToFile(logFile, [repr(hopTimes[0]), repr(globalCarrierDict)])
                 for ID, carrier in globalCarrierDict.items():
-                    print(ID, carrier.currentDevicePosn, carrier.currentChromophore.ID)
+                    helperFunctions.writeToFile(logFile, [str(ID), repr(carrier.currentDevicePosn),
+                                                          str(carrier.currentChromophore.ID)])
             return hopTimes[0][:4]
         else:
             # We are trapped here, so just return in order to raise the calculateBehaviour exception
@@ -337,9 +342,15 @@ class carrier:
                             numberOfExtractions -= 1
                     # Else (injected from cathode), number of extractions doesn't change.
                 if self.carrierType == ELECTRON:
-                    print("EVENT: Electron Left out of", self.destinationChromophore, "of Device! New number of extractions", numberOfExtractions, "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                    helperFunctions.writeToFile(logFile, ["EVENT: Electron Left out of " + str(self.destinationChromophore) +
+                                                          " of Device! New number of extractions: " + str(numberOfExtractions) +
+                                                          " after " + str(KMCIterations) + " iterations (globalTime = " +
+                                                          str(globalTime) + ")"])
                 else:
-                    print("EVENT: Hole Left out of", self.destinationChromophore, "of Device! New number of extractions:", numberOfExtractions, "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                    helperFunctions.writeToFile(logFile, ["EVENT: Hole Left out of " + str(self.destinationChromophore) +
+                                                          " of Device! New number of extractions: " + str(numberOfExtractions) +
+                                                          " after " + str(KMCIterations) + " iterations (globalTime = " +
+                                                          str(globalTime) + ")"])
                 # Now ensure that it doesn't get queued up again
                 [self.destinationChromophore, self.hopTime, self.relativeImage, self.destinationImage] = [None, None, None, None]
                 self.removedTime = globalTime
@@ -471,7 +482,8 @@ def calculateCoulomb(absolutePosition, selfID, selfCarrierType, carrierIsRecombi
                 # Only do this if we're not currently recombining with something
                 if (separation <= parameterDict['coulombCaptureRadius']) and (selfCarrierType != carrier.carrierType):
                     # If carriers are within 1nm of each other, then assume that they are within the Coulomb capture radius and are about to recombine
-                    print("CARRIER", selfID, "CLOSE ENOUGH TO RECOMBINE WITH", carrierID)
+                    helperFunctions.writeToFile(logFile, ["CARRIER " + str(selfID) + " CLOSE ENOUGH " +
+                                                          "TO RECOMBINE WITH " + str(carrierID)])
                     canRecombineHere = True
                     recombiningWith = carrierID
                     # We don't necessarily need to update the carrier.recombining, since all of the behaviour will be determined in the main program by checking hoppingCarrier.recombining, but just in case, we can update the carrier too as well as self.
@@ -719,8 +731,12 @@ def determineEventTau(rate, eventType):
                     return None
                 else:
                     if 'injection' not in eventType:
-                        print("Attempted 100 times to obtain a '"+str(eventType)+"'-type event timescale within the tolerances:", fastestEventAllowed, "<= tau <", slowestEventAllowed, "with the given rate", rate, "all without success.")
-                        print("Permitting the event anyway with the next random number.")
+                        helperFunctions.writeToFile(logFile, ["Attempted 100 times to obtain a '" + str(eventType) +
+                                                              "'-type event timescale within the tolerances: " +
+                                                              str(fastestEventAllowed) + " <= tau < " +
+                                                              str(slowestEventAllowed) + " with the given rate " +
+                                                              str(rate) + " all without success.",
+                                                              "Permitting the event anyway with the next random number."])
             x = R.random()
             # Ensure that we do not get exactly 0.0 or 1.0, which would break our logarithm
             if (x == 0) or (x == 1):
@@ -741,26 +757,26 @@ def pushToQueue(queue, event):
     try:
         event[0] = np.float64(event[0])
     except:
-        print("Tried to push an event to the queue that does not have a np.float64 as the first element (and so can't be queued)")
-        print("Queue =", queue)
-        print("Event =", event)
-        print("Terminating...")
+        helperFunctions.writeToFile(logFile, ["Tried to push an event to the queue that does not have a" +
+                                              "np.float64 as the first element (and so can't be queued)",
+                                              "Queue = " + repr(queue), "Event = " + repr(event),
+                                              "Terminating..."])
         raise KeyboardInterrupt
     if event[0] == np.float64(1E99):
-        print("---=== TRIED TO QUEUE EVENT WITH CRAZY LONG WAIT TIME ===---")
-        print("Event =", event)
-        print("This carrier has completed", len(event[2].history), "hops.")
+        helperFunctions.writeToFile(logFile, ["---=== TRIED TO QUEUE EVENT WITH CRAZY LONG WAIT TIME ===---",
+                                              "Event = " + str(event), "This carrier has completed " +
+                                              str(len(event[2].history)) + " hops."])
         try:
             event[2].__dict__.pop('history')
         except KeyError:
             pass
-        print("Instance =", event[2].__dict__)
+        helperFunctions.writeToFile(logFile, ["Instance = " + repr(event[2].__dict__)])
         try:
-            print("Current Chromophore =", event[2].currentChromophore.__dict__)
-            print("Destination Chromophore =", event[2].destinationChromophore.__dict__)
+            helperFunctions.writeToFile(logFile, ["Current Chromophore = " + repr(event[2].currentChromophore.__dict__),
+                                                  "Destination Chromophore = " + repr(event[2].destinationChromophore.__dict__)])
         except AttributeError:
             pass
-        print("Terminating...")
+        helperFunctions.writeToFile(logFile, ["Terminating..."])
         for index, carrier in globalCarrierDict.items():
             print(carrier.currentDevicePosn, carrier.currentChromophore.posn)
         for carrier1ID, carrier1 in globalCarrierDict.items():
@@ -858,7 +874,7 @@ def plot3DTrajectory(injectSource, carriersToPlot, parameterDict, deviceArray, o
     plt.close()
 
 
-def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal, logFile):
+def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal):
     # ---=== PROGRAMMER'S NOTE ===---
     # This `High Resolution' version of the code will permit chromophore-based hopping through the device, rather than just approximating the distribution. We have the proper resolution there, let's just use it!
     # ---=========================---
@@ -869,6 +885,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     global KMCIterations
     global fastestEventAllowed
     global slowestEventAllowed
+    global logFile
 
     globalChromophoreData = chromophoreData
     globalMorphologyData = morphologyData
@@ -1008,7 +1025,12 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 outputPrintStatement = False
                 alreadyPrinted = False
             if outputPrintStatement and not alreadyPrinted:
-                print("Current runtime =", str(int(t1-t0))+"s, with", len(eventQueue), "events currently in the queue and", len(globalCarrierDict.keys()), "carriers currently in the system. Currently completed", KMCIterations, "iterations and simulated", globalTime, "s.")
+                helperFunctions.writeToFile(logFile, ["Current runtime = " + str(int(t1-t0)) + "s, with " +
+                                                      str(len(eventQueue)) + " events currently in the queue and " +
+                                                      str(len(globalCarrierDict.keys())) +
+                                                      " carriers currently in the system. Currently completed " +
+                                                      str(KMCIterations) + " iterations and simulated " +
+                                                      str(globalTime) + "s."])
                 alreadyPrinted = True
 
 
@@ -1033,12 +1055,16 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 # Complete the event by injecting an exciton
                 # First find an injection location. For now, this will just be somewhere random in the system
                 randomDevicePosition = [R.randint(0, x-1) for x in deviceArray.shape]
-                print("EVENT: Photoinjection #" + str(numberOfPhotoinjections), "into", randomDevicePosition, "(which has type", repr(deviceArray[tuple(randomDevicePosition)]) + ")", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                helperFunctions.writeToFile(logFile, ["EVENT: Photoinjection #" + str(numberOfPhotoinjections) +
+                                                      " into " + repr(randomDevicePosition) + " (which has type " +
+                                                      repr(deviceArray[tuple(randomDevicePosition)]) + ") after" +
+                                                      str(KMCIterations) + " iterations (globalTime = " +
+                                                      str(globalTime) + ")"])
                 injectedExciton = exciton(excitonIndex, globalTime, randomDevicePosition, parameterDict)
                 if (injectedExciton.canDissociate is True) or (injectedExciton.hopTime is None):
                     # Injected onto either a dissociation site or a trap site
                     if injectedExciton.canDissociate is True:
-                        print("EVENT: Exciton Dissociating immediately")
+                        helperFunctions.writeToFile(logFile, ["EVENT: Exciton Dissociating immediately"])
                         numberOfDissociations += 1
                         numberOfHops.append(injectedExciton.numberOfHops)
                         # Create the carrier instances, but don't yet calculate their behaviour (need to add them to the carrier list before we can calculate the energetics)
@@ -1061,7 +1087,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                             eventQueue = pushToQueue(eventQueue, (injectedHole.hopTime, 'carrierHop', injectedHole))
                     else:
                         # Injected onto a site with no connections, so this exciton will eventually die
-                        print("EVENT: Exciton Recombining immediately")
+                        helperFunctions.writeToFile(logFile, ["EVENT: Exciton Recombining immediately"])
                         numberOfRecombinations += 1
                         numberOfHops.append(injectedExciton.numberOfHops)
                 else:
@@ -1083,28 +1109,35 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     numberOfInjections = numberOfAnodeInjections
                 injectChromophore = globalChromophoreData.returnSpecificChromophore(injectSite.devicePosn, injectSite.chromophore.ID)
                 if (injectSite.devicePosn not in injectChromophore.occupied):
-                    print("EVENT: Dark Current injection from the " + str(injectSite.electrode) + " #" + str(numberOfInjections), "into", injectSite.devicePosn, "(which has type", repr(deviceArray[tuple(injectSite.devicePosn)]) + ")", "chromophore number", injectSite.chromophore.ID, "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                    helperFunctions.writeToFile(logFile, ["EVENT: Dark Current injection from the " +
+                                                          str(injectSite.electrode) + " #" +
+                                                          str(numberOfInjections) + " into " +
+                                                          repr(injectSite.devicePosn) + " (which has type " +
+                                                          repr(deviceArray[tuple(injectSite.devicePosn)]) +
+                                                          ") chromophore number " + str(injectSite.chromophore.ID) +
+                                                          " after " + str(KMCIterations) + " iterations (globalTime = " +
+                                                          str(globalTime) + ")"])
                     # Inject the carrier
                     injectedCarrier = carrier(carrierIndex, globalTime, injectSite.devicePosn, injectSite.chromophore, injectSite.electrode, parameterDict, injectedOntoSite = injectSite)
                     globalCarrierDict[carrierIndex] = injectedCarrier
                     carrierIndex += 1
                     # Update the chromophore occupation
-                    print("PREVIOUS OCCUPATION =", injectChromophore.occupied)
+                    helperFunctions.writeToFile(logFile, ["PREVIOUS OCCUPATION = " + repr(injectChromophore.occupied)])
                     injectChromophore.occupied.append(injectSite.devicePosn)
-                    print("UPDATED ON INJECTION =", injectChromophore.occupied)
+                    helperFunctions.writeToFile(logFile, ["UPDATED ON INJECTION =" + repr(injectChromophore.occupied)])
                     # Determine the injected carrier's next hop and queue it
                     injectedCarrier.calculateBehaviour()
                     if (injectedCarrier.hopTime is not None) and (injectedCarrier.hopTime > 1):
-                        print("DARK INJECTION LED TO ELECTRON WITH CRAZY HOPTIME")
+                        helperFunctions.writeToFile(logFile, ["DARK INJECTION LED TO ELECTRON WITH CRAZY HOPTIME"])
                         for carrierFromList in globalCarrierDict.values():
                             print(carrierFromList.currentDevicePosn, carrierFromList.currentChromophore.posn)
-                        print(injectedCarrier.currentChromophore.ID)
-                        print(injectedCarrier.__dict__)
+                        helperFunctions.writeToFile(logFile, [str(injectedCarrier.currentChromophore.ID)])
+                        helperFunctions.writeToFile(logFile, [repr(injectedCarrier.__dict__)])
                         exit()
                     if injectedCarrier.hopTime is not None:
                         eventQueue = pushToQueue(eventQueue, (injectedCarrier.hopTime, 'carrierHop', injectedCarrier))
                 else:
-                    print("CANNOT INJECT HERE, DESTINATION CHROMOPHORE IS ALREADY OCCUPIED")
+                    helperFunctions.writeToFile(logFile, ["CANNOT INJECT HERE, DESTINATION CHROMOPHORE IS ALREADY OCCUPIED"])
 
                 # Now determine the next DC event and queue it
                 if injectSite.electrode == 'Cathode':
@@ -1139,7 +1172,9 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         allCarriers.append(hoppingExciton)
 
                     if hoppingExciton.canDissociate is True:
-                        print("EVENT: Exciton Dissociating after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                        helperFunctions.writeToFile(logFile, ["EVENT: Exciton Dissociating after " +
+                                                              str(KMCIterations) + " iterations (globalTime = " +
+                                                              str(globalTime) + ")"])
                         numberOfDissociations += 1
                         numberOfHops.append(injectedExciton.numberOfHops)
                         # Create the carrier instances, but don't yet calculate their behaviour (need to add them to the carrier list before we can calculate the energetics)
@@ -1165,7 +1200,8 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         if injectedHole.hopTime is not None:
                             eventQueue = pushToQueue(eventQueue, (injectedHole.hopTime, 'carrierHop', injectedHole))
                     else:
-                        print("EVENT: Exciton Recombining", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                        helperFunctions.writeToFile(logFile, ["EVENT: Exciton Recombining after" + str(KMCIterations) +
+                                                              " iterations (globalTime = " + str(globalTime) + ")"])
                         numberOfRecombinations += 1
                         numberOfHops.append(injectedExciton.numberOfHops)
                         #pass
@@ -1223,8 +1259,8 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 #    heapq.heappush(darkInjectQueue, (newDarkInject.injectTime, 'dark', newDarkInject))
 
             elif nextEvent[1] == 'recombine':
-                print(eventQueue)
-                print("EVENT: Carrier Recombination Check", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                helperFunctions.writeToFile(logFile, ["EVENT: Carrier Recombination Check after " + str(KMCIterations) +
+                                                      " iterations (globalTime = " + str(globalTime) + ")"])
                 # A recombination event is about to occur. At this point, we should check if the carrier and its recombination partner are still in range.
                 carrier1 = nextEvent[2]
                 carrier1Posn = np.array(carrier1.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier1.currentChromophore.posn) * 1E-10)
@@ -1234,8 +1270,9 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 recombiningCarrierIDs.remove(carrier1.ID)
                 recombiningCarrierIDs.remove(carrier2.ID)
                 if separation <= parameterDict['coulombCaptureRadius']:
-                    print(separation, "<=", parameterDict['coulombCaptureRadius'])
-                    print("EVENT: Carrier Recombination Succeeded", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                    helperFunctions.writeToFile(logFile, [str(separation) + " <= " + str(parameterDict['coulombCaptureRadius'])])
+                    helperFunctions.writeToFile(logFile, ["EVENT: Carrier Recombination Succeeded after " + str(KMCIterations) +
+                                                          " iterations (globalTime = " + str(globalTime) + ")"])
                     # Carriers are in range, so recombine them
                     carrier1.removedTime = globalTime
                     carrier2.removedTime = globalTime
@@ -1245,8 +1282,9 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     if parameterDict['recordCarrierHistory'] is True:
                         allCarriers += [carrier1, carrier2]
                 else:
-                    print(separation, ">", parameterDict['coulombCaptureRadius'])
-                    print("EVENT: Carrier Recombination Failed", "after", KMCIterations, "iterations (globalTime =", str(globalTime) + ")")
+                    helperFunctions.writeToFile(logFile, [str(separation) + " >" + str(parameterDict['coulombCaptureRadius'])])
+                    helperFunctions.writeToFile(logFile, ["EVENT: Carrier Recombination Failed after " + str(KMCIterations) +
+                                                          " iterations (globalTime = " + str(globalTime) + ")"])
                     # Carriers are no longer in range, so the recombination fails. Update their recombination flags
                     carrier1.recombining = False
                     carrier1.recombiningWith = None
@@ -1259,14 +1297,18 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
 
     except KeyboardInterrupt:
         time = T.time() - t0
-        print("---=== RESULTS FROM CPU RANK", sys.argv[2], "===---")
-        print("Run terminated after", KMCIterations, "iterations (globalTime =", str(globalTime) + ") after", time, "seconds")
-        print("Number of Photoinjections =", numberOfPhotoinjections)
-        print("Number of Cathode Injections =", numberOfCathodeInjections)
-        print("Number of Anode Injections =", numberOfAnodeInjections)
-        print("Number of Dissociations =", numberOfDissociations)
-        print("Number of Recombinations =", numberOfRecombinations)
-        print("Number of Extractions =", numberOfExtractions)
+        print("KILL COMMAND RECIEVED...")
+        print("Plotting output graphs before terminating...")
+        helperFunctions.writeToFile(logFile, ["---=== RESULTS FROM CPU RANK " + sys.argv[2] + " ===---",
+                                              "Run terminated after " + str(KMCIterations) +
+                                              " iterations (globalTime = " + str(globalTime) + ") after " +
+                                              str(time) + " seconds",
+                                              "Number of Photoinjections = " + str(numberOfPhotoinjections),
+                                              "Number of Cathode Injections = " + str(numberOfCathodeInjections),
+                                              "Number of Anode Injections = " + str(numberOfAnodeInjections),
+                                              "Number of Dissociations = " + str(numberOfDissociations),
+                                              "Number of Recombinations = " + str(numberOfRecombinations),
+                                              "Number of Extractions = " + str(numberOfExtractions)])
         #print("DURING THIS RUN:")
         #print("Slowest Event Considered =", slowestEvent)
         #print("Fastest Event Considered =", fastestEvent)
@@ -1336,20 +1378,27 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     #plt.savefig(outputFiguresDir + 'convergence.png')
     #return
     time = T.time() - t0
-    helperFunctions.writeToLogFile(logFile, ["---=== RESULTS FROM CPU RANK", sys.argv[2], "===---"])
-    helperFunctions.writeToLogFile(logFile, ["Run completed after", KMCIterations, "iterations (globalTime =", str(globalTime) + ") after", time, "seconds"])
-    helperFunctions.writeToLogFile(logFile, ["Number of Photoinjections = " + str(numberOfPhotoinjections)])
-    helperFunctions.writeToLogFile(logFile, ["Number of Cathode Injections = " + str(numberOfCathodeInjections)])
-    helperFunctions.writeToLogFile(logFile, ["Number of Anode Injections = " + str(numberOfAnodeInjections)])
-    helperFunctions.writeToLogFile(logFile, ["Number of Dissociations = " + str(numberOfDissociations)])
-    helperFunctions.writeToLogFile(logFile, ["Number of Recombinations = " + str(numberOfRecombinations)])
-    helperFunctions.writeToLogFile(logFile, ["Number of Extractions = " + str(numberOfExtractions)])
+    print("SIMULATION COMPLETED")
+    print("Plotting output graphs...")
+    helperFunctions.writeToFile(logFile, ["---=== RESULTS FROM CPU RANK " + sys.argv[2] + " ===---",
+                                          "Simulation voltage = " + str(voltageVal),
+                                          "Run completed after " + str(KMCIterations) +
+                                          " iterations (globalTime = " + str(globalTime) + ") after " +
+                                          str(time) + " seconds",
+                                          "Number of Photoinjections = " + str(numberOfPhotoinjections),
+                                          "Number of Cathode Injections = " + str(numberOfCathodeInjections),
+                                          "Number of Anode Injections = " + str(numberOfAnodeInjections),
+                                          "Number of Dissociations = " + str(numberOfDissociations),
+                                          "Number of Recombinations = " + str(numberOfRecombinations),
+                                          "Number of Extractions = " + str(numberOfExtractions)])
     plotEventTimeDistribution(eventLog, outputFiguresDir, fastestEvent, slowestEvent)
     if parameterDict['recordCarrierHistory'] is True:
         plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputFiguresDir)
 
 
 if __name__ == "__main__":
+    global logFile
+
     KMCDirectory = sys.argv[1]
     CPURank = int(sys.argv[2])
     R.seed(int(sys.argv[3]))
@@ -1366,7 +1415,11 @@ if __name__ == "__main__":
         [deviceArray, chromophoreData, morphologyData, parameterDict] = pickle.load(pickleFile)
     with open(jobsFileName, 'rb') as pickleFile:
         jobsToRun = pickle.load(pickleFile)
-    logFile = KMCDirectory + '/KMClog_' + str(CPURank) + '.log'
+    if parameterDict['outputLogToSTDOUT'] is True:
+        print("Redirecting log to standard out.")
+        logFile = 'stdout'
+    else:
+        logFile = KMCDirectory + '/KMClog_' + str(CPURank) + '.log'
     # Reset the log file
     with open(logFile, 'wb+') as logFileHandle:
         pass
@@ -1384,4 +1437,4 @@ if __name__ == "__main__":
 
     # Begin the simulation
     for voltageVal in jobsToRun:
-        execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal, logFile)
+        execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal)

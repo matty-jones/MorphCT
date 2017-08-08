@@ -1,6 +1,7 @@
 import numpy as np
 import copy
 import os
+import sys
 import pickle
 import multiprocessing as mp
 import csv
@@ -1204,9 +1205,13 @@ def writeToFile(logFile, stringList, mode='logFile'):
         openAs = 'w+'
     else:
         openAs = 'a+'
-    with open(logFile, openAs) as logWrite:
+    if logFile == 'stdout':
         for line in stringList:
-            logWrite.writelines(line + '\n')
+            sys.stdout.writelines(line + '\n')
+    else:
+        with open(logFile, openAs) as logWrite:
+            for line in stringList:
+                logWrite.writelines(line + '\n')
 
 
 def loadPickle(pickleLocation):
