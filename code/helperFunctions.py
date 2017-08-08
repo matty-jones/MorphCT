@@ -52,10 +52,9 @@ def findIndex(string, character):
 
 def calculateSeparation(atom1, atom2):
     '''This function calculates the distance between two input points (either as lists or np.arrays)'''
-    xdif = atom1[0] - atom2[0]
-    ydif = atom1[1] - atom2[1]
-    zdif = atom1[2] - atom2[2]
-    return np.sqrt(xdif**2 + ydif**2 + zdif**2)
+    atom1 = np.array(atom1)
+    atom2 = np.array(atom2)
+    return np.sqrt(np.sum((atom1 - atom2)**2))
 
 
 def linearInterpDescendingY(targetValue, xArray, yArray):
@@ -123,7 +122,7 @@ def findAxis(atom1, atom2, normalise=True):
 
 def normaliseVec(vector):
     '''This function normalises an input vector to unit magnitude'''
-    return vector / np.linalg.norm(vector)  # float(np.sqrt(vector[0]**2 + vector[1]**2 + vector[2]**2))
+    return vector / float(np.sqrt(np.sum(vector)**2))
 
 
 def getRotationMatrix(vector1, vector2):

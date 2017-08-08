@@ -156,7 +156,7 @@ class exciton:
             # Morphology shape so we can work out the actual relative positions
             morphologyShape = [globalMorphologyData.returnAAMorphology(self.currentDevicePosn)[key] for key in ['lx', 'ly', 'lz']]
             remappedPosn = neighbourPosn + [neighbourRelativeImage[axis] * morphologyShape[axis] for axis in range(3)]
-            rij = helperFunctions.calculateSeparation(currentChromoPosn, remappedPosn) * 1E-10
+            rij = helperFunctions.calculateSeparation(np.array(currentChromoPosn), np.array(remappedPosn)) * 1E-10
             #if neighbourRelativeImage != [0, 0, 0]:
             #    print(neighbourID, neighbourPosn, neighbourUnwrappedPosn, neighbourImage, neighbourRelativeImage, rij)
             # Note, separations are recorded in angstroems, so spin this down to metres.
@@ -474,7 +474,7 @@ def calculateCoulomb(absolutePosition, selfID, selfCarrierType, carrierIsRecombi
         carrierPosn = np.array(carrier.currentDevicePosn)*parameterDict['morphologyCellSize'] + (np.array(carrier.currentChromophore.posn) * 1E-10)
         if carrierID != selfID:
             # Only consider the current carrier if it is not us!
-            separation = np.linalg.norm(absolutePosition - carrierPosn)
+            separation = helperFunctions.calculateSeparation(absolutePosition, carrierPosn)
             #print("Separation between", selfID, "and", carrier.ID, "=", separation)
             coulombicPotential += coulombConstant * ((elementaryCharge * ((2 * selfCarrierType) - 1)) * (elementaryCharge * ((2 * carrier.carrierType) - 1)) / separation)
             # I'm also going to use this opportunity (as we're iterating over all carriers in the system) to see if we're close enough to any to recombine.
@@ -498,25 +498,25 @@ def calculateCoulomb(absolutePosition, selfID, selfCarrierType, carrierIsRecombi
         #deviceZSize = globalChromophoreData.deviceArray.shape[2] * parameterDict['morphologyCellSize']
         #topImagePosn = copy.deepcopy(carrierPosn)
         #topImagePosn[2] = deviceZSize + (deviceZSize - carrierPosn[2])
-        #separation = np.linalg.norm(absolutePosition - topImagePosn)
+        #separation = helperFunctions.calculateSeparation(absolutePosition, topImagePosn)
         #print("Separation between", selfID, "and top image charge =", separation)
         #coulombicPotential -= (elementaryCharge**2) * (coulombConstant / separation)
         ## Now do the bottom image charge
         #bottomImagePosn = copy.deepcopy(carrierPosn)
         #bottomImagePosn[2] = - carrierPosn[2]
-        #separation = np.linalg.norm(absolutePosition - bottomImagePosn)
+        #separation = helperFunctions.calculateSeparation(absolutePosition, bottomImagePosn)
         #print("Separation between", selfID, "and bottom image charge =", separation)
         #coulombicPotential -= (elementaryCharge**2) * (coulombConstant / separation)
         ## Now do the top image of the bottom image charge
         #topImageOfBottomImagePosn = copy.deepcopy(carrierPosn)
         #topImageOfBottomImagePosn[2] = (2 * deviceZSize) + carrierPosn[2]
-        #separation = np.linalg.norm(absolutePosition - topImageOfBottomImagePosn)
+        #separation = helperFunctions.calculateSeparation(absolutePosition, topImageOfBottomImagePosn)
         #print("Separation between", selfID, "and top image of bottom image charge =", separation)
         #coulombicPotential += (elementaryCharge**2) * (coulombConstant / separation)
         ## And finally the bottom image of the top image charge
         #bottomImageOfTopImagePosn = copy.deepcopy(carrierPosn)
         #bottomImageOfTopImagePosn[2] = - (deviceZSize + (deviceZSize - carrierPosn[2]))
-        #separation = np.linalg.norm(absolutePosition - bottomImageOfTopImagePosn)
+        #separation = helperFunctions.calculateSeparation(absolutePosition, bottomImageOfTopImagePosn)
         #print("Separation between", selfID, "and bottom image of top image charge =", separation, "\n")
         #coulombicPotential += (elementaryCharge**2) * (coulombConstant / separation)
     return coulombicPotential, canRecombineHere, recombiningWith
@@ -665,7 +665,7 @@ def estimateTransferIntegral(chromophoreList):
     #        # Ignore hops that are not in this simulation volume
     #        continue
     #    chromoID = chromo[0]
-    #    separation = np.linalg.norm(currentPosn - chromophoreList[chromoID].posn)
+    #    separation = helperFunctions.calculateSeparation(currentPosn, chromophoreList[chromoID].posn)
     #    separations.append(separation)
     #    transferIntegrals.append(chromophore.neighboursTI[index])
     #if len(separations) > 1:
@@ -785,7 +785,7 @@ def pushToQueue(queue, event):
                     continue
                 carrier1posn = (78 * np.array(carrier1.currentDevicePosn)) + np.array(carrier1.currentChromophore.posn)
                 carrier2posn = (78 * np.array(carrier2.currentDevicePosn)) + np.array(carrier2.currentChromophore.posn)
-                print(carrier1ID, carrier2ID, np.linalg.norm(carrier1posn - carrier2posn))
+                print(carrier1ID, carrier2ID, helperFunctions.calculateSeparation(carrier1posn, carrier2posn))
         raise KeyboardInterrupt
     event = tuple(event)
     heapq.heappush(queue, event)
@@ -1061,7 +1061,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 randomDevicePosition = [R.randint(0, x-1) for x in deviceArray.shape]
                 helperFunctions.writeToFile(logFile, ["EVENT: Photoinjection #" + str(numberOfPhotoinjections) +
                                                       " into " + repr(randomDevicePosition) + " (which has type " +
-                                                      repr(deviceArray[tuple(randomDevicePosition)]) + ") after" +
+                                                      repr(deviceArray[tuple(randomDevicePosition)]) + ") after " +
                                                       str(KMCIterations) + " iterations (globalTime = " +
                                                       str(globalTime) + ")"])
                 injectedExciton = exciton(excitonIndex, globalTime, randomDevicePosition, parameterDict)
@@ -1270,7 +1270,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 carrier1Posn = np.array(carrier1.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier1.currentChromophore.posn) * 1E-10)
                 carrier2 = globalCarrierDict[carrier1.recombiningWith]
                 carrier2Posn = np.array(carrier2.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier2.currentChromophore.posn) * 1E-10)
-                separation = np.linalg.norm(carrier2Posn - carrier1Posn)
+                separation = helperFunctions.calculateSeparation(carrier2Posn, carrier1Posn)
                 recombiningCarrierIDs.remove(carrier1.ID)
                 recombiningCarrierIDs.remove(carrier2.ID)
                 if separation <= parameterDict['coulombCaptureRadius']:

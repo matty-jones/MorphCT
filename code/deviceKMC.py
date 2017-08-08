@@ -10,8 +10,7 @@ import helperFunctions
 
 
 class morphologyMoiety:
-    def __init__(self, moietyTypeNumber, molMorphName, parameterDict):
-        self.typeNo = moietyTypeNumber
+    def __init__(self, molMorphName, parameterDict):
         chromophoreListLocation = parameterDict['outputMorphDir'] + '/' + molMorphName + '/code/' + molMorphName + '.pickle'
         self.AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict, self.chromophoreList = helperFunctions.loadPickle(chromophoreListLocation)
         self.carrierType = self.getCarrierType()
@@ -85,12 +84,17 @@ class chromophoreDataContainer:
                 else:
                     return 'Out of Bounds'
         deviceMoietyType = self.deviceArray[tuple(devicePosition)]
-        for chromophore in self.moietyDictionary[deviceMoietyType].chromophoreList:
-            separation = helperFunctions.calculateSeparation(desiredPosition, chromophore.posn)
-            if separation < closestDistance:
-                closestDistance = separation
-                closestChromoID = chromophore.ID
-                continue
+        # NOTE For efficiency, this section has been rewritten
+        # The following uncommented code represents a 10x speedup over the commented code
+        #for chromophore in self.moietyDictionary[deviceMoietyType].chromophoreList:
+        #    separation = np.linalg.norm(np.array(desiredPosition) - np.array(chromophore.posn))
+        #    if separation < closestDistance:
+        #        closestDistance = separation
+        #        closestChromoID = chromophore.ID
+        #        continue
+        positions = np.array([chromo.posn for chromo in self.moietyDictionary[deviceMoietyType].chromophoreList])
+        distances = np.sqrt(np.sum((positions - np.array(desiredPosition))**2, axis=1))
+        closestChromoID = np.argmin(distances)
         return self.moietyDictionary[deviceMoietyType].chromophoreList[closestChromoID]
 
 
@@ -124,7 +128,7 @@ def loadDeviceMorphology(parameterDict):
                 deviceArray[xVal, yVal, zVal] = datum
     moietyDictionary = {}
     for moietyID in np.unique(deviceArray):
-        moietyDictionary[moietyID] = morphologyMoiety(moietyID, parameterDict['deviceComponents'][moietyID], parameterDict)
+        moietyDictionary[moietyID] = morphologyMoiety(parameterDict['deviceComponents'][moietyID], parameterDict)
     return deviceArray, moietyDictionary
 
 
@@ -161,8 +165,13 @@ def execute(parameterDict):
         # Open the required processes to execute the KMC jobs
         # Random seeding is a little weird here. If we don't generate a random seed in the child process, it will just use the system time. So, we generate a seed here to get the same random number stream each time, and then feed the child process a new seed from the random number stream. This way, we ensure that each child process has a different random number stream to the other processes, but it's the same stream every time we run the program.
         childSeed = R.randint(0, 2**32)
-        print('python ' + os.getcwd() + '/code/singleCoreRunDeviceKMC.py' + outputDir + ' ' + str(procID) + ' ' + str(childSeed) + ' &')
-        runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunDeviceKMC.py', outputDir, str(procID), str(childSeed)]))
+        # NOTE DEBUG USING cProfile
+        print('RUNNING CPROFILE...')
+        print('python -m cProfile -o deviceSim.cprof ' + os.getcwd() + '/code/singleCoreRunDeviceKMC.py', outputDir + ' ' + str(procID) + ' ' + str(childSeed) + ' &')
+        runningJobs.append(sp.Popen(['python -m cProfile -o deviceSim.cprof ' + str(os.getcwd()) + '/code/singleCoreRunDeviceKMC.py', outputDir, str(procID), str(childSeed)]))
+        # Previous run command:
+        #print('python ' + os.getcwd() + '/code/singleCoreRunDeviceKMC.py' + outputDir + ' ' + str(procID) + ' ' + str(childSeed) + ' &')
+        #runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunDeviceKMC.py', outputDir, str(procID), str(childSeed)]))
     # Wait for all jobs to complete
     [p.wait() for p in runningJobs]
     print("All KMC jobs completed!")
