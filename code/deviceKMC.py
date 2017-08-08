@@ -160,7 +160,7 @@ def execute(parameterDict):
         print("KMC jobs for procID", procID, "written to KMCData_%02d.pickle" % (procID))
         # Open the required processes to execute the KMC jobs
         # Random seeding is a little weird here. If we don't generate a random seed in the child process, it will just use the system time. So, we generate a seed here to get the same random number stream each time, and then feed the child process a new seed from the random number stream. This way, we ensure that each child process has a different random number stream to the other processes, but it's the same stream every time we run the program.
-        childSeed = R.randint(0,1000)
+        childSeed = R.randint(0, 2**32)
         print('python ' + os.getcwd() + '/code/singleCoreRunDeviceKMC.py' + outputDir + ' ' + str(procID) + ' ' + str(childSeed) + ' &')
         runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunDeviceKMC.py', outputDir, str(procID), str(childSeed)]))
     # Wait for all jobs to complete
