@@ -455,7 +455,7 @@ def plotConnections(excitonPath, chromophoreList, AADict, outputDir):
     for corner1 in corners:
         for corner2 in corners:
             ax.plot([corner1[0], corner2[0]], [corner1[1], corner2[1]], [corner1[2], corner2[2]], color = 'k')
-    fileName = outputDir + '3d_exciton.png'
+    fileName = outputDir + '3d_exciton.pdf'
     plt.show()
     plt.savefig(fileName)
     print("Figure saved as " + fileName)
@@ -801,7 +801,7 @@ def plotEventTimeDistribution(eventLog, outputDir, fastest, slowest):
     plt.xlabel(r'$\mathrm{\tau}$ (s)')
     plt.ylabel('Freq (Arb. U.)')
     plt.xticks([1E-16, 1E-14, 1E-12, 1E-10, 1E-8, 1E-6, 1E-5, 1E-4])
-    fileName = outputDir + 'EventTimeDist.png'
+    fileName = outputDir + 'EventTimeDist.pdf'
     plt.savefig(fileName)
     print('Event time distribution saved as ' + fileName)
 
@@ -814,6 +814,7 @@ def plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputDir):
     combinationsToPlot = {'Cathode':[], 'Anode':[]}
     popList = []
     for index, carrier in enumerate(allCarriers):
+        print("\n", carrier.__dict__)
         # First add all the excitons
         if 'rF' in carrier.__dict__:
             # We know this is an exciton
@@ -823,7 +824,10 @@ def plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputDir):
         allCarriers.pop(index)
     for carrier in allCarriers:
         # Only electrons and holes remaining
-        combinationsToPlot[carrier.injectedFrom].append(carrier)
+        try:
+            combinationsToPlot[carrier.injectedFrom].append(carrier)
+        except KeyError:
+            pass
     for injectSource, carriers in combinationsToPlot.items():
         plot3DTrajectory(injectSource, carriers, parameterDict, deviceArray, outputDir)
 
@@ -864,11 +868,12 @@ def plot3DTrajectory(injectSource, carriersToPlot, parameterDict, deviceArray, o
             color = 'r'
         for hopIndex, hop in enumerate(carrier.history[:-1]):
             # Note that conversion factors are needed as hop[0] * morphCellSize is in m, and hop[1] is in ang.
-            currentPosn = (1E10 * (np.array(hop[0]) * parameterDict['morphologyCellSize'])) + np.array(hop[1])
+            # Additionally, we need to add half of the morphCellSize to whatever hop[0] is as the origin is in the centre of the box 
+            currentPosn = (1E10 * ((np.array(hop[0]) + np.array([0.5, 0.5, 0.5])) * parameterDict['morphologyCellSize'])) + np.array(hop[1])
             nextHop = carrier.history[hopIndex + 1]
-            nextPosn = (1E10 * (np.array(nextHop[0]) * parameterDict['morphologyCellSize'])) + np.array(nextHop[1])
+            nextPosn = (1E10 * ((np.array(nextHop[0]) + np.array([0.5, 0.5, 0.5])) * parameterDict['morphologyCellSize'])) + np.array(nextHop[1])
             ax.plot([currentPosn[0], nextPosn[0]], [currentPosn[1], nextPosn[1]], [currentPosn[2], nextPosn[2]], c = color, linewidth = 0.5)
-    fileName = outputDir + carrierString + '_traj.png'
+    fileName = outputDir + carrierString + '_traj.pdf'
     plt.savefig(fileName)
     print("Figure saved as " + fileName)
     plt.close()
@@ -903,7 +908,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
         (parameterDict['anodeWorkFunction'] - parameterDict['donorHOMO'])) /
         # Z-extent:
         (deviceArray.shape[2] * parameterDict['morphologyCellSize']))
-    outputFiguresDir = parameterDict['outputDeviceDir'] + '/' + parameterDict['deviceMorphology'] + '/figures/' + str(voltageVal)
+    outputFiguresDir = parameterDict['outputDeviceDir'] + '/' + parameterDict['deviceMorphology'] + '/figures/' + str(voltageVal) +'/'
 
     # DEBUG
     slowestEvent = 0
@@ -1200,7 +1205,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         if injectedHole.hopTime is not None:
                             eventQueue = pushToQueue(eventQueue, (injectedHole.hopTime, 'carrierHop', injectedHole))
                     else:
-                        helperFunctions.writeToFile(logFile, ["EVENT: Exciton Recombining after" + str(KMCIterations) +
+                        helperFunctions.writeToFile(logFile, ["EVENT: Exciton Recombining after " + str(KMCIterations) +
                                                               " iterations (globalTime = " + str(globalTime) + ")"])
                         numberOfRecombinations += 1
                         numberOfHops.append(injectedExciton.numberOfHops)
@@ -1323,33 +1328,33 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     #plt.title('Displacement until Dissociation')
     #plt.xlabel('Displacement, nm')
     #plt.ylabel('Frequency, Arb. U.')
-    #plt.savefig(outputFiguresDir + 'dissExcitonDisp.png')
+    #plt.savefig(outputFiguresDir + 'dissExcitonDisp.pdf')
     #plt.clf()
 
     #plt.hist(np.array(dissExcitonTime) * 1E9, bins=15
     #plt.title('Time until Dissociation')
     #plt.xlabel('Time, ns')
     #plt.ylabel('Frequency, Arb. U.')
-    #plt.savefig(outputFiguresDir + 'dissExcitonTime.png')
+    #plt.savefig(outputFiguresDir + 'dissExcitonTime.pdf')
     #plt.clf()
 
     #plt.hist(recExcitonDisp, bins=15)
     #plt.title('Displacement until Recombination')
     #plt.xlabel('Displacement, nm')
     #plt.ylabel('Frequency, Arb. U.')
-    #plt.savefig(outputFiguresDir + 'recExcitonDisp.png')
+    #plt.savefig(outputFiguresDir + 'recExcitonDisp.pdf')
     #plt.clf()
 
     #plt.hist(np.array(recExcitonTime) * 1E10, bins=15)
     #plt.title('Time until Recombination')
     #plt.xlabel('Time, ns')
     #plt.ylabel('Frequency, Arb. U.')
-    #plt.savefig(outputFiguresDir + 'recExcitonTime.png')
+    #plt.savefig(outputFiguresDir + 'recExcitonTime.pdf')
     #plt.clf()
 
     #plt.hist(numberOfHops, bins=15)
     #plt.title('numberOfHops')
-    #plt.savefig(outputFiguresDir + 'numberOfExcitonHops.png')
+    #plt.savefig(outputFiguresDir + 'numberOfExcitonHops.pdf')
     #plt.clf()
 
     #print("XDE =", numberOfDissociations/parameterDict['minimumNumberOfPhotoinjections'])
@@ -1370,12 +1375,12 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     #xFit = np.linspace(0, max(excitonTime), 100)
     #yFit = [(xVal*fit[0] + fit[1]) for xVal in xFit]
     #plt.plot(xFit, yFit, c='b')
-    #plt.savefig(outputFiguresDir + 'excitonMSD.png')
+    #plt.savefig(outputFiguresDir + 'excitonMSD.pdf')
 
     #print("Plotting the extraction data as a function of simulation time")
     #plt.figure()
     #plt.plot(convGlobalTime, convExtractions)
-    #plt.savefig(outputFiguresDir + 'convergence.png')
+    #plt.savefig(outputFiguresDir + 'convergence.pdf')
     #return
     time = T.time() - t0
     print("SIMULATION COMPLETED")
@@ -1420,9 +1425,9 @@ if __name__ == "__main__":
         logFile = 'stdout'
     else:
         logFile = KMCDirectory + '/KMClog_' + str(CPURank) + '.log'
-    # Reset the log file
-    with open(logFile, 'wb+') as logFileHandle:
-        pass
+        # Reset the log file
+        with open(logFile, 'wb+') as logFileHandle:
+            pass
     helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
     #helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
     # Set the affinities for this current process to make sure it's maximising available CPU usage
