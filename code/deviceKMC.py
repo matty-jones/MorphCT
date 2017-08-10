@@ -166,12 +166,12 @@ def execute(parameterDict):
         # Random seeding is a little weird here. If we don't generate a random seed in the child process, it will just use the system time. So, we generate a seed here to get the same random number stream each time, and then feed the child process a new seed from the random number stream. This way, we ensure that each child process has a different random number stream to the other processes, but it's the same stream every time we run the program.
         childSeed = R.randint(0, 2**32)
         # NOTE DEBUG USING cProfile
-        print('RUNNING CPROFILE...')
-        print('python -m cProfile -o deviceSim.cprof ' + os.getcwd() + '/code/singleCoreRunDeviceKMC.py', outputDir + ' ' + str(procID) + ' ' + str(childSeed) + ' &')
-        runningJobs.append(sp.Popen(['python -m cProfile -o deviceSim.cprof ' + str(os.getcwd()) + '/code/singleCoreRunDeviceKMC.py', outputDir, str(procID), str(childSeed)]))
+        #print('RUNNING CPROFILE...')
+        #print('python -m cProfile -o deviceSim.cprof ' + os.getcwd() + '/code/singleCoreRunDeviceKMC.py', outputDir + ' ' + str(procID) + ' ' + str(childSeed) + ' &')
+        #runningJobs.append(sp.Popen(['python -m cProfile -o deviceSim.cprof ' + str(os.getcwd()) + '/code/singleCoreRunDeviceKMC.py', outputDir, str(procID), str(childSeed)]))
         # Previous run command:
-        #print('python ' + os.getcwd() + '/code/singleCoreRunDeviceKMC.py' + outputDir + ' ' + str(procID) + ' ' + str(childSeed) + ' &')
-        #runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunDeviceKMC.py', outputDir, str(procID), str(childSeed)]))
+        print('python ' + os.getcwd() + '/code/singleCoreRunDeviceKMC.py' + outputDir + ' ' + str(procID) + ' ' + str(childSeed) + ' &')
+        runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunDeviceKMC.py', outputDir, str(procID), str(childSeed)]))
     # Wait for all jobs to complete
     [p.wait() for p in runningJobs]
     print("All KMC jobs completed!")
