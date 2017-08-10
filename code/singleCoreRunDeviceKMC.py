@@ -878,7 +878,7 @@ def plot3DTrajectory(injectSource, carriersToPlot, parameterDict, deviceArray, o
     plt.close()
 
 
-def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal):
+def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal, timeLimit):
     # ---=== PROGRAMMER'S NOTE ===---
     # This `High Resolution' version of the code will permit chromophore-based hopping through the device, rather than just approximating the distribution. We have the proper resolution there, let's just use it!
     # ---=========================---
@@ -975,6 +975,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     try:
         while True:
             KMCIterations += 1
+            t1 = T.time()
             #print("\rGlobal Time =", globalTime, "Queue =", eventQueue)
             # TODO Check whether the output current has converged, after we have had sufficient photoinjections
             # To check convergence, create a datapoint every time 5% of the parameter-file-determined photoinjections
@@ -985,12 +986,17 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 # Regardless of how many photoinjections we have, add to the convergence datasets every 5% of the minimum required
                 convGlobalTime.append(globalTime)
                 convExtractions.append(numberOfExtractions)
-                if numberOfPhotoinjections > parameterDict['minimumNumberOfPhotoinjections']:
+                if (numberOfPhotoinjections > parameterDict['minimumNumberOfPhotoinjections']):
                     # If we've gone over the minimum, then perform the convergence check to see if the output current has converged
                     # TODO Check convergence, but for now, let's just see what the curve looks like
                     break
 
+            # Break if current has converged
             if outputCurrentConverged is True:
+                break
+
+            # Break if less than an hour before SLURM will kill the job
+            if (timeLimit is not None) and (t1 > t0 + timeLimit - 3600):
                 break
 
             if len(eventQueue) == 0:
@@ -1022,7 +1028,6 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 # Now push the anode event to the main queue
                 eventQueue = pushToQueue(eventQueue, (anodeInjectionTime, 'anode-injection', nextAnodeEvent[2]))
 
-            t1 = T.time()
             if int(t1 - t0)%10 == 0:
                 outputPrintStatement = True
             else:
@@ -1400,6 +1405,13 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
         plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputFiguresDir)
 
 
+def slurmTimeInS(slurmTime):
+    # Expects slurmTime in HH:MM:SS
+    splitTime = slurmTime.split(':')
+    timeInS = int(splitTime[0]) * 60**2 + int(splitTime[1]) * 60 + int(splitTime[2])
+    return timeInS
+
+
 if __name__ == "__main__":
     global logFile
 
@@ -1411,6 +1423,11 @@ if __name__ == "__main__":
         overwrite = bool(sys.argv[4])
     except:
         pass
+
+    # Get the time limit
+    timeLimit = os.getenv('SLURM_TIMELIMIT', None)
+    if timeLimit is not None:
+        timeLimit = slurmTimeInS(timeLimit)
 
     jobsFileName = KMCDirectory + '/KMCData_%02d.pickle' % (CPURank)
     deviceDataFileName = KMCDirectory.replace('/KMC', '/code/deviceData.pickle')
@@ -1441,4 +1458,4 @@ if __name__ == "__main__":
 
     # Begin the simulation
     for voltageVal in jobsToRun:
-        execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal)
+        execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal, timeLimit)
