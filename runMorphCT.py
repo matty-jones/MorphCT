@@ -129,7 +129,7 @@ class simulation:
         elif self.deviceMorphology is not None:
             if self.overwriteCurrentData is True:
                 print('rm -r ' + self.outputDeviceDirectory + '/')
-                shutil.rmtree(self.outputDeviceDirectory + '/')
+                shutil.rmtree(self.outputDeviceDirectory + '/', ignore_errors=True)
             for deviceDirectoryToMake in ['code', 'KMC', 'figures']:
                 if deviceDirectoryToMake == 'figures':
                     for potentialVal in self.voltageSweep:
