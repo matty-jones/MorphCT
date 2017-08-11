@@ -207,7 +207,7 @@ class exciton:
                 # TODO This carrier has left the simulation volume so we now need to ensure we remove it from the carrier dictionary so it's not included in any of the Coulombic calculations
             elif (newChromophore == 'Out of Bounds'):
                 # Ignore this hop, do a different one instead
-                helperFunctions.writetoFile(logFile, ["Out of bounds Exciton hop discarded"])
+                helperFunctions.writeToFile(logFile, ["Out of bounds Exciton hop discarded"])
             else:
                 self.currentDevicePosn = list(np.array(self.currentDevicePosn) + np.array(self.destinationImage))
                 self.currentChromophore = newChromophore
