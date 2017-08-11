@@ -763,7 +763,7 @@ def pushToQueue(queue, event):
                                               "Queue = " + repr(queue), "Event = " + repr(event),
                                               "Terminating..."])
         raise KeyboardInterrupt
-    if event[0] == np.float64(1E99):
+    if (event[0] == np.float64(1E99)) and (event[1] != 'photo'):
         helperFunctions.writeToFile(logFile, ["---=== TRIED TO QUEUE EVENT WITH CRAZY LONG WAIT TIME ===---",
                                               "Event = " + str(event), "This carrier has completed " +
                                               str(len(event[2].history)) + " hops."])
@@ -1278,11 +1278,11 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     carrier2 = globalCarrierDict[carrier1.recombiningWith]
                     carrier2Posn = np.array(carrier2.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier2.currentChromophore.posn) * 1E-10)
                     separation = helperFunctions.calculateSeparation(carrier2Posn, carrier1Posn)
+                    recombiningCarrierIDs.remove(carrier2.ID)
                 except KeyError:
                     # The second carrier is missing from the simulation (already extracted), so set the separation to be large
                     separation = 1E99
                 recombiningCarrierIDs.remove(carrier1.ID)
-                recombiningCarrierIDs.remove(carrier2.ID)
                 if separation <= parameterDict['coulombCaptureRadius']:
                     helperFunctions.writeToFile(logFile, [str(separation) + " <= " + str(parameterDict['coulombCaptureRadius'])])
                     helperFunctions.writeToFile(logFile, ["EVENT: Carrier Recombination Succeeded after " + str(KMCIterations) +
