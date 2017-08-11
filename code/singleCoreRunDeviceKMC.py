@@ -207,7 +207,7 @@ class exciton:
                 # TODO This carrier has left the simulation volume so we now need to ensure we remove it from the carrier dictionary so it's not included in any of the Coulombic calculations
             elif (newChromophore == 'Out of Bounds'):
                 # Ignore this hop, do a different one instead
-                print("Out of bounds Exciton hop discarded")
+                helperFunctions.writetoFile(logFile, ["Out of bounds Exciton hop discarded"])
             else:
                 self.currentDevicePosn = list(np.array(self.currentDevicePosn) + np.array(self.destinationImage))
                 self.currentChromophore = newChromophore
@@ -1271,11 +1271,15 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 helperFunctions.writeToFile(logFile, ["EVENT: Carrier Recombination Check after " + str(KMCIterations) +
                                                       " iterations (globalTime = " + str(globalTime) + ")"])
                 # A recombination event is about to occur. At this point, we should check if the carrier and its recombination partner are still in range.
-                carrier1 = nextEvent[2]
-                carrier1Posn = np.array(carrier1.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier1.currentChromophore.posn) * 1E-10)
-                carrier2 = globalCarrierDict[carrier1.recombiningWith]
-                carrier2Posn = np.array(carrier2.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier2.currentChromophore.posn) * 1E-10)
-                separation = helperFunctions.calculateSeparation(carrier2Posn, carrier1Posn)
+                try:
+                    carrier1 = nextEvent[2]
+                    carrier1Posn = np.array(carrier1.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier1.currentChromophore.posn) * 1E-10)
+                    carrier2 = globalCarrierDict[carrier1.recombiningWith]
+                    carrier2Posn = np.array(carrier2.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier2.currentChromophore.posn) * 1E-10)
+                    separation = helperFunctions.calculateSeparation(carrier2Posn, carrier1Posn)
+                except KeyError:
+                    # The second carrier is missing from the simulation (already extracted), so set the separation to be large
+                    separation = 1E99
                 recombiningCarrierIDs.remove(carrier1.ID)
                 recombiningCarrierIDs.remove(carrier2.ID)
                 if separation <= parameterDict['coulombCaptureRadius']:
@@ -1297,8 +1301,10 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     # Carriers are no longer in range, so the recombination fails. Update their recombination flags
                     carrier1.recombining = False
                     carrier1.recombiningWith = None
-                    carrier2.recombining = False
-                    carrier2.recombiningWith = None
+                    if separation != 1E99:
+                        # If recombining carrier was already extracted, then skip this
+                        carrier2.recombining = False
+                        carrier2.recombiningWith = None
 
             else:
                 print(eventQueue)
