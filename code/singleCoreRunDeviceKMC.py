@@ -369,7 +369,8 @@ class carrier:
         # 2) Field within the device
         currentAbsolutePosition = np.array(self.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(self.currentChromophore.posn) * 1E-10)
         destinationAbsolutePosition = ((np.array(self.currentDevicePosn) + np.array(neighbourRelativeImage)) * parameterDict['morphologyCellSize'] + (np.array(destinationChromophore.posn) * 1E-10))
-        zSep = destinationAbsolutePosition[2] - currentAbsolutePosition[2]
+        # Field has negative sign because device is flipped with anode at +Z and Cathode at 0
+        zSep = - (destinationAbsolutePosition[2] - currentAbsolutePosition[2])
         charge = elementaryCharge * ((2 * self.carrierType) - 1)
         deltaEij += (zSep * currentFieldValue * charge)
         # 3) Difference in Coulombic Potential at dest compared to origin
