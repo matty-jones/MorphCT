@@ -119,7 +119,8 @@ targetDoSSTDLUMO = 0.1
 # ---=== Kinetic Monte Carlo Parameters ===---
 
 systemTemperature = 290
-numberOfCarriersPerSimulationTime = 1000
+numberOfHolesPerSimulationTime = 1000
+numberOfElectronsPerSimulationTime = 1000
 hopLimit = 0
 simulationTimes = [1.00e-12, 1.00e-11, 1.00e-10, 1.00e-9, 1.00e-8]
 recordCarrierHistory = True
