@@ -99,14 +99,14 @@ def parseDataIncomplete(data):
 
 
 def calculateJ(data, deviceArea):
-    numberOfExtractions = []
-    timeOfExtractions = []
+    numberOfExtractions = [0]
+    timeOfExtractions = [0.0]
     for line in data:
         if 'number of extractions' in line:
             splitLine = line.split(' ')
             extractionNumber = int(splitLine[12])
             extractionTime = float(splitLine[-1][:-2])
-            if extractionNumber is not 0:
+            if extractionNumber != numberOfExtractions[-1]:
                 numberOfExtractions.append(extractionNumber)
                 timeOfExtractions.append(extractionTime)
     #plt.figure()
