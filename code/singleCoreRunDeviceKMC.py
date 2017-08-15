@@ -898,14 +898,16 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
         fastestEventAllowed = parameterDict['fastestEventAllowed']
     if parameterDict['slowestEventAllowed'] is not None:
         slowestEventAllowed = parameterDict['slowestEventAllowed']
-    # Given a voltage, the field value corresponding to it = ((bandgap - el_inj_barrier - ho_inj_barrier) / z-extent) 
+    # Given a voltage, the field value corresponding to it = (((bandgap - el_inj_barrier - ho_inj_barrier) - Voltage) / z-extent) 
     currentFieldValue = (
         # Bandgap:
         ((parameterDict['acceptorLUMO'] - parameterDict['donorHOMO']) -
         # Electron Inject Barrier:
         (parameterDict['acceptorLUMO'] - parameterDict['cathodeWorkFunction']) -
         # Hole Inject Barrier:
-        (parameterDict['anodeWorkFunction'] - parameterDict['donorHOMO'])) /
+        (parameterDict['anodeWorkFunction'] - parameterDict['donorHOMO']) -
+        # Voltage
+        voltageVal) /
         # Z-extent:
         (deviceArray.shape[2] * parameterDict['morphologyCellSize']))
     outputFiguresDir = parameterDict['outputDeviceDir'] + '/' + parameterDict['deviceMorphology'] + '/figures/' + str(voltageVal) +'/'
