@@ -204,7 +204,7 @@ def getORCAJobs(inputDir, parameterDict, procIDs):
     if len(ORCAFilesToRun) == 0:
         return []
     # Create a jobslist for each procID
-    jobsList = [ORCAFilesToRun[i:i + (int(np.ceil(len(ORCAFilesToRun) / len(procIDs)))) + 1] for i in range(0, len(ORCAFilesToRun), int(np.ceil(len(ORCAFilesToRun) / float(len(procIDs)))))]
+    jobsList = [ORCAFilesToRun[i:i + (int(np.ceil(len(ORCAFilesToRun) / len(procIDs))))] for i in range(0, len(ORCAFilesToRun), int(np.ceil(len(ORCAFilesToRun) / float(len(procIDs)))))]
     return jobsList
 
 
