@@ -38,7 +38,63 @@ def parseData(dataFileList, deviceArea):
             dataDict['Rec'].append(int(data[-2].split(' ')[-1][:-1]))
             dataDict['Ext'].append(int(data[-1].split(' ')[-1][:-1]))
         except ValueError:
-            continue
+            # Some problem in the Results section (maybe it didn't finish?)
+            # Run the incomplete data parser instead
+            fileData = parseDataIncomplete(data)
+            if fileData is not None:
+                for key, val in fileData.items():
+                    dataDict[key].append(val)
+    return dataDict
+
+
+def parseDataIncomplete(data):
+    dataDict = {'J': 0, 'V': 0, 'Photo': 0, 'Cathode': 0, 'Anode': 0, 'Diss': 0, 'Rec': 0, 'Ext': 0, 'Iter': 0, 'SimT': 0, 'WallT': 0}
+    numberOfExtractions = []
+    timeOfExtractions = []
+    dataDict['V'] = float(eval(data[1][:-1])[0])
+    simT = 0
+    wallT = 0
+    iterations = 0
+    for line in data:
+        if 'EVENT' in line:
+            if ('Dark Current' and 'Anode' in line):
+                dataDict['Anode'] += 1
+            elif ('Dark Current' and 'Cathode' in line):
+                dataDict['Cathode'] += 1
+            elif ('New number of extractions' in line):
+                dataDict['Ext'] += 1
+                splitLine = line.split(' ')
+                extractionNumber = int(splitLine[12])
+                extractionTime = float(splitLine[-1][:-2])
+                if extractionNumber is not 0:
+                    numberOfExtractions.append(extractionNumber)
+                    timeOfExtractions.append(extractionTime)
+            elif ('Recombination Succeeded' in line):
+                dataDict['Rec'] += 1
+            elif ('Photoinjetion' in line):
+                dataDict['Photo'] += 1
+            elif ('Exciton Dissociating' in line):
+                dataDict['Diss'] += 1
+        elif ('Current runtime' in line):
+            wallT = int(line.split(' ')[3][:-2])
+            simT = float(line.split(' ')[24][:-3])
+            iterations = int(line.split(' ')[20])
+
+    dataDict['SimT'] = simT
+    dataDict['WallT'] = wallT
+    dataDict['Iter'] = iterations
+    if len(numberOfExtractions) != 0:
+        gradient, intercept, rVal, pVal, stdErr = scipy.stats.linregress(timeOfExtractions, numberOfExtractions)
+        jVal = float((elementaryCharge * gradient) / (deviceArea * 10))
+        dataDict['J'] = jVal
+        plt.figure()
+        plt.scatter(timeOfExtractions, numberOfExtractions)
+        plt.xlabel('Time (s)')
+        plt.ylabel('Number of Extractions (Arb. U)')
+        plt.xlim([0, 2E-4])
+        plt.show()
+    else:
+        return None
     return dataDict
 
 
@@ -73,6 +129,7 @@ def quickCheck(data):
 
 
 def plotData(xLabel, xVals, yLabel, yVals, fileName, mode='scatter'):
+    xVals, yVals = zip(*sorted(zip(xVals, yVals)))
     plt.figure()
     if mode == 'scatter':
         plt.scatter(xVals, yVals)
