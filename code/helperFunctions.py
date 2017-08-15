@@ -399,28 +399,28 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
     with open(xmlPath, 'r') as xmlFile:
         xmlData = xmlFile.readlines()
         for line in xmlData:
-            if ('</' in line):
+            if ('</' in line) or ('<!--' in line):
                 record = False
             elif ('<configuration' in line) or ('<box' in line):
                 # Get configuration data from this line (timestep, natoms etc)
                 splitLine = line.split(' ')
                 for i in range(1, len(splitLine)):
                     equalsLoc = findIndex(splitLine[i], '=')
-                    if equalsLoc is None:
-                        # Skip any elements without equals
+                    if (equalsLoc is None) or ('units' in splitLine[i]):
+                        # Skip any elements without equals or to do with the distance units
                         continue
                     quotationLoc = findIndex(splitLine[i], '"')
                     if ('.' in splitLine[i][quotationLoc[0] + 1:quotationLoc[1]]):
                         # Catch float in the value (excludes the = and quotation marks)
                         if ('<box' in line):
-                            AtomDictionary[splitLine[i][:equalsLoc[0]]] = float(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
+                            AtomDictionary[splitLine[i][:equalsLoc[0]].lower()] = float(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
                         else:
-                            AtomDictionary[splitLine[i][:equalsLoc[0]]] = float(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
+                            AtomDictionary[splitLine[i][:equalsLoc[0]].lower()] = float(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
                     else:
                         if ('<box' in line):
-                            AtomDictionary[splitLine[i][:equalsLoc[0]]] = int(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
+                            AtomDictionary[splitLine[i][:equalsLoc[0]].lower()] = int(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
                         else:
-                            AtomDictionary[splitLine[i][:equalsLoc[0]]] = int(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
+                            AtomDictionary[splitLine[i][:equalsLoc[0]].lower()] = int(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
             elif ('<position' in line):
                 record = True
                 recordType = 'position'
@@ -445,19 +445,19 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
                 record = True
                 recordType = 'body'
                 continue
-            elif ('<bond' in line):
+            elif ('<bond' in line) and ('_coeff' not in line):
                 record = True
                 recordType = 'bond'
                 continue
-            elif ('<angle' in line):
+            elif ('<angle' in line) and ('_coeff' not in line):
                 record = True
                 recordType = 'angle'
                 continue
-            elif ('<dihedral' in line):
+            elif ('<dihedral' in line) and ('_coeff' not in line):
                 record = True
                 recordType = 'dihedral'
                 continue
-            elif ('<improper' in line):
+            elif ('<improper' in line) and ('_coeff' not in line):
                 record = True
                 recordType = 'improper'
                 continue
@@ -467,12 +467,13 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
                 continue
             # Now we know what the variable is, append it to the dictionary data
             if (record is True):
+                # Mbuild outputs properties that are split by \t, so do a bit of jiggery pokery to allow us to interpret both
+                splitLine = ' '.join(line.split('\t')).split(' ')
+                # Remove the "\n"
+                splitLine[-1] = splitLine[-1][:-1]
                 if (recordType == 'position'):
                     # NOTE: VELOCITIES ARE NOT NORMALISED IN THE MORPHOLOGY FILE...DO THEY NEED TO BE SCALED BY SIGMA OR NOT? CURRENTLY THEY ARE.
                     # Write to dictionary as floats scaled by sigma
-                    splitLine = line.split(' ')
-                    # Remove the "\n"
-                    splitLine[-1] = splitLine[-1][:-1]
                     if (len(splitLine) == 1):
                         AtomDictionary[recordType].append(float(splitLine[0]))
                         continue
@@ -481,9 +482,6 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
                     AtomDictionary[recordType].append(splitLine)
                 elif (recordType == 'mass') or (recordType == 'diameter') or (recordType == 'charge'):
                     # Write to dictionary as floats
-                    splitLine = line.split(' ')
-                    # Remove the "\n"
-                    splitLine[-1] = splitLine[-1][:-1]
                     if (len(splitLine) == 1):
                         AtomDictionary[recordType].append(float(splitLine[0]))
                         continue
@@ -492,9 +490,6 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
                     AtomDictionary[recordType].append(splitLine)
                 elif (recordType == 'image') or (recordType == 'body'):
                     # Write to dictionary as int
-                    splitLine = line.split(' ')
-                    # Remove the "\n"
-                    splitLine[-1] = splitLine[-1][:-1]
                     if (len(splitLine) == 1):
                         AtomDictionary[recordType].append(int(splitLine[0]))
                         continue
@@ -503,16 +498,10 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
                     AtomDictionary[recordType].append(splitLine)
                 elif (recordType == 'type'):
                     # Write to dictionary as str
-                    splitLine = line.split(' ')
-                    # Remove the "\n"
-                    splitLine[-1] = splitLine[-1][:-1]
                     AtomDictionary[recordType].append(str(splitLine[0]))
                 else:
                     #  (recordType == 'bond') or (recordType == 'angle') or (recordType == 'dihedral') or (recordType == 'improper')
                     # Write to dictionary as combination
-                    splitLine = line.split(' ')
-                    # Remove the "\n"
-                    splitLine[-1] = splitLine[-1][:-1]
                     splitLine[0] = str(splitLine[0])
                     for i in range(1, len(splitLine)):
                         splitLine[i] = int(splitLine[i])
