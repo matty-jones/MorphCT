@@ -153,10 +153,12 @@ def execute(parameterDict):
     for V in parameterDict['voltageSweep']:
         voltages.append(V)
     procIDs = parameterDict['procIDs']
-    jobsList = [voltages[i:i + (int(np.ceil(len(voltages) / len(procIDs)))) + 1] for i in range(0, len(voltages), int(np.ceil(len(voltages)/float(len(procIDs)))))]
+    jobsList = [voltages[i:i + (int(np.ceil(len(voltages) / len(procIDs))))] for i in range(0, len(voltages), int(np.ceil(len(voltages)/float(len(procIDs)))))]
     runningJobs = []
     outputDir = parameterDict['outputDeviceDir'] + '/' + parameterDict['deviceMorphology'] + '/KMC'
     print("Writing job pickles for each CPU...")
+    print(jobsList)
+    exit()
     for procID, jobs in enumerate(jobsList):
         pickleName = outputDir + '/KMCData_%02d.pickle' % (procID)
         with open(pickleName, 'wb+') as pickleFile:
