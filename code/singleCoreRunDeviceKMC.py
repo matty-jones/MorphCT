@@ -910,6 +910,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
         voltageVal) /
         # Z-extent:
         (deviceArray.shape[2] * parameterDict['morphologyCellSize']))
+    helperFunctions.writeToFile(logFile, ["Current E-Field value = " + str(currentFieldValue) + "Vm^{-1}"])
     outputFiguresDir = parameterDict['outputDeviceDir'] + '/' + parameterDict['deviceMorphology'] + '/figures/' + str(voltageVal) +'/'
 
     # DEBUG
@@ -1281,7 +1282,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     carrier2Posn = np.array(carrier2.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier2.currentChromophore.posn) * 1E-10)
                     separation = helperFunctions.calculateSeparation(carrier2Posn, carrier1Posn)
                     recombiningCarrierIDs.remove(carrier2.ID)
-                except KeyError:
+                except ValueError:
                     # The second carrier is missing from the simulation (already extracted), so set the separation to be large
                     separation = 1E99
                 recombiningCarrierIDs.remove(carrier1.ID)
