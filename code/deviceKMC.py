@@ -157,8 +157,6 @@ def execute(parameterDict):
     runningJobs = []
     outputDir = parameterDict['outputDeviceDir'] + '/' + parameterDict['deviceMorphology'] + '/KMC'
     print("Writing job pickles for each CPU...")
-    print(jobsList)
-    exit()
     for procID, jobs in enumerate(jobsList):
         pickleName = outputDir + '/KMCData_%02d.pickle' % (procID)
         with open(pickleName, 'wb+') as pickleFile:
