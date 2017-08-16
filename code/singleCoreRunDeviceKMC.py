@@ -1011,26 +1011,27 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 photoinjectionTime = determineEventTau(photoinjectionRate, 'photoinjection')
                 eventQueue = pushToQueue(eventQueue, (photoinjectionTime, 'photo', None))
                 numberOfPhotoinjections += 1
-                # Dark Injection:
-                # We now split up dark injection to be separate between the anode and the cathode, to ensure detail balance.
-                # We will use the cathodeInjectRate (the mean of the distribution) and the anodeInjectRate to determine when to perform the injection
-                # Then, we will pop the first event of the cathodeInjectWaitTimes and anodeInjectWaitTimes as required, executing it IMMEDIATELY and decrementing the time in the rest of the queue.
-                # Then, we can re-queue the inject site.
-                # This means that the wait times in cathodeInjectWaitTimes and anodeInjectWaitTimes are actually only used to determine the order of the chromophores onto which we inject from each electrode, and do not increment the globalTime.
-                # The global time is incremented according to cathodeInjectionTime and anodeInjectionTime instead.
-                # First, deal with the cathode injection
-                cathodeInjectionTime = determineEventTau(cathodeInjectRate, 'cathode-injection')
-                # Sort out the cathodeInjectQueue by getting the next inject site, and requeueing it with a new time to update the queue.
-                nextCathodeEvent, cathodeInjectQueue = getNextDarkEvent(cathodeInjectQueue, 'Cathode')
-                # Now push the cathode event to the main queue
-                eventQueue = pushToQueue(eventQueue, (cathodeInjectionTime, 'cathode-injection', nextCathodeEvent[2]))
+                if parameterDict['disableDarkInjection'] is False:
+                    # Dark Injection:
+                    # We now split up dark injection to be separate between the anode and the cathode, to ensure detail balance.
+                    # We will use the cathodeInjectRate (the mean of the distribution) and the anodeInjectRate to determine when to perform the injection
+                    # Then, we will pop the first event of the cathodeInjectWaitTimes and anodeInjectWaitTimes as required, executing it IMMEDIATELY and decrementing the time in the rest of the queue.
+                    # Then, we can re-queue the inject site.
+                    # This means that the wait times in cathodeInjectWaitTimes and anodeInjectWaitTimes are actually only used to determine the order of the chromophores onto which we inject from each electrode, and do not increment the globalTime.
+                    # The global time is incremented according to cathodeInjectionTime and anodeInjectionTime instead.
+                    # First, deal with the cathode injection
+                    cathodeInjectionTime = determineEventTau(cathodeInjectRate, 'cathode-injection')
+                    # Sort out the cathodeInjectQueue by getting the next inject site, and requeueing it with a new time to update the queue.
+                    nextCathodeEvent, cathodeInjectQueue = getNextDarkEvent(cathodeInjectQueue, 'Cathode')
+                    # Now push the cathode event to the main queue
+                    eventQueue = pushToQueue(eventQueue, (cathodeInjectionTime, 'cathode-injection', nextCathodeEvent[2]))
 
-                # Now, deal with the anode injection
-                anodeInjectionTime = determineEventTau(anodeInjectRate, 'anode-injection')
-                # Sort out the anodeInjectQueue by popping the next inject site, decrementing the queue and re-queueing the inject site
-                nextAnodeEvent, anodeInjectQueue = getNextDarkEvent(anodeInjectQueue, 'Anode')
-                # Now push the anode event to the main queue
-                eventQueue = pushToQueue(eventQueue, (anodeInjectionTime, 'anode-injection', nextAnodeEvent[2]))
+                    # Now, deal with the anode injection
+                    anodeInjectionTime = determineEventTau(anodeInjectRate, 'anode-injection')
+                    # Sort out the anodeInjectQueue by popping the next inject site, decrementing the queue and re-queueing the inject site
+                    nextAnodeEvent, anodeInjectQueue = getNextDarkEvent(anodeInjectQueue, 'Anode')
+                    # Now push the anode event to the main queue
+                    eventQueue = pushToQueue(eventQueue, (anodeInjectionTime, 'anode-injection', nextAnodeEvent[2]))
 
             if int(t1 - t0)%10 == 0:
                 outputPrintStatement = True
