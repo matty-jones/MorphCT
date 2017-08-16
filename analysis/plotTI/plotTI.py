@@ -466,6 +466,7 @@ if __name__ == "__main__":
                 plotHist(tempDir, donorInterChainTI, 'DonorInterChainTI')
                 plotHist(tempDir, donorInterChainTITrim, 'DonorInterChainTITrim')
             print("Donor intra-chain hops =", len(donorIntraChainHop), "Donor inter-chain hops =", len(donorInterChainHop))
+            print("Donor intra-chain hop proportion =", len(donorIntraChainHop) / (len(donorIntraChainHop) + len(donorInterChainHop)))
             plotHist(tempDir, donorIntraChainHop, 'DonorHopMix', xvals=donorInterChainHop)
         if len(LUMOLevels) > 0:
             if len(acceptorIntraChainHop) > 0:
@@ -477,6 +478,7 @@ if __name__ == "__main__":
                 plotHist(tempDir, acceptorInterChainTI, 'AcceptorInterChainTI')
                 plotHist(tempDir, acceptorInterChainTITrim, 'AcceptorInterChainTITrim')
             print("Acceptor intra-chain hops =", len(acceptorIntraChainHop), "Acceptor inter-chain hops =", len(acceptorInterChainHop))
+            print("Acceptor intra-chain hop proportion =", len(acceptorIntraChainHop) / (len(acceptorIntraChainHop) + len(acceptorInterChainHop)))
             plotHist(tempDir, acceptorIntraChainHop, 'AcceptorHopMix', xvals=acceptorInterChainHop)
 
 
