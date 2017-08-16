@@ -49,8 +49,8 @@ def parseData(dataFileList, deviceArea):
 
 def parseDataIncomplete(data):
     dataDict = {'J': 0, 'V': 0, 'Photo': 0, 'Cathode': 0, 'Anode': 0, 'Diss': 0, 'Rec': 0, 'Ext': 0, 'Iter': 0, 'SimT': 0, 'WallT': 0}
-    numberOfExtractions = []
-    timeOfExtractions = []
+    numberOfExtractions = [0]
+    timeOfExtractions = [0.0]
     dataDict['V'] = float(eval(data[1][:-1])[0])
     simT = 0
     wallT = 0
@@ -66,7 +66,7 @@ def parseDataIncomplete(data):
                 splitLine = line.split(' ')
                 extractionNumber = int(splitLine[12])
                 extractionTime = float(splitLine[-1][:-2])
-                if extractionNumber is not 0:
+                if extractionNumber != numberOfExtractions[-1]:
                     numberOfExtractions.append(extractionNumber)
                     timeOfExtractions.append(extractionTime)
             elif ('Recombination Succeeded' in line):
@@ -92,7 +92,6 @@ def parseDataIncomplete(data):
         plt.xlabel('Time (s)')
         plt.ylabel('Number of Extractions (Arb. U)')
         plt.xlim([0, 2E-4])
-        plt.show()
     else:
         return None
     return dataDict
@@ -117,7 +116,7 @@ def calculateJ(data, deviceArea):
     #plt.show()
     #exit()
     gradient, intercept, rVal, pVal, stdErr = scipy.stats.linregress(timeOfExtractions, numberOfExtractions)
-    return (elementaryCharge * gradient) / deviceArea
+    return -(elementaryCharge * gradient) / deviceArea
 
 
 def quickCheck(data):
@@ -141,6 +140,17 @@ def plotData(xLabel, xVals, yLabel, yVals, fileName, mode='scatter'):
     print("Plot of", yLabel, "against", xLabel, "saved to", fileName)
 
 
+def printJVTable(dataDict):
+    VData, JData = zip(*sorted(zip(dataDict['V'], dataDict['J'])))
+    print("|" + "-" * 63 + "|")
+    print("|\t\tV\t\t|\t\tJ\t\t|")
+    print("|\t\t(V)\t\t|\t\t(mA cm^{2})\t|")
+    print("|" + "-" * 63 + "|")
+    for index, V in enumerate(VData):
+        print("|\t\t%0.2f\t\t|\t\t%0.4f\t\t|" % (V, JData[index]))
+        print("|" + "-" * 63 + "|")
+
+
 if __name__ == "__main__":
     deviceArea = (3 * 7.14E-9)**2
     print("Using a device area of", str(deviceArea) + ". Make sure this is correct for the system that is being studied!")
@@ -148,3 +158,4 @@ if __name__ == "__main__":
     dataFiles = loadDataFiles(deviceDirectory)
     dataDict = parseData(dataFiles, deviceArea)
     plotData('Voltage (V)', dataDict['V'], 'J (mA / cm^{2})', dataDict['J'], deviceDirectory + '/Figures/JV.pdf', mode='line')
+    printJVTable(dataDict)
