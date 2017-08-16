@@ -1,9 +1,0 @@
-name: hoomd2
-channels:
-- glotzer
-- defaults
-dependencies:
-- python=3.6
-- hoomd
-- scipy=0.16.0
-- matplotlib=1.4.3
