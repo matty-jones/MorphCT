@@ -1288,7 +1288,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     carrier2Posn = np.array(carrier2.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier2.currentChromophore.posn) * 1E-10)
                     separation = helperFunctions.calculateSeparation(carrier2Posn, carrier1Posn)
                     recombiningCarrierIDs.remove(carrier2.ID)
-                except ValueError:
+                except (ValueError, KeyError) as e:
                     # The second carrier is missing from the simulation (already extracted), so set the separation to be large
                     separation = 1E99
                 recombiningCarrierIDs.remove(carrier1.ID)
