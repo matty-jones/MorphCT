@@ -308,8 +308,8 @@ class carrier:
             if hopTimes[0][1] > 1E98:
                 helperFunctions.writeToFile(logFile, [repr(hopTimes[0]), repr(globalCarrierDict)])
                 for ID, carrier in globalCarrierDict.items():
-                    helperFunctions.writeToFile(logFile, [str(ID), repr(carrier.currentDevicePosn),
-                                                          str(carrier.currentChromophore.ID)])
+                    helperFunctions.writeToFile(logFile, ["ID = " + str(ID) + ", Current Posn = " + repr(carrier.currentDevicePosn) +
+                                                          ", currentChromophoreID = " + str(carrier.currentChromophore.ID)])
             return hopTimes[0][:4]
         else:
             # We are trapped here, so just return in order to raise the calculateBehaviour exception
@@ -866,13 +866,18 @@ def plot3DTrajectory(injectSource, carriersToPlot, parameterDict, deviceArray, o
             color = 'b'
         elif carrier.carrierType== HOLE:
             color = 'r'
-        for hopIndex, hop in enumerate(carrier.history[:-1]):
-            # Note that conversion factors are needed as hop[0] * morphCellSize is in m, and hop[1] is in ang.
-            # Additionally, we need to add half of the morphCellSize to whatever hop[0] is as the origin is in the centre of the box 
-            currentPosn = (1E10 * ((np.array(hop[0]) + np.array([0.5, 0.5, 0.5])) * parameterDict['morphologyCellSize'])) + np.array(hop[1])
-            nextHop = carrier.history[hopIndex + 1]
-            nextPosn = (1E10 * ((np.array(nextHop[0]) + np.array([0.5, 0.5, 0.5])) * parameterDict['morphologyCellSize'])) + np.array(nextHop[1])
-            ax.plot([currentPosn[0], nextPosn[0]], [currentPosn[1], nextPosn[1]], [currentPosn[2], nextPosn[2]], c = color, linewidth = 0.5)
+        try:
+            for hopIndex, hop in enumerate(carrier.history[:-1]):
+                # Note that conversion factors are needed as hop[0] * morphCellSize is in m, and hop[1] is in ang.
+                # Additionally, we need to add half of the morphCellSize to whatever hop[0] is as the origin is in the centre of the box 
+                currentPosn = (1E10 * ((np.array(hop[0]) + np.array([0.5, 0.5, 0.5])) * parameterDict['morphologyCellSize'])) + np.array(hop[1])
+                nextHop = carrier.history[hopIndex + 1]
+                nextPosn = (1E10 * ((np.array(nextHop[0]) + np.array([0.5, 0.5, 0.5])) * parameterDict['morphologyCellSize'])) + np.array(nextHop[1])
+                ax.plot([currentPosn[0], nextPosn[0]], [currentPosn[1], nextPosn[1]], [currentPosn[2], nextPosn[2]], c = color, linewidth = 0.5)
+        except AttributeError:
+            helperFunctions.writeToFile(logFile, ["SOMETHING HAS GONE WRONG WHILE PLOTTING. THIS CARRIER HAS NO HISTORY:",
+                                                 repr(carrier.__dict__), "Continuing..."])
+            continue
     fileName = outputDir + carrierString + '_traj.pdf'
     plt.savefig(fileName)
     print("Figure saved as " + fileName)
@@ -1075,7 +1080,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                                                       str(KMCIterations) + " iterations (globalTime = " +
                                                       str(globalTime) + ")"])
                 injectedExciton = exciton(excitonIndex, globalTime, randomDevicePosition, parameterDict)
-                if (injectedExciton.canDissociate is True) or (injectedExciton.hopTime is None):
+                if (injectedExciton.canDissociate is True) or (injectedExciton.hopTime is None) or (injectedExciton.destinationChromophore is None):
                     # Injected onto either a dissociation site or a trap site
                     if injectedExciton.canDissociate is True:
                         helperFunctions.writeToFile(logFile, ["EVENT: Exciton Dissociating immediately"])
