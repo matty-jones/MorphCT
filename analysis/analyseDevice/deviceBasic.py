@@ -157,5 +157,5 @@ if __name__ == "__main__":
     deviceDirectory = sys.argv[1]
     dataFiles = loadDataFiles(deviceDirectory)
     dataDict = parseData(dataFiles, deviceArea)
-    plotData('Voltage (V)', dataDict['V'], 'J (mA / cm^{2})', dataDict['J'], deviceDirectory + '/Figures/JV.pdf', mode='line')
+    plotData('Voltage (V)', dataDict['V'], r'J (mA / cm$^{2}$)', dataDict['J'], deviceDirectory + '/Figures/JV.pdf', mode='line')
     printJVTable(dataDict)
