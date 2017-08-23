@@ -1,18 +1,17 @@
 import os
 import sys
+import pickle
 import matplotlib.pyplot as plt
 import numpy as np
-import cPickle as pickle
 import scipy.optimize
 import scipy.stats
 from scipy.sparse import lil_matrix
-from scipy.sparse import find as findNonZero
 sys.path.append('../../code/')
 import helperFunctions
 try:
     import mpl_toolkits.mplot3d as p3
 except ImportError:
-    print "Could not import 3D plotting engine, calling the plotMolecule3D function will result in an error!"
+    print("Could not import 3D plotting engine, calling the plotMolecule3D function will result in an error!")
 
 elementaryCharge = 1.60217657E-19  # C
 kB = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}
@@ -20,11 +19,15 @@ temperature = 290  # K
 
 
 def getData(carrierData):
-    carrierHistory = carrierData['carrierHistoryMatrix']
+    try:
+        carrierHistory = carrierData['carrierHistoryMatrix']
+    except:
+        carrierHistory = None
     totalDataPoints = 0
     totalDataPointsAveragedOver = 0
     squaredDisps = {}
     actualTimes = {}
+    carrierTypes = {}
     for carrierIndex, displacement in enumerate(carrierData['displacement']):
         if (carrierData['currentTime'][carrierIndex] > carrierData['lifetime'][carrierIndex] * 2) or (carrierData['currentTime'][carrierIndex] < carrierData['lifetime'][carrierIndex] / 2.0) or (carrierData['noHops'][carrierIndex] == 1):
             totalDataPoints += 1
@@ -36,13 +39,14 @@ def getData(carrierData):
         else:
             squaredDisps[carrierKey].append((carrierData['displacement'][carrierIndex] * 1E-10) ** 2)  # Carrier displacement is in angstroems, convert to metres
             actualTimes[carrierKey].append(carrierData['currentTime'][carrierIndex])
+        # Also keep track of whether each carrier is a hole or an electron
         totalDataPointsAveragedOver += 1
         totalDataPoints += 1
     times = []
     MSDs = []
     timeStandardErrors = []
     MSDStandardErrors = []
-    for time, disps in squaredDisps.iteritems():
+    for time, disps in squaredDisps.items():
         times.append(float(time))
         timeStandardErrors.append(np.std(actualTimes[time]) / len(actualTimes[time]))
         MSDs.append(np.average(disps))
@@ -75,30 +79,39 @@ def plotHeatMap(carrierHistory, directory):
     plt.clf()
 
 
-def plotConnections(chromophoreList, simExtent, carrierHistory, directory):
+def plotConnections(chromophoreList, simExtent, carrierHistory, directory, carrierType):
     # A complicated function that shows connections between carriers in 3D that carriers prefer to hop between.
     # Connections that are frequently used are highlighted in black, whereas rarely used connections are more white.
     fig = plt.gcf()
     ax = p3.Axes3D(fig)
     # Find a good normalisation factor
     carrierHistory = carrierHistory.toarray()
-    normalizeTo = np.log(np.max(carrierHistory))
+    normalizeTo = np.max(carrierHistory)
     for chromo1, row in enumerate(carrierHistory):
         for chromo2, value in enumerate(row):
             if value > 0:
                 coords1 = chromophoreList[chromo1].posn
                 coords2 = chromophoreList[chromo2].posn
-                #ax.scatter(coords1[0], coords1[1], coords1[2], c = 'k', s = '5')
-                #ax.scatter(coords2[0], coords2[1], coords2[2], c = 'k', s = '5')
-                line = [coords2[0] - coords1[0], coords2[1] - coords1[1], coords2[2] - coords2[1]]
-                if (np.abs(coords2[0] - coords1[0]) < simExtent[0] / 2.0) and (np.abs(coords2[1] - coords1[1]) < simExtent[1] / 2.0) and (np.abs(coords2[2] - coords1[2]) < simExtent[2] / 2.0):
-                    colourIntensity = np.log(value) / normalizeTo
-                    ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = plt.cm.jet(colourIntensity), linewidth = 0.5)
-    fileName = '3d.pdf'
+                # Only plot connections between chromophores in the same image
+                plotConnection = True
+                for neighbour in chromophoreList[chromo1].neighbours:
+                    if neighbour[0] != chromophoreList[chromo2].ID:
+                        continue
+                    if neighbour[1] != [0, 0, 0]:
+                        plotConnection = False
+                        break
+                if plotConnection is True:
+                    #ax.scatter(coords1[0], coords1[1], coords1[2], c = 'k', s = '5')
+                    #ax.scatter(coords2[0], coords2[1], coords2[2], c = 'k', s = '5')
+                    line = [coords2[0] - coords1[0], coords2[1] - coords1[1], coords2[2] - coords2[1]]
+                    if (np.abs(coords2[0] - coords1[0]) < simExtent[0] / 2.0) and (np.abs(coords2[1] - coords1[1]) < simExtent[1] / 2.0) and (np.abs(coords2[2] - coords1[2]) < simExtent[2] / 2.0):
+                        #colourIntensity = value / normalizeTo
+                        colourIntensity = np.log10(value) / np.log10(normalizeTo)
+                        ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = plt.cm.Blues(colourIntensity), linewidth = 0.5)
+    fileName = '3d' + carrierType + '.pdf'
     plt.savefig(directory + '/' + fileName)
-    print "Figure saved as", directory + "/" + fileName
+    print("Figure saved as", directory + "/" + fileName)
     plt.clf()
-    #plt.show()
 
 
 def calcMobility(linFitX, linFitY, avTimeError, avMSDError):
@@ -117,7 +130,7 @@ def calcMobility(linFitX, linFitY, avTimeError, avMSDError):
     return mobility, mobError
 
 
-def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory):
+def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carrierType):
     ### DEBUG TEST ###
     #print "DEBUG TEST CODE ACTIVE, DELETE TO GET PROPER RESULTS!"
     #times = times[-3:]
@@ -128,8 +141,8 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory):
     fit = np.polyfit(times, MSDs, 1)
     fitX = np.linspace(np.min(times), np.max(times), 100)
     gradient, intercept, rVal, pVal, stdErr = scipy.stats.linregress(times, MSDs)
-    print "StandardError", stdErr
-    print "Fitting rVal =", rVal
+    print("StandardError", stdErr)
+    print("Fitting rVal =", rVal)
     fitY = (fitX * gradient) + intercept
     mobility, mobError = calcMobility(fitX, fitY, np.average(timeStandardErrors), np.average(MSDStandardErrors))
     plt.plot(times, MSDs)
@@ -138,20 +151,20 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory):
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
     #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
-    fileName = 'LinMSD.pdf'
+    fileName = 'LinMSD' + carrierType + '.pdf'
     plt.savefig(directory + '/' + fileName)
     plt.clf()
-    print "Figure saved as", directory + "/" + fileName
+    print("Figure saved as", directory + "/" + fileName)
     plt.semilogx(times, MSDs)
     plt.errorbar(times, MSDs, xerr = timeStandardErrors, yerr = MSDStandardErrors)
     plt.semilogx(fitX, fitY, 'r')
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
     #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
-    fileName = 'SemiLogMSD.pdf'
+    fileName = 'SemiLogMSD' + carrierType + '.pdf'
     plt.savefig(directory + '/' + fileName)
     plt.clf()
-    print "Figure saved as", directory + "/" + fileName
+    print("Figure saved as", directory + "/" + fileName)
     plt.plot(times, MSDs)
     plt.errorbar(times, MSDs, xerr = timeStandardErrors, yerr = MSDStandardErrors)
     plt.plot(fitX, fitY, 'r')
@@ -160,10 +173,10 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory):
     plt.xscale('log')
     plt.yscale('log')
     #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
-    fileName = 'LogMSD.pdf'
+    fileName = 'LogMSD' + carrierType + '.pdf'
     plt.savefig(directory + '/' + fileName)
     plt.clf()
-    print "Figure saved as", directory + "/" + fileName
+    print("Figure saved as", directory + "/" + fileName)
     return mobility, mobError
 
 
@@ -198,7 +211,7 @@ def calculateAnisotropy(xvals, yvals, zvals):
     return anisotropy
 
 
-def plotAnisotropy(carrierData, directory, simDims):
+def plotAnisotropy(carrierData, directory, simDims, carrierType):
     fig = plt.gcf()
     ax = p3.Axes3D(fig)
     xvals = []
@@ -217,7 +230,14 @@ def plotAnisotropy(carrierData, directory, simDims):
         zvals.append(position[2]/10.)
         colours.append('b')
     anisotropy = calculateAnisotropy(xvals, yvals, zvals)
-    print "Anisotropy calculated as", anisotropy
+    print("----------====================----------")
+    print(carrierType + " charge transport anisotropy calculated as", anisotropy)
+    print("----------====================----------")
+    # Reduce number of plot markers
+    if len(xvals) > 1000:
+        xvals = xvals[0:len(xvals):len(xvals)//1000]
+        yvals = yvals[0:len(yvals):len(yvals)//1000]
+        zvals = zvals[0:len(zvals):len(zvals)//1000]
     plt.scatter(xvals, yvals, zs = zvals, c = colours, s = 20)
     plt.scatter(0, 0, zs = 0, c = 'r', s = 50)
     ax.set_xlabel('X (nm)', fontsize = 20, labelpad = 40)
@@ -229,11 +249,15 @@ def plotAnisotropy(carrierData, directory, simDims):
     ax.set_zlim([-maximum, maximum])
     for tick in ax.xaxis.get_major_ticks() + ax.yaxis.get_major_ticks() + ax.zaxis.get_major_ticks():
         tick.label.set_fontsize(16)
-    plt.title(directory[directory.index('T'):directory.index('T')+directory[directory.index('T'):].index('-')], fontsize = 24)
+    try:
+        plt.title(carrierType + ' transport for:' + directory[directory.index('T'):directory.index('T')+directory[directory.index('T'):].index('-')], fontsize = 24)
+    except:
+        plt.title(carrierType + ' transport for:' + directory, fontsize = 24)
     ax.dist = 11
-    plt.savefig(directory + '/anisotropy.pdf')
+    plt.savefig(directory + '/anisotropy' + carrierType + '.pdf')
+    #plt.show()
     plt.clf()
-    print "Figure saved as", directory + "/anisotropy.pdf"
+    print("Figure saved as", directory + "/anisotropy" + carrierType + ".pdf")
     return anisotropy
 
 
@@ -243,7 +267,7 @@ def getTempVal(string):
     return tempVal
 
 
-def plotTemperatureProgression(tempData, mobilityData, anisotropyData):
+def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierType):
     plt.gcf()
     xvals = tempData
     yvals = list(np.array(mobilityData)[:,0])
@@ -254,58 +278,120 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData):
     plt.xlim([1.4, 2.6])
     plt.semilogy(xvals, yvals, c = 'b')
     plt.errorbar(xvals, yvals, xerr = 0, yerr = yerrs)
-    fileName = './mobility.pdf'
+    fileName = './mobility' + carrierType + '.pdf'
     plt.savefig(fileName)
     plt.clf()
-    print "Figure saved as " + fileName
+    print("Figure saved as " + fileName)
 
     plt.plot(tempData, anisotropyData, c = 'r')
-    fileName = './anisotropy.pdf'
+    fileName = './anisotropy' + carrierType + '.pdf'
     plt.xlabel('T, Arb. U')
     plt.ylabel(r'$\kappa$'+', Arb. U')
     plt.savefig(fileName)
     plt.clf()
-    print "Figure saved as " + fileName
+    print("Figure saved as " + fileName)
 
 
 if __name__ == "__main__":
     sys.path.append('../../code')
     directoryList = []
-    for directory in os.listdir(os.getcwd()):
-        if '-T' in directory:
-            directoryList.append(directory)
+    if len(sys.argv) == 1:
+        for directory in os.listdir(os.getcwd()):
+            if ('py' not in directory) and ('pdf' not in directory) and ('store' not in directory) and ('Store' not in directory):
+                directoryList.append(directory)
+    else:
+        directoryList = [sys.argv[1]]
     tempData = []
-    mobilityData = []
-    anisotropyData = []
+    holeMobilityData = []
+    holeAnisotropyData = []
+    electronMobilityData = []
+    electronAnisotropyData = []
+    combinedPlots = True
     for directory in directoryList:
-        tempData.append(getTempVal(directory))
-        with open(directory + '/KMCResults.pickle', 'r') as pickleFile:
-            carrierData = pickle.load(pickleFile)
-        print "Carrier Data obtained"
-        print "Obtaining mean squared displacements..."
-        carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getData(carrierData)
-        print "MSDs obtained"
-        print "Loading chromophoreList..."
-        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, emptyCarrierList = helperFunctions.loadPickle('./' + directory + '/' + directory + '.pickle')
-        print "ChromophoreList obtained"
-        # Create the first figure that will be replotted each time
-        plt.figure()
-        anisotropy = plotAnisotropy(carrierData, directory, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']])
-        #plotHeatMap(carrierHistory, directory)
-        # READ IN THE MAIN CHROMOPHORELIST PICKLE FILE TO DO THIS
-        print "Loading chromophoreList..."
-        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, emptyCarrierList = helperFunctions.loadPickle('./' + directory + '/' + directory + '.pickle')
-        print "ChromophoreList obtained"
-        if carrierHistory is not None:
-            print "Determining carrier hopping connections..."
-            plotConnections(chromophoreList, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']], carrierHistory, directory)
-        times, MSDs = helperFunctions.parallelSort(times, MSDs)
-        print "Calculating MSD..."
-        mobility, mobError = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory)
-        print "----------====================----------"
-        print "Mobility for", directory, "= %.2E +- %.2E cm^{2} V^{-1} s^{-1}" % (mobility, mobError)
-        print "----------====================----------"
-        anisotropyData.append(anisotropy)
-        mobilityData.append([mobility, mobError])
-    print "Plotting temperature progression..."
-    plotTemperatureProgression(tempData, mobilityData, anisotropyData)
+        print("\n")
+        try:
+            tempData.append(getTempVal(directory))
+        except:
+            print("No temp data found in morphology name, skipping combined plots")
+            combinedPlots = False
+        try:
+            with open(directory + '/KMCResults.pickle', 'rb') as pickleFile:
+                carrierData = pickle.load(pickleFile)
+        except UnicodeDecodeError:
+            with open(directory + '/KMCResults.pickle', 'rb') as pickleFile:
+                carrierData = pickle.load(pickleFile, encoding='latin1')
+        except:
+            print(sys.exc_info()[0])
+            continue
+        print("Carrier Data obtained")
+        # Now need to split up the carrierData into both electrons and holes
+        # If only one carrier type has been given, call the carriers holes and skip the electron calculations
+        listVariables = ['currentTime', 'ID', 'noHops', 'displacement', 'lifetime', 'finalPosition', 'image', 'initialPosition']
+        try:
+            carrierDataHoles = {'carrierHistoryMatrix': carrierData['holeHistoryMatrix'], 'seed': carrierData['seed']}
+            carrierDataElectrons = {'carrierHistoryMatrix': carrierData['electronHistoryMatrix'], 'seed': carrierData['seed']}
+            for listVar in listVariables:
+                carrierDataHoles[listVar] = []
+                carrierDataElectrons[listVar] = []
+                for carrierIndex, chargeType in enumerate(carrierData['carrierType']):
+                    if chargeType == 'Hole':
+                        carrierDataHoles[listVar].append(carrierData[listVar][carrierIndex])
+                    elif chargeType == 'Electron':
+                        carrierDataElectrons[listVar].append(carrierData[listVar][carrierIndex])
+        except:
+            print("Multiple charge carriers not found, assuming donor material and holes only")
+            try:
+                carrierDataHoles = {'carrierHistoryMatrix': carrierData['carrierHistoryMatrix'], 'seed': carrierData['seed']}
+            except KeyError:
+                carrierDataHoles = {'carrierHistoryMatrix': carrierData['carrierHistoryMatrix'], 'seed': 0}
+            carrierDataElectrons = None
+            for listVar in listVariables:
+                carrierDataHoles[listVar] = []
+                for carrierIndex, carrierID in enumerate(carrierData['ID']):
+                    carrierDataHoles[listVar].append(carrierData[listVar][carrierIndex])
+
+        print("Loading chromophoreList...")
+        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle('./' + directory + '/' + directory + '.pickle')
+        print("ChromophoreList obtained")
+#### NOW DO ALL OF THE BELOW BUT FOR ELECTRONS AND HOLES SEPARATELY
+        completeCarrierTypes = []
+        completeCarrierData = []
+        if (carrierDataHoles is not None) and (len(carrierDataHoles['ID']) > 0):
+            completeCarrierTypes.append('Hole')
+            completeCarrierData.append(carrierDataHoles)
+        if (carrierDataElectrons is not None) and (len(carrierDataElectrons['ID']) > 0):
+            completeCarrierTypes.append('Electron')
+            completeCarrierData.append(carrierDataElectrons)
+        for carrierTypeIndex, carrierData in enumerate(completeCarrierData):
+            print("Considering the transport of", completeCarrierTypes[carrierTypeIndex]+"...")
+            print("Obtaining mean squared displacements...")
+            carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getData(carrierData)
+            print("MSDs obtained")
+            # Create the first figure that will be replotted each time
+            plt.figure()
+            anisotropy = plotAnisotropy(carrierData, directory, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']], completeCarrierTypes[carrierTypeIndex])
+            #plotHeatMap(carrierHistory, directory)
+            if carrierHistory is not None:
+                print("Determining carrier hopping connections...")
+                plotConnections(chromophoreList, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']], carrierHistory, directory, completeCarrierTypes[carrierTypeIndex])
+            times, MSDs = helperFunctions.parallelSort(times, MSDs)
+            print("Calculating MSD...")
+            mobility, mobError = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, completeCarrierTypes[carrierTypeIndex])
+            print("----------====================----------")
+            print(completeCarrierTypes[carrierTypeIndex], "mobility for", directory, "= %.2E +- %.2E cm^{2} V^{-1} s^{-1}" % (mobility, mobError))
+            print("----------====================----------")
+            if completeCarrierTypes[carrierTypeIndex] == 'Hole':
+                holeAnisotropyData.append(anisotropy)
+                holeMobilityData.append([mobility, mobError])
+            elif completeCarrierTypes[carrierTypeIndex] == 'Electron':
+                electronAnisotropyData.append(anisotropy)
+                electronMobilityData.append([mobility, mobError])
+
+    print("Plotting temperature progression...")
+    if combinedPlots is True:
+        if len(holeAnisotropyData) > 0:
+            plotTemperatureProgression(tempData, holeMobilityData, holeAnisotropyData, 'Hole')
+        if len(electronAnisotropyData) > 0:
+            plotTemperatureProgression(tempData, electronMobilityData, electronAnisotropyData, 'Electron')
+    else:
+        print("Temperature Progression not possible (probably due to no temperature specified). Cancelling...")

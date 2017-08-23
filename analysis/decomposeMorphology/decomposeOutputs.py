@@ -110,12 +110,12 @@ def trimBonds(AAMorphologyDict, AAIDLookup):
     AAMorphologyDict['bond'] = newMorphologyBonds
     print len(AAMorphologyDict['bond'])
     return AAMorphologyDict
-    
+
 
 if __name__ == "__main__":
     generateNewMorphologyXML = False
     generateNewPickleFile = True
-    
+
     chromoDict = loadChromoPickle('./chromophores.pickle')
     morphologyDict = helperFunctions.loadMorphologyXML('./relaxed_p1-L15-f0.0-P0.1-T2.25-e0.5.xml')#, sigma=3.0)
     chromosToKeep = getChromosToKeep('./brokenInps')
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     for newAAID, oldAAID in enumerate(atomIDsToKeep):
         lookup[oldAAID] = newAAID
 
-        
+
     if generateNewMorphologyXML == True:
         newMorphDict = copy.deepcopy(morphologyDict)
         newMorphDict['natoms'] = len(atomIDsToKeep)
@@ -157,7 +157,7 @@ if __name__ == "__main__":
                         element[index] = lookup[value]
                     newData.append(element)
             newMorphDict[key] = newData
-        helperFunctions.writeMorphologyXML(newMorphDict, './trimmedFiles/testMorph.xml')
+        helperFunctions.writeMorphologyXML(newMorphDict, './outputFiles/testMorph.xml')
 
     if generateNewPickleFile == True:
         AAfileName, CGMoleculeDict, UnrelaxedAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = loadMorphPickle('./p1-L15-f0.0-P0.1-T2.25-e0.5.pickle')
@@ -166,7 +166,7 @@ if __name__ == "__main__":
         CGMoleculeDict = trimCGMoleculeDict(CGMoleculeDict, CGtoAAIDs)
         UnrelaxedAAMorphologyDict = trimBonds(UnrelaxedAAMorphologyDict, lookup)
         toPickle = (AAfileName, CGMoleculeDict, UnrelaxedAAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize)
-        with open('./trimmedFiles/testMorph.pickle', 'w+') as pickleFile:
+        with open('./outputFiles/testMorph.pickle', 'w+') as pickleFile:
             pickle.dump(toPickle, pickleFile)
 
 

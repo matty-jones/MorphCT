@@ -1,5 +1,10 @@
 ./temp/*
 temp/
+*.hoomdxml
+*ipynb*
+*par*.py
+*.cprof
+*.bak
 *.pyc
 *.swp
 *.swo
@@ -17,10 +22,12 @@ temp/
 *.xyz
 *.POSCAR
 *.xml
+OLD*
 *#*
 *~
 *.pickle
 relaxedP3HT.xml
-*.DS_Store
 outputFiles/*
+*store*
+*Store*
 storage/*

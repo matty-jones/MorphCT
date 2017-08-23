@@ -1,5 +1,7 @@
 import os
 import sys
+import shutil
+import glob
 import time as T
 import subprocess as sp
 
@@ -10,7 +12,7 @@ try:
     import runHoomd
     import extractMol
 except:
-    print "HOOMD-Blue not found on this machine! As a result, runHoomd and extractMol will fail."
+    print("HOOMD-Blue not found on this machine! As a result, runHoomd and extractMol will fail.")
 import obtainChromophores
 import executeZINDO
 import transferIntegrals
@@ -21,7 +23,7 @@ class simulation:
     def __init__(self, **kwargs):
         parameterDict = {}
         # Read in all of the keyword arguments from the par file
-        for key, value in kwargs.iteritems():
+        for key, value in kwargs.items():
             self.__dict__[key] = value
         # Obtain the slurm job ID (if there is one)
         self.slurmJobID = self.getSlurmID()
@@ -29,7 +31,7 @@ class simulation:
         self.inputMorphologyFile = self.inputDir+'/'+self.morphology
         self.outputDirectory = self.outputDir+'/'+self.morphology[:-4]
         # Add all the parameters to the parameterDict, which will be used to send everything between classes
-        for key, value in self.__dict__.iteritems():
+        for key, value in self.__dict__.items():
             if key in ['os', 'sys']:
                 continue
             parameterDict[key] = value
@@ -37,42 +39,47 @@ class simulation:
         self.makeDirTree()
         # Copy the current code and the parameter file for safekeeping
         self.copyCode()
+        if self.executeFinegraining is False:
         # Load any previous data to allow us to run individual phases
-        try:
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict, chromophoreList = helperFunctions.loadPickle(self.outputDirectory+'/code/'+self.morphology[:-4]+'.pickle')
-        except:
-            print "PICKLE NOT FOUND, EXECUTING FINEGRAINING TO OBTAIN REQUIRED PARAMETERS..."
-            self.executeFinegraining = False
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, []).analyseMorphology()
+            try:
+                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict, chromophoreList = helperFunctions.loadPickle(self.outputDirectory+'/code/'+self.morphology[:-4]+'.pickle')
+                # Load in any parameters from the previousParameterDict that have not been already defined in the new parameterDict (e.g. CGTypeMappings):
+                for key, previousValue in previousParameterDict.items():
+                    if key not in list(parameterDict.keys()):
+                        parameterDict[key] = previousValue
+            except:
+                print("PICKLE NOT FOUND, EXECUTING FINEGRAINING TO OBTAIN REQUIRED PARAMETERS...")
+                self.executeFinegraining = False
+                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, []).analyseMorphology()
         # Now begin running the code based on user's flags
-        if self.executeFinegraining is True:
-            print "---=== BACKMAPPING COARSE-GRAINED SITES... ===---"
-            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, chromophoreList).analyseMorphology()
-            print "---=== BACKMAPPING COMPLETED ===---"
+        else:
+            print("---=== BACKMAPPING COARSE-GRAINED SITES... ===---")
+            AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, []).analyseMorphology()
+            print("---=== BACKMAPPING COMPLETED ===---")
         if self.executeMolecularDynamics is True:
-            print "---=== EQUILIBRATING FINE-GRAINED MORPHOLOGY... ===---"
+            print("---=== EQUILIBRATING FINE-GRAINED MORPHOLOGY... ===---")
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = runHoomd.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
-            print "---=== EQUILIBRATION COMPLETED ===---"
+            print("---=== EQUILIBRATION COMPLETED ===---")
         if self.executeExtractMolecules is True:
-            print "---=== EXTRACTING SINGLE MOLECULES FROM SYSTEM... ===---"
+            print("---=== EXTRACTING SINGLE MOLECULES FROM SYSTEM... ===---")
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = extractMol.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
-            print "---=== EXTRACTION COMPLETED ===---"
+            print("---=== EXTRACTION COMPLETED ===---")
         if self.executeObtainChromophores is True:
-            print "---=== IDENTIFYING CHROMOPHORES OF CHARGE CARRIER DELOCALISATION... ===---"
+            print("---=== IDENTIFYING CHROMOPHORES OF CHARGE CARRIER DELOCALISATION... ===---")
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = obtainChromophores.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
-            print "---=== IDENTIFICATION COMPLETED ===---"
+            print("---=== IDENTIFICATION COMPLETED ===---")
         if self.executeZINDO is True:
-            print "---=== PERFORMING SEMI-EMPIRICAL ZINDO/S CALCULATIONS... ===---"
+            print("---=== PERFORMING SEMI-EMPIRICAL ZINDO/S CALCULATIONS... ===---")
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = executeZINDO.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
-            print "---=== CALCULATIONS COMPLETED ===---"
+            print("---=== CALCULATIONS COMPLETED ===---")
         if self.executeCalculateTransferIntegrals is True:
-            print "---=== DETERMINING ELECTRONIC TRANSFER INTEGRALS... ===---"
+            print("---=== DETERMINING ELECTRONIC TRANSFER INTEGRALS... ===---")
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = transferIntegrals.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
-            print "---=== DETERMINATION COMPLETED ===---"
+            print("---=== DETERMINATION COMPLETED ===---")
         if self.executeCalculateMobility is True:
-            print "---=== EXECUTING KINETIC MONTE CARLO SIMULATIONS... ===---"
+            print("---=== EXECUTING KINETIC MONTE CARLO SIMULATIONS... ===---")
             AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hoppingKMC.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
-            print "---=== EXECUTION COMPLETED ===---"
+            print("---=== EXECUTION COMPLETED ===---")
         exit()
 
 
@@ -85,9 +92,9 @@ class simulation:
             return None
         # ...or if the squeue errors out, then return no slurm job ID
         if len(squeueCommand[1]) != 0:
-            print "StdErr not empty:", squeueCommand[1]
+            print("StdErr not empty:", squeueCommand[1])
             return None
-        outputLines = squeueCommand[0].split('\n')
+        outputLines = squeueCommand[0].decode().split('\n')
         # If the command ran, the output is sorted by ascending runtime, so this job will be the most recent submission from the current user which is outputLines[1]
         for element in outputLines[1].split(' '):
             if len(element) != 0:
@@ -95,7 +102,7 @@ class simulation:
                 return int(element)
 
     def makeDirTree(self):
-        print "Sorting out directory structure..."
+        print("Sorting out directory structure...")
         # Delete any previous data if the user asked to
         #if self.overwriteCurrentData == True:
         #    sp.Popen('echo rm -rf '+self.outputDirectory+'/*', shell=True)
@@ -103,329 +110,18 @@ class simulation:
         #    sp.Popen('rm -rf '+self.outputDirectory+'/*', shell=True).communicate()
         # Then, make sure that all the required directories are in place
         # TODO: Remove the helperFunctions that mess around with the directory structure, do it all here instead.
-        for directoryToMake in ['chromophores/{input,output}ORCA/{single,pair}', 'KMC', 'molecules', 'morphology', 'code']:
-            sp.Popen('echo mkdir -p '+self.outputDirectory+'/'+directoryToMake, shell=True)
+        for directoryToMake in ['chromophores/inputORCA/single', 'chromophores/inputORCA/pair','chromophores/outputORCA/single', 'chromophores/outputORCA/pair', 'KMC', 'molecules', 'morphology', 'code']:
+            print('mkdir -p ' + self.outputDirectory + '/' + directoryToMake)
             # Make sure that the mkdir command has finished before moving on
-            sp.Popen('mkdir -p '+self.outputDirectory+'/'+directoryToMake, shell=True).communicate()
+            os.makedirs(self.outputDirectory + '/' + directoryToMake, exist_ok=True)
 
 
     def copyCode(self):
-        print "Copying code..."
+        print("Copying code...")
         codeDir = os.getcwd()+'/code'
-        sp.Popen('echo cp '+codeDir+'/*.py '+self.outputDirectory+'/code/', shell=True)
-        sp.Popen('echo cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputDirectory+'/code/', shell=True)
-        sp.Popen('cp '+codeDir+'/*.py '+self.outputDirectory+'/code/', shell=True)
-        sp.Popen('cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputDirectory+'/code/', shell=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def getFilesList(direc):
-    fileList = os.listdir(direc)
-    morphologyFiles = []
-    for fileName in fileList:
-        if (fileName[-4:] == '.xml'):
-            morphologyFiles.append(str(fileName))
-    return morphologyFiles
-
-
-def checkOutputDirectory(morphologyFile, outputDir, mode="<NO MODE>"):
-    morphologyName = str(morphologyFile[:-4])
-    outputDirContents = os.listdir(outputDir)
-    if (morphologyName in outputDirContents):
-        try:
-            morphologyDirContents = os.listdir(outputDir+'/'+morphologyName+'/morphology')
-        except OSError:
-            os.makedirs(outputDir+'/'+morphologyName+'/morphology')
-            os.makedirs(outputDir+'/'+morphologyName+'/molecules')
-            return True, True
-        for fileName in morphologyDirContents:
-            if '.pickle' in fileName:
-                #AUTO RUN
-                #overwriteFlag = str(raw_input("OVERWRITE CURRENT "+mode+" DATA FOR "+morphologyName+"? (Y or N, default N): "))
-                overwriteFlag = 'N'
-                if ((overwriteFlag == 'y') or (overwriteFlag == 'Y')):
-                    print "Cleaning directory ready for calculations..."
-                    os.system('rm -rf '+str(outputDir)+'/'+morphologyName+'/*')
-                    os.makedirs(str(outputDir)+'/'+morphologyName+'/morphology')
-                    return True, True
-                else:
-                    print "Using current data..."
-                    return False, True
-    else:
-        os.makedirs(str(outputDir)+'/'+morphologyName)
-        os.makedirs(str(outputDir)+'/'+morphologyName+'/morphology')
-        os.makedirs(str(outputDir)+'/'+morphologyName+'/molecules')
-    return True, True
-
-
-
-def getCurrentSlurmID(squeueOutput):
-    if len(squeueOutput[1]) != 0:
-        # Something in stdErr, so return None.
-        print "StdErr not empty:", squeueOutput[1]
-        return None
-    outputLines = squeueOutput[0].split('\n')
-    # The output is sorted by ascending runtime, so this job will be the most recent submission from the current user which is outputLines[1]
-    for element in outputLines[1].split(' '):
-        if len(element) != 0:
-            # First element come across is the jobID
-            return int(element)
-
-
-
-if __name__ == '__main__':
-    # FIRST THING to do is get the SLURM job ID (should be the most recent SLURM job)
-    try:
-        slurmJobID = getCurrentSlurmID(sp.Popen(['squeue', '-u', os.getenv('USER'), '--sort=t'], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE).communicate())
-    except OSError:
-        # Not submitted as as slurm job
-        slurmJobID = None
-    
-    #### Put these into an input parameter file at some point along with everything else so that they are not defined here
-    inputDir = 'inputCGMorphs'
-    outputDir = 'outputFiles'
-    currentDirContents = os.listdir(os.getcwd())
-    if inputDir not in currentDirContents:
-        os.makedirs(os.getcwd()+'/'+inputDir)
-    if outputDir not in currentDirContents:
-        os.makedirs(os.getcwd()+'/'+outputDir)
-    inputDir = os.getcwd()+'/'+inputDir
-    outputDir = os.getcwd()+'/'+outputDir
-
-    morphologyFiles = sorted(getFilesList(inputDir))
-    exitFlag = 0
-    while exitFlag == 0:
-        while True:
-            print "\n---=== VALID MORPHOLOGY FILES ===---"
-            for elementNo in range(len(morphologyFiles)):
-                print str(elementNo)+"):", morphologyFiles[elementNo]
-            print str(elementNo+1)+"): Exit program\n"
-            # print "Valid files =", zip(datFiles, lammpstrjFiles)
-            # AUTO RUNNING
-            #runThisFile = raw_input("Please pick a file to run (integer, default = 0): ")
-            try:
-                runThisFile = str(sys.argv[1])
-            except IndexError:
-                runThisFile = '0'
-            print "Selection =", runThisFile
-            if len(runThisFile) == 0:
-                runThisFile = 0
-            else:
-                try:
-                    runThisFile = int(runThisFile)
-                except:
-                    print "Please enter an integer between 0 and", len(morphologyFiles)
-                    continue
-            if (runThisFile < 0) or (runThisFile > len(morphologyFiles)):
-                print "Please enter an integer between 0 and", len(morphologyFiles)
-                continue
-            elif runThisFile == len(morphologyFiles):
-                print "Exiting Program..."
-                exitFlag = 1
-                break
-            break
-        if exitFlag == 0:
-            print "Checking for previous calculations of", str(morphologyFiles[runThisFile])+"..."
-            runFG, runMD = checkOutputDirectory(morphologyFiles[runThisFile], outputDir, mode='MORPHOLOGY')
-            if runFG == True:
-                # Work out if this is a Jankowski/Marsh morphology by determining the number of hyphens in the filename
-                hyphenLocs = helperFunctions.findIndex(morphologyFiles[runThisFile], '-')
-                sigma = 1.
-                if hyphenLocs != None:
-                    if len(hyphenLocs) == 5:
-                        print "This file looks like a Jankowski/Marsh morphology. The value of sigma has been set to 3 Angstroems for this morphology"
-                        sigma = 3.
-                t0 = T.time()
-                print "Loading morphology from XML for FineGraining..."
-                AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = fineGrainer.morphology(str(inputDir)+'/'+str(morphologyFiles[runThisFile]), sigma).analyseMorphology()
-                t1 = T.time()
-                elapsedTime = float(t1) - float(t0)
-                if elapsedTime < 60:
-                    timeunits = 'seconds.'
-                elif elapsedTime < 3600:
-                    elapsedTime /= 60.0
-                    timeunits = 'minutes.'
-                elif elapsedTime < 86400:
-                    elapsedTime /= 3600.0
-                    timeunits = 'hours.'
-                else:
-                    elapsedTime /= 86400.0
-                    timeunits = 'days.'
-                print "----------====================----------"
-                print "FineGraining calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
-                print "----------====================----------"
-
-            print "Running hoomd on morphology files..."
-            if runMD == True:
-                t2 = T.time()
-                if 'AAMorphologyDict' in locals():
-                    # Fine Graining calcs have been done so we already have the required data. No need to read in the pickle again.
-                    morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = runHoomd.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize) 
-                else:
-                    # Fine Graining calcs have not just been run, so we need to call runHoomd.py directly to unpickle the data we need
-                    morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = runHoomd.loadPickle(outputDir+'/'+morphologyFiles[runThisFile][:-4])
-                t3 = T.time()
-                elapsedTime = float(t3) - float(t2)
-                if elapsedTime < 60:
-                    timeunits = 'seconds.'
-                elif elapsedTime < 3600:
-                    elapsedTime /= 60.0
-                    timeunits = 'minutes.'
-                elif elapsedTime < 86400:
-                    elapsedTime /= 3600.0
-                    timeunits = 'hours.'
-                else:
-                    elapsedTime /= 86400.0
-                    timeunits = 'days.'
-                print "----------====================----------"
-                print "RunHoomd calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
-                print "----------====================----------"
-
-
-            print "Sorting morphology into individual molecules and outputing .xyz for DFT..."
-            runMol = True
-            if runMol == True:
-                t4 = T.time()
-                if 'AAMorphologyDict' in locals():
-                    morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = extractMol.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize)
-                else:
-                    morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = extractMol.loadPickle(outputDir+'/'+morphologyFiles[runThisFile][:-4])
-                t5 = T.time()
-                elapsedTime = float(t5) - float(t4)
-                if elapsedTime < 60:
-                    timeunits = 'seconds.'
-                elif elapsedTime < 3600:
-                    elapsedTime /= 60.0
-                    timeunits = 'minutes.'
-                elif elapsedTime < 86400:
-                    elapsedTime /= 3600.0
-                    timeunits = 'hours.'
-                else:
-                    elapsedTime /= 86400.0
-                    timeunits = 'days.'
-                print "----------====================----------"
-                print "ExtractMol calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
-                print "----------====================----------"
-
-
-            print "Analysing morphology to obtain chromophores..."
-       
-            runAnalyse = True
-            if runAnalyse == True:
-                t6 = T.time()
-                if 'AAMorphologyDict' in locals():
-                    morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = analyseMolecules.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize)
-                else:
-                    morphologyFile, AAFileName, CGMorphologyDict, AAMorphologyDict, CGtoAAIDs, moleculeAAIDs, boxSize = analyseMolecules.loadPickle(outputDir+'/'+morphologyFiles[runThisFile][:-4])
-                t7 = T.time()
-                elapsedTime = float(t7) - float(t6)
-                if elapsedTime < 60:
-                    timeunits = 'seconds.'
-                elif elapsedTime < 3600:
-                    elapsedTime /= 60.0
-                    timeunits = 'minutes.'
-                elif elapsedTime < 86400:
-                    elapsedTime /= 3600.0
-                    timeunits = 'hours.'
-                else:
-                    elapsedTime /= 86400.0
-                    timeunits = 'days.'
-                print "----------====================----------"
-                print "AnalyseMolecules calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
-                print "----------====================----------"
-
-
-            runORCA = True
-            if runORCA == True:
-                t8 = T.time()
-                executeOrca.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4], slurmJobID)
-                #os.system('hoomd ./code/executeOrca.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4])
-                t9 = T.time()
-                elapsedTime = float(t9) - float(t8)
-                if elapsedTime < 60:
-                    timeunits = 'seconds.'
-                elif elapsedTime < 3600:
-                    elapsedTime /= 60.0
-                    timeunits = 'minutes.'
-                elif elapsedTime < 86400:
-                    elapsedTime /= 3600.0
-                    timeunits = 'hours.'
-                else:
-                    elapsedTime /= 86400.0
-                    timeunits = 'days.'
-                print "----------====================----------"
-                print "executeORCA calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
-                print "----------====================----------"
-
-            runTij = True
-            if runTij == True:
-                t10 = T.time()
-                transferIntegrals.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4])
-                #os.system('hoomd ./code/executeOrca.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4])
-                t11 = T.time()
-                elapsedTime = float(t11) - float(t10)
-                if elapsedTime < 60:
-                    timeunits = 'seconds.'
-                elif elapsedTime < 3600:
-                    elapsedTime /= 60.0
-                    timeunits = 'minutes.'
-                elif elapsedTime < 86400:
-                    elapsedTime /= 3600.0
-                    timeunits = 'hours.'
-                else:
-                    elapsedTime /= 86400.0
-                    timeunits = 'days.'
-                print "----------====================----------"
-                print "transferIntegrals calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
-                print "----------====================----------"
-
-
-            runKMC = True
-            if runKMC == True:
-                t12 = T.time()
-                executeKMC.execute(outputDir+'/'+morphologyFiles[runThisFile][:-4])
-                #os.system('hoomd ./code/executeOrca.py '+outputDir+'/'+morphologyFiles[runThisFile][:-4])
-                t13 = T.time()
-                elapsedTime = float(t13) - float(t12)
-                if elapsedTime < 60:
-                    timeunits = 'seconds.'
-                elif elapsedTime < 3600:
-                    elapsedTime /= 60.0
-                    timeunits = 'minutes.'
-                elif elapsedTime < 86400:
-                    elapsedTime /= 3600.0
-                    timeunits = 'hours.'
-                else:
-                    elapsedTime /= 86400.0
-                    timeunits = 'days.'
-                print "----------====================----------"
-                print "KMC calculations completed in %.1f %s." % (float(elapsedTime), str(timeunits))
-                print "----------====================----------"
-
-                
-            # Close program
-            exitFlag = 1
-            break
-
-    print "Exitting program normally..."
-    if slurmJobID != None:
-        os.system('scancel '+str(slurmJobID))
-    exit()
+        print('cp '+codeDir+'/*.py '+self.outputDirectory+'/code/')
+        print('cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputDirectory+'/code/')
+        shutil.copy(os.getcwd() + '/' + self.parameterFile, self.outputDirectory + '/code')
+        for fileName in glob.glob(codeDir + '/*.py'):
+            shutil.copy(fileName, self.outputDirectory+'/code/')
+        shutil.copy(os.getcwd()+'/'+self.parameterFile, self.outputDirectory+'/code/')

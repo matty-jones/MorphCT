@@ -8,7 +8,7 @@ import time as T
 import random as R
 from scipy.sparse import lil_matrix
 import subprocess as sp
-import cPickle as pickle
+import pickle
 
 
 elementaryCharge = 1.60217657E-19 # C
@@ -18,10 +18,6 @@ hbar = 1.05457173E-34 # m^{2} kg s^{-1}
 
 class carrier:
     def __init__(self, chromophoreList, parameterDict, chromoID, lifetime, carrierNo, AAMorphologyDict):
-        if parameterDict['recordCarrierHistory'] is True:
-            self.carrierHistoryMatrix = lil_matrix((len(chromophoreList), len(chromophoreList)), dtype = int)
-        else:
-            self.carrierHistoryMatrix = None
         self.ID = carrierNo
         self.image = [0, 0, 0]
         self.initialChromophore = chromophoreList[chromoID]
@@ -33,7 +29,18 @@ class carrier:
         self.T = parameterDict['systemTemperature']
         self.lifetime = lifetime
         self.currentTime = 0.0
-        self.lambdaij = parameterDict['reorganisationEnergy']
+        self.holeHistoryMatrix = None
+        self.electronHistoryMatrix = None
+        if self.currentChromophore.species == 'Donor':
+            self.carrierType = 'Hole'
+            self.lambdaij = parameterDict['reorganisationEnergyDonor']
+            if parameterDict['recordCarrierHistory'] is True:
+                self.holeHistoryMatrix = lil_matrix((len(chromophoreList), len(chromophoreList)), dtype = int)
+        elif self.currentChromophore.species == 'Acceptor':
+            self.carrierType = 'Electron'
+            self.lambdaij = parameterDict['reorganisationEnergyAcceptor']
+            if parameterDict['recordCarrierHistory'] is True:
+                self.electronHistoryMatrix = lil_matrix((len(chromophoreList), len(chromophoreList)), dtype = int)
         self.noHops = 0
         self.simDims = [[-AAMorphologyDict['lx'] / 2.0, AAMorphologyDict['lx'] / 2.0], [-AAMorphologyDict['ly'] / 2.0, AAMorphologyDict['ly'] / 2.0], [-AAMorphologyDict['lz'] / 2.0, AAMorphologyDict['lz'] / 2.0]]
         self.displacement = None
@@ -66,6 +73,9 @@ class carrier:
         hopTimes = []
         # Obtain the reorganisation energy in J (from eV in the parameter file)
         for neighbourIndex, transferIntegral in enumerate(self.currentChromophore.neighboursTI):
+            # Ignore any hops with a NoneType transfer integral (usually due to an ORCA error)
+            if transferIntegral is None:
+                continue
             deltaEij = self.currentChromophore.neighboursDeltaE[neighbourIndex]
             # All of the energies are in eV currently, so convert them to J
             hopRate = self.calculateHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge)
@@ -75,7 +85,11 @@ class carrier:
         # Sort by ascending hop time
         hopTimes.sort(key = lambda x:x[1])
         # Take the quickest hop
-        destinationChromophore = chromophoreList[hopTimes[0][0]]
+        if len(hopTimes) > 0:
+            destinationChromophore = chromophoreList[hopTimes[0][0]]
+        else:
+            # We are trapped here, so create a dummy hop with time 1E99
+            hopTimes = [[self.currentChromophore.ID, 1E99]]
         # As long as we're not limiting by the number of hops:
         if self.hopLimit is None:
             # Ensure that the next hop does not put the carrier over its lifetime
@@ -109,14 +123,10 @@ class carrier:
         # Increment the hop counter
         self.noHops += 1
         # Now update the sparse history matrix
-        if self.carrierHistoryMatrix is not None:
-            self.carrierHistoryMatrix[initialID, destinationID] += 1
-
-
-class saveCarrier:
-    def __init__(self, **kwargs):#ID, image, initialPosn, finalPosn, lifetime, currentTime, noHops, displacement):
-        for key, value in kwargs.iteritems():
-            self.__dict__[key] = value
+        if (self.carrierType == 'Hole') and (self.holeHistoryMatrix is not None):
+            self.holeHistoryMatrix[initialID, destinationID] += 1
+        elif (self.carrierType == 'Electron') and (self.electronHistoryMatrix is not None):
+            self.electronHistoryMatrix[initialID, destinationID] += 1
 
 
 class terminationSignal:
@@ -128,6 +138,7 @@ class terminationSignal:
     def catchKill(self, signum, frame):
         self.killSent = True
 
+
 class Terminate(Exception):
     '''This class is raised to terminate a KMC simulation'''
     def __init__(self, string):
@@ -136,8 +147,9 @@ class Terminate(Exception):
     def __str__(self):
         return self.string
 
+
 def savePickle(saveData, savePickleName):
-    with open(savePickleName, 'w+') as pickleFile:
+    with open(savePickleName, 'wb+') as pickleFile:
         pickle.dump(saveData, pickleFile)
     helperFunctions.writeToFile(logFile, ['Pickle file saved successfully as ' + savePickleName + '!'])
 
@@ -150,7 +162,7 @@ def calculateDisplacement(initialPosition, finalPosition, finalImage, simDims):
 
 
 def initialiseSaveData(nChromos, seed):
-    return {'seed': seed, 'ID': [], 'image': [], 'lifetime': [], 'currentTime': [], 'noHops': [], 'displacement': [], 'carrierHistoryMatrix': lil_matrix((nChromos, nChromos), dtype = int), 'initialPosition': [], 'finalPosition': []}
+    return {'seed': seed, 'ID': [], 'image': [], 'lifetime': [], 'currentTime': [], 'noHops': [], 'displacement': [], 'holeHistoryMatrix': lil_matrix((nChromos, nChromos), dtype = int), 'electronHistoryMatrix': lil_matrix((nChromos, nChromos), dtype = int), 'initialPosition': [], 'finalPosition': [], 'carrierType':[]}
 
 
 if __name__ == '__main__':
@@ -161,13 +173,13 @@ if __name__ == '__main__':
         overwrite = bool(sys.argv[3])
     except:
         pass
-    # Load `jobsToRun' which is a list of tuples that contains the [carrier.ID, carrier.lifetime]
+    # Load `jobsToRun' which is a list, where each element contains the [carrier.ID, carrier.lifetime, carrier.carrierType]
     pickleFileName = KMCDirectory + '/KMCData_%02d.pickle' % (CPURank)
-    with open(pickleFileName, 'r') as pickleFile:
+    with open(pickleFileName, 'rb') as pickleFile:
         jobsToRun = pickle.load(pickleFile)
     logFile = KMCDirectory + '/KMClog_' + str(CPURank) + '.log'
     # Reset the log file
-    with open(logFile, 'w+') as logFileHandle:
+    with open(logFile, 'wb+') as logFileHandle:
         pass
     helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
     # Set the affinities for this current process to make sure it's maximising available CPU usage
@@ -188,18 +200,27 @@ if __name__ == '__main__':
     helperFunctions.writeToFile(logFile, ['Main morphology pickle loaded!'])
     # Attempt to catch a kill signal to ensure that we save the pickle before termination
     killer = terminationSignal()
-    seed = R.randint(0, sys.maxint)
+    seed = R.randint(0, sys.maxsize)
     R.seed(seed)
     # Save the pickle as a list of `saveCarrier' instances that contain the bare minimum
     saveData = initialiseSaveData(len(chromophoreList), seed)
+    if parameterDict['recordCarrierHistory'] is False:
+        saveData['holeHistoryMatrix'] = None
+        saveData['electronHistoryMatrix'] = None
     t0 = T.time()
     saveTime = T.time()
     saveSlot = 'slot1'
     try:
-        for jobNumber, [carrierNo, lifetime] in enumerate(jobsToRun):
+        for jobNumber, [carrierNo, lifetime, carrierType] in enumerate(jobsToRun):
             t1 = T.time()
             # Find a random position to start the carrier in
-            startChromoID = R.randint(0, len(chromophoreList) - 1)
+            while True:
+                startChromoID = R.randint(0, len(chromophoreList) - 1)
+                if (carrierType == 'Electron') and (chromophoreList[startChromoID].species != 'Acceptor'):
+                    continue
+                elif (carrierType == 'Hole') and (chromophoreList[startChromoID].species != 'Donor'):
+                    continue
+                break
             # Create the carrier instance
             thisCarrier = carrier(chromophoreList, parameterDict, startChromoID, lifetime, carrierNo, AAMorphologyDict)
             terminateSimulation = False
@@ -214,18 +235,18 @@ if __name__ == '__main__':
             simDims = thisCarrier.simDims
             thisCarrier.displacement = calculateDisplacement(initialPosition, finalPosition, finalImage, simDims)
             # Now the calculations are completed, create a barebones class containing the save data
-            importantData = ['ID', 'image', 'lifetime', 'currentTime', 'noHops', 'displacement']
+            importantData = ['ID', 'image', 'lifetime', 'currentTime', 'noHops', 'displacement', 'carrierType']
             for name in importantData:
                 saveData[name].append(thisCarrier.__dict__[name])
             # Update the carrierHistoryMatrix
             if parameterDict['recordCarrierHistory'] is True:
-                saveData['carrierHistoryMatrix'] += thisCarrier.carrierHistoryMatrix
-            else:
-                saveData['carrierHistoryMatrix'] = None
+                if thisCarrier.carrierType == 'Hole':
+                    saveData['holeHistoryMatrix'] += thisCarrier.holeHistoryMatrix
+                elif thisCarrier.carrierType == 'Electron':
+                    saveData['electronHistoryMatrix'] += thisCarrier.electronHistoryMatrix
             # Then add in the initial and final positions
             saveData['initialPosition'].append(initialPosition)
             saveData['finalPosition'].append(finalPosition)
-            #saveData.append(saveCarrier(**dataToSave))
             t2 = T.time()
             elapsedTime = float(t2) - float(t1)
             if elapsedTime < 60:
@@ -243,7 +264,7 @@ if __name__ == '__main__':
             helperFunctions.writeToFile(logFile, ['Carrier hopped ' + str(thisCarrier.noHops) + ' times, over ' + str(thisCarrier.currentTime) + ' seconds, into image ' + str(thisCarrier.image) + ', for a displacement of ' + str(thisCarrier.displacement) + ', in ' + str(elapsedTime) + ' wall-clock ' + str(timeunits)])
             # Save the pickle file every hour
             if (t2 - saveTime) > 3600:
-                print "Completed", jobNumber, "of", len(jobsToRun), "jobs. Making checkpoint at %3d%%" % (np.round(jobNumber + 1 / float(len(jobsToRun)) * 100))
+                print("Completed", jobNumber, "of", len(jobsToRun), "jobs. Making checkpoint at %3d%%" % (np.round(jobNumber + 1 / float(len(jobsToRun)) * 100)))
                 helperFunctions.writeToFile(logFile, ['Completed ' + str(jobNumber) + ' jobs. Making checkpoint at %3d%%' % (np.round(jobNumber / float(len(jobsToRun)) * 100))])
                 savePickle(saveData, pickleFileName.replace('Data', saveSlot + 'Results'))
                 if saveSlot == 'slot1':
@@ -252,12 +273,12 @@ if __name__ == '__main__':
                     saveSlot = 'slot1'
                 saveTime = T.time()
     except Exception as errorMessage:
-        print traceback.format_exc()
-        print "Saving the pickle file cleanly before termination..."
+        print(traceback.format_exc())
+        print("Saving the pickle file cleanly before termination...")
         helperFunctions.writeToFile(logFile, [str(errorMessage)])
         helperFunctions.writeToFile(logFile, ['Saving the pickle file cleanly before termination...'])
         savePickle(saveData, pickleFileName.replace('Data', 'TerminatedResults'))
-        print "Pickle saved! Exitting Python..."
+        print("Pickle saved! Exitting Python...")
         exit()
     t3 = T.time()
     elapsedTime = float(t3) - float(t0)

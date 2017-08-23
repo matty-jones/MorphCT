@@ -3,11 +3,11 @@ import os
 import helperFunctions
 import time as T
 import subprocess as sp
-import cPickle as pickle
+import pickle
 
 
 if __name__ == '__main__':
-    print sys.argv
+    print(sys.argv)
     morphologyFile = sys.argv[1]
     CPURank = int(sys.argv[2])
     overwrite = False
@@ -22,7 +22,7 @@ if __name__ == '__main__':
     logFile = inputDir.replace('/inputORCA', '/ORCAlog_' + str(CPURank) + '.log')
     outputDir = os.getcwd() + '/outputFiles/' + morphologyName + '/chromophores/outputORCA'
     pickleFileName = inputDir.replace('inputORCA', 'ORCAJobs.pickle')
-    with open(pickleFileName, 'r') as pickleFile:
+    with open(pickleFileName, 'rb') as pickleFile:
         jobsList = pickle.load(pickleFile)
     jobsToRun = jobsList[CPURank]
     helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
@@ -50,9 +50,9 @@ if __name__ == '__main__':
             helperFunctions.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinities..."])
         orcaShellOutput = orcaJob.communicate()
         # Write the outputFile:
-        helperFunctions.writeToFile(outputFileName, orcaShellOutput[0].split('\n'), mode='outputFile')
+        helperFunctions.writeToFile(outputFileName, orcaShellOutput[0].decode().split('\n'), mode='outputFile')
         # helperFunctions.writeToFile(logFile, orcaShellOutput[0].split('\n'))  # stdOut
-        helperFunctions.writeToFile(logFile, orcaShellOutput[1].split('\n'))  # stdErr
+        helperFunctions.writeToFile(logFile, orcaShellOutput[1].decode().split('\n'))  # stdErr
         # os.system(orcaDir+'/orca '+str(job)+' > '+str(outputFileName))
         t2 = T.time()
         elapsedTime = float(t2) - float(t1)

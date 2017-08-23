@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -p batch 
-#SBATCH -J morph0CT
-#SBATCH -o log_Morph0CT.log
+#SBATCH -J P3HTC60
+#SBATCH -o log_Morph00CT.log
 #SBATCH -N 1
 #SBATCH -n 16
 #SBATCH --mail-type=All
@@ -11,6 +11,7 @@
 #SBATCH --gres=gpu:2
 
 cd /scratch/erjank_project/mattyMorphCT
-hoomd -u runMorphCT.py 0
-#cp files you'd like to move off of scratch
-#mv files that you'd like moved off of scratch
+on-conda
+removePathDuplicates
+source activate hoomd1.3
+hoomd -u par00.py

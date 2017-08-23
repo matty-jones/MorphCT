@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 import os
-import cPickle as pickle
+import pickle
 import multiprocessing as mp
 import csv
 import xml.etree.cElementTree as ET
@@ -85,7 +85,7 @@ def calcCOM(listOfPositions, listOfAtomTypes=None, listOfMasses=None):
             # Masses obtained from nist.gov, for the atoms we are likely to simulate the most.
             # Add in new atoms here if your molecule requires it!
             if ('BR' in atomType) or ('Br' in atomType) or ('br' in atomType):
-                print "Br 79 being used as the preferred isotope, change in helperFunctions.calcCOM if not!"
+                print("Br 79 being used as the preferred isotope, change in helperFunctions.calcCOM if not!")
                 listOfMasses.append(78.918338)
             elif ('SI' in atomType) or ('Si' in atomType) or ('si' in atomType):
                 listOfMasses.append(27.976926)
@@ -138,9 +138,9 @@ def getRotationMatrix(vector1, vector2):
 
 def parallelSort(list1, list2):
     '''This function sorts a pair of lists by the first list in ascending order (for example, atom mass and corresponding position can be input, sorted by ascending mass, and the two lists output, where the mass[atom_i] still corresponds to position[atom_i]'''
-    data = zip(list1, list2)
+    data = list(zip(list1, list2))
     data.sort()
-    list1, list2 = map(lambda t: list(t), zip(*data))
+    list1, list2 = [list(t) for t in zip(*data)]
     return list1, list2
 
 
@@ -157,7 +157,7 @@ def writeCSV(fileName, data):
         document = csv.writer(csvFile, delimiter=',')
         for row in data:
             document.writerow(list(row))
-    print "CSV written to", fileName
+    print("CSV written to", fileName)
 
 
 def rotationMatrix(vector1, vector2):
@@ -244,6 +244,68 @@ def addDiameters(inputDictionary):
     return inputDictionary
 
 
+def getTerminatingPositions(currentAtomPosn, bondedAtomPositions, numberOfUnitsToAdd):
+    # Given a currentAtomPosn and several bondedAtomPositions we can add numberOfUnitsToAdd different terminating units to the currentAtom through a series of geometric checks.
+    # First get the vector to the average position of the bonded neighbours
+    hydrogenPositions = []
+    averagePositionOfBondedAtoms = np.array([0.0, 0.0, 0.0])
+    for bondedAtomPosn in bondedAtomPositions:
+        bondVector = np.array(bondedAtomPosn) - currentAtomPosn
+        bondVector /= np.linalg.norm(bondVector)
+        averagePositionOfBondedAtoms += bondVector
+    [x, y, z] = currentAtomPosn + (-1.06 * (averagePositionOfBondedAtoms / np.linalg.norm(averagePositionOfBondedAtoms)))
+    if numberOfUnitsToAdd == 1:
+        # Easy, this is the perylene code
+        # Simply reverse the bonded vector and make it the hydrogen position at a distance of 1.06 angstroems
+        hydrogenPositions.append(np.array([x, y, z]))
+    # Initial position for all hydrogens
+    elif numberOfUnitsToAdd == 2:
+        # As above (to get the right plane), but then rotated +(109.5/2) degrees and -(109.5/2) degrees around the bonding axis
+        rotationAxis = np.array(bondedAtomPositions[0]) - np.array(bondedAtomPositions[-1])
+        rotationAxis /= np.linalg.norm(rotationAxis)
+        # Rotation matrix calculations from: http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
+        # The array that describes the 3D rotation of (x, y, z) around the point (a, b, c) through
+        # the unit axis <u, v, w> by the angle theta is given by:
+        # [ (a(v^2 + w^2) - u(bv + cw - ux - vy - wz))(1 - cos(theta)) + x*cos(theta) + (-cv + bw - wy + vz)sin(theta),
+        #   (b(u^2 + w^2) - v(au + cw - ux - vy - wz))(1 - cos(theta)) + y*cos(theta) + (cu - aw + wx - uz)sin(theta),
+        #   (c(u^2 + v^2) - w(au + bv - ux - vy - wz))(1 - cos(theta)) + z*cos(theta) + (-bu + av - vx + uy)sin(theta) ]
+        [a, b, c] = currentAtomPosn
+        [u, v, w] = rotationAxis
+        for theta in [(109.5 / 2.0) * (np.pi / 180.0), -(109.5 / 2.0) * (np.pi / 180.0)]:
+            newPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
+                           (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (y * np.cos(theta)) + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
+                           (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
+            hydrogenPositions.append(newPosition)
+    elif numberOfUnitsToAdd == 3:
+        # As for one (to get the right side of the bonded atom), rotate the first one up by 70.5 (180 - 109.5) and then rotate around by 109.5 degrees for the other two
+        # The first hydrogen can be rotated around any axis perpendicular to the only bond present
+        axisToBond = currentAtomPosn - np.array(bondedAtomPositions[0])
+        # Now find one of the set of vectors [i, j, k] perpendicular to this one so we can place the first hydrogen.
+        # Do this by setting i = j = 1 and solve for k (given that currentAtomPosn[0]*i + currentAtomPosn[1]*j + currentAtomPosn[2]*k = 0)
+        firstHydrogenRotationAxis = np.array([1, 1, -(axisToBond[0] + axisToBond[1])/axisToBond[2]])
+        firstHydrogenRotationAxis /= np.linalg.norm(firstHydrogenRotationAxis)
+
+        [a, b, c] = currentAtomPosn
+        [u, v, w] = firstHydrogenRotationAxis
+        # First hydrogen
+        theta = 70.5 * np.pi/180.0
+        newPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
+                           (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (y * np.cos(theta)) + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
+                           (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
+        hydrogenPositions.append(newPosition)
+        # Second and third hydrogens
+        # Rotate these from the newPosition +/-120 degrees around the vector axisToBond from the position currentAtomPosn - axisToBond
+        [x, y, z] = newPosition
+        [a, b, c] = currentAtomPosn + (np.cos(theta) * axisToBond)
+        [u, v, w] = ((np.cos(theta) * axisToBond) / np.linalg.norm(np.cos(theta) * axisToBond))
+        for theta in [120 * (np.pi / 180.0), -120 * (np.pi / 180.0)]:
+            newHydrogenPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
+                               (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (y * np.cos(theta)) + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
+                               (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
+            hydrogenPositions.append(newHydrogenPosition)
+    return hydrogenPositions
+
+
 def addTerminatingHydrogen(inputDictionary, terminatingConnection, terminatingUnit=[['H1', 0, 0, 0]], terminatingUnitBonds=None):
     '''This function takes a runHoomd.py input dictionary, and the atom that the terminating unit is bonded to'''
     # Examine the current bonds on the terminating connection
@@ -302,20 +364,20 @@ def loadMorphologyXMLETree(xmlPath, sigma=1.0):
     with open(xmlPath, 'r') as xmlFileName:
         xmlFile = ET.parse(xmlFileName)
     morphologyConfig = xmlFile.getroot()[-1]
-    for axis, systemDim in morphologyConfig.find('box').attrib.iteritems():
+    for axis, systemDim in morphologyConfig.find('box').attrib.items():
         atomDictionary[axis] = float(systemDim)
     for key in atomPropsInt:
-        atomDictionary[key] = map(int, morphologyConfig.find(key).text.split('\n')[1:-1])
+        atomDictionary[key] = list(map(int, morphologyConfig.find(key).text.split('\n')[1:-1]))
     for key in atomPropsFloat:
-        atomDictionary[key] = map(float, morphologyConfig.find(key).text.split('\n')[1:-1])
+        atomDictionary[key] = list(map(float, morphologyConfig.find(key).text.split('\n')[1:-1]))
     for key in atomPropsStr:
         atomDictionary[key] = morphologyConfig.find(key).text.split('\n')[1:-1]
     for key in atomProps3DInt:
-        atomDictionary[key] = [map(int, x.split(' ')) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
+        atomDictionary[key] = [list(map(int, x.split(' '))) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
     for key in atomProps3DFloat:
-        atomDictionary[key] = [list(np.array(map(float, x.split(' '))) * sigma) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
+        atomDictionary[key] = [list(np.array(list(map(float, x.split(' ')))) * sigma) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
     for key in constraintProps:
-        atomDictionary[key] = [[x.split(' ')[0]] + map(int, x.split(' ')[1:]) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
+        atomDictionary[key] = [[x.split(' ')[0]] + list(map(int, x.split(' ')[1:])) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
     return atomDictionary
 
 
@@ -351,12 +413,12 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
                     if ('.' in splitLine[i][quotationLoc[0] + 1:quotationLoc[1]]):
                         # Catch float in the value (excludes the = and quotation marks)
                         if ('<box' in line):
-                            AtomDictionary[splitLine[i][:equalsLoc[0]]] = float(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]]) * sigma
+                            AtomDictionary[splitLine[i][:equalsLoc[0]]] = float(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
                         else:
                             AtomDictionary[splitLine[i][:equalsLoc[0]]] = float(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
                     else:
                         if ('<box' in line):
-                            AtomDictionary[splitLine[i][:equalsLoc[0]]] = int(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]]) * sigma
+                            AtomDictionary[splitLine[i][:equalsLoc[0]]] = int(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
                         else:
                             AtomDictionary[splitLine[i][:equalsLoc[0]]] = int(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
             elif ('<position' in line):
@@ -412,10 +474,10 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
                     # Remove the "\n"
                     splitLine[-1] = splitLine[-1][:-1]
                     if (len(splitLine) == 1):
-                        AtomDictionary[recordType].append(float(splitLine[0]) * sigma)
+                        AtomDictionary[recordType].append(float(splitLine[0]))
                         continue
                     for i in range(len(splitLine)):
-                        splitLine[i] = float(splitLine[i]) * sigma
+                        splitLine[i] = float(splitLine[i])
                     AtomDictionary[recordType].append(splitLine)
                 elif (recordType == 'mass') or (recordType == 'diameter') or (recordType == 'charge'):
                     # Write to dictionary as floats
@@ -455,11 +517,83 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
                     for i in range(1, len(splitLine)):
                         splitLine[i] = int(splitLine[i])
                     AtomDictionary[recordType].append(splitLine)
+    if sigma != 1.0:
+        AtomDictionary = scale(AtomDictionary, sigma)
     return AtomDictionary
 
 
+def loadFFXML(xmlPath, mapping = False):
+    FFDict = {'lj':[], 'dpd':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[]}
+    with open(xmlPath, 'r') as xmlFile:
+        xmlData = xmlFile.readlines()
+        for line in xmlData:
+            if ('</' in line):
+                record = False
+            elif ('<lj' in line):
+                record = True
+                recordType = 'lj'
+                continue
+            elif ('<dpd' in line):
+                record = True
+                recordType = 'dpd'
+                continue
+            elif ('<bond' in line):
+                record = True
+                recordType = 'bond'
+                continue
+            elif ('<angle' in line):
+                record = True
+                recordType = 'angle'
+                continue
+            elif ('<dihedral' in line):
+                record = True
+                recordType = 'dihedral'
+                continue
+            elif ('<improper' in line):
+                record = True
+                recordType = 'improper'
+                continue
+            # Now we know what the variable is, append it to the dictionary data
+            if (record is True):
+                # Write to dictionary as combination
+                splitLine = line.split(' ')
+                # Remove the "\n"
+                splitLine[-1] = splitLine[-1][:-1]
+                splitLine[0] = str(splitLine[0])
+                for i in range(1, len(splitLine)):
+                    splitLine[i] = float(splitLine[i])
+                FFDict[recordType].append(splitLine)
+    # Now remap the names of the constraints if any mappings have been specified
+    if mapping is not False:
+        for constraintType in list(FFDict.keys()):
+            for index, constraint in enumerate(FFDict[constraintType]):
+                # Split the constraint name up based on each atom type
+                constraintName = copy.deepcopy(constraint[0].split('-'))
+                # Remap each atom
+                for atomLoc, atomType in enumerate(constraintName):
+                    constraintName[atomLoc] = mapping[atomType]
+                # Apply the mapping to the FFDict
+                FFDict[constraintType][index][0] = '-'.join(constraintName)
+    return FFDict
+
+def checkConstraintNames(AAMorphologyDict):
+    # A function that renames the constraints based on the atom types given in the dictionary
+    constraintTypes = ['bond', 'angle', 'dihedral', 'improper']
+    for constraintType in constraintTypes:
+        for constraintID, constraint in enumerate(AAMorphologyDict[constraintType]):
+            newConstraintName = ""
+            # Iterate through the atomIDs and update the constraint name based on the types
+            for atomID in constraint[1:]:
+                newConstraintName += AAMorphologyDict['type'][atomID]
+                newConstraintName += "-"
+            # Update the dict if the name has changed
+            if (constraint[0] != newConstraintName[:-1]):
+                AAMorphologyDict[constraintType][constraintID][0] = newConstraintName[:-1]
+    return AAMorphologyDict
+
+
 def removeRigidBodies(inputDictionary):
-    print "Removing rigid bodies..."
+    print("Removing rigid bodies...")
     atomsToRemove = []
     bondsToRemove = []
     # First remove the anchor points
@@ -480,12 +614,12 @@ def removeRigidBodies(inputDictionary):
         inputDictionary['body'][index] = -1
     # Finally, update the number of atoms in the morphology
     inputDictionary['natoms'] -= len(atomsToRemove)
-    print len(atomsToRemove), "atoms and", len(bondsToRemove), "bonds removed."
+    print(len(atomsToRemove), "atoms and", len(bondsToRemove), "bonds removed.")
     return inputDictionary
 
 
 def writeMorphologyXMLETree(inputDictionary, outputFile):
-    print "Checking wrapped positions before writing XML..."
+    print("Checking wrapped positions before writing XML...")
     inputDictionary = checkWrappedPositions(inputDictionary)
     systemProps = ['box']
     atomProps3D = ['position', 'image']
@@ -520,12 +654,15 @@ def writeMorphologyXMLETree(inputDictionary, outputFile):
     root.insert(0, config)
     tree = ET.ElementTree(root)
     tree.write(outputFile, xml_declaration=True, encoding='UTF-8')
-    print "XML file written to", str(outputFile) + "!"
+    print("XML file written to", str(outputFile) + "!")
 
 
-def writeMorphologyXML(inputDictionary, outputFile):
-    # First, need to check the positions of the atoms to ensure that everything is correctly contained inside the box
-    print "Checking wrapped positions before writing XML..."
+def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0):
+    # Firstly, scale everything by the inverse of the provided sigma value
+    if sigma != 1.0:
+        inputDictionary = scale(inputDictionary, 1.0 / sigma)
+    # Now need to check the positions of the atoms to ensure that everything is correctly contained inside the box
+    print("Checking wrapped positions before writing XML...")
     inputDictionary = checkWrappedPositions(inputDictionary)
     # inputDictionary['position'], inputDictionary['image'] = pbc.shift_pbc(inputDictionary['position'], [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']])
     # print inputDictionary['image'][:20]
@@ -591,7 +728,7 @@ def writeMorphologyXML(inputDictionary, outputFile):
     linesToWrite.append('</hoomd_xml>\n')
     with open(outputFile, 'w+') as xmlFile:
         xmlFile.writelines(linesToWrite)
-    print "XML file written to", str(outputFile) + "!"
+    print("XML file written to", str(outputFile) + "!")
 
 
 def writePOSCARFile(inputDict, outputFile):
@@ -666,9 +803,9 @@ def writePOSCARFile(inputDict, outputFile):
         linesToWrite.append(coordinates + '\n')
     with open(outputFile, 'w+') as POSCARFile:
         POSCARFile.writelines(linesToWrite)
-    with open(outputFile.replace('POSCAR', 'pickle'), 'w+') as bondPickle:
+    with open(outputFile.replace('POSCAR', 'pickle'), 'wb+') as bondPickle:
         pickle.dump(inputDict['bond'], bondPickle)
-    print "POSCAR data written to", str(outputFile) + ". Bond data written to", str(outputFile.replace('POSCAR', 'pickle')) + "."
+    print("POSCAR data written to", str(outputFile) + ". Bond data written to", str(outputFile.replace('POSCAR', 'pickle')) + ".")
 
 
 def writeXYZFile(inputDict, outputFile):
@@ -692,7 +829,7 @@ def writeXYZFile(inputDict, outputFile):
         rowsToWrite.append(lineToWrite)
     with open(outputFile, 'w+') as xyzFile:
         xyzFile.writelines(rowsToWrite)
-    print "XYZ data written to", str(outputFile) + "."
+    print("XYZ data written to", str(outputFile) + ".")
 
 
 def createSlurmSubmissionScript(outputDir, runName, mode):
@@ -835,13 +972,13 @@ def cellSearchBonds(moleculeDict):
     atomIDs = np.arange(len(moleculeDict['position']))
     for coordinates in moleculeDict['position']:
         cellLocation = np.copy(coordinates)
-        moleculeDict['neighbourCell'].append(map(int, np.round(cellLocation / maximumBondLength)))
-        print coordinates, moleculeDict['neighbourCell'][-1]
+        moleculeDict['neighbourCell'].append(list(map(int, np.round(cellLocation / maximumBondLength))))
+        print(coordinates, moleculeDict['neighbourCell'][-1])
     neighbourCells = np.copy(moleculeDict['neighbourCell'])
-    print calculateSeparation(moleculeDict['position'][0], moleculeDict['position'][1]), calculateSeparation(moleculeDict['position'][1], moleculeDict['position'][2])
+    print(calculateSeparation(moleculeDict['position'][0], moleculeDict['position'][1]), calculateSeparation(moleculeDict['position'][1], moleculeDict['position'][2]))
     parallelSort(neighbourCells, atomIDs)
     for i in range(len(atomIDs)):
-        print atomIDs[i], neighbourCells[i]
+        print(atomIDs[i], neighbourCells[i])
 
 
 def getAAIDsByMolecule(CGtoAAIDs):
@@ -849,7 +986,7 @@ def getAAIDsByMolecule(CGtoAAIDs):
     moleculeAAIDs = []
     for moleculeID, CGtoAAIDDict in enumerate(CGtoAAIDs):
         moleculeAAIDs.append([])
-        for dictionaryValue in CGtoAAIDs[moleculeID].values():
+        for dictionaryValue in list(CGtoAAIDs[moleculeID].values()):
             moleculeAAIDs[-1] += dictionaryValue[1]
         moleculeAAIDs[-1].sort()
     return moleculeAAIDs
@@ -871,7 +1008,7 @@ def loadDict(masterDict, moleculeIDs, bondPickleName):
     moleculeDict = {'position': [], 'unwrapped_position': [], 'type': [], 'diameter': [], 'image': [], 'charge': [], 'mass': []}
     # First get atom-specific properties
     for atomID in moleculeIDs:
-        for key in moleculeDict.keys():
+        for key in list(moleculeDict.keys()):
             moleculeDict[key].append(masterDict[key][atomID])
     # Then add in the simulation properties
     for key in ['lx', 'ly', 'lz', 'xy', 'xz', 'yz', 'dimensions']:
@@ -880,7 +1017,7 @@ def loadDict(masterDict, moleculeIDs, bondPickleName):
         except:
             continue
     # Then load the relevant bonds
-    with open(bondPickleName, 'r') as bondPickle:
+    with open(bondPickleName, 'rb') as bondPickle:
         moleculeDict['bond'] = pickle.load(bondPickle)
     # Now need to unwrap the coordinates
     # moleculeDict = addUnwrappedPositions(moleculeDict)
@@ -906,7 +1043,7 @@ def loadPoscar(inputFilePath):
     moleculeDict['lz'] = simDims[2][2]
     simBoxDims = ['lx', 'ly', 'lz']
     typeList = poscarData[5].split('\n')[0].split(' ')
-    freqList = map(int, poscarData[6].split('\n')[0].split(' '))
+    freqList = list(map(int, poscarData[6].split('\n')[0].split(' ')))
     for i in range(len(typeList)):
         if len(typeList[i]) != 0:  # Catch for the extra space I had to put in to make VMD behave properly
             moleculeDict['type'] += [typeList[i]] * freqList[i]
@@ -918,7 +1055,7 @@ def loadPoscar(inputFilePath):
                 coordinatesToWrite.append(float(coordinate))
             for i in range(len(coordinatesToWrite)):
                 moleculeDict['position'][-1].append(coordinatesToWrite[i] - (moleculeDict[simBoxDims[i]] / 2.0))
-    with open(inputFilePath.replace('POSCAR', 'pickle'), 'r') as bondPickle:
+    with open(inputFilePath.replace('POSCAR', 'pickle'), 'rb') as bondPickle:
         moleculeDict['bond'] = pickle.load(bondPickle)
     moleculeDict = addMasses(moleculeDict)
     return moleculeDict
@@ -930,7 +1067,7 @@ def checkORCAFileStructure(outputDir):
     if 'KMC' not in morphologyDirList:
         os.makedirs(outputDir + '/KMC')
     if 'chromophores' not in morphologyDirList:
-        print "Making /chromophores directory..."
+        print("Making /chromophores directory...")
         os.makedirs(outputDir + '/chromophores')
         os.makedirs(outputDir + '/chromophores/inputORCA')
         os.makedirs(outputDir + '/chromophores/inputORCA/single')
@@ -941,7 +1078,7 @@ def checkORCAFileStructure(outputDir):
     else:
         chromophoresDirList = os.listdir(outputDir + '/chromophores')
         if 'inputORCA' not in chromophoresDirList:
-            print "Making /inputORCA directory..."
+            print("Making /inputORCA directory...")
             os.makedirs(outputDir + '/chromophores/inputORCA')
             os.makedirs(outputDir + '/chromophores/inputORCA/single')
             os.makedirs(outputDir + '/chromophores/inputORCA/pair')
@@ -952,7 +1089,7 @@ def checkORCAFileStructure(outputDir):
             if 'pair' not in inputDirList:
                 os.makedirs(outputDir + '/chromophores/inputORCA/pair')
         if 'outputORCA' not in chromophoresDirList:
-            print "Making /outputORCA directory..."
+            print("Making /outputORCA directory...")
             os.makedirs(outputDir + '/chromophores/outputORCA')
             os.makedirs(outputDir + '/chromophores/outputORCA/single')
             os.makedirs(outputDir + '/chromophores/outputORCA/pair')
@@ -987,9 +1124,9 @@ def writeORCAInp(inputDictList, outputDir, mode):
         fileExists = False
     inputFileName = outputDir + '/chromophores/inputORCA/' + mode + '/' + ORCAFileName
     if fileExists is True:
-        print "File", ORCAFileName, "already exists, skipping..."
+        print("File", ORCAFileName, "already exists, skipping...")
         return
-        print "Creating file anyway to check that they are the same"
+        print("Creating file anyway to check that they are the same")
         inputFileName = inputFileName.replace('.inp', '_2.inp')
 
     # chromophore1COM = calcCOM(chromophore1['position'], chromophore1['mass'])
@@ -1023,10 +1160,10 @@ def writeORCAInp(inputDictList, outputDir, mode):
     inpFileLines[-1:-1] = linesToWrite
     with open(inputFileName, 'w+') as ORCAInputFile:
         ORCAInputFile.writelines(inpFileLines)
-    print "ORCA input file written to", inputFileName, "\r",
+    print("ORCA input file written to", inputFileName, "\r", end=' ')
     if fileExists is True:
-        print "\n"
-        raw_input("Hit return to continue...")
+        print("\n")
+        input("Hit return to continue...")
 
 
 def getCPUCores():
@@ -1050,18 +1187,22 @@ def writeToFile(logFile, stringList, mode='logFile'):
 
 
 def loadPickle(pickleLocation):
-    print "Loading Pickle from", str(pickleLocation) + "..."
-    with open(pickleLocation, 'r') as pickleFile:
-        objects = pickle.load(pickleFile)
-    print "Pickle loaded successfully!"
+    print("Loading Pickle from", str(pickleLocation) + "...")
+    try:
+        with open(pickleLocation, 'rb') as pickleFile:
+                objects = pickle.load(pickleFile)
+    except UnicodeDecodeError:  # Python 2/3 fix
+        with open(pickleLocation, 'rb') as pickleFile:
+            objects = pickle.load(pickleFile, encoding='latin1')
+    print("Pickle loaded successfully!")
     return objects[0], objects[1], objects[2], objects[3], objects[4]
 
 
 def writePickle(toPickle, pickleFileName):
-    print "Writing pickle file..."
-    with open(pickleFileName, 'w+') as pickleFile:
+    print("Writing pickle file...")
+    with open(pickleFileName, 'wb+') as pickleFile:
         pickle.dump(toPickle, pickleFile)
-    print "Pickle file written to", pickleFileName
+    print("Pickle file written to", pickleFileName)
 
 
 def obtainBondedList(bondList):
@@ -1091,7 +1232,7 @@ def convertStringToInt(x):
 def TEMPAddBondedChromos(chromophoreList, CGMorphologyDict):
     t0 = T.time()
     for chromo1ID, chromo1 in enumerate(chromophoreList):
-        print "Examining chromophore", chromo1ID + 1, "of", len(chromophoreList)
+        print("Examining chromophore", chromo1ID + 1, "of", len(chromophoreList))
         for chromo2ID in [x[0] for x in chromo1.neighbours]:
             chromo2 = chromophoreList[chromo2ID]
             for bond in CGMorphologyDict['bond']:
@@ -1102,5 +1243,5 @@ def TEMPAddBondedChromos(chromophoreList, CGMorphologyDict):
                         chromo1.bondedChromos.append(chromo2.ID)
                     break
     t1 = T.time()
-    print "Took %f seconds" % (t1-t0)
+    print("Took %f seconds" % (t1-t0))
     return chromophoreList

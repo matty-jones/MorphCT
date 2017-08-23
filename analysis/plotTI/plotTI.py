@@ -5,7 +5,6 @@ import numpy as np
 import csv
 sys.path.append('../../code')
 import helperFunctions
-
 from scipy.optimize import curve_fit
 
 elementaryCharge = 1.60217657E-19 # C
@@ -31,158 +30,223 @@ def gaussian(x, a, x0, sigma):
     return a*np.exp(-(x-x0)**2/(2*sigma**2))
 
 
-def gaussFit(data):
+def gaussFit(data, materialType):
     n = len(data)
     mean = np.mean(data)
     std = np.std(data)
-    print "\n"
-    print "Delta Eij stats: mean =", mean, "std =", std
+    print(materialType, "Delta Eij stats: mean =", mean, "std =", std)
     hist, binEdges = np.histogram(data, bins=100)
-    fitArgs, fitConv = curve_fit(gaussian, binEdges[:-1], hist, p0=[1, mean, std])
+    try:
+        fitArgs, fitConv = curve_fit(gaussian, binEdges[:-1], hist, p0=[1, mean, std])
+    except RuntimeError:
+        return None, None
     return binEdges, fitArgs
 
 
 def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
-
     if mode == 'HOMO':
-        plt.hist(yvals, 20)
+        plt.hist(yvals, 20, color = ['b'])
         plt.ylabel('Frequency')
         plt.xlabel('HOMO Level (eV)')
-        plt.xlim([-5.5, -3.5])
+        plt.xlim([-6.5, -4.0])
         fileName = 'HOMODoS.pdf'
 
-    elif mode == 'Bandgap':
-        plt.hist(yvals, 20)
+    if mode == 'LUMO':
+        plt.hist(yvals, 20, color = ['b'])
         plt.ylabel('Frequency')
-        plt.xlabel('Bandgap (eV)')
+        plt.xlabel('LUMO Level (eV)')
+        plt.xlim([-4.0, -2.5])
+        fileName = 'LUMODoS.pdf'
+
+    elif mode == 'DonorBandgap':
+        plt.hist(yvals, 20, color = ['b'])
+        plt.ylabel('Frequency')
+        plt.xlabel('Donor Bandgap (eV)')
         plt.xlim([3, 9])
-        fileName = 'Bandgap.pdf'
+        fileName = 'DonorBandgap.pdf'
 
-    elif mode == 'BandgapLength':
-        plt.scatter(xvals, yvals)
-        plt.ylabel('Bandgap (eV)')
-        plt.xlabel('Chromo Length (monomers)')
-        fileName = 'BandgapLength.pdf'
-
-    elif mode == 'Splitting':
-        plt.hist(yvals, 20)
+    elif mode == 'AcceptorBandgap':
+        plt.hist(yvals, 20, color = ['b'])
         plt.ylabel('Frequency')
-        plt.xlabel('HOMO Splitting (ev)')
-        plt.xlim([0, 3.5])
-        fileName = 'HOMOSplit.pdf'
+        plt.xlabel('Acceptor Bandgap (eV)')
+        plt.xlim([3, 9])
+        fileName = 'AcceptorBandgap.pdf'
 
-    elif mode == 'TI':
-        plt.hist(yvals, 20)
+    elif mode == 'DonorTI':
+        plt.hist(yvals, 20, color = ['b'])
         plt.ylabel('Frequency')
-        plt.xlabel('Transfer Integral (eV)')
+        plt.xlabel('Donor Transfer Integral (eV)')
         plt.xlim([0.0, 1.2])
-        fileName = 'TI.pdf'
+        fileName = 'DonorTI.pdf'
 
-    elif mode == 'TITrimmed':
-        plt.hist(yvals, 20)
+    elif mode == 'AcceptorTI':
+        plt.hist(yvals, 20, color = ['b'])
         plt.ylabel('Frequency')
-        plt.xlabel('Non-Zero Transfer Integral (eV)')
+        plt.xlabel('Acceptor Transfer Integral (eV)')
         plt.xlim([0.0, 1.2])
-        fileName = 'TITrimmed.pdf'
+        fileName = 'AcceptorTI.pdf'
 
-    elif mode == 'Length':
-        plt.scatter(xvals, yvals)
-        plt.xlabel('HOMO Level (eV)')
-        plt.ylabel('Chromo Length (monomers)')
-        fileName = 'HOMOLength.pdf'
-
-    elif mode == 'lambda':
-        plt.scatter(xvals, yvals)
-        plt.xlabel('Chromo Length (monomers)')
-        plt.ylabel('Reorganisation energy (eV)')
-        fileName = 'LambdaIJ.pdf'
-
-    elif mode == 'deltaEij':
-        n, bins, patches = plt.hist(yvals, 20)
-        gaussY = gaussian(gaussBins[:-1], *fitArgs)
-        scaleFactor = max(n)/max(gaussY)
-        plt.plot(gaussBins[:-1], gaussY*scaleFactor, 'ro:')
+    elif mode == 'DonorTITrimmed':
+        plt.hist(yvals, 20, color = ['b'])
         plt.ylabel('Frequency')
-        plt.xlabel('Delta Eij (eV)')
+        plt.xlabel('Donor Non-Zero Transfer Integral (eV)')
+        plt.xlim([0.0, 1.2])
+        fileName = 'DonorTITrimmed.pdf'
+
+    elif mode == 'AcceptorTITrimmed':
+        plt.hist(yvals, 20, color = ['b'])
+        plt.ylabel('Frequency')
+        plt.xlabel('Acceptor Non-Zero Transfer Integral (eV)')
+        plt.xlim([0.0, 1.2])
+        fileName = 'AcceptorTITrimmed.pdf'
+
+    elif mode == 'DonorDeltaEij':
+        n, bins, patches = plt.hist(yvals, 20, color = ['b'])
+        if gaussBins is not None:
+            gaussY = gaussian(gaussBins[:-1], *fitArgs)
+            scaleFactor = max(n)/max(gaussY)
+            plt.plot(gaussBins[:-1], gaussY*scaleFactor, 'ro:')
+        plt.ylabel('Frequency')
+        plt.xlabel('Donor Delta Eij (eV)')
         plt.xlim([-0.5, 0.5])
-        fileName = 'deltaEij.pdf'
+        fileName = 'DonorDeltaEij.pdf'
 
-    elif mode == 'averageHOMO':
-        plt.scatter(xvals, yvals)
-        plt.xlabel('Chromo Length (monomers)')
-        plt.ylabel('Average HOMO level (eV)')
-        fileName = 'averageHOMO.pdf'
-
-    elif mode == 'intraChainHop':
-        if len(yvals) > 0:
-            plt.hist(yvals, bins = np.logspace(1, 18, 40))
+    elif mode == 'AcceptorDeltaEij':
+        n, bins, patches = plt.hist(yvals, 20, color = ['b'])
+        if gaussBins is not None:
+            gaussY = gaussian(gaussBins[:-1], *fitArgs)
+            scaleFactor = max(n)/max(gaussY)
+            plt.plot(gaussBins[:-1], gaussY*scaleFactor, 'ro:')
         plt.ylabel('Frequency')
-        plt.xlabel('Intra-Chain Hop rate (s' + r'^{-1}' + ')')
+        plt.xlabel('Acceptor Delta Eij (eV)')
+        plt.xlim([-0.5, 0.5])
+        fileName = 'AcceptorDeltaEij.pdf'
+
+    elif mode == 'DonorIntraChainHop':
+        if len(yvals) > 0:
+            plt.hist(yvals, bins = np.logspace(1, 18, 40), color = ['b'])
+        plt.ylabel('Frequency')
+        plt.xlabel('Donor Intra-Chain Hop rate (s' + r'^{-1}' + ')')
         plt.gca().set_xscale('log')
         plt.xlim([1, 1E18])
-        fileName = 'intrakij.pdf'
+        fileName = 'DonorIntrakij.pdf'
 
-    elif mode == 'interChainHop':
+    elif mode == 'DonorInterChainHop':
         if len(yvals) > 0:
-            plt.hist(yvals, bins = np.logspace(1, 18, 40))
+            plt.hist(yvals, bins = np.logspace(1, 18, 40), color = ['b'])
         plt.ylabel('Frequency')
-        plt.xlabel('Inter-Chain Hop rate (s' + r'$^{-1}$' + ')')
+        plt.xlabel('Donor Inter-Chain Hop rate (s' + r'$^{-1}$' + ')')
         plt.gca().set_xscale('log')
         plt.xlim([1, 1E18])
-        fileName = 'interkij.pdf'
+        fileName = 'DonorInterkij.pdf'
 
-    elif mode == 'intraChainTI':
+    elif mode == 'DonorIntraChainTI':
         if len(yvals) > 0:
-            plt.hist(yvals, 20)
+            plt.hist(yvals, 20, color = ['b'])
         plt.ylabel('Frequency')
-        plt.xlabel('Intra-Chain TI (eV)')
+        plt.xlabel('Donor Intra-Chain TI (eV)')
         plt.xlim([0, 1.2])
-        fileName = 'intraTij.pdf'
+        fileName = 'DonorIntraTij.pdf'
 
-    elif mode == 'interChainTI':
+    elif mode == 'DonorInterChainTI':
         if len(yvals) > 0:
-            plt.hist(yvals, 20)
+            plt.hist(yvals, 20, color = ['b'])
         plt.ylabel('Frequency')
-        plt.xlabel('Inter-Chain TI (eV)')
+        plt.xlabel('Donor Inter-Chain TI (eV)')
         plt.xlim([0, 1.2])
-        fileName = 'interTij.pdf'
+        fileName = 'DonorInterTij.pdf'
 
-    elif mode == 'intraChainTITrim':
+    elif mode == 'DonorIntraChainTITrim':
         if len(yvals) > 0:
-            plt.hist(yvals, 20)
+            plt.hist(yvals, 20, color = ['b'])
         plt.ylabel('Frequency')
-        plt.xlabel('Intra-Chain TI (eV)')
+        plt.xlabel('Donor Intra-Chain TI (eV)')
         plt.xlim([0, 1.2])
-        fileName = 'intraTijTrim.pdf'
+        fileName = 'DonorIntraTijTrim.pdf'
 
-    elif mode == 'interChainTITrim':
+    elif mode == 'DonorInterChainTITrim':
         if len(yvals) > 0:
-            plt.hist(yvals, 20)
+            plt.hist(yvals, 20, color = ['b'])
         plt.ylabel('Frequency')
-        plt.xlabel('Inter-Chain TI (eV)')
+        plt.xlabel('Donor Inter-Chain TI (eV)')
         plt.xlim([0, 1.2])
-        fileName = 'interTijTrim.pdf'
+        fileName = 'DonorInterTijTrim.pdf'
 
-    elif mode == 'wobbey':
-        plt.scatter(xvals, yvals)
-        plt.xlabel('Chromo Length (monomers)')
-        plt.ylabel('A (eV)')
-        fileName = 'averageHOMO.pdf'
-
-    elif mode == 'hopMix':
-        plt.hist([yvals, xvals], bins = np.logspace(1, 18, 40), stacked = True, color = ['r', 'b'], label = ['Intra-chain', 'Inter-chain'])
+    elif mode == 'DonorHopMix':
+        plt.hist([yvals, xvals], bins = np.logspace(1, 18, 40), stacked = True, color = ['r', 'b'], label = ['Intra-Molecular', 'Inter-Molecular'])
         plt.ylabel('Frequency')
-        plt.xlabel('Hopping Rate (s' + r'$^{-1}$' + ')')
+        plt.xlabel('Donor Hopping Rate (s' + r'$^{-1}$' + ')')
         plt.xlim([1,1E18])
-        plt.ylim([0,8000])
+        plt.xticks([1E0, 1E3, 1E6, 1E9, 1E12, 1E15, 1E18])
+        #plt.ylim([0,8000])
         plt.legend(loc = 2, prop = {'size':18})
         plt.gca().set_xscale('log')
-        fileName = 'hoppingRateMixed.pdf'
+        fileName = 'DonorHoppingRateMixed.pdf'
 
+    elif mode == 'AcceptorIntraChainHop':
+        if len(yvals) > 0:
+            plt.hist(yvals, bins = np.logspace(1, 18, 40), color = ['b'])
+        plt.ylabel('Frequency')
+        plt.xlabel('Acceptor Intra-Chain Hop rate (s' + r'^{-1}' + ')')
+        plt.gca().set_xscale('log')
+        plt.xlim([1, 1E18])
+        fileName = 'AcceptorIntrakij.pdf'
+
+    elif mode == 'AcceptorInterChainHop':
+        if len(yvals) > 0:
+            plt.hist(yvals, bins = np.logspace(1, 18, 40), color = ['b'])
+        plt.ylabel('Frequency')
+        plt.xlabel('Acceptor Inter-Chain Hop rate (s' + r'$^{-1}$' + ')')
+        plt.gca().set_xscale('log')
+        plt.xlim([1, 1E18])
+        fileName = 'AcceptorInterkij.pdf'
+
+    elif mode == 'AcceptorIntraChainTI':
+        if len(yvals) > 0:
+            plt.hist(yvals, 20, color = ['b'])
+        plt.ylabel('Frequency')
+        plt.xlabel('Acceptor Intra-Chain TI (eV)')
+        plt.xlim([0, 1.2])
+        fileName = 'AcceptorIntraTij.pdf'
+
+    elif mode == 'AcceptorInterChainTI':
+        if len(yvals) > 0:
+            plt.hist(yvals, 20, color = ['b'])
+        plt.ylabel('Frequency')
+        plt.xlabel('Acceptor Inter-Chain TI (eV)')
+        plt.xlim([0, 1.2])
+        fileName = 'AcceptorInterTij.pdf'
+
+    elif mode == 'AcceptorIntraChainTITrim':
+        if len(yvals) > 0:
+            plt.hist(yvals, 20, color = ['b'])
+        plt.ylabel('Frequency')
+        plt.xlabel('Acceptor Intra-Chain TI (eV)')
+        plt.xlim([0, 1.2])
+        fileName = 'AcceptorIntraTijTrim.pdf'
+
+    elif mode == 'AcceptorInterChainTITrim':
+        if len(yvals) > 0:
+            plt.hist(yvals, 20, color = ['b'])
+        plt.ylabel('Frequency')
+        plt.xlabel('Acceptor Inter-Chain TI (eV)')
+        plt.xlim([0, 1.2])
+        fileName = 'AcceptorInterTijTrim.pdf'
+
+    elif mode == 'AcceptorHopMix':
+        plt.hist([yvals, xvals], bins = np.logspace(1, 18, 40), stacked = True, color = ['r', 'b'], label = ['Intra-Molecular', 'Inter-Molecular'])
+        plt.ylabel('Frequency')
+        plt.xlabel('Acceptor Hopping Rate (s' + r'$^{-1}$' + ')')
+        plt.xlim([1,1E18])
+        plt.xticks([1E0, 1E3, 1E6, 1E9, 1E12, 1E15, 1E18])
+        #plt.ylim([0,8000])
+        plt.legend(loc = 2, prop = {'size':18})
+        plt.gca().set_xscale('log')
+        fileName = 'AcceptorHoppingRateMixed.pdf'
 
     plt.savefig(saveDir+'/'+fileName)
     plt.clf()
-    print "Figure saved as", saveDir+"/"+fileName
+    print("Figure saved as", saveDir+"/"+fileName)
 
 
 def findIndex(string, character):
@@ -204,82 +268,222 @@ def calculateHopRate(lambdaij, Tij, deltaEij, T):
     return kij
 
 
+def splitMolecules(inputDictionary):
+    # Split the full morphology into individual molecules
+    moleculeAAIDs = []
+    moleculeLengths = []
+    # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
+    bondedAtoms = helperFunctions.obtainBondedList(inputDictionary['bond'])
+    moleculeList = [i for i in range(len(inputDictionary['type']))]
+    # Recursively add all atoms in the neighbour list to this molecule
+    for molID in range(len(moleculeList)):
+        moleculeList = updateMolecule(molID, moleculeList, bondedAtoms)
+    # Create a dictionary of the molecule data
+    moleculeData = {}
+    for atomID in range(len(inputDictionary['type'])):
+        if moleculeList[atomID] not in moleculeData:
+            moleculeData[moleculeList[atomID]] = [atomID]
+        else:
+            moleculeData[moleculeList[atomID]].append(atomID)
+    # Return the list of AAIDs and the lengths of the molecules
+    for moleculeID in list(moleculeData.keys()):
+        moleculeAAIDs.append(sorted(moleculeData[moleculeID]))
+        moleculeLengths.append(len(moleculeData[moleculeID]))
+    return moleculeAAIDs, moleculeLengths
+
+
+def updateMolecule(atomID, moleculeList, bondedAtoms):
+    # Recursively add all neighbours of atom number atomID to this molecule
+    try:
+        for bondedAtom in bondedAtoms[atomID]:
+            # If the moleculeID of the bonded atom is larger than that of the current one,
+            # update the bonded atom's ID to the current one's to put it in this molecule,
+            # then iterate through all of the bonded atom's neighbours
+            if moleculeList[bondedAtom] > moleculeList[atomID]:
+                moleculeList[bondedAtom] = moleculeList[atomID]
+                moleculeList = updateMolecule(bondedAtom, moleculeList, bondedAtoms)
+            # If the moleculeID of the current atom is larger than that of the bonded one,
+            # update the current atom's ID to the bonded one's to put it in this molecule,
+            # then iterate through all of the current atom's neighbours
+            elif moleculeList[bondedAtom] < moleculeList[atomID]:
+                moleculeList[atomID] = moleculeList[bondedAtom]
+                moleculeList = updateMolecule(atomID, moleculeList, bondedAtoms)
+            # Else: both the current and the bonded atom are already known to be in this
+            # molecule, so we don't have to do anything else.
+    except KeyError:
+        # This means that there are no bonded CG sites (i.e. it's a single molecule)
+        pass
+    return moleculeList
+
+
 if __name__ == "__main__":
     tempDirs = []
     for fileName in os.listdir(os.getcwd()):
-        if fileName[0] == 'T':
+        if ('py' not in fileName) and ('pdf' not in fileName) and ('store' not in fileName):
             tempDirs.append(fileName)
     plt.figure()
     for tempDir in tempDirs:
         for fileName in os.listdir(os.getcwd() + '/' + tempDir):
-            if "pickle" in fileName:
+            if ("pickle" in fileName) and (tempDir in fileName):
                 mainMorphologyPickleName = os.getcwd() + '/' + tempDir + '/' + fileName
-        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle(mainMorphologyPickleName)
+        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(mainMorphologyPickleName)
         HOMOLevels = []
         LUMOLevels = []
-        bandgap = []
-        transferIntegrals = []
-        transferIntegralsTrimmed = []
-        deltaEij = []
+        donorBandgap = []
+        donorTransferIntegrals = []
+        donorTransferIntegralsTrimmed = []
+        donorDeltaEij = []
+        acceptorBandgap = []
+        acceptorTransferIntegrals = []
+        acceptorTransferIntegralsTrimmed = []
+        acceptorDeltaEij = []
         for chromophore in chromophoreList:
             if chromophore.species == 'Donor':
                 HOMOLevels.append(chromophore.HOMO)
+                donorBandgap.append(chromophore.LUMO - chromophore.HOMO)
+                for neighbourLoc, transferIntegral in enumerate(chromophore.neighboursTI):
+                    if (transferIntegral is not None) and (chromophore.neighboursDeltaE[neighbourLoc] is not None):
+                        donorTransferIntegrals.append(transferIntegral)
+                        donorDeltaEij.append(chromophore.neighboursDeltaE[neighbourLoc])
+                for neighbourTI in chromophore.neighboursTI:
+                    if (neighbourTI != 0) and (neighbourTI is not None):
+                        donorTransferIntegralsTrimmed.append(neighbourTI)
             else:
                 LUMOLevels.append(chromophore.LUMO)
-            bandgap.append(chromophore.LUMO - chromophore.HOMO)
-            transferIntegrals += chromophore.neighboursTI
-            for neighbourTI in chromophore.neighboursTI:
-                if neighbourTI != 0:
-                    transferIntegralsTrimmed.append(neighbourTI)
-            deltaEij += chromophore.neighboursDeltaE
+                acceptorBandgap.append(chromophore.LUMO - chromophore.HOMO)
+                for neighbourLoc, transferIntegral in enumerate(chromophore.neighboursTI):
+                    if (transferIntegral is not None) and (chromophore.neighboursDeltaE[neighbourLoc] is not None):
+                        acceptorTransferIntegrals.append(transferIntegral)
+                        acceptorDeltaEij.append(chromophore.neighboursDeltaE[neighbourLoc])
+                for neighbourTI in chromophore.neighboursTI:
+                    if (neighbourTI != 0) and (neighbourTI is not None):
+                        acceptorTransferIntegralsTrimmed.append(neighbourTI)
 
-        binEdges, fitArgs = gaussFit(deltaEij)
+        donorBinEdges, donorFitArgs = gaussFit(donorDeltaEij, 'Donor')
+        acceptorBinEdges, acceptorFitArgs = gaussFit(acceptorDeltaEij, 'Acceptor')
 
-        plotHist(tempDir, HOMOLevels, 'HOMO')
-        plotHist(tempDir, transferIntegrals, 'TI')
-        plotHist(tempDir, transferIntegralsTrimmed, 'TITrimmed')
-        plotHist(tempDir, deltaEij, 'deltaEij', gaussBins=binEdges, fitArgs=fitArgs)
-        plotHist(tempDir, bandgap, 'Bandgap')
+        if len(HOMOLevels) > 0:
+            plotHist(tempDir, HOMOLevels, 'HOMO')
+            plotHist(tempDir, donorTransferIntegrals, 'DonorTI')
+            plotHist(tempDir, donorTransferIntegralsTrimmed, 'DonorTITrimmed')
+            plotHist(tempDir, donorDeltaEij, 'DonorDeltaEij', gaussBins=donorBinEdges, fitArgs=donorFitArgs)
+            plotHist(tempDir, donorBandgap, 'DonorBandgap')
+        if len(LUMOLevels) > 0:
+            plotHist(tempDir, LUMOLevels, 'LUMO')
+            plotHist(tempDir, acceptorTransferIntegrals, 'AcceptorTI')
+            plotHist(tempDir, acceptorTransferIntegralsTrimmed, 'AcceptorTITrimmed')
+            plotHist(tempDir, acceptorDeltaEij, 'AcceptorDeltaEij', gaussBins=acceptorBinEdges, fitArgs=acceptorFitArgs)
+            plotHist(tempDir, acceptorBandgap, 'AcceptorBandgap')
 
+        print("Determining molecule IDs...")
         CGIDToMolID = {}
-        for molID, molDict in enumerate(CGToAAIDMaster):
-            for CGID in molDict.keys():
-                CGIDToMolID[CGID] = molID
-        interChainHop = []
-        intraChainHop = []
-        interChainTI = []
-        intraChainTI = []
-        interChainTITrim = []
-        intraChainTITrim = []
-        lambdaij = 0.3063 * elementaryCharge
+        if CGToAAIDMaster is not None:
+            # Normal operation with a CGMorphology defined (fine-graining was performed)
+            for molID, molDict in enumerate(CGToAAIDMaster):
+                for CGID in list(molDict.keys()):
+                    CGIDToMolID[CGID] = molID
+        elif (len(parameterDict['CGSiteSpecies']) == 1) and (len(parameterDict['AARigidBodySpecies']) == 0):
+            print("Small-molecule system detected, assuming each chromophore is its own molecule...")
+            # When CGMorphology doesn't exist, and no rigid body species have been specified, then 
+            # every chromophore is its own molecule)
+            for index, chromo in enumerate(chromophoreList):
+                for CGID in chromo.CGIDs:
+                    CGIDToMolID[CGID] = chromo.ID
+        else:
+            # No CGMorphology, but not small molecules either, so determine molecules based on bonds
+            print("Polymeric system detected, determining molecules based on AA bonds (slow calculation)...")
+            moleculeAAIDs, moleculeLengths = splitMolecules(AAMorphologyDict)
+            for index, moleculeAAIDList in enumerate(moleculeAAIDs):
+                for AAID in moleculeAAIDList:
+                    CGIDToMolID[AAID] = index
+        donorInterChainHop = []
+        donorIntraChainHop = []
+        donorInterChainTI = []
+        donorIntraChainTI = []
+        donorInterChainTITrim = []
+        donorIntraChainTITrim = []
+        acceptorInterChainHop = []
+        acceptorIntraChainHop = []
+        acceptorInterChainTI = []
+        acceptorIntraChainTI = []
+        acceptorInterChainTITrim = []
+        acceptorIntraChainTITrim = []
+        try:
+            if parameterDict['reorganisationEnergyDonor'] is not None:
+                donorLambdaij = parameterDict['reorganisationEnergyDonor'] * elementaryCharge
+            if parameterDict['reorganisationEnergyAcceptor'] is not None:
+                acceptorLambdaij = parameterDict['reorganisationEnergyAcceptor'] * elementaryCharge
+        except KeyError: # Old MorphCT fix
+            print("Only one reorganisation energy found, assuming donor and continuing")
+            donorLambdaij = parameterDict['reorganisationEnergy'] * elementaryCharge
         T = 290
         for chromophore in chromophoreList:
             mol1ID = CGIDToMolID[chromophore.CGIDs[0]]
             for index, neighbour in enumerate(chromophore.neighbours):
+                if chromophore.neighboursTI[index] is None:
+                    continue
                 chromophore2 = chromophoreList[neighbour[0]]
                 mol2ID = CGIDToMolID[chromophore2.CGIDs[0]]
-                hopRate = calculateHopRate(lambdaij, chromophore.neighboursTI[index] * elementaryCharge, chromophore.neighboursDeltaE[index] * elementaryCharge, T)
+                if chromophore.species == 'Donor':
+                    hopRate = calculateHopRate(donorLambdaij, chromophore.neighboursTI[index] * elementaryCharge, chromophore.neighboursDeltaE[index] * elementaryCharge, T)
+                elif chromophore.species == 'Acceptor':
+                    hopRate = calculateHopRate(acceptorLambdaij, chromophore.neighboursTI[index] * elementaryCharge, chromophore.neighboursDeltaE[index] * elementaryCharge, T)
                 if mol1ID == mol2ID:
                     if chromophore2.ID > chromophore.ID:
-                        if hopRate != 0:
-                            intraChainHop.append(hopRate)
-                        intraChainTI.append(chromophore.neighboursTI[index])
-                        if chromophore.neighboursTI[index] != 0:
-                            intraChainTITrim.append(chromophore.neighboursTI[index])
+                        if chromophore.species == 'Donor':
+                            if hopRate != 0:
+                                donorIntraChainHop.append(hopRate)
+                            donorIntraChainTI.append(chromophore.neighboursTI[index])
+                            if chromophore.neighboursTI[index] != 0:
+                                donorIntraChainTITrim.append(chromophore.neighboursTI[index])
+                        elif chromophore.species == 'Acceptor':
+                            if hopRate != 0:
+                                acceptorIntraChainHop.append(hopRate)
+                            acceptorIntraChainTI.append(chromophore.neighboursTI[index])
+                            if chromophore.neighboursTI[index] != 0:
+                                acceptorIntraChainTITrim.append(chromophore.neighboursTI[index])
                 else:
                     if chromophore2.ID > chromophore.ID:
-                        if hopRate != 0:
-                            interChainHop.append(hopRate)
-                        interChainTI.append(chromophore.neighboursTI[index])
-                        if chromophore.neighboursTI[index] != 0:
-                            interChainTITrim.append(chromophore.neighboursTI[index])
+                        if chromophore.species == 'Donor':
+                            if hopRate != 0:
+                                donorInterChainHop.append(hopRate)
+                            donorInterChainTI.append(chromophore.neighboursTI[index])
+                            if chromophore.neighboursTI[index] != 0:
+                                donorInterChainTITrim.append(chromophore.neighboursTI[index])
+                        if chromophore.species == 'Acceptor':
+                            if hopRate != 0:
+                                acceptorInterChainHop.append(hopRate)
+                            acceptorInterChainTI.append(chromophore.neighboursTI[index])
+                            if chromophore.neighboursTI[index] != 0:
+                                acceptorInterChainTITrim.append(chromophore.neighboursTI[index])
+        if len(HOMOLevels) > 0:
+            if len(donorIntraChainHop) > 0:
+                plotHist(tempDir, donorIntraChainHop, 'DonorIntraChainHop')
+                plotHist(tempDir, donorIntraChainTI, 'DonorIntraChainTI')
+                plotHist(tempDir, donorIntraChainTITrim, 'DonorIntraChainTITrim')
+            if len(donorInterChainHop) > 0:
+                plotHist(tempDir, donorInterChainHop, 'DonorInterChainHop')
+                plotHist(tempDir, donorInterChainTI, 'DonorInterChainTI')
+                plotHist(tempDir, donorInterChainTITrim, 'DonorInterChainTITrim')
+            print("Donor intra-chain hops =", len(donorIntraChainHop), "Donor inter-chain hops =", len(donorInterChainHop))
+            plotHist(tempDir, donorIntraChainHop, 'DonorHopMix', xvals=donorInterChainHop)
+        if len(LUMOLevels) > 0:
+            if len(acceptorIntraChainHop) > 0:
+                plotHist(tempDir, acceptorIntraChainHop, 'AcceptorIntraChainHop')
+                plotHist(tempDir, acceptorIntraChainTI, 'AcceptorIntraChainTI')
+                plotHist(tempDir, acceptorIntraChainTITrim, 'AcceptorIntraChainTITrim')
+            if len(acceptorInterChainHop) > 0:
+                plotHist(tempDir, acceptorInterChainHop, 'AcceptorInterChainHop')
+                plotHist(tempDir, acceptorInterChainTI, 'AcceptorInterChainTI')
+                plotHist(tempDir, acceptorInterChainTITrim, 'AcceptorInterChainTITrim')
+            print("Acceptor intra-chain hops =", len(acceptorIntraChainHop), "Acceptor inter-chain hops =", len(acceptorInterChainHop))
+            plotHist(tempDir, acceptorIntraChainHop, 'AcceptorHopMix', xvals=acceptorInterChainHop)
 
-        plotHist(tempDir, intraChainHop, 'intraChainHop')
-        plotHist(tempDir, interChainHop, 'interChainHop')
-        plotHist(tempDir, intraChainTI, 'intraChainTI')
-        plotHist(tempDir, interChainTI, 'interChainTI')
-        plotHist(tempDir, intraChainTITrim, 'intraChainTITrim')
-        plotHist(tempDir, interChainTITrim, 'interChainTITrim')
 
-        print len(intraChainHop), len(interChainHop)
-        plotHist(tempDir, intraChainHop, 'hopMix', xvals=interChainHop)
+        if len(HOMOLevels) > 0:
+            print("DONOR HOMO LEVEL =", np.average(HOMOLevels), "+/-", np.std(HOMOLevels)/np.sqrt(len(HOMOLevels)))
+            print("DONOR BANDGAP =", np.average(donorBandgap), "+/-", np.std(donorBandgap)/np.sqrt(len(donorBandgap)))
+        if len(LUMOLevels) > 0:
+            print("ACCEPTOR LUMO LEVEL =", np.average(LUMOLevels), "+/-", np.std(LUMOLevels)/np.sqrt(len(LUMOLevels)))
+            print("ACCEPTOR BANDGAP =", np.average(acceptorBandgap), "+/-", np.std(acceptorBandgap)/np.sqrt(len(acceptorBandgap)))
+        print("\n")

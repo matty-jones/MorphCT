@@ -6,9 +6,10 @@ import sys
 
 class morphology:
     def __init__(self, morphologyXML, morphologyName, parameterDict, chromophoreList):
-        # Import parameters from the parXX.py
+        # Need to save the parameterDict in full as well as its component values because we're going to update the parameterDict with the new type mappings by the end of this code module.
         self.parameterDict = parameterDict
-        for key, value in parameterDict.iteritems():
+        # Import parameters from the parXX.py
+        for key, value in parameterDict.items():
             self.__dict__[key] = value
         self.xmlPath = morphologyXML
         self.morphologyName = morphologyName
@@ -20,7 +21,7 @@ class morphology:
 
     def analyseMorphology(self):
         # Split the morphology into individual molecules
-        print "Finding molecules..."
+        print("Finding molecules...")
         moleculeIDs, moleculeLengths = self.splitMolecules()
         rollingAAIndex = 0
         CGMorphologyDict = {}
@@ -35,27 +36,71 @@ class morphology:
         # first element and then another list of all the AAIDs corresponding to that CG site as the second
         # element.
 
+        # If no CGToTemplate info is present in the parameter dict, then we can assume that the morphology 
+        # is already fine-grained and so we can just return the important information and skip this module
+        if len(self.CGToTemplateDirs) == 0:
+            print("No CG to AA data found in parameter file - the morphology is already fine-grained! Skipping this module...")
+            # Write the XML file and create the pickle
+            print("Writing XML file...")
+            AAFileName = './outputFiles/' + self.morphologyName + '/morphology/' + self.morphologyName + '.xml'
+            atomisticMorphology = helperFunctions.addUnwrappedPositions(self.CGDictionary)
+            # Now write the morphology XML
+            helperFunctions.writeMorphologyXML(atomisticMorphology, AAFileName)
+            # And finally write the pickle with the CGDictionary as None (to indicate to MorphCT that no
+            # fine-graining has taken place), but the other parameters assigned as required.
+            pickleLocation = './outputFiles/' + self.morphologyName + '/code/' + self.morphologyName + '.pickle'
+            helperFunctions.writePickle((atomisticMorphology, None, None, self.parameterDict, self.chromophoreList), pickleLocation)
+            return atomisticMorphology, None, None, self.parameterDict, self.chromophoreList
+
         # Create a ghost particle dictionary to be added at the end of the morphology.
         # This way, we don't mess up the order of atoms later on when trying to split
         # back up into individual molecules and monomers.
         # The ghost dictionary contains all of the type T and type X particles that will
         # anchor the thiophene rings to the CG COM positions.
         ghostDictionary = {'position': [], 'image': [], 'unwrapped_position': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': []}
-        print "Adding molecules to the system..."
+
+        # Need to check for atom-type conflicts and suitably increment the type indices if more than
+        # one molecule type is being fine-grained
+        newTypeMappings = self.getNewTypeMappings(self.CGToTemplateDirs, self.CGToTemplateForceFields)
+        # Need to update the self.parameterDict, which will be rewritten at the end of this module
+        self.parameterDict['newTypeMappings'] = newTypeMappings
+        molecule = []
+        uniqueMappings = []
+        CGSites, mappings = helperFunctions.parallelSort(list(newTypeMappings.keys()), list(newTypeMappings.values()))
+        for index, mapping in enumerate(mappings):
+            if mapping not in uniqueMappings:
+                molecule.append([])
+                uniqueMappings.append(mapping)
+            molecule[-1].append(CGSites[index])
+        printExplanation = True
+        for index, CGSites in enumerate(molecule):
+            printMol = True
+            initialAtoms, finalAtoms = helperFunctions.parallelSort(list(uniqueMappings[index].keys()), list(uniqueMappings[index].values()))
+            for index, initialAtom in enumerate(initialAtoms):
+                if initialAtom == finalAtoms[index]:
+                    continue
+                if printExplanation is True:
+                    print("The following atom types have been remapped due to conflicting typenames in the atomistic templates:")
+                    printExplanation = False
+                if printMol is True:
+                    print("Atom types belonging the molecule described by", repr(CGSites)+":")
+                    printMol = False
+                print(initialAtom, "--->", finalAtoms[index])
+        print("Adding", len(moleculeIDs), "molecules to the system...")
         for moleculeNumber in range(len(moleculeIDs)):
-            print "Adding molecule number", moleculeNumber, "\r",
+            print("Adding molecule number", moleculeNumber, "\r", end=' ')
             sys.stdout.flush()
             # Obtain the AA dictionary for each molecule using the fine-grainining procedure
-            CGMoleculeDict, AAMoleculeDict, CGtoAAIDs, ghostDictionary = atomistic(moleculeNumber, moleculeIDs[moleculeNumber], self.CGDictionary, moleculeLengths, rollingAAIndex, ghostDictionary, self.parameterDict).returnData()
+            AAMoleculeDict, CGtoAAIDs, ghostDictionary = atomistic(moleculeNumber, moleculeIDs[moleculeNumber], self.CGDictionary, moleculeLengths, rollingAAIndex, ghostDictionary, self.parameterDict).returnData()
             CGToAAIDMaster.append(CGtoAAIDs)
             # Update the morphology dictionaries with this new molecule
-            for key in CGMoleculeDict.keys():
-                if key not in ['lx', 'ly', 'lz']:
-                    if key not in CGMorphologyDict.keys():
-                        CGMorphologyDict[key] = CGMoleculeDict[key]
-                    else:
-                        CGMorphologyDict[key] += CGMoleculeDict[key]
-                    if key not in AAMorphologyDict.keys():
+            for key in list(self.CGDictionary.keys()):
+                if key not in ['lx', 'ly', 'lz', 'time_step', 'dimensions']:
+                    #if key not in CGMorphologyDict.keys():
+                    #    CGMorphologyDict[key] = CGMoleculeDict[key]
+                    #else:
+                    #    CGMorphologyDict[key] += CGMoleculeDict[key]
+                    if key not in list(AAMorphologyDict.keys()):
                         AAMorphologyDict[key] = AAMoleculeDict[key]
                     else:
                         AAMorphologyDict[key] += AAMoleculeDict[key]
@@ -77,22 +122,24 @@ class morphology:
             if str(bond[2])[0] == '*':
                 ghostDictionary['bond'][bondNo][2] = int(bond[2][1:]) + totalNumberOfAtoms
         # Now append all ghosts to morphology
-        for key in ghostDictionary.keys():
+        for key in list(ghostDictionary.keys()):
             AAMorphologyDict[key] += ghostDictionary[key]
         # Finally, update the number of atoms
         AAMorphologyDict['natoms'] += len(ghostDictionary['type'])
-        print "\n"
+        print("\n")
         # Now write the XML file and create the pickle
-        print "Writing XML file..."
+        print("Writing XML file...")
         AAFileName = './outputFiles/' + self.morphologyName + '/morphology/' + self.morphologyName + '.xml'
         # Replace the `positions' with the `unwrapped_positions' ready for writing
         AAMorphologyDict = helperFunctions.replaceWrappedPositions(AAMorphologyDict)
+        # Update the additionalConstraints that we put in by checking all of the constraints have the correct names before writing
+        AAMorphologyDict = helperFunctions.checkConstraintNames(AAMorphologyDict)
         # Now write the morphology XML
         helperFunctions.writeMorphologyXML(AAMorphologyDict, AAFileName)
         # And finally write the pickle
         pickleLocation = './outputFiles/' + self.morphologyName + '/code/' + self.morphologyName + '.pickle'
-        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict, self.chromophoreList), pickleLocation)
-        return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict, self.chromophoreList
+        helperFunctions.writePickle((AAMorphologyDict, self.CGDictionary, CGToAAIDMaster, self.parameterDict, self.chromophoreList), pickleLocation)
+        return AAMorphologyDict, self.CGDictionary, CGToAAIDMaster, self.parameterDict, self.chromophoreList
 
     def splitMolecules(self):
         # Split the full morphology into individual molecules
@@ -112,7 +159,7 @@ class morphology:
             else:
                 moleculeData[moleculeList[atomID]].append(atomID)
         # Return the list of AAIDs and the lengths of the molecules
-        for moleculeID in moleculeData.keys():
+        for moleculeID in list(moleculeData.keys()):
             moleculeAAIDs.append(sorted(moleculeData[moleculeID]))
             moleculeLengths.append(len(moleculeData[moleculeID]))
         return moleculeAAIDs, moleculeLengths
@@ -140,6 +187,38 @@ class morphology:
             pass
         return moleculeList
 
+    def getNewTypeMappings(self, CGToTemplateDirs, CGToTemplateForceFields):
+        forceFieldLocations = []
+        forceFieldMappings = []
+        morphologyAtomTypes = []
+        CGToTemplateMappings = {}
+        for CGSite, directory in CGToTemplateDirs.items():
+            FFLoc = directory + '/' + CGToTemplateForceFields[CGSite]
+            if FFLoc not in forceFieldLocations:
+                forceFieldLocations.append(FFLoc)
+        for FFLoc in forceFieldLocations:
+            mappingForThisFF = {}
+            forceField = helperFunctions.loadFFXML(FFLoc)
+            for ljInteraction in forceField['lj']:
+                atomType = ljInteraction[0]
+                while atomType in morphologyAtomTypes:
+                    # Atom type already exists in morphology, so increment the atomType number by one
+                    for i in range(1,len(atomType)):
+                        # Work out where the integer start so we can increment it (should be i = 1 for one-character element names)
+                        try:
+                            integer = int(atomType[i:])
+                            break
+                        except:
+                            continue
+                    atomType = atomType[:i] + str(integer + 1)
+                morphologyAtomTypes.append(atomType)
+                mappingForThisFF[ljInteraction[0]] = atomType
+            forceFieldMappings.append(mappingForThisFF)
+        for CGSite, directory in CGToTemplateDirs.items():
+            FFLoc = directory + '/' + CGToTemplateForceFields[CGSite]
+            CGToTemplateMappings[CGSite] = forceFieldMappings[forceFieldLocations.index(FFLoc)]
+        return CGToTemplateMappings
+
 
 class atomistic:
     def __init__(self, moleculeIndex, siteIDs, CGDictionary, moleculeLengths, rollingAAIndex, ghostDictionary, parameterDict):
@@ -150,21 +229,22 @@ class atomistic:
         self.siteIDs = siteIDs
         self.CGDictionary = CGDictionary
         # Get the dictionary of all the CG sites in this molecule
-        self.CGMonomerDictionary = self.getCGMonomerDict()
+        #self.CGMonomerDictionary = self.getCGMonomerDict()
         # Import the parXX.py parameters
-        for key, value in parameterDict.iteritems():
+        for key, value in parameterDict.items():
             self.__dict__[key] = value
         self.AATemplatesDictionary = {}
         # Load the template file for each CG atom
-        for CGAtomType in self.CGToTemplateFiles.keys():
+        for CGAtomType in list(self.CGToTemplateFiles.keys()):
             templateDictionary = helperFunctions.loadMorphologyXML(self.CGToTemplateDirs[CGAtomType] + '/' + self.CGToTemplateFiles[CGAtomType])
+            templateDictionary = self.remapAtomTypes(templateDictionary, parameterDict['newTypeMappings'][CGAtomType])
             templateDictionary = helperFunctions.addUnwrappedPositions(templateDictionary)
             self.AATemplatesDictionary[CGAtomType] = templateDictionary
         self.AADictionary, self.atomIDLookupTable, self.ghostDictionary = self.runFineGrainer(ghostDictionary)
 
     def returnData(self):
         # Return the important fine-grained results from this class
-        return self.CGMonomerDictionary, self.AADictionary, self.atomIDLookupTable, self.ghostDictionary
+        return self.AADictionary, self.atomIDLookupTable, self.ghostDictionary
 
     def getCGMonomerDict(self):
         CGMonomerDictionary = {'position': [], 'image': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': [], 'lx': 0, 'ly': 0, 'lz': 0}
@@ -189,10 +269,26 @@ class atomistic:
         CGMonomerDictionary['natoms'] = len(CGMonomerDictionary['position'])
         return CGMonomerDictionary
 
+    def remapAtomTypes(self, templateDict, mappings):
+        # Remap the atom types first
+        for index, atomType in enumerate(templateDict['type']):
+            templateDict['type'][index] = mappings[atomType]
+        # Then rename the constraints appropriately
+        constraintTypes = ['bond', 'angle', 'dihedral', 'improper']
+        for constraintType in constraintTypes:
+            for constraintIndex, constraint in enumerate(templateDict[constraintType]):
+                newConstraint0 = ""  # Create a new constraint label
+                for atomID in constraint[1:]:
+                    newConstraint0 += templateDict['type'][atomID]
+                    newConstraint0 += '-'
+                    # Assign the constraint label
+                templateDict[constraintType][constraintIndex][0] = newConstraint0[:-1]
+        return templateDict
+
     def runFineGrainer(self, ghostDictionary):
         AADictionary = {'position': [], 'image': [], 'unwrapped_position': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': [], 'lx': 0, 'ly': 0, 'lz': 0}
         # Find the COMs of each CG site in the system, so that we know where to move the template to
-        CGCoMs = self.getAATemplatePosition(self.CGToTemplateAAIDs)
+        CGCoMs, self.CGToTemplateAAIDs = self.getAATemplatePosition(self.CGToTemplateAAIDs)
         # Need to keep track of the atom ID numbers globally - runFineGrainer sees individual monomers, atomistic sees molecules and the XML needs to contain the entire morphology.
         noAtomsInMolecule = 0
         CGTypeList = {}
@@ -204,6 +300,9 @@ class atomistic:
         atomIDLookupTable = {}
         # Calculate the total number of permitted atoms
         totalPermittedAtoms = self.totalPermittedAtoms(monomerList)
+        # Set the initial and final atom indices to None initially, so that we don't add terminating units for small molecules
+        startAtomIndex = None
+        endAtomIndex = None
         for monomerNo, monomer in enumerate(monomerList):
             # This monomer should have the same template file for all CG sites in the monomer, if not we've made a mistake in splitting the monomers. So check this:
             templateFiles = []
@@ -212,9 +311,9 @@ class atomistic:
                 templateFiles.append(self.CGToTemplateFiles[self.CGDictionary['type'][CGSite]])
                 monomerCGTypes.append(self.CGDictionary['type'][CGSite])
             if len(set(templateFiles)) != 1:
-                print monomer
-                print monomerCGTypes
-                print templateFiles
+                print(monomer)
+                print(monomerCGTypes)
+                print(templateFiles)
                 raise SystemError('NOT ALL MONOMER SITES ARE THE SAME TEMPLATE')
             # Copy the template dictionary for editing for this monomer
             thisMonomerDictionary = copy.deepcopy(self.AATemplatesDictionary[self.CGDictionary['type'][monomer[0]]])
@@ -235,19 +334,23 @@ class atomistic:
                     # Every rigid body needs a ghost particle that describes its CoM
                     AAIDPositions = []
                     AAIDAtomTypes = []
+                    # If the key is specified with no values, assume that all the AAIDs in the template contitute the rigid body
+                    if len(self.rigidBodySites[CGTypeList[siteID]]) == 0:
+                        self.rigidBodySites[CGTypeList[siteID]] = list(np.arange(len(self.CGToTemplateAAIDs[CGTypeList[siteID]])))
                     for AAID in self.rigidBodySites[CGTypeList[siteID]]:
                         thisMonomerDictionary['body'][AAID] = currentMonomerIndex
                         AAIDPositions.append(thisMonomerDictionary['unwrapped_position'][AAID])
                         AAIDAtomTypes.append(thisMonomerDictionary['type'][AAID])
                     # Now create the ghost particle describing the rigid body
-                    ghostDictionary['unwrapped_position'].append(helperFunctions.calcCOM(AAIDPositions, listOfAtomTypes=AAIDAtomTypes))
+                    ghostCOM = helperFunctions.calcCOM(AAIDPositions, listOfAtomTypes=AAIDAtomTypes)
+                    ghostDictionary['unwrapped_position'].append(ghostCOM)
                     ghostDictionary['mass'].append(1.0)
                     ghostDictionary['diameter'].append(1.0)
                     ghostDictionary['type'].append('R' + str(CGTypeList[siteID]))
                     ghostDictionary['body'].append(currentMonomerIndex)
                     ghostDictionary['charge'].append(0.0)
                     # Then create the corresponding CG anchorpoint
-                    ghostDictionary['unwrapped_position'].append(self.CGDictionary['unwrapped_position'][siteID])
+                    ghostDictionary['unwrapped_position'].append(ghostCOM)
                     ghostDictionary['mass'].append(1.0)
                     ghostDictionary['diameter'].append(1.0)
                     ghostDictionary['type'].append('X' + str(CGTypeList[siteID]))
@@ -290,9 +393,13 @@ class atomistic:
             # Now need to add in the additionalConstraints for this monomer (which include the bond, angle and dihedral for the inter-monomer connections.
             # However, we need a check to make sure that we don't add stuff for the final monomer (because those atoms +25 don't exist in this molecule!)
             for constraint in self.additionalConstraints:
-                # Check that we're not at the final monomer
+                # Firstly, skip this constraint if the current monomer doesn't have the relevant CG types
+                importantCGType = constraint[0]
+                if importantCGType not in monomerCGTypes:
+                    continue
+                # Also check that we're not at the final monomer
                 atFinalMonomer = False
-                for atomID in constraint[1:]:
+                for atomID in constraint[2:]:
                     if (noAtomsInMolecule + atomID + 1) > totalPermittedAtoms:
                         atFinalMonomer = True
                         break
@@ -301,28 +408,33 @@ class atomistic:
                 # Work out which key to write the constraint to based on its length:
                 # 3 = Bond, 4 = Angle, 5 = Dihedral, 6 = Improper
                 constraintType = ['bond', 'angle', 'dihedral', 'improper']
-                thisMonomerDictionary[constraintType[len(constraint) - 3]].append(constraint)
+                thisMonomerDictionary[constraintType[len(constraint) - 4]].append(constraint[1:])
             # Finally, increment the atom IDs to take into account previous monomers in this molecule and then update the AADictionary.
             # Note that the ghost dictionary bond was already updated to have the correct realAtom AAID for this molecule when the bond was created. Therefore, leave the ghost dictionary unchanged.
             thisMonomerDictionary, ghostDictionary = helperFunctions.incrementAtomIDs(thisMonomerDictionary, ghostDictionary, noAtomsInMolecule, modifyGhostDictionary=False)
             # Find the connecting atoms to the terminating units based on monomer number
+            # Only do this if the molecule length is > 1 (i.e. not small molecule)
             if len(self.moleculeTerminatingConnections) != 0:
-                if monomerNo == 0:
-                    startAtomIndex = noAtomsInMolecule + self.moleculeTerminatingConnections[0][1]
-                elif monomerNo == len(monomerList) - 1:
-                    endAtomIndex = noAtomsInMolecule + self.moleculeTerminatingConnections[1][1]
+                # Work out which types need terminating
+                terminateTheseTypes = set([connection[0] for connection in self.moleculeTerminatingConnections])
+                # Check if any of these CGTypes exist in the current monomer
+                for CGType in set([self.CGDictionary['type'][CGID] for CGID in monomer]):
+                    if CGType in terminateTheseTypes:
+                        terminationConnections = [self.moleculeTerminatingConnections[i] for i in range(len(self.moleculeTerminatingConnections)) if self.moleculeTerminatingConnections[i][0] == CGType]
+                        if monomerNo == 0:
+                            startAtomIndex = noAtomsInMolecule + terminationConnections[0][2]
+                        elif monomerNo == len(monomerList) - 1:
+                            endAtomIndex = noAtomsInMolecule + terminationConnections[1][2]
             noAtomsInMolecule += len(thisMonomerDictionary['type'])
             currentMonomerIndex += 1
             # Update the current AA dictionary with this monomer
             AADictionary = self.updateMoleculeDictionary(thisMonomerDictionary, AADictionary)
-            # All Monomers sorted, now for the final bits
-
+        # All Monomers sorted, now for the final bits
         AADictionary['natoms'] = noAtomsInMolecule
         for key in ['lx', 'ly', 'lz']:
             AADictionary[key] = thisMonomerDictionary[key]
         # Add in the terminating units
-        # TODO: This code only permits hydrogens to be used as terminating units current. Perhaps it wouldn't be that hard to implement a template-based termination unit for enhanced flexibility.
-        if len(self.moleculeTerminatingConnections) != 0:
+        if (startAtomIndex is not None) and (endAtomIndex is not None):
             AADictionary, startTerminatingHydrogen = helperFunctions.addTerminatingHydrogen(AADictionary, startAtomIndex)
             AADictionary, endTerminatingHydrogen = helperFunctions.addTerminatingHydrogen(AADictionary, endAtomIndex)
             atomIDLookupTable[monomerList[0][0]][1].append(startTerminatingHydrogen + self.noAtomsInMorphology)
@@ -390,7 +502,7 @@ class atomistic:
     def updateMoleculeDictionary(self, currentMonomerDictionary, AADictionary):
         # Update AADictionary with all of the values in currentMonomerDictionary,
         # except ths system dimensions which will be sorted later
-        keyList = AADictionary.keys()
+        keyList = list(AADictionary.keys())
         keyList.remove('lx')
         keyList.remove('ly')
         keyList.remove('lz')
@@ -402,9 +514,14 @@ class atomistic:
     def getAATemplatePosition(self, CGToTemplateAAIDs):
         CGCoMs = {}
         # For each CG site, determine the types and positions so we can calculate the COM
-        for siteName in CGToTemplateAAIDs.keys():
+        for siteName in list(CGToTemplateAAIDs.keys()):
             atomIDs = CGToTemplateAAIDs[siteName]
             AATemplate = self.AATemplatesDictionary[siteName]
+            # If the key's length is zero, then add all the atoms from the template
+            if len(atomIDs) == 0:
+                atomIDs = list(np.arange(len(AATemplate['type'])))
+                # Update self.CGToTemplateAAIDs with these for later on
+                CGToTemplateAAIDs[siteName] = atomIDs
             sitePositions = []
             siteTypes = []
             for atomID in atomIDs:
@@ -412,4 +529,4 @@ class atomistic:
                 sitePositions.append(AATemplate['unwrapped_position'][atomID])
             # These output as numpy arrays because we can't do maths with lists
             CGCoMs[siteName] = helperFunctions.calcCOM(sitePositions, listOfAtomTypes=siteTypes)
-        return CGCoMs
+        return CGCoMs, CGToTemplateAAIDs
