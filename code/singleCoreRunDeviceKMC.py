@@ -1006,6 +1006,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
 
             # Break if less than an hour before SLURM will kill the job
             if (timeLimit is not None) and (t1 > t0 + timeLimit - 3600):
+                helperFunctions.writeToFile(logFile, ["LESS THAN ONE HOUR TO GO, TERMINATING JOB AT THIS POINT"])
                 break
 
             if len(eventQueue) == 0:
@@ -1322,9 +1323,8 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
 
     except KeyboardInterrupt:
         time = T.time() - t0
-        print("KILL COMMAND RECIEVED...")
-        print("Plotting output graphs before terminating...")
-        helperFunctions.writeToFile(logFile, ["---=== RESULTS FROM CPU RANK " + sys.argv[2] + " ===---",
+        helperFunctions.writeToFile(logFile, ["KILL COMMAND RECIEVED...", "Plotting output graphs before terminat" +
+                                              "ing...", "---=== RESULTS FROM CPU RANK " + sys.argv[2] + " ===---",
                                               "Run terminated after " + str(KMCIterations) +
                                               " iterations (globalTime = " + str(globalTime) + ") after " +
                                               str(time) + " seconds",
@@ -1403,9 +1403,8 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     #plt.savefig(outputFiguresDir + 'convergence.pdf')
     #return
     time = T.time() - t0
-    print("SIMULATION COMPLETED")
-    print("Plotting output graphs...")
-    helperFunctions.writeToFile(logFile, ["---=== RESULTS FROM CPU RANK " + sys.argv[2] + " ===---",
+    helperFunctions.writeToFile(logFile, ["SIMULATION COMPLETED", "Plotting Output Graphs...",
+                                          "---=== RESULTS FROM CPU RANK " + sys.argv[2] + " ===---",
                                           "Simulation voltage = " + str(voltageVal),
                                           "Run completed after " + str(KMCIterations) +
                                           " iterations (globalTime = " + str(globalTime) + ") after " +
