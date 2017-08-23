@@ -779,14 +779,14 @@ def pushToQueue(queue, event):
             pass
         helperFunctions.writeToFile(logFile, ["Terminating..."])
         for index, carrier in globalCarrierDict.items():
-            print(carrier.currentDevicePosn, carrier.currentChromophore.posn)
+            helperFunctions.writeToFile(logFile, [str(carrier.currentDevicePosn) + " " + str(carrier.currentChromophore.posn)])
         for carrier1ID, carrier1 in globalCarrierDict.items():
             for carrier2ID, carrier2 in globalCarrierDict.items():
                 if carrier1ID >= carrier2ID:
                     continue
                 carrier1posn = (78 * np.array(carrier1.currentDevicePosn)) + np.array(carrier1.currentChromophore.posn)
                 carrier2posn = (78 * np.array(carrier2.currentDevicePosn)) + np.array(carrier2.currentChromophore.posn)
-                print(carrier1ID, carrier2ID, helperFunctions.calculateSeparation(carrier1posn, carrier2posn))
+                helperFunctions.writeToFile(logFile, [str(carrier1ID) + " " + str(carrier2ID) + " " + str(helperFunctions.calculateSeparation(carrier1posn, carrier2posn))])
         raise KeyboardInterrupt
     event = tuple(event)
     heapq.heappush(queue, event)
@@ -880,7 +880,7 @@ def plot3DTrajectory(injectSource, carriersToPlot, parameterDict, deviceArray, o
             continue
     fileName = outputDir + carrierString + '_traj.pdf'
     plt.savefig(fileName)
-    print("Figure saved as " + fileName)
+    helperFunctions.writeToFile(logFile, ["Figure saved as " + fileName])
     plt.close()
 
 
@@ -1149,7 +1149,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     if (injectedCarrier.hopTime is not None) and (injectedCarrier.hopTime > 1):
                         helperFunctions.writeToFile(logFile, ["DARK INJECTION LED TO ELECTRON WITH CRAZY HOPTIME"])
                         for carrierFromList in globalCarrierDict.values():
-                            print(carrierFromList.currentDevicePosn, carrierFromList.currentChromophore.posn)
+                            helperFunctions.writeToFile(logFile, [str(carrierFromList.currentDevicePosn) + " " + str(carrierFromList.currentChromophore.posn)])
                         helperFunctions.writeToFile(logFile, [str(injectedCarrier.currentChromophore.ID)])
                         helperFunctions.writeToFile(logFile, [repr(injectedCarrier.__dict__)])
                         exit()
