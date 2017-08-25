@@ -255,7 +255,6 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType):
         plt.title(carrierType + ' transport for:' + directory, fontsize = 24)
     ax.dist = 11
     plt.savefig(directory + '/anisotropy' + carrierType + '.pdf')
-    #plt.show()
     plt.clf()
     print("Figure saved as", directory + "/anisotropy" + carrierType + ".pdf")
     return anisotropy
