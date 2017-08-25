@@ -107,7 +107,7 @@ def plotConnections(chromophoreList, simExtent, carrierHistory, directory, carri
                     if (np.abs(coords2[0] - coords1[0]) < simExtent[0] / 2.0) and (np.abs(coords2[1] - coords1[1]) < simExtent[1] / 2.0) and (np.abs(coords2[2] - coords1[2]) < simExtent[2] / 2.0):
                         #colourIntensity = value / normalizeTo
                         colourIntensity = np.log10(value) / np.log10(normalizeTo)
-                        ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = plt.cm.Blues(colourIntensity), linewidth = 0.5)
+                        ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = plt.cm.Blues(colourIntensity), linewidth = 0.5, alpha = colourIntensity)
     fileName = '3d' + carrierType + '.pdf'
     plt.savefig(directory + '/' + fileName)
     print("Figure saved as", directory + "/" + fileName)
