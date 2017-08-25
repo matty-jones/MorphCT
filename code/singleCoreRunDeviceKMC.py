@@ -1142,9 +1142,9 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     globalCarrierDict[carrierIndex] = injectedCarrier
                     carrierIndex += 1
                     # Update the chromophore occupation
-                    helperFunctions.writeToFile(logFile, ["PREVIOUS OCCUPATION = " + repr(injectChromophore.occupied)])
+                    #helperFunctions.writeToFile(logFile, ["PREVIOUS OCCUPATION = " + repr(injectChromophore.occupied)])
                     injectChromophore.occupied.append(injectSite.devicePosn)
-                    helperFunctions.writeToFile(logFile, ["UPDATED ON INJECTION = " + repr(injectChromophore.occupied)])
+                    #helperFunctions.writeToFile(logFile, ["UPDATED ON INJECTION = " + repr(injectChromophore.occupied)])
                     # Determine the injected carrier's next hop and queue it
                     injectedCarrier.calculateBehaviour()
                     if (injectedCarrier.hopTime is not None) and (injectedCarrier.hopTime > 1):
