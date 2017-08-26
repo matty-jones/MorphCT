@@ -53,6 +53,7 @@ def moveBondedAtoms(centralAtom, morphology, bondDict):
             morphology = moveBondedAtoms(bondedAtom, morphology, bondDict)
         else:
             #print("Move was unnecessary")
+            pass
     return morphology
 
 
