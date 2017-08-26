@@ -118,7 +118,7 @@ if __name__ == "__main__":
     # ---==== P3HT ====---
     print("Using data for P3HT")
     hydrogensToAdd = {'CA':[[2, 1]],
-                      'CT':[[2, 2],[1,3]]}
+                      'CT':[[2, 2],[1, 3]]}
     sigmaVal = 3.905
     # ---==== PERYLENE/PERYLOTHIOPHENE ====---
     #print("Using data for Perylene/Perylothiophene")
