@@ -101,9 +101,10 @@ def addHydrogensToMorph(morphologyDict, hydrogenPositions):
         morphologyDict['unwrapped_position'].append(hydrogenAtom[1])
         morphologyDict['bond'].append(['C-H', hydrogenAtom[0], morphologyDict['natoms']])
         morphologyDict['natoms'] += 1
-        otherProperties = ['mass', 'charge', 'body', 'diameter']
-        for propName in otherProperties:
-            morphologyDict[propName].append(morphologyDict[propName][hydrogenAtom[0]])
+        morphologyDict['mass'].append(1.00794)
+        morphologyDict['charge'].append(0.0)
+        morphologyDict['diameter'].append(0.53)
+        morphologyDict['body'].append(morphologyDict['body'][hydrogenAtom[0]])
     return morphologyDict
 
 
@@ -116,21 +117,21 @@ if __name__ == "__main__":
     #                  'CE':[[1, 3]]}  # If the atom type is CE and has only one bond, add 3 hydrogens
     #sigmaVal = 1.0
     # ---==== P3HT ====---
-    print("Using data for P3HT")
-    hydrogensToAdd = {'CA':[[2, 1]],
-                      'CT':[[2, 2],[1, 3]]}
-    sigmaVal = 3.905
+    #print("Using data for P3HT")
+    #hydrogensToAdd = {'CA':[[2, 1]],
+    #                  'CT':[[2, 2],[1, 3]]}
+    #sigmaVal = 3.905
     # ---==== PERYLENE/PERYLOTHIOPHENE ====---
     #print("Using data for Perylene/Perylothiophene")
     #hydrogensToAdd = {'C':[[2, 1]]}
     #sigmaVal = 3.905
     ## ---==== BDT-TPD ====---
-    #print("Using data for BDT-TPD")
-    #hydrogensToAdd = {'CS':[[2, 1]],
-    #                  'C!':[[2, 1]],
-    #                  'CT':[[2, 2],[1, 3]],
-    #                  'CP':[[2, 1]]}
-    #sigmaVal = 3.905
+    print("Using data for BDT-TPD")
+    hydrogensToAdd = {'CS':[[2, 1]],
+                      'C!':[[2, 1]],
+                      'CT':[[2, 2],[1, 3], [3, 1]],
+                      'CP':[[2, 1]]}
+    sigmaVal = 3.55
 
     print("THIS FUNCTION IS SET UP TO USE A DICTIONARY TO DEFINE HOW MANY HYDROGENS TO ADD TO BONDS OF A SPECIFIC TYPE WITH A CERTAIN NUMBER OF BONDS")
     print(hydrogensToAdd)
@@ -144,4 +145,4 @@ if __name__ == "__main__":
         hydrogenPositions = calculateHydrogenPositions(morphologyDict, hydrogensToAdd)
         morphologyDict = addHydrogensToMorph(morphologyDict, hydrogenPositions)
         morphologyDict = helperFunctions.addWrappedPositions(morphologyDict)
-        helperFunctions.writeMorphologyXML(morphologyDict, inputFile.replace('.xml','_AA.xml'))#, sigma = sigmaVal)
+        helperFunctions.writeMorphologyXML(morphologyDict, inputFile.replace('.xml','_AA.xml'), checkWrappedPosns=False)#, sigma = sigmaVal)
