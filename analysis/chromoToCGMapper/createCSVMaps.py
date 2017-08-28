@@ -75,9 +75,9 @@ def createNewCSV(outputFile, data):
 if __name__ == "__main__":
     for pickleFile in os.listdir('./inputPickles'):
         outputFile = './outputCSVs/' + pickleFile.replace('.pickle', '_kij.csv')
-        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList, carrierList = helperFunctions.loadPickle('./inputPickles/'+pickleFile)
+        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle('./inputPickles/'+pickleFile)
         CSVData = []
-        print "Examining chromophores..."
+        print("Examining chromophores...")
         for chromo1 in chromophoreList:
             for index, neighbour in enumerate(chromo1.neighbours):
                 # Only consider pairs X-Y where Y > X
@@ -86,11 +86,12 @@ if __name__ == "__main__":
                     continue
                 Tij = chromo1.neighboursTI[index]
                 deltaE = chromo1.neighboursDeltaE[index]
-                Kij = calcHoppingRate(Tij, deltaE)
-                CGIDs1 = chromo1.CGIDs
-                CGIDs2 = chromophoreList[chromo2ID].CGIDs
-                if Kij > 1E5:
-                    CSVData.append([str(chromo1.ID), str(chromo2ID), str(Kij), repr(CGIDs1), repr(CGIDs2)])
-        print "Writing CSV file..."
+                if (Tij is not None) and (deltaE is not None):
+                    Kij = calcHoppingRate(Tij, deltaE)
+                    CGIDs1 = chromo1.CGIDs
+                    CGIDs2 = chromophoreList[chromo2ID].CGIDs
+                    if Kij > 1E5:
+                        CSVData.append([str(chromo1.ID), str(chromo2ID), str(Kij), repr(CGIDs1), repr(CGIDs2)])
+        print("Writing CSV file...")
         createNewCSV(outputFile, CSVData)
-        print "CSV file written to", str(outputFile)+"!"
+        print("CSV file written to", str(outputFile)+"!")
