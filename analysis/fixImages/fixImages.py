@@ -63,4 +63,4 @@ if __name__ == "__main__":
     morphology = zeroOutImages(morphology)
     bondDict = getBondDict(morphology)
     morphology = checkBonds(morphology, bondDict)
-    helperFunctions.writeMorphologyXML(morphology, "fixed_" + fileName)
+    helperFunctions.writeMorphologyXML(morphology, "imageFix_" + fileName)
