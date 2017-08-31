@@ -82,11 +82,20 @@ def plotHeatMap(carrierHistory, directory):
 def plotConnections(chromophoreList, simExtent, carrierHistory, directory, carrierType):
     # A complicated function that shows connections between carriers in 3D that carriers prefer to hop between.
     # Connections that are frequently used are highlighted in black, whereas rarely used connections are more white.
-    fig = plt.gcf()
-    ax = p3.Axes3D(fig)
     # Find a good normalisation factor
     carrierHistory = carrierHistory.toarray()
     normalizeTo = np.max(carrierHistory)
+    # Try to get the colour map first
+    colormap = plt.cm.plasma
+    minimum = np.min(carrierHistory[np.nonzero(carrierHistory)])
+    maximum = np.max(carrierHistory[np.nonzero(carrierHistory)])
+    plt.gcf()
+    levels = np.linspace(np.log10(minimum), np.log10(maximum), 100)
+    coloursForMap = plt.contourf([[0, 0], [0, 0]], levels, cmap = colormap)
+    plt.clf()
+    # Now for the actual plot
+    fig = plt.gcf()
+    ax = p3.Axes3D(fig)
     for chromo1, row in enumerate(carrierHistory):
         for chromo2, value in enumerate(row):
             if value > 0:
@@ -107,9 +116,12 @@ def plotConnections(chromophoreList, simExtent, carrierHistory, directory, carri
                     if (np.abs(coords2[0] - coords1[0]) < simExtent[0] / 2.0) and (np.abs(coords2[1] - coords1[1]) < simExtent[1] / 2.0) and (np.abs(coords2[2] - coords1[2]) < simExtent[2] / 2.0):
                         #colourIntensity = value / normalizeTo
                         colourIntensity = np.log10(value) / np.log10(normalizeTo)
-                        ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = plt.cm.Blues(colourIntensity), linewidth = 0.5, alpha = colourIntensity)
+                        ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = colormap(colourIntensity), linewidth = 0.5, alpha = colourIntensity)
+    tickLocation = range(0, int(np.round(np.log10(maximum))), int(np.round(np.log10(maximum)/6)))
+    cbar = plt.colorbar(coloursForMap, ticks=tickLocation)#np.linspace(np.log10(minimum), np.log10(maximum), 6))
+    cbar.ax.set_yticklabels([r'10$^{{{}}}$'.format(x) for x in tickLocation])
     fileName = '3d' + carrierType + '.pdf'
-    plt.savefig(directory + '/' + fileName)
+    plt.savefig(directory + '/' + fileName, bbox_inches='tight')
     print("Figure saved as", directory + "/" + fileName)
     plt.clf()
 
