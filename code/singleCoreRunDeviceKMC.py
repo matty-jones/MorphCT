@@ -795,7 +795,7 @@ def pushToQueue(queue, event):
 
 def plotEventTimeDistribution(eventLog, outputDir, fastest, slowest):
     fig = plt.figure()
-    plt.hist([eventLog[_] for _ in eventLog.keys()], bins=np.logspace(int(np.floor(np.log10(fastest))), int(np.ceil(np.log10(slowest))), 10), color=['r', 'g', 'c', 'm', 'b', 'y'], label=eventLog.keys(), linewidth=0)
+    plt.hist([eventLog[eventType] for eventType in sorted(eventLog.keys())], bins=np.logspace(int(np.floor(np.log10(fastest))), int(np.ceil(np.log10(slowest))), 10), color=['r', 'g', 'c', 'm', 'b', 'y'], label=eventLog.keys(), linewidth=0)
     plt.legend(loc = 1, prop = {'size':6})
     plt.gca().set_xscale('log')
     plt.gca().set_yscale('log')
