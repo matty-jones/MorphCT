@@ -126,12 +126,19 @@ if __name__ == "__main__":
     #hydrogensToAdd = {'C':[[2, 1]]}
     #sigmaVal = 3.905
     ## ---==== BDT-TPD ====---
-    print("Using data for BDT-TPD")
-    hydrogensToAdd = {'CS':[[2, 1]],
-                      'C!':[[2, 1]],
-                      'CT':[[2, 2],[1, 3], [3, 1]],
-                      'CP':[[2, 1]]}
-    sigmaVal = 3.55
+    #print("Using data for BDT-TPD")
+    #hydrogensToAdd = {'CS':[[2, 1]],
+    #                  'C!':[[2, 1]],
+    #                  'CT':[[2, 2],[1, 3], [3, 1]],
+    #                  'CP':[[2, 1]]}
+    #sigmaVal = 3.55
+    # ---==== P3HT & PCBM ====---
+    print("Using Data for P3HT/PCBM")
+    hydrogensToAdd = {'CA': [[2, 1]],
+                      'CT': [[2, 2], [1, 3]],
+                      'FCA': [[2, 1]],
+                      'FCT': [[2, 2], [1, 3]]}
+    sigmaVal = 3.905
 
     print("THIS FUNCTION IS SET UP TO USE A DICTIONARY TO DEFINE HOW MANY HYDROGENS TO ADD TO BONDS OF A SPECIFIC TYPE WITH A CERTAIN NUMBER OF BONDS")
     print(hydrogensToAdd)
