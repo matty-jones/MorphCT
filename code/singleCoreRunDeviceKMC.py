@@ -122,7 +122,7 @@ class exciton:
         return False
 
     def calculateHop(self):
-        # First thing's first, if the current global time is > creationTime + lifeTime then this exciton recombined before the hop so we need to remove it from the system
+        # First things first, if the current global time is > creationTime + lifeTime then this exciton recombined before the hop so we need to remove it from the system
         if globalTime > (self.creationTime + self.recombinationTime):
             return []
 
@@ -1100,10 +1100,10 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         globalChromophoreData.returnSpecificChromophore(injectedExciton.currentDevicePosn, injectedExciton.holeChromophore.ID).occupied.append(injectedExciton.currentDevicePosn)
                         # Now determine the behaviour of both carriers, and add their next hops to the KMC queue
                         injectedElectron.calculateBehaviour()
-                        if injectedElectron.hopTime is not None:
+                        if (injectedElectron.hopTime is not None) and (injectedElectron.destinationChromophore is not None):
                             eventQueue = pushToQueue(eventQueue, (injectedElectron.hopTime, 'carrierHop', injectedElectron))
                         injectedHole.calculateBehaviour()
-                        if injectedHole.hopTime is not None:
+                        if (injectedHole.hopTime is not None) and (injectedHole.destinationChromophore is not None):
                             eventQueue = pushToQueue(eventQueue, (injectedHole.hopTime, 'carrierHop', injectedHole))
                     else:
                         # Injected onto a site with no connections, so this exciton will eventually die
@@ -1154,7 +1154,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         helperFunctions.writeToFile(logFile, [str(injectedCarrier.currentChromophore.ID)])
                         helperFunctions.writeToFile(logFile, [repr(injectedCarrier.__dict__)])
                         exit()
-                    if injectedCarrier.hopTime is not None:
+                    if (injectedCarrier.hopTime is not None) and (injectedCarrier.destinationChromophore is not None):
                         eventQueue = pushToQueue(eventQueue, (injectedCarrier.hopTime, 'carrierHop', injectedCarrier))
                 else:
                     helperFunctions.writeToFile(logFile, ["CANNOT INJECT HERE, DESTINATION CHROMOPHORE IS ALREADY OCCUPIED"])
@@ -1186,7 +1186,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     # As long as this exciton hasn't just been removed, recalculate its behaviour
                     hoppingExciton.calculateBehaviour()
                 # At this point, dissociate the exciton or remove it from the system if needed.
-                if (hoppingExciton.canDissociate is True) or (hoppingExciton.hopTime is None):
+                if (hoppingExciton.canDissociate is True) or (hoppingExciton.hopTime is None) or (hoppingExciton.destinationChromophore is None):
                     # Exciton needs to be removed. As we've already popped it from the queue, we just need to not queue it up again.
                     if parameterDict['recordCarrierHistory'] is True:
                         allCarriers.append(hoppingExciton)
@@ -1214,10 +1214,10 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                             allCarriers += [injectedElectron, injectedHole]
                         # Now determine the behaviour of both carriers, and add their next hops to the KMC queue
                         injectedElectron.calculateBehaviour()
-                        if injectedElectron.hopTime is not None:
+                        if (injectedElectron.hopTime is not None) and (injectedElectron.destinationChromophore is not None):
                             eventQueue = pushToQueue(eventQueue, (injectedElectron.hopTime, 'carrierHop', injectedElectron))
                         injectedHole.calculateBehaviour()
-                        if injectedHole.hopTime is not None:
+                        if (injectedHole.hopTime is not None) and (injectedHole.destinationChromophore is not None):
                             eventQueue = pushToQueue(eventQueue, (injectedHole.hopTime, 'carrierHop', injectedHole))
                     else:
                         helperFunctions.writeToFile(logFile, ["EVENT: Exciton Recombining after " + str(KMCIterations) +
@@ -1251,7 +1251,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 if hoppingCarrier.removedTime is None:
                     # As long as this carrier hasn't just been removed, recalculate its behaviour
                     hoppingCarrier.calculateBehaviour()
-                if hoppingCarrier.hopTime is None:
+                if (hoppingCarrier.hopTime is None) or (hoppingCarrier.destinationChromophore is None):
                     # Carrier is either trapped with no eligible hops or has just been extracted
                     if hoppingCarrier.removedTime is not None:
                         # Carrier has been extracted, so remove it from the carriers dictionary
