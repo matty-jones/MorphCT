@@ -52,21 +52,36 @@ def getFFCoeffs(FFName):
         harmonic_angle.set_coeff(angleCoeff[0], k=angleCoeff[1], t0=angleCoeff[2])
 
     # set dihedral coeffs
-    table_dihedral = dihedral.table(width=1000)
-    for dihedralCoeff in dihedralCoeffs:
-        table_dihedral.dihedral_coeff.set(dihedralCoeff[0], func=multiHarmonicTorsion, coeff=dict(V0=dihedralCoeff[1], V1=dihedralCoeff[2], V2=dihedralCoeff[3], V3=dihedralCoeff[4], V4=dihedralCoeff[5]))
+    if len(dihedralCoeffs[0]) == 6:
+        # Multiharmonic
+        table_dihedral = dihedral.table(width=1000)
+        for dihedralCoeff in dihedralCoeffs:
+            table_dihedral.dihedral_coeff.set(dihedralCoeff[0], func=multiHarmonicTorsion, coeff=dict(V0=dihedralCoeff[1], V1=dihedralCoeff[2], V2=dihedralCoeff[3], V3=dihedralCoeff[4], V4=dihedralCoeff[5]))
+    elif len(dihedralCoeffs[0]) == 5:
+        # OPLS
+        opls_dihedral = dihedral.opls()
+        for dihedralCoeff in dihedralCoeffs:
+            opls_dihedral.set_coeff(dihedralCoeff[0], k1 = dihedralCoeff[1], k2 = dihedralCoeff[2], k3 = dihedralCoeff[3], k4 = dihedralCoeff[4])
+    else:
+        raise SystemError("UNKNOWN DIHEDRAL TYPE")
 
     # set Improper Coeffs
     if len(improperCoeffs) > 0:
-        harmonic_improper = hoomd.md.improper.harmonic()
+        harmonic_improper = improper.harmonic()
         for improperCoeff in improperCoeffs:
             harmonic_improper.improper_coeff.set(improperCoeff[0], k=improperCoeff[1], chi=improperCoeff[2])
 
 
 if __name__ == "__main__":
-    FFFileName = 'FFP3HT.xml'
-    filesToRun = []
-    fileName = sys.argv[1]
+    try:
+        fileName = sys.argv[1]
+        FFFileName = sys.argv[2]
+        temperature = float(sys.argv[3])
+        targetBoxSize = float(sys.argv[4])
+    except:
+        print("Please run this script using the following syntax:")
+        print("python shrinkHOOMD1AA.py <MORPHOLOGY_FILE_LOC> <FORCEFIELD_FILE_LOC> <TEMPERATURE> <TARGET_BOX_SIZE>")
+        exit()
 
     print("RUNNING", fileName)
 
@@ -78,14 +93,14 @@ if __name__ == "__main__":
     nonRigidGroup = group.nonrigid()
 
     # Get the initial temperature of the simulation
-    hyphenLocs = helperFunctions.findIndex(fileName, '-')
-    temperature = fileName[hyphenLocs[3]+1:hyphenLocs[4]][1:]  # HARD CODED for the standard Jankowski naming nomenclature
+    #hyphenLocs = helperFunctions.findIndex(fileName, '-')
+    #temperature = fileName[hyphenLocs[3]+1:hyphenLocs[4]][1:]  # HARD CODED for the standard Jankowski naming nomenclature
 
     integrate.mode_standard(dt=0.001);
     rigidIntegrator = integrate.nvt_rigid(group=rigidGroup, T=temperature, tau=1.0)
     nonRigidIntegrator = integrate.nvt(group=nonRigidGroup, T=temperature, tau=1.0)
 
-    run_time = 1e6
+    run_time = 1e7
 
     dump.dcd(filename=fileName.replace(".xml", ".dcd"), overwrite=True, period=int(run_time/500))
     analyze.log(filename=fileName.replace(".xml", ".log"), quantities=['potential_energy'],
@@ -93,7 +108,8 @@ if __name__ == "__main__":
 
     # Get the initial box size dynamically
     initialMorphology = helperFunctions.loadMorphologyXML(fileName)
-    update.box_resize(L = variant.linear_interp([(0, initialMorphology['lx']), (run_time, 85.18963051)]))  # HARD CODED for the ordered P3HT morphology volume size (atomistic, no scaling)
+    update.box_resize(L = variant.linear_interp([(0, initialMorphology['lx']), (run_time, targetBoxSize)]))
+    #update.box_resize(L = variant.linear_interp([(0, initialMorphology['lx']), (run_time, 85.18963051)]))  # HARD CODED for the ordered P3HT morphology volume size (atomistic, no scaling)
     run(run_time)
     dump.xml(filename="postshrink_" + fileName, all=True)
     run(run_time)
