@@ -75,7 +75,7 @@ def plotHeatMap(carrierHistory, directory):
     cax.patch.set_alpha(0)
     cax.set_frame_on(False)
     plt.colorbar(orientation='vertical')
-    plt.savefig(directory + '/heatmap.pdf')
+    plt.savefig(directory + '/heatmap.pdf', bbox_inches='tight')
     plt.clf()
 
 
@@ -117,7 +117,7 @@ def plotConnections(chromophoreList, simExtent, carrierHistory, directory, carri
                         #colourIntensity = value / normalizeTo
                         colourIntensity = np.log10(value) / np.log10(normalizeTo)
                         ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = colormap(colourIntensity), linewidth = 0.5, alpha = colourIntensity)
-    tickLocation = range(0, int(np.round(np.log10(maximum))), int(np.round(np.log10(maximum)/6)))
+    tickLocation = range(0, int(np.log10(maximum)) + 1), 1)
     cbar = plt.colorbar(coloursForMap, ticks=tickLocation)#np.linspace(np.log10(minimum), np.log10(maximum), 6))
     cbar.ax.set_yticklabels([r'10$^{{{}}}$'.format(x) for x in tickLocation])
     fileName = '3d' + carrierType + '.pdf'
@@ -164,7 +164,7 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     plt.ylabel('MSD (m'+r'$^{2}$)')
     #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
     fileName = 'LinMSD' + carrierType + '.pdf'
-    plt.savefig(directory + '/' + fileName)
+    plt.savefig(directory + '/' + fileName, bbox_inches='tight')
     plt.clf()
     print("Figure saved as", directory + "/" + fileName)
     plt.semilogx(times, MSDs)
@@ -174,7 +174,7 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     plt.ylabel('MSD (m'+r'$^{2}$)')
     #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
     fileName = 'SemiLogMSD' + carrierType + '.pdf'
-    plt.savefig(directory + '/' + fileName)
+    plt.savefig(directory + '/' + fileName, bbox_inches='tight')
     plt.clf()
     print("Figure saved as", directory + "/" + fileName)
     plt.plot(times, MSDs)
@@ -186,7 +186,7 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     plt.yscale('log')
     #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
     fileName = 'LogMSD' + carrierType + '.pdf'
-    plt.savefig(directory + '/' + fileName)
+    plt.savefig(directory + '/' + fileName, bbox_inches='tight')
     plt.clf()
     print("Figure saved as", directory + "/" + fileName)
     return mobility, mobError
@@ -266,7 +266,7 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType):
     except:
         plt.title(carrierType + ' transport for:' + directory, fontsize = 24)
     ax.dist = 11
-    plt.savefig(directory + '/anisotropy' + carrierType + '.pdf')
+    plt.savefig(directory + '/anisotropy' + carrierType + '.pdf', bbox_inches='tight')
     plt.clf()
     print("Figure saved as", directory + "/anisotropy" + carrierType + ".pdf")
     return anisotropy
@@ -297,7 +297,7 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierTy
     plt.gca().set_xscale('log')
     plt.errorbar(xvals, yvals, xerr = 0, yerr = yerrs)
     fileName = './mobility' + carrierType + '.pdf'
-    plt.savefig(fileName)
+    plt.savefig(fileName, bbox_inches='tight')
     plt.clf()
     print("Figure saved as " + fileName)
 
@@ -305,7 +305,7 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierTy
     fileName = './anisotropy' + carrierType + '.pdf'
     plt.xlabel(xLabel)
     plt.ylabel(r'$\kappa$'+', Arb. U')
-    plt.savefig(fileName)
+    plt.savefig(fileName, bbox_inches='tight')
     plt.clf()
     print("Figure saved as " + fileName)
 

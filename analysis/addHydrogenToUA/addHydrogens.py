@@ -118,38 +118,36 @@ if __name__ == "__main__":
     #sigmaVal = 1.0
     # ---==== P3HT ====---
     #print("Using data for P3HT")
-    #hydrogensToAdd = {'CA':[[2, 1]],
-    #                  'CT':[[2, 2],[1, 3]]}
+    #hydrogensToAdd = {'CA': [[2, 1]],
+    #                  'CT': [[2, 2],[1, 3]]}
     #sigmaVal = 3.905
     # ---==== PERYLENE/PERYLOTHIOPHENE ====---
-    #print("Using data for Perylene/Perylothiophene")
-    #hydrogensToAdd = {'C':[[2, 1]]}
-    #sigmaVal = 3.905
+    print("Using data for Perylene/Perylothiophene")
+    hydrogensToAdd = {'C': [[2, 1]]}
+    sigmaVal = 3.8
     ## ---==== BDT-TPD ====---
     #print("Using data for BDT-TPD")
-    #hydrogensToAdd = {'CS':[[2, 1]],
-    #                  'C!':[[2, 1]],
-    #                  'CT':[[2, 2],[1, 3], [3, 1]],
-    #                  'CP':[[2, 1]]}
+    #hydrogensToAdd = {'CS': [[2, 1]],
+    #                  'C!': [[2, 1]],
+    #                  'CT': [[2, 2],[1, 3], [3, 1]],
+    #                  'CP': [[2, 1]]}
     #sigmaVal = 3.55
-    # ---==== P3HT & PCBM ====---
-    print("Using Data for P3HT/PCBM")
-    hydrogensToAdd = {'CA': [[2, 1]],
-                      'CT': [[2, 2], [1, 3]],
-                      'FCA': [[2, 1]],
-                      'FCT': [[2, 2], [1, 3]]}
-    sigmaVal = 3.905
+    ## ---==== P3HT & PCBM ====---
+    #print("Using Data for P3HT/PCBM")
+    #hydrogensToAdd = {'CA': [[2, 1]],
+    #                  'CT': [[2, 2], [1, 3]],
+    #                  'FCA': [[2, 1]],
+    #                  'FCT': [[2, 2], [1, 3]]}
+    #sigmaVal = 3.905
 
+    inputFile = sys.argv[1]
     print("THIS FUNCTION IS SET UP TO USE A DICTIONARY TO DEFINE HOW MANY HYDROGENS TO ADD TO BONDS OF A SPECIFIC TYPE WITH A CERTAIN NUMBER OF BONDS")
     print(hydrogensToAdd)
     print("IF THE ABOVE DICTIONARY DOESN'T LOOK RIGHT, PLEASE TERMINATE NOW AND IGNORE ANY OUTPUTS UNTIL THE DICTIONARY HAS BEEN RECTIFIED")
     print("Additionally, we're using a sigma value of", sigmaVal)
-    for inputFile in os.listdir('./'):
-        if ('_AA.xml' in inputFile) or ('.xml' not in inputFile):
-            continue
-        morphologyDict = helperFunctions.loadMorphologyXML(inputFile, sigma = sigmaVal)
-        morphologyDict = helperFunctions.addUnwrappedPositions(morphologyDict)
-        hydrogenPositions = calculateHydrogenPositions(morphologyDict, hydrogensToAdd)
-        morphologyDict = addHydrogensToMorph(morphologyDict, hydrogenPositions)
-        morphologyDict = helperFunctions.addWrappedPositions(morphologyDict)
-        helperFunctions.writeMorphologyXML(morphologyDict, inputFile.replace('.xml','_AA.xml'), checkWrappedPosns=False)#, sigma = sigmaVal)
+    morphologyDict = helperFunctions.loadMorphologyXML(inputFile, sigma = sigmaVal)
+    morphologyDict = helperFunctions.addUnwrappedPositions(morphologyDict)
+    hydrogenPositions = calculateHydrogenPositions(morphologyDict, hydrogensToAdd)
+    morphologyDict = addHydrogensToMorph(morphologyDict, hydrogenPositions)
+    morphologyDict = helperFunctions.addWrappedPositions(morphologyDict)
+    helperFunctions.writeMorphologyXML(morphologyDict, inputFile.replace('.xml','_AA.xml'), checkWrappedPosns=False)#, sigma = sigmaVal)
