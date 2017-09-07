@@ -117,7 +117,7 @@ def plotConnections(chromophoreList, simExtent, carrierHistory, directory, carri
                         #colourIntensity = value / normalizeTo
                         colourIntensity = np.log10(value) / np.log10(normalizeTo)
                         ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = colormap(colourIntensity), linewidth = 0.5, alpha = colourIntensity)
-    tickLocation = range(0, int(np.log10(maximum)) + 1), 1)
+    tickLocation = range(0, int(np.log10(maximum)) + 1, 1)
     cbar = plt.colorbar(coloursForMap, ticks=tickLocation)#np.linspace(np.log10(minimum), np.log10(maximum), 6))
     cbar.ax.set_yticklabels([r'10$^{{{}}}$'.format(x) for x in tickLocation])
     fileName = '3d' + carrierType + '.pdf'
