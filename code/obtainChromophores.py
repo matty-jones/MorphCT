@@ -294,25 +294,33 @@ def determineNeighbours(chromophoreList, parameterDict, simDims):
                     relativeImageOfChromo2[axis] += 1
             separation = np.linalg.norm(deltaPosn)
             # If proximity is within tolerance, add these chromophores as neighbours
-            if separation <= parameterDict['maximumHopDistance']:
+            # Base check is against the maximum of the donor and acceptor hop distances.
+            # A further separation check is made if the chromophores are the same type to make sure we don't
+            # exceed the maximum specified hop distance for the carrier type.
+            if separation <= max([parameterDict['maximumHoleHopDistance'], parameterDict['maximumElectronHopDistance']]):
                 # Only add the neighbours if they haven't already been added so far
                 chromo1NeighbourIDs = [neighbourData[0] for neighbourData in chromophore1.neighbours]
                 chromo2NeighbourIDs = [neighbourData[0] for neighbourData in chromophore2.neighbours]
                 chromo1DissociationNeighbourIDs = [neighbourData[0] for neighbourData in chromophore1.dissociationNeighbours]
                 chromo2DissociationNeighbourIDs = [neighbourData[0] for neighbourData in chromophore2.dissociationNeighbours]
                 # Also, make the deltaE and the Tij lists as long as the neighbour lists for easy access later
-                if (chromophore1.species == chromophore2.species) and (chromophore2.ID not in chromo1NeighbourIDs):
-                    chromophore1.neighbours.append([chromophore2.ID, relativeImageOfChromo2])
-                    chromophore1.neighboursDeltaE.append(None)
-                    chromophore1.neighboursTI.append(None)
-                elif (chromophore1.species != chromophore2.species) and (chromophore2.ID not in chromo2DissociationNeighbourIDs):
-                    chromophore1.dissociationNeighbours.append([chromophore2.ID, relativeImageOfChromo2])
-                if (chromophore1.species == chromophore2.species) and (chromophore1.ID not in chromo2NeighbourIDs):
-                    chromophore2.neighbours.append([chromophore1.ID, list(-np.array(relativeImageOfChromo2))])
-                    chromophore2.neighboursDeltaE.append(None)
-                    chromophore2.neighboursTI.append(None)
-                elif (chromophore1.species != chromophore2.species) and (chromophore1.ID not in chromo1DissociationNeighbourIDs):
-                    chromophore2.dissociationNeighbours.append([chromophore1.ID, list(-np.array(relativeImageOfChromo2))])
+                if chromophore1.species == chromophore2.species:
+                    if ((chromophore1.species == 'Donor') and (separation >= parameterDict['maximumHoleHopDistance'])) or\
+                        ((chromophore1.species == 'Acceptor') and (separation >= parameterDict['maximumElectronHopDistance'])):
+                        continue
+                    if (chromophore2.ID not in chromo1NeighbourIDs):
+                        chromophore1.neighbours.append([chromophore2.ID, relativeImageOfChromo2])
+                        chromophore1.neighboursDeltaE.append(None)
+                        chromophore1.neighboursTI.append(None)
+                    if (chromophore1.ID not in chromo2NeighbourIDs):
+                        chromophore2.neighbours.append([chromophore1.ID, list(-np.array(relativeImageOfChromo2))])
+                        chromophore2.neighboursDeltaE.append(None)
+                        chromophore2.neighboursTI.append(None)
+                else:
+                    if chromophore2.ID not in chromo2DissociationNeighbourIDs:
+                        chromophore1.dissociationNeighbours.append([chromophore2.ID, relativeImageOfChromo2])
+                    if chromophore1.ID not in chromo1DissociationNeighbourIDs:
+                        chromophore2.dissociationNeighbours.append([chromophore1.ID, list(-np.array(relativeImageOfChromo2))])
         # DEBUG TESTING
         # if chromophore1.ID == 1961:
         #     print ""
