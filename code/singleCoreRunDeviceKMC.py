@@ -99,7 +99,7 @@ class exciton:
             if self.canDissociate is True:
                 # Notify execute() that this exciton should not be queued up again by setting self.hopTime == None
                 [self.destinationChromophore, self.hopTime, self.destinationImage] = [None, None, None]
-                self.removeTime = globalTime
+                self.removedTime = globalTime
                 return
         # If we're not instantaneously dissociating, check the recombination time
         if globalTime >= self.creationTime + self.recombinationTime:
