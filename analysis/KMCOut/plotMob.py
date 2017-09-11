@@ -261,10 +261,10 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType):
     ax.set_zlim([-maximum, maximum])
     for tick in ax.xaxis.get_major_ticks() + ax.yaxis.get_major_ticks() + ax.zaxis.get_major_ticks():
         tick.label.set_fontsize(16)
-    try:
-        plt.title(carrierType + ' transport for:' + directory[directory.index('T'):directory.index('T')+directory[directory.index('T'):].index('-')], fontsize = 24)
-    except:
-        plt.title(carrierType + ' transport for:' + directory, fontsize = 24)
+    #try:
+    #    plt.title(carrierType + ' transport for:' + directory[directory.index('T'):directory.index('T')+directory[directory.index('T'):].index('-')], fontsize = 24)
+    #except:
+    #    plt.title(carrierType + ' transport for:' + directory, fontsize = 24)
     ax.dist = 11
     plt.savefig(directory + '/anisotropy' + carrierType + '.pdf', bbox_inches='tight')
     plt.clf()
