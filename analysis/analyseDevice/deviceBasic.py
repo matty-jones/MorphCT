@@ -37,7 +37,7 @@ def parseData(dataFileList, deviceArea):
             dataDict['Diss'].append(int(data[-3].split(' ')[-1][:-1]))
             dataDict['Rec'].append(int(data[-2].split(' ')[-1][:-1]))
             dataDict['Ext'].append(int(data[-1].split(' ')[-1][:-1]))
-        except ValueError:
+        except (ValueError, IndexError):
             # Some problem in the Results section (maybe it didn't finish?)
             # Run the incomplete data parser instead
             fileData = parseDataIncomplete(data)
