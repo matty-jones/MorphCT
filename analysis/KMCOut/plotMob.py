@@ -411,6 +411,7 @@ if __name__ == "__main__":
         print("Writing text to file at {}.".format(directory + "/KMC_data.txt"))
         with open(directory+ "/KMC_data.txt", 'w+') as f:
             f.writelines(write_to_file)
+        write_to_file = ""
 
     print("Plotting temperature progression...")
     if combinedPlots is True:
