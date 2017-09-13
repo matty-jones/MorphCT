@@ -1,6 +1,8 @@
 import os
 import sys
 import pickle
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize
@@ -130,7 +132,7 @@ def calcMobility(linFitX, linFitY, avTimeError, avMSDError):
     return mobility, mobError
 
 
-def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carrierType):
+def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carrierType, write_to_file):
     ### DEBUG TEST ###
     #print "DEBUG TEST CODE ACTIVE, DELETE TO GET PROPER RESULTS!"
     #times = times[-3:]
@@ -141,8 +143,9 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     fit = np.polyfit(times, MSDs, 1)
     fitX = np.linspace(np.min(times), np.max(times), 100)
     gradient, intercept, rVal, pVal, stdErr = scipy.stats.linregress(times, MSDs)
-    print("StandardError", stdErr)
+    print("StandardError = ", stdErr)
     print("Fitting rVal =", rVal)
+    write_to_file += "\nStandard Error = " + str(stdErr) + "\nFitting rval = " + str(rVal) + "\n"
     fitY = (fitX * gradient) + intercept
     mobility, mobError = calcMobility(fitX, fitY, np.average(timeStandardErrors), np.average(MSDStandardErrors))
     plt.plot(times, MSDs)
@@ -177,7 +180,7 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     plt.savefig(directory + '/' + fileName)
     plt.clf()
     print("Figure saved as", directory + "/" + fileName)
-    return mobility, mobError
+    return mobility, mobError, write_to_file
 
 
 def calculateAnisotropy(xvals, yvals, zvals):
@@ -211,7 +214,7 @@ def calculateAnisotropy(xvals, yvals, zvals):
     return anisotropy
 
 
-def plotAnisotropy(carrierData, directory, simDims, carrierType):
+def plotAnisotropy(carrierData, directory, simDims, carrierType, write_to_file):
     fig = plt.gcf()
     ax = p3.Axes3D(fig)
     xvals = []
@@ -233,6 +236,9 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType):
     print("----------====================----------")
     print(carrierType + " charge transport anisotropy calculated as", anisotropy)
     print("----------====================----------")
+    write_to_file += "----------====================----------\n"
+    write_to_file += "Data for " + str(carrierType) +"\n"
+    write_to_file += str(carrierType) + " charge transport anisotropy calculated as " + str(anisotropy)
     # Reduce number of plot markers
     if len(xvals) > 1000:
         xvals = xvals[0:len(xvals):len(xvals)//1000]
@@ -257,7 +263,7 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType):
     plt.savefig(directory + '/anisotropy' + carrierType + '.pdf')
     plt.clf()
     print("Figure saved as", directory + "/anisotropy" + carrierType + ".pdf")
-    return anisotropy
+    return anisotropy, write_to_file
 
 
 def getTempVal(string):
@@ -297,9 +303,9 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierTy
     plt.clf()
     print("Figure saved as " + fileName)
 
-
 if __name__ == "__main__":
     sys.path.append('../../code')
+    write_to_file = ""
     directoryList = []
     if len(sys.argv) == 1:
         for directory in os.listdir(os.getcwd()):
@@ -380,23 +386,31 @@ if __name__ == "__main__":
             print("MSDs obtained")
             # Create the first figure that will be replotted each time
             plt.figure()
-            anisotropy = plotAnisotropy(carrierData, directory, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']], completeCarrierTypes[carrierTypeIndex])
+            anisotropy, write_to_file = plotAnisotropy(carrierData, directory, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']], completeCarrierTypes[carrierTypeIndex], write_to_file)
             #plotHeatMap(carrierHistory, directory)
             if carrierHistory is not None:
                 print("Determining carrier hopping connections...")
                 plotConnections(chromophoreList, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']], carrierHistory, directory, completeCarrierTypes[carrierTypeIndex])
             times, MSDs = helperFunctions.parallelSort(times, MSDs)
             print("Calculating MSD...")
-            mobility, mobError = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, completeCarrierTypes[carrierTypeIndex])
+            mobility, mobError, write_to_file = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, completeCarrierTypes[carrierTypeIndex], write_to_file)
             print("----------====================----------")
-            print(completeCarrierTypes[carrierTypeIndex], "mobility for", directory, "= %.2E +- %.2E cm^{2} V^{-1} s^{-1}" % (mobility, mobError))
+            print(completeCarrierTypes[carrierTypeIndex], " mobility for", directory, " = %.2E +- %.2E cm^{2} V^{-1} s^{-1}" % (mobility, mobError))
             print("----------====================----------")
+            #####Replica for writing to file.###########
+            #write_to_file += "\n----------====================----------\n"
+            write_to_file += str(completeCarrierTypes[carrierTypeIndex]) + " mobility for "+ str(directory)+ " = %.2E +/- %.2E cm^{2} V^{-1} s^{-1}" % (mobility, mobError) + "\n"
+            write_to_file += "----------====================----------\n"
+            #####Replica for writing to file.###########
             if completeCarrierTypes[carrierTypeIndex] == 'Hole':
                 holeAnisotropyData.append(anisotropy)
                 holeMobilityData.append([mobility, mobError])
             elif completeCarrierTypes[carrierTypeIndex] == 'Electron':
                 electronAnisotropyData.append(anisotropy)
                 electronMobilityData.append([mobility, mobError])
+        print("Writing text to file at {}.".format(directory + "/KMC_data.txt"))
+        with open(directory+ "/KMC_data.txt", 'w+') as f:
+            f.writelines(write_to_file)
 
     print("Plotting temperature progression...")
     if combinedPlots is True:
@@ -406,3 +420,4 @@ if __name__ == "__main__":
             plotTemperatureProgression(tempData, electronMobilityData, electronAnisotropyData, 'Electron', tempXLabel)
     else:
         print("Temperature Progression not possible (probably due to no temperature specified). Cancelling...")
+
