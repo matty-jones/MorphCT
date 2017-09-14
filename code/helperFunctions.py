@@ -99,6 +99,8 @@ def calcCOM(listOfPositions, listOfAtomTypes=None, listOfMasses=None):
                 listOfMasses.append(15.994914)
             elif ('N' in atomType) or ('n' in atomType):
                 listOfMasses.append(14.003074)
+            elif (atomType == 'D') or (atomType == 'A'):
+                listOfMasses.append(1.0)
             else:
                 raise SystemError("Unknown atomic mass", atomType, "please hardcode into helperFunctions.calcCOM.")
     totalMass = np.sum(listOfMasses)
