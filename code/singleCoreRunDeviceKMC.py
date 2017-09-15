@@ -233,6 +233,7 @@ class carrier:
         self.recombiningWith = None
         self.T = parameterDict['systemTemperature']
         self.wrapxy = parameterDict['wrapDeviceXY']
+        self.disableCoulombic = parameterDict['disableCoulombic']
         # self.carrierType: Set carrier type to be == 0 if Electron and == 1 if Hole. This allows us to do quick arithmetic to get the signs correct in the potential calculations without having to burn through a ton of conditionals.
         if self.currentChromophore.species == 'Donor':
             self.carrierType = HOLE
@@ -373,14 +374,15 @@ class carrier:
         zSep = - (destinationAbsolutePosition[2] - currentAbsolutePosition[2])
         charge = elementaryCharge * ((2 * self.carrierType) - 1)
         deltaEij += (zSep * currentFieldValue * charge)
-        # 3) Difference in Coulombic Potential at dest compared to origin
-        originCoulomb, recombineFlag, recombineID = calculateCoulomb(currentAbsolutePosition, self.ID, self.carrierType, carrierIsRecombining=self.recombining)
-        destinationCoulomb, dummy1, dummy2 = calculateCoulomb(destinationAbsolutePosition, self.ID, self.carrierType)
-        deltaEij += (destinationCoulomb - originCoulomb)
-        if (recombineFlag is True) and (self.recombining is False):
-            # Need to update the recombining details
-            self.recombining = recombineFlag
-            self.recombiningWith = recombineID
+        if self.disableCoulombic is not True:
+            # 3) Difference in Coulombic Potential at dest compared to origin
+            originCoulomb, recombineFlag, recombineID = calculateCoulomb(currentAbsolutePosition, self.ID, self.carrierType, carrierIsRecombining=self.recombining)
+            destinationCoulomb, dummy1, dummy2 = calculateCoulomb(destinationAbsolutePosition, self.ID, self.carrierType)
+            deltaEij += (destinationCoulomb - originCoulomb)
+            if (recombineFlag is True) and (self.recombining is False):
+                # Need to update the recombining details
+                self.recombining = recombineFlag
+                self.recombiningWith = recombineID
         return deltaEij
 
 
@@ -1460,6 +1462,10 @@ if __name__ == "__main__":
         with open(logFile, 'wb+') as logFileHandle:
             pass
     helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run:', repr(jobsToRun)])
+    if parameterDict['disableCoulobmic'] is True:
+        helperFunctions.writeToFile(logFile, ['COULOMBIC INTERACTIONS DISABLED'])
+    if parameterDict['disableDarkInjection'] is True:
+        helperFunctions.writeToFile(logFile, ['DARK CURRENT INJECTION (FROM CONTACTS) DISABLED'])
     #helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
     # Set the affinities for this current process to make sure it's maximising available CPU usage
     currentPID = os.getpid()
