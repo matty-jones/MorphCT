@@ -121,17 +121,28 @@ if __name__ == "__main__":
     #hydrogensToAdd = {'CA':[[2, 1]],
     #                  'CT':[[2, 2],[1, 3]]}
     #sigmaVal = 3.905
+    # ---==== DBP/Fullerene ====---
+    #print("Using data for DBP")
+    #hydrogensToAdd = {'C':[[2, 1]],
+    #                  'CA':[[2,1]],
+    #                  'CT':[[2, 2],[1, 3]]}
+    #sigmaVal = 3.905
+    # ---==== MePDI ====---
+    print("Using data for MePDI")
+    hydrogensToAdd = {'CMe':[[1, 3]],
+                      'C':[[2, 1]]}
+    sigmaVal = 3.905
     # ---==== PERYLENE/PERYLOTHIOPHENE ====---
     #print("Using data for Perylene/Perylothiophene")
     #hydrogensToAdd = {'C':[[2, 1]]}
     #sigmaVal = 3.905
     ## ---==== BDT-TPD ====---
-    print("Using data for BDT-TPD")
-    hydrogensToAdd = {'CS':[[2, 1]],
-                      'C!':[[2, 1]],
-                      'CT':[[2, 2],[1, 3], [3, 1]],
-                      'CP':[[2, 1]]}
-    sigmaVal = 3.55
+    #print("Using data for BDT-TPD")
+    #hydrogensToAdd = {'CS':[[2, 1]],
+    #                  'C!':[[2, 1]],
+    #                  'CT':[[2, 2],[1, 3], [3, 1]],
+    #                  'CP':[[2, 1]]}
+    #sigmaVal = 3.55
 
     print("THIS FUNCTION IS SET UP TO USE A DICTIONARY TO DEFINE HOW MANY HYDROGENS TO ADD TO BONDS OF A SPECIFIC TYPE WITH A CERTAIN NUMBER OF BONDS")
     print(hydrogensToAdd)
@@ -145,4 +156,5 @@ if __name__ == "__main__":
         hydrogenPositions = calculateHydrogenPositions(morphologyDict, hydrogensToAdd)
         morphologyDict = addHydrogensToMorph(morphologyDict, hydrogenPositions)
         morphologyDict = helperFunctions.addWrappedPositions(morphologyDict)
-        helperFunctions.writeMorphologyXML(morphologyDict, inputFile.replace('.xml','_AA.xml'), checkWrappedPosns=False)#, sigma = sigmaVal)
+        helperFunctions.writeMorphologyXML(morphologyDict, inputFile.replace('.xml','_AA.xml'))#, sigma = sigmaVal)
+        #helperFunctions.writeMorphologyXML(morphologyDict, inputFile.replace('.xml','_AA.xml'), checkWrappedPosns=False)#, sigma = sigmaVal)
