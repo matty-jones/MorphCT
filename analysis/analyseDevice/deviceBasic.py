@@ -152,7 +152,8 @@ def printJVTable(dataDict):
 
 
 if __name__ == "__main__":
-    deviceArea = (3 * 7.14E-9)**2
+    #deviceArea = (3 * 7.14E-9)**2
+    deviceArea = (3 * 1E-8)**2
     print("Using a device area of", str(deviceArea) + ". Make sure this is correct for the system that is being studied!")
     deviceDirectory = sys.argv[1]
     dataFiles = loadDataFiles(deviceDirectory)
