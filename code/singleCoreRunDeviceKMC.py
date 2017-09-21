@@ -370,10 +370,13 @@ class carrier:
         # 2) Field within the device
         currentAbsolutePosition = np.array(self.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(self.currentChromophore.posn) * 1E-10)
         destinationAbsolutePosition = ((np.array(self.currentDevicePosn) + np.array(neighbourRelativeImage)) * parameterDict['morphologyCellSize'] + (np.array(destinationChromophore.posn) * 1E-10))
+        #print(self.currentDevicePosn, parameterDict['morphologyCellSize'], self.currentChromophore.posn * 1E-10, currentAbsolutePosition, destinationAbsolutePosition)
         # Field has negative sign because device is flipped with anode at +Z and Cathode at 0
         zSep = - (destinationAbsolutePosition[2] - currentAbsolutePosition[2])
         charge = elementaryCharge * ((2 * self.carrierType) - 1)
         deltaEij += (zSep * currentFieldValue * charge)
+        #print(deltaEij)
+        #input("PAUSE")
         if self.disableCoulombic is not True:
             # 3) Difference in Coulombic Potential at dest compared to origin
             originCoulomb, recombineFlag, recombineID = calculateCoulomb(currentAbsolutePosition, self.ID, self.carrierType, carrierIsRecombining=self.recombining)
@@ -1462,7 +1465,7 @@ if __name__ == "__main__":
         with open(logFile, 'wb+') as logFileHandle:
             pass
     helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run:', repr(jobsToRun)])
-    if parameterDict['disableCoulobmic'] is True:
+    if parameterDict['disableCoulombic'] is True:
         helperFunctions.writeToFile(logFile, ['COULOMBIC INTERACTIONS DISABLED'])
     if parameterDict['disableDarkInjection'] is True:
         helperFunctions.writeToFile(logFile, ['DARK CURRENT INJECTION (FROM CONTACTS) DISABLED'])
