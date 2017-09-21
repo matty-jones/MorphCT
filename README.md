@@ -2,6 +2,10 @@
 
 # PLEASE NOTE, README IS A WORK IN PROGRESS. #
 
+# MorphCT has been published in Molecular Simulation 2017, which can be found at [http://dx.doi.org/10.1080/08927022.2017.1296958](http://dx.doi.org/10.1080/08927022.2017.1296958). Please read and cite this paper if you use any of MorphCT's code in your own research! #
+
+
+
 The intention of this code is to:
 
 * Parse any coarse-grained morphology input in the HOOMD xml format. Atomistic morphologies should work too, but the infrastructure is currently set up to map single simulation elements to multiple atoms, so there will likely be plenty of redundant code.

@@ -11,7 +11,7 @@ def checkBonds(morphology, bondDict):
         posn2 = np.array(morphology['position'][bond[2]]) + (np.array(morphology['image'][bond[2]]) * np.array([morphology['lx'], morphology['ly'], morphology['lz']]))
         separation = helperFunctions.calculateSeparation(posn1, posn2)
         if separation >= morphology['lx'] / 2.0:
-            print("Periodic bond found:", bond, "because separation =", separation, ">=", morphology['lx'] / 2.0)
+            #print("Periodic bond found:", bond, "because separation =", separation, ">=", morphology['lx'] / 2.0)
             morphology = moveBondedAtoms(bond[1], morphology, bondDict)
     return morphology
 
@@ -51,8 +51,6 @@ def moveBondedAtoms(centralAtom, morphology, bondDict):
             #print("Moved", bondedAtom, "to same box as", centralAtom)
             #print("New Positions: atom1 =", morphology['position'][centralAtom], "atom2 =", morphology['position'][bondedAtom])
             morphology = moveBondedAtoms(bondedAtom, morphology, bondDict)
-        else:
-            #print("Move was unnecessary")
     return morphology
 
 
