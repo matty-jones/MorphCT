@@ -22,5 +22,22 @@ if __name__ == "__main__":
                     morphDict['type'].append('A')
                 morphDict['diameter'].append(1.0)
                 morphDict['charge'].append(0.0)
+                # In order to calculate the transfer integrals out of the morphology moiety, we also need to include a layer of the `wrong material' that can be picked up by the periodic boundary calculation. Otherwise carriers will permanently be trapped in the mixed bilayer.
+                if zVal == 45.0:
+                    morphDict['position'].append([xVal, yVal, zVal])
+                    morphDict['mass'].append(1.0)
+                    morphDict['image'].append([0, 0, 0])
+                    morphDict['body'].append(len(morphDict['position']) - 1)
+                    morphDict['type'].append('A')
+                    morphDict['diameter'].append(1.0)
+                    morphDict['charge'].append(0.0)
+                elif zVal == -45.0:
+                    morphDict['position'].append([xVal, yVal, zVal])
+                    morphDict['mass'].append(1.0)
+                    morphDict['image'].append([0, 0, 0])
+                    morphDict['body'].append(len(morphDict['position']) - 1)
+                    morphDict['type'].append('D')
+                    morphDict['diameter'].append(1.0)
+                    morphDict['charge'].append(0.0)
     morphDict['natoms'] = len(morphDict['position'])
     helperFunctions.writeMorphologyXML(morphDict, './mixedCrystalBilayer.xml')
