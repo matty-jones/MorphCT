@@ -1,5 +1,5 @@
-./temp/*
-temp/
+analysis/drawDevice/*/
+*temp*
 *test*
 *.hoomdxml
 *ipynb*
