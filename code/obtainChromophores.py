@@ -2,6 +2,9 @@ import numpy as np
 import sys
 import helperFunctions
 import copy
+from scipy.spatial import Delaunay
+from collections import defaultdict
+import itertools
 
 
 class chromophore:
