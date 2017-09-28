@@ -382,9 +382,10 @@ class atomistic:
                     # Later, when the ghost atoms are added to the main system, the ghostAtomIDs will be incremented according to the number of atoms in the whole system (i.e. the ghosts appear at the end of the real atoms).
                     # At this time, the realAtomIDs will be left unchanged because they are already correct for the whole system.
                     ghostDictionary['bond'].append([str(ghostDictionary['type'][-1]) + '-' + str(thisMonomerDictionary['type'][closestAtomID]), '*' + str(len(ghostDictionary['type']) - 1), '_' + str(closestAtomID + noAtomsInMolecule)])
-            thisMonomerDictionary = helperFunctions.addWrappedPositions(thisMonomerDictionary)
-            thisMonomerDictionary = helperFunctions.addMasses(thisMonomerDictionary)
-            thisMonomerDictionary = helperFunctions.addDiameters(thisMonomerDictionary)
+            # DEBUG: NOTE ADD THESE BACK IN IF IT DOESN'T WORK
+            #thisMonomerDictionary = helperFunctions.addWrappedPositions(thisMonomerDictionary)
+            #thisMonomerDictionary = helperFunctions.addMasses(thisMonomerDictionary)
+            #thisMonomerDictionary = helperFunctions.addDiameters(thisMonomerDictionary)
             # Now add in the bonds between CGSites in this monomer
             for bond in self.CGDictionary['bond']:
                 if (bond[1] in monomer) and (bond[2] in monomer):
@@ -393,9 +394,8 @@ class atomistic:
             # Now need to add in the additionalConstraints for this monomer (which include the bond, angle and dihedral for the inter-monomer connections.
             # However, we need a check to make sure that we don't add stuff for the final monomer (because those atoms +25 don't exist in this molecule!)
             for constraint in self.additionalConstraints:
-                # Firstly, skip this constraint if the current monomer doesn't have the relevant CG types
-                importantCGType = constraint[0]
-                if importantCGType not in monomerCGTypes:
+                # Firstly, skip this constraint if the current monomer doesn't have the relevant atom types
+                if all([atomType in set(thisMonomerDictionary['type']) for atomType in constraint[0].split('-')]) is False:
                     continue
                 # Also check that we're not at the final monomer
                 atFinalMonomer = False
@@ -408,23 +408,10 @@ class atomistic:
                 # Work out which key to write the constraint to based on its length:
                 # 3 = Bond, 4 = Angle, 5 = Dihedral, 6 = Improper
                 constraintType = ['bond', 'angle', 'dihedral', 'improper']
-                thisMonomerDictionary[constraintType[len(constraint) - 4]].append(constraint[1:])
+                thisMonomerDictionary[constraintType[len(constraint) - 3]].append(constraint)
             # Finally, increment the atom IDs to take into account previous monomers in this molecule and then update the AADictionary.
             # Note that the ghost dictionary bond was already updated to have the correct realAtom AAID for this molecule when the bond was created. Therefore, leave the ghost dictionary unchanged.
             thisMonomerDictionary, ghostDictionary = helperFunctions.incrementAtomIDs(thisMonomerDictionary, ghostDictionary, noAtomsInMolecule, modifyGhostDictionary=False)
-            # Find the connecting atoms to the terminating units based on monomer number
-            # Only do this if the molecule length is > 1 (i.e. not small molecule)
-            if len(self.moleculeTerminatingConnections) != 0:
-                # Work out which types need terminating
-                terminateTheseTypes = set([connection[0] for connection in self.moleculeTerminatingConnections])
-                # Check if any of these CGTypes exist in the current monomer
-                for CGType in set([self.CGDictionary['type'][CGID] for CGID in monomer]):
-                    if CGType in terminateTheseTypes:
-                        terminationConnections = [self.moleculeTerminatingConnections[i] for i in range(len(self.moleculeTerminatingConnections)) if self.moleculeTerminatingConnections[i][0] == CGType]
-                        if monomerNo == 0:
-                            startAtomIndex = noAtomsInMolecule + terminationConnections[0][2]
-                        elif monomerNo == len(monomerList) - 1:
-                            endAtomIndex = noAtomsInMolecule + terminationConnections[1][2]
             noAtomsInMolecule += len(thisMonomerDictionary['type'])
             currentMonomerIndex += 1
             # Update the current AA dictionary with this monomer
@@ -433,17 +420,48 @@ class atomistic:
         AADictionary['natoms'] = noAtomsInMolecule
         for key in ['lx', 'ly', 'lz']:
             AADictionary[key] = thisMonomerDictionary[key]
-        # Add in the terminating units
-        if (startAtomIndex is not None) and (endAtomIndex is not None):
-            AADictionary, startTerminatingHydrogen = helperFunctions.addTerminatingHydrogen(AADictionary, startAtomIndex)
-            AADictionary, endTerminatingHydrogen = helperFunctions.addTerminatingHydrogen(AADictionary, endAtomIndex)
-            atomIDLookupTable[monomerList[0][0]][1].append(startTerminatingHydrogen + self.noAtomsInMorphology)
-            atomIDLookupTable[monomerList[-1][0]][1].append(endTerminatingHydrogen + self.noAtomsInMorphology)
+        # Now we terminate the molecules using the technique in the addHydrogensToUA analysis script
+        newHydrogenData = []
+        for atomIndex, atomType in enumerate(AADictionary['type']):
+            if atomType not in self.moleculeTerminatingConnections.keys():
+                continue
+            bondedAAIDs = []
+            # Iterate over all termination connections defined for this atomType (in case we are trying to do something mega complicated)
+            for connectionInfo in self.moleculeTerminatingConnections[atomType]:
+                for [bondName, AAID1, AAID2] in AADictionary['bond']:
+                    if AAID1 == atomIndex:
+                        if AAID2 not in bondedAAIDs:
+                            bondedAAIDs.append(AAID2)
+                    elif AAID2 == atomIndex:
+                        if AAID1 not in bondedAAIDs:
+                            bondedAAIDs.append(AAID1)
+                if len(bondedAAIDs) != connectionInfo[0]:
+                    continue
+                newHydrogenPositions = helperFunctions.getTerminatingPositions(AADictionary['unwrapped_position'][atomIndex], [AADictionary['unwrapped_position'][bondedAAID] for bondedAAID in bondedAAIDs], 1)
+                for hydrogenPosition in newHydrogenPositions:
+                    newHydrogenData.append([atomIndex, list(hydrogenPosition)])
+        AADictionary = self.addTerminatingToMolecule(AADictionary, newHydrogenData)
+        AADictionary = helperFunctions.addWrappedPositions(AADictionary)
+        AADictionary = helperFunctions.addMasses(AADictionary)
+        AADictionary = helperFunctions.addDiameters(AADictionary)
         # Now the molecule is done, we need to add on the correct identifying numbers for all the bonds, angles and dihedrals
         # (just as we did between monomers) for the other molecules in the system, so that they all connect to the right atoms
         # Note that here we need to increment the '_'+ATOMIDs in the ghost dictionary to take into account the number of molecules.
         AADictionary, ghostDictionary = helperFunctions.incrementAtomIDs(AADictionary, ghostDictionary, self.noAtomsInMorphology, modifyGhostDictionary=True)
         return AADictionary, atomIDLookupTable, ghostDictionary
+
+    def addTerminatingToMolecule(self, AADictionary, newHydrogenData):
+        hydrogenID = len(AADictionary['type'])
+        for hydrogen in newHydrogenData:
+            # hydrogen has the form [BondedAtomID, [position]]
+            AADictionary['unwrapped_position'].append([coord for coord in hydrogen[1]])
+            AADictionary['type'].append('H1')
+            AADictionary['body'].append(-1)
+            AADictionary['charge'].append(0.0)
+            AADictionary['bond'].append([AADictionary['type'][hydrogen[0]] + '-H1', hydrogen[0], hydrogenID])
+            AADictionary['natoms'] += 1
+            hydrogenID += 1
+        return AADictionary
 
     def totalPermittedAtoms(self, monomerList):
         # Work out how many atoms we have in the molecule so that we don't create
