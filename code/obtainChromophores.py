@@ -288,49 +288,70 @@ def createSuperCell(chromophoreList, boxSize):
     return chromophoreList
 
 
-def getVoronoiNeighbours(tri):
+def getVoronoiNeighbours(tri, chromoList):
     nList = defaultdict(set)
     for p in tri.vertices:
         for i, j in itertools.permutations(p, 2):
-            nList[i].add(j)
+            nList[chromoList[i].periodicID].add(chromoList[j].periodicID)
     return nList
 
 
 class superCellChromo:
     def __init__(self):
         self.species = None
-        self.chromoID = None
-        self.index = None
+        self.originalID = None
+        self.periodicID = None
         self.position = None
         self.image = None
 
 
-def updateChromophoreListVoronoi(IDsToUpdate, superCellChromosToUpdate, neighbourIDs, chromophoreList):
-    for chromoID in IDsToUpdate:
-        chromophore1 = chromophoreList[superCellChromosToUpdate[chromoID].chromoID]
+def updateChromophoreListVoronoi(IDsToUpdate, superCellChromos, neighbourIDs, chromophoreList, simDims):
+    # IDs to Update is a list of the periodic chromophores with the image [0, 0, 0]
+    for periodicID in IDsToUpdate:
+        # Obtain the real chromophore corresponding to this periodicID
+        chromophore1 = chromophoreList[superCellChromos[periodicID].originalID]
+        #print("EXAMINING CHROMOPHORE", superCellChromos[periodicID].originalID)
+        #print("Chromophore", chromophore1.ID, "position =", chromophore1.posn)
+        # Get latest neighbour information
         chromo1NeighbourIDs = [neighbourData[0] for neighbourData in chromophore1.neighbours]
         chromo1DissociationNeighbourIDs = [neighbourData[0] for neighbourData in chromophore1.dissociationNeighbours]
-        for neighbourPointIndex in neighbourIDs[chromoID]:
-            neighbourSuperCellChromo = superCellChromosToUpdate[neighbourPointIndex]
-            realChromoID = neighbourSuperCellChromo.chromoID
-            relativeImage = neighbourSuperCellChromo.image
-            chromophore2 = chromophoreList[realChromoID]
+        #print(IDsToUpdate)
+        #print(neighbourIDs[periodicID])
+        for neighbourPeriodicID in neighbourIDs[periodicID]:
+            neighbourSuperCellChromo = superCellChromos[neighbourPeriodicID]
+            #print(neighbourSuperCellChromo.__dict__)
+            chromophore2 = chromophoreList[neighbourSuperCellChromo.originalID]
             chromo2NeighbourIDs = [neighbourData[0] for neighbourData in chromophore2.neighbours]
             chromo2DissociationNeighbourIDs = [neighbourData[0] for neighbourData in chromophore2.dissociationNeighbours]
+
+            relativeImage = neighbourSuperCellChromo.image
+            #print("Chromo 1 =", chromophore1.posn, chromophore1.image, chromophore1.species, "Chromo 2 =", chromophore2.posn, relativeImage, chromophore2.species)
+            #deltaPosn = chromophore2.posn - chromophore1.posn
+            #relativeImage = [0, 0, 0]
+            ## Consider periodic boundary conditions
+            #for axis in range(3):
+            #    halfBoxLength = (simDims[axis][1] - simDims[axis][0]) / 2.0
+            #    while deltaPosn[axis] > halfBoxLength:
+            #        deltaPosn[axis] -= simDims[axis][1] - simDims[axis][0]
+            #        relativeImage[axis] -= 1
+            #    while deltaPosn[axis] < - halfBoxLength:
+            #        deltaPosn[axis] += simDims[axis][1] - simDims[axis][0]
+            #        relativeImage[axis] += 1
+
             if chromophore1.species == chromophore2.species:
                 if (chromophore2.ID not in chromo1NeighbourIDs):
-                    chromophore1.neighbours.append([chromophore2.ID, list(relativeImage)])
+                    chromophore1.neighbours.append([chromophore2.ID, list(np.array(relativeImage))])
                     chromophore1.neighboursDeltaE.append(None)
                     chromophore1.neighboursTI.append(None)
                 if (chromophore1.ID not in chromo2NeighbourIDs):
-                    chromophore2.neighbours.append([chromophore1.ID, list(-relativeImage)])
+                    chromophore2.neighbours.append([chromophore1.ID, list(-np.array(relativeImage))])
                     chromophore2.neighboursDeltaE.append(None)
                     chromophore2.neighboursTI.append(None)
             else:
                 if chromophore2.ID not in chromo2DissociationNeighbourIDs:
-                    chromophore1.dissociationNeighbours.append([chromophore2.ID, list(relativeImage)])
+                    chromophore1.dissociationNeighbours.append([chromophore2.ID, list(np.array(relativeImage))])
                 if chromophore1.ID not in chromo1DissociationNeighbourIDs:
-                    chromophore2.dissociationNeighbours.append([chromophore1.ID, list(-relativeImage)])
+                    chromophore2.dissociationNeighbours.append([chromophore1.ID, list(-np.array(relativeImage))])
     return chromophoreList
 
 
@@ -339,30 +360,21 @@ def determineNeighboursVoronoi(chromophoreList, parameterDict, simDims):
     # First create the supercell
     superCell = createSuperCell(chromophoreList, boxSize)
     donorChromos = []
-    acceptorChromos = []
-    allChromos = []
+    acceptorChromos = [] allChromos = []
     chromoIndex = 0
-    numberOfDonorChromos = 0
-    numberOfAcceptorChromos = 0
-    numberOfChromos = 0
     for chromophore in superCell:
-        if chromophore.species == 'Donor':
-            numberOfDonorChromos += 1
-        elif chromophore.species == 'Acceptor':
-            numberOfAcceptorChromos += 1
-        numberOfChromos += 1
         for index, position in enumerate(chromophore.superCellPosns):
             chromo = superCellChromo()
             chromo.species = chromophore.species
-            chromo.chromoID = chromophore.ID
-            chromo.index = chromoIndex
+            chromo.originalID = chromophore.ID
+            chromo.periodicID = chromoIndex
             chromo.position = position
             chromo.image = chromophore.superCellImages[index]
             chromoIndex += 1
             if chromophore.species == 'Donor':
                 donorChromos.append(chromo)
             elif chromophore.species == 'Acceptor':
-                donorChromos.append(chromo)
+                acceptorChromos.append(chromo)
             allChromos.append(chromo)
     # Now obtain the positions and send them to the Delaunay Triangulation
     # Then get the voronoi neighbours
@@ -378,24 +390,31 @@ def determineNeighboursVoronoi(chromophoreList, parameterDict, simDims):
     # Chromophores in the original simulation volume will be every 27th (there are 27 periodic images in the triple range(-1,2)),
     # beginning from #13 ((0, 0, 0) is the thirteenth element of the triple range(-1,2))
     # up to the length of the list in question.
+    originalDonorChromoIDs = []
+    originalAcceptorChromoIDs = []
+    originalAllChromoIDs = []
+    for chromophore in allChromos:
+        if np.array_equal(chromophore.image, [0, 0, 0]):
+            originalAllChromoIDs.append(chromophore.periodicID)
+            if chromophore.species == 'Donor':
+                originalDonorChromoIDs.append(chromophore.periodicID)
+            elif chromophore.species == 'Acceptor':
+                originalAcceptorChromoIDs.append(chromophore.periodicID)
     if len(donorPositions) > 0:
         print("Calculating Neighbours of Donor Moieties")
-        donorNeighbours = getVoronoiNeighbours(Delaunay(donorPositions))
-        originalDonorChromoIDs = list(np.arange(13, len(donorChromos), 27))
+        donorNeighbours = getVoronoiNeighbours(Delaunay(donorPositions), donorChromos)
         print("Updating the chromophore list for donor chromos")
-        chromophoreList = updateChromophoreListVoronoi(originalDonorChromoIDs, donorChromos, donorNeighbours, chromophoreList)
+        chromophoreList = updateChromophoreListVoronoi(originalDonorChromoIDs, allChromos, donorNeighbours, chromophoreList, simDims)
     if len(acceptorPositions) > 0:
         print("Calculating Neighbours of Acceptor Moieties")
-        acceptorNeighbours = getVoronoiNeighbours(Delaunay(acceptorPositions))
-        originalAcceptorChromoIDs = list(np.arange(13, len(acceptorChromos), 27))
+        acceptorNeighbours = getVoronoiNeighbours(Delaunay(acceptorPositions), acceptorChromos)
         print("Updating the chromophore list for acceptor chromos")
-        chromophoreList = updateChromophoreListVoronoi(originalAcceptorChromoIDs, acceptorChromos, acceptorNeighbours, chromophoreList)
+        chromophoreList = updateChromophoreListVoronoi(originalAcceptorChromoIDs, allChromos, acceptorNeighbours, chromophoreList, simDims)
     if (len(donorPositions) > 0) and (len(acceptorPositions) > 0):
         print("Calculating Neighbours of All Moieties")
-        allNeighbours = getVoronoiNeighbours(Delaunay(allPositions))
-        originalAllChromoIDs = list(np.arange(13, len(allChromos), 27))
+        allNeighbours = getVoronoiNeighbours(Delaunay(allPositions), allChromos)
         print("Updating the chromophore list for dissociation neighbours")
-        chromophoreList = updateChromophoreListVoronoi(originalAllChromoIDs, allChromos, allNeighbours, chromophoreList)
+        chromophoreList = updateChromophoreListVoronoi(originalAllChromoIDs, allChromos, allNeighbours, chromophoreList, simDims)
     return chromophoreList
 
 
