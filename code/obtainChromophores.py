@@ -360,7 +360,8 @@ def determineNeighboursVoronoi(chromophoreList, parameterDict, simDims):
     # First create the supercell
     superCell = createSuperCell(chromophoreList, boxSize)
     donorChromos = []
-    acceptorChromos = [] allChromos = []
+    acceptorChromos = []
+    allChromos = []
     chromoIndex = 0
     for chromophore in superCell:
         for index, position in enumerate(chromophore.superCellPosns):
