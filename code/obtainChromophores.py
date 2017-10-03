@@ -494,7 +494,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     if parameterDict['useVoronoiNeighbours'] == True:
         chromophoreList = determineNeighboursVoronoi(chromophoreList, parameterDict, simDims)
     else:
-        chromophoreList = determineNeighboursCut(chromophoreList, parameterDict, simDims)
+        chromophoreList = determineNeighboursCutOff(chromophoreList, parameterDict, simDims)
     # Now we have updated the chromophoreList, rewrite the pickle with this new information.
     #### SANITY CHECK  ####
     for index, chromo in enumerate(chromophoreList):
