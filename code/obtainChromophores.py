@@ -310,6 +310,7 @@ def updateChromophoreListVoronoi(IDsToUpdate, superCellChromos, neighbourIDs, ch
     for periodicID in IDsToUpdate:
         # Obtain the real chromophore corresponding to this periodicID
         chromophore1 = chromophoreList[superCellChromos[periodicID].originalID]
+        assert np.array_equal(superCellChromos[periodicID].image, [0, 0, 0])
         #print("EXAMINING CHROMOPHORE", superCellChromos[periodicID].originalID)
         #print("Chromophore", chromophore1.ID, "position =", chromophore1.posn)
         # Get latest neighbour information
@@ -343,15 +344,14 @@ def updateChromophoreListVoronoi(IDsToUpdate, superCellChromos, neighbourIDs, ch
                     chromophore1.neighbours.append([chromophore2.ID, list(np.array(relativeImage))])
                     chromophore1.neighboursDeltaE.append(None)
                     chromophore1.neighboursTI.append(None)
-                else:
-                    print("I am on chromophore", chromophore1.ID, "and want to add chromophore", chromophore2.ID, "to neighbours but it is already in the neighbourlist (Voronoi).")
-                    exit()
+                #else:
+                #    print("I am on chromophore", chromophore1.ID, "and want to add chromophore", chromophore2.ID, "to neighbours but it is already in the neighbourlist (Voronoi).")
                 if (chromophore1.ID not in chromo2NeighbourIDs):
                     chromophore2.neighbours.append([chromophore1.ID, list(-np.array(relativeImage))])
                     chromophore2.neighboursDeltaE.append(None)
                     chromophore2.neighboursTI.append(None)
-                else:
-                    print("I am on chromophore", chromophore2.ID, "and want to add chromophore", chromophore1.ID, "to neighbours but it is already in the neighbourlist (Voronoi).")
+                #else:
+                #    print("I am on chromophore", chromophore2.ID, "and want to add chromophore", chromophore1.ID, "to neighbours but it is already in the neighbourlist (Voronoi).")
             else:
                 if chromophore2.ID not in chromo2DissociationNeighbourIDs:
                     chromophore1.dissociationNeighbours.append([chromophore2.ID, list(np.array(relativeImage))])
@@ -463,14 +463,14 @@ def determineNeighboursCutOff(chromophoreList, parameterDict, simDims):
                         chromophore1.neighbours.append([chromophore2.ID, relativeImageOfChromo2])
                         chromophore1.neighboursDeltaE.append(None)
                         chromophore1.neighboursTI.append(None)
-                    else:
-                        print("I am on chromophore", chromophore1.ID, "and want to add chromophore", chromophore2.ID, "to neighbours but it is already in the neighbourlist (CutOff).")
+                    #else:
+                    #    print("I am on chromophore", chromophore1.ID, "and want to add chromophore", chromophore2.ID, "to neighbours but it is already in the neighbourlist (CutOff).")
                     if (chromophore1.ID not in chromo2NeighbourIDs):
                         chromophore2.neighbours.append([chromophore1.ID, list(-np.array(relativeImageOfChromo2))])
                         chromophore2.neighboursDeltaE.append(None)
                         chromophore2.neighboursTI.append(None)
-                    else:
-                        print("I am on chromophore", chromophore2.ID, "and want to add chromophore", chromophore1.ID, "to neighbours but it is already in the neighbourlist (CutOff).")
+                    #else:
+                    #    print("I am on chromophore", chromophore2.ID, "and want to add chromophore", chromophore1.ID, "to neighbours but it is already in the neighbourlist (CutOff).")
                 else:
                     if chromophore2.ID not in chromo2DissociationNeighbourIDs:
                         chromophore1.dissociationNeighbours.append([chromophore2.ID, relativeImageOfChromo2])
