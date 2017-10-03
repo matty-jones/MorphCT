@@ -343,10 +343,15 @@ def updateChromophoreListVoronoi(IDsToUpdate, superCellChromos, neighbourIDs, ch
                     chromophore1.neighbours.append([chromophore2.ID, list(np.array(relativeImage))])
                     chromophore1.neighboursDeltaE.append(None)
                     chromophore1.neighboursTI.append(None)
+                else:
+                    print("I am on chromophore", chromophore1.ID, "and want to add chromophore", chromophore2.ID, "to neighbours but it is already in the neighbourlist (Voronoi).")
+                    exit()
                 if (chromophore1.ID not in chromo2NeighbourIDs):
                     chromophore2.neighbours.append([chromophore1.ID, list(-np.array(relativeImage))])
                     chromophore2.neighboursDeltaE.append(None)
                     chromophore2.neighboursTI.append(None)
+                else:
+                    print("I am on chromophore", chromophore2.ID, "and want to add chromophore", chromophore1.ID, "to neighbours but it is already in the neighbourlist (Voronoi).")
             else:
                 if chromophore2.ID not in chromo2DissociationNeighbourIDs:
                     chromophore1.dissociationNeighbours.append([chromophore2.ID, list(np.array(relativeImage))])
@@ -458,10 +463,14 @@ def determineNeighboursCutOff(chromophoreList, parameterDict, simDims):
                         chromophore1.neighbours.append([chromophore2.ID, relativeImageOfChromo2])
                         chromophore1.neighboursDeltaE.append(None)
                         chromophore1.neighboursTI.append(None)
+                    else:
+                        print("I am on chromophore", chromophore1.ID, "and want to add chromophore", chromophore2.ID, "to neighbours but it is already in the neighbourlist (CutOff).")
                     if (chromophore1.ID not in chromo2NeighbourIDs):
                         chromophore2.neighbours.append([chromophore1.ID, list(-np.array(relativeImageOfChromo2))])
                         chromophore2.neighboursDeltaE.append(None)
                         chromophore2.neighboursTI.append(None)
+                    else:
+                        print("I am on chromophore", chromophore2.ID, "and want to add chromophore", chromophore1.ID, "to neighbours but it is already in the neighbourlist (CutOff).")
                 else:
                     if chromophore2.ID not in chromo2DissociationNeighbourIDs:
                         chromophore1.dissociationNeighbours.append([chromophore2.ID, relativeImageOfChromo2])
