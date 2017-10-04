@@ -440,32 +440,39 @@ def decrementTime(eventQueue, eventTime):
     return eventQueue
 
 
-def plotConnections(excitonPath, chromophoreList, AADict, outputDir):
-    # A complicated function that shows connections between carriers in 3D that carriers prefer to hop between.
-    # Connections that are frequently used are highlighted in black, whereas rarely used connections are more white.
-    fig = plt.figure()
-    ax = p3.Axes3D(fig)
-    for index, chromophoreID in enumerate(excitonPath[:-1]):
-        coords1 = chromophoreList[chromophoreID].posn
-        coords2 = chromophoreList[excitonPath[index + 1]].posn
-        ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], color = 'r', linewidth = 0.5)
-    simDims = [AADict['lx']/2.0, AADict['ly']/2.0, AADict['lz']/2.0]
-    corners = []
-    corners.append([-simDims[1], -simDims[1], -simDims[2]])
-    corners.append([-simDims[0], simDims[1], -simDims[2]])
-    corners.append([-simDims[0], -simDims[1], simDims[2]])
-    corners.append([-simDims[0], simDims[1], simDims[2]])
-    corners.append([simDims[0], -simDims[1], -simDims[2]])
-    corners.append([simDims[0], simDims[1], -simDims[2]])
-    corners.append([simDims[0], -simDims[1], simDims[2]])
-    corners.append([simDims[0], simDims[1], simDims[2]])
-    for corner1 in corners:
-        for corner2 in corners:
-            ax.plot([corner1[0], corner2[0]], [corner1[1], corner2[1]], [corner1[2], corner2[2]], color = 'k')
-    fileName = outputDir + '3d_exciton.pdf'
-    plt.show()
+def plotCarrierZProfiles(allCarriers, parameterDict, deviceArray, outputDir):
+    carriersToPlot = []
+    # Only consider electrons and holes
+    for carrier in allCarriers:
+        if 'rF' not in carrier.__dict__:
+            carriersToPlot.append(carrier)
+    # Determine the ylims of the zProfile plot
+    zLen = 1E10 * (np.array(deviceArray.shape[2]) * parameterDict['morphologyCellSize'])
+    # Now make the plots
+    for carrier in carriersToPlot:
+        plotZProfile(carrier, zLen, outputDir)
+
+
+def plotZProfile(carrier, zDimSize, outputDir):
+    xVals = []
+    yVals = []
+    for hopIndex, hop in enumerate(carrier.history):
+        xVals.append(hopIndex)
+        currentZ = (1E10 * ((np.array(hop[0][2]) + 0.5)) * parameterDict['morphologyCellSize']) + np.array(hop[1][2])
+        yVals.append(currentZ)
+        if carrier.carrierType == ELECTRON:
+            colour = 'b'
+        else:
+            colour = 'r'
+    fileName = outputDir + 'Carrier_%04d_ZProfile.pdf' % (carrier.ID)
+    plt.figure()
+    plt.plot(xVals, yVals, color=colour)
+    plt.ylim([0, zDimSize])
+    plt.xlabel('Hop Number')
+    plt.ylabel('Z-position')
     plt.savefig(fileName)
-    print("Figure saved as " + fileName)
+    print('Carrier Z-Profile saved as ' + fileName)
+    plt.close()
 
 
 def calculateCoulomb(absolutePosition, selfID, selfCarrierType, carrierIsRecombining=None):
@@ -1355,7 +1362,8 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
         #print("Fastest Event Considered =", fastestEvent)
         plotEventTimeDistribution(eventLog, outputFiguresDir, fastestEvent, slowestEvent)
         if parameterDict['recordCarrierHistory'] is True:
-            plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputFiguresDir)
+            plotCarrierZProfiles(allCarriers, parameterDict, deviceArray, outputFiguresDir)
+            #plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputFiguresDir)
         exit()
     ### THE FOLLOWING CODE WAS USED TO GENERATE THE ANALYSIS DATA USED IN THE MATTYSUMMARIES EXCITON DYNAMICS STUFF
     #print("Plotting Exciton Characteristics")
@@ -1433,7 +1441,8 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                                           "Number of Extractions = " + str(numberOfExtractions)])
     plotEventTimeDistribution(eventLog, outputFiguresDir, fastestEvent, slowestEvent)
     if parameterDict['recordCarrierHistory'] is True:
-        plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputFiguresDir)
+        plotCarrierZProfiles(allCarriers, parameterDict, deviceArray, outputFiguresDir)
+        #plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputFiguresDir)
 
 
 def slurmTimeInS(slurmTime):
