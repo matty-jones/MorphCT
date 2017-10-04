@@ -468,6 +468,7 @@ def plotZProfile(carrier, zDimSize, outputDir):
     plt.figure()
     plt.plot(xVals, yVals, color=colour)
     plt.ylim([0, zDimSize])
+    plt.xlim([0, 200])
     plt.xlabel('Hop Number')
     plt.ylabel('Z-position')
     plt.savefig(fileName)
