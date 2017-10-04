@@ -489,7 +489,7 @@ def chromoSort(chromophoreList):
             for chromo in chromophoreList:
                 newChromophoreList[chromo.ID] = chromo
             chromophoreList = copy.deepcopy(newChromophoreList)
-            return chromophoreList
+    return chromophoreList
 
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
