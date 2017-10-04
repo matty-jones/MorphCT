@@ -479,6 +479,18 @@ def determineNeighboursCutOff(chromophoreList, parameterDict, simDims):
     print("")
     return chromophoreList
 
+def chromoSort(chromophoreList):
+    for index, chromo in enumerate(chromophoreList):
+        if index != chromo.ID:
+            print("Inconsistency found in the ordering of the chromophoreList, rewriting the chromophoreList in the correct order...")
+            newChromophoreList = []
+            for chromo in chromophoreList:
+                newChromophoreList.append(0)
+            for chromo in chromophoreList:
+                newChromophoreList[chromo.ID] = chromo
+            chromophoreList = copy.deepcopy(newChromophoreList)
+            return chromophoreList
+
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
     simDims = [[-AAMorphologyDict['lx'] / 2.0, AAMorphologyDict['lx'] / 2.0], [-AAMorphologyDict['ly'] / 2.0, AAMorphologyDict['ly'] / 2.0], [-AAMorphologyDict['lz'] / 2.0, AAMorphologyDict['lz'] / 2.0]]
@@ -491,23 +503,14 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     else:
         # Other system, with electronically active species specified as rigid bodies using AARigidBodySpecies in parameter file
         chromophoreList = calculateChromophoresAA(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims, rigidBodies=AAMorphologyDict['body'])
+    #### SANITY CHECK  ####
+    chromophoreList = chromoSort(chromophoreList)
+    #### END OF SANITY CHECK ####     
     if parameterDict['useVoronoiNeighbours'] == True:
         chromophoreList = determineNeighboursVoronoi(chromophoreList, parameterDict, simDims)
     else:
         chromophoreList = determineNeighboursCutOff(chromophoreList, parameterDict, simDims)
     # Now we have updated the chromophoreList, rewrite the pickle with this new information.
-    #### SANITY CHECK  ####
-    for index, chromo in enumerate(chromophoreList):
-        if index != chromo.ID:
-            print("Inconsistency found in the ordering of the chromophoreList, rewriting the chromophoreList in the correct order...")
-            newChromophoreList = []
-            for chromo in chromophoreList:
-                newChromophoreList.append(0)
-            for chromo in chromophoreList:
-                newChromophoreList[chromo.ID] = chromo
-            chromophoreList = newChromophoreList
-            break
-    #### END OF SANITY CHECK ####
     pickleName = parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle'
     helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleName)
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
