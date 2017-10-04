@@ -32,6 +32,7 @@ globalTime = 0               # The total simulation time that is required/update
 globalCarrierDict = {}       # A dictionary of all carriers in the system for the potential/recombination calculations
 currentFieldValue = 0        # The field value calculated from the voltage this child process was given
 numberOfExtractions = 0      # The total number of charges that have hopped out of the device through the `correct' contact
+numberOfElectricalRecombinations = 0  # The total number of charges that have recombined with an injected carrier from the `correct' contact
 KMCIterations = 0
 fastestEventAllowed = 1E-15
 slowestEventAllowed = 1E-9
@@ -1287,6 +1288,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 helperFunctions.writeToFile(logFile, ["EVENT: Carrier Recombination Check after " + str(KMCIterations) +
                                                       " iterations (globalTime = " + str(globalTime) + ")"])
                 # A recombination event is about to occur. At this point, we should check if the carrier and its recombination partner are still in range.
+                deltaElectricalRecombinations = 0
                 try:
                     carrier1 = nextEvent[2]
                     carrier1Posn = np.array(carrier1.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier1.currentChromophore.posn) * 1E-10)
@@ -1294,6 +1296,15 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     carrier2Posn = np.array(carrier2.currentDevicePosn) * parameterDict['morphologyCellSize'] + (np.array(carrier2.currentChromophore.posn) * 1E-10)
                     separation = helperFunctions.calculateSeparation(carrier2Posn, carrier1Posn)
                     recombiningCarrierIDs.remove(carrier2.ID)
+                    # Calculate the increment to the numberOfElectricalRecombinations counter (this will be used to calculate the current density later)
+                    # Note that optical recombinations do not contribute to photocurrent
+                    for recombiningCarrier in [carrier1, carrier2]:
+                        if ((recombiningCarrier.carrierType == HOLE) and (recombiningCarrier.injectedFrom == 'Anode')) or\
+                           ((recombiningCarrier.carrierType == ELECTRON) and (recombiningCarrier.injectedFrom == 'Cathode')):
+                            deltaElectricalRecombinations += 1
+                        elif ((recombiningCarrier.carrierType == ELECTRON) and (recombiningCarrier.injectedFrom == 'Anode')) or\
+                                ((recombiningCarrier.carrierType == HOLE) and (recombiningCarrier.injectedFrom == 'Cathode')):
+                            deltaElectricalRecombinations -= 1
                 except (ValueError, KeyError) as e:
                     # The second carrier is missing from the simulation (already extracted), so set the separation to be large
                     separation = 1E99
@@ -1306,6 +1317,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     carrier1.removedTime = globalTime
                     carrier2.removedTime = globalTime
                     numberOfRecombinations += 1
+                    numberOfElectricalRecombinations += deltaElectricalRecombinations
                     globalCarrierDict.pop(carrier1.ID)
                     globalCarrierDict.pop(carrier2.ID)
                     if parameterDict['recordCarrierHistory'] is True:
@@ -1321,7 +1333,6 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         # If recombining carrier was already extracted, then skip this
                         carrier2.recombining = False
                         carrier2.recombiningWith = None
-
             else:
                 print(eventQueue)
                 raise SystemError("New Event is next in queue")
