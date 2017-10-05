@@ -1128,11 +1128,11 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     # Hopping permitted, push the exciton to the queue.
                     # Push the exciton to the queue
                     eventQueue = pushToQueue(eventQueue, (injectedExciton.hopTime, 'excitonHop', injectedExciton))
-                    # Increment the exciton counter
-                    excitonIndex += 1
                 # A photoinjection has just occured, so now queue up a new one
                 photoinjectionTime = determineEventTau(photoinjectionRate, 'photoinjection')
                 eventQueue = pushToQueue(eventQueue, (photoinjectionTime, 'photo', None))
+                # Increment the exciton and photoinjection counters
+                excitonIndex += 1
                 numberOfPhotoinjections += 1
 
             elif (nextEvent[1] == 'cathode-injection') or (nextEvent[1] == 'anode-injection'):
@@ -1194,7 +1194,14 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 #excitonDisp.append(helperFunctions.calculateSeparation(currentChromoPosn, destinationChromoPosn))
                 #if len(excitonTime) == 1000:
                 #    break
+
                 hoppingExciton = nextEvent[2]
+                # There is a sporadic (rare) bug that causes excitons to sometimes get queued up to hop 
+                # even though they have already recombined.
+                # The following is similar to the check we do before the carrier hop, and should fix that.
+                if hoppingExciton.removedTime is not None:
+                    # Exciton has already been removed from the system through recombination
+                    continue
                 hoppingExciton.performHop()
                 if hoppingExciton.removedTime is None:
                     # As long as this exciton hasn't just been removed, recalculate its behaviour
@@ -1234,7 +1241,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         if (injectedHole.hopTime is not None) and (injectedHole.destinationChromophore is not None):
                             eventQueue = pushToQueue(eventQueue, (injectedHole.hopTime, 'carrierHop', injectedHole))
                     else:
-                        helperFunctions.writeToFile(logFile, ["EVENT: Exciton Recombining after " + str(KMCIterations) +
+                        helperFunctions.writeToFile(logFile, ["EVENT: Exciton #" + str(hoppingExciton.ID) + " Recombining after " + str(KMCIterations) +
                                                               " iterations (globalTime = " + str(globalTime) + ")"])
                         numberOfRecombinations += 1
                         numberOfHops.append(injectedExciton.numberOfHops)
@@ -1486,6 +1493,7 @@ if __name__ == "__main__":
         with open(logFile, 'wb+') as logFileHandle:
             pass
     helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run:', repr(jobsToRun)])
+    helperFunctions.writeToFile(logFile, ['Using Random number seed ' + str(int(sys.argv[3]))])
     if parameterDict['disableCoulombic'] is True:
         helperFunctions.writeToFile(logFile, ['COULOMBIC INTERACTIONS DISABLED'])
     if parameterDict['disableDarkInjection'] is True:
