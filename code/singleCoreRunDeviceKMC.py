@@ -778,9 +778,11 @@ def pushToQueue(queue, event):
                                               "Terminating..."])
         raise KeyboardInterrupt
     if (event[0] == np.float64(1E99)) and (event[1] != 'photo'):
-        helperFunctions.writeToFile(logFile, ["---=== TRIED TO QUEUE EVENT WITH CRAZY LONG WAIT TIME ===---",
-                                              "Event = " + str(event), "This carrier has completed " +
-                                              str(len(event[2].history)) + " hops."])
+        logLineToWrite = ["---=== TRIED TO QUEUE EVENT WITH CRAZY LONG WAIT TIME ===---",
+                                              "Event = " + str(event)]
+        if event[2].history is not None:
+            logLineToWrite.append("This carrier has completed " + str(len(event[2].history)) + " hops.")
+        helperFunctions.writeToFile(logFile, [logLineToWrite])
         try:
             event[2].__dict__.pop('history')
         except KeyError:
