@@ -26,7 +26,7 @@ def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
             if int(neighbour[0]) > chromo.ID:
                 numberOfPairs += 1
     numberOfPairs = np.sum([len(chromo.neighbours) for chromo in chromophoreList])
-    print("There are", numberOfPairs/2, "total neighbour pairs to consider.")  # /2 because the forwards and backwards hops are identical
+    print("There are", int(numberOfPairs/2), "total neighbour pairs to consider.")  # /2 because the forwards and backwards hops are identical
     # Then consider each chromophore against every other chromophore
     for chromophore1 in chromophoreList:
         neighboursID = [neighbour[0] for neighbour in chromophore1.neighbours]
