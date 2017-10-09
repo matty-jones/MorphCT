@@ -264,7 +264,7 @@ if __name__ == '__main__':
             helperFunctions.writeToFile(logFile, ['Carrier hopped ' + str(thisCarrier.noHops) + ' times, over ' + str(thisCarrier.currentTime) + ' seconds, into image ' + str(thisCarrier.image) + ', for a displacement of ' + str(thisCarrier.displacement) + ', in ' + str(elapsedTime) + ' wall-clock ' + str(timeunits)])
             # Save the pickle file every hour
             if (t2 - saveTime) > 3600:
-                print("Completed", jobNumber, "of", len(jobsToRun), "jobs. Making checkpoint at %3d%%" % (np.round(jobNumber + 1 / float(len(jobsToRun)) * 100)))
+                print("Completed", jobNumber, "of", len(jobsToRun), "jobs. Making checkpoint at %3d%%" % (np.round((jobNumber + 1) / float(len(jobsToRun)) * 100)))
                 helperFunctions.writeToFile(logFile, ['Completed ' + str(jobNumber) + ' jobs. Making checkpoint at %3d%%' % (np.round(jobNumber / float(len(jobsToRun)) * 100))])
                 savePickle(saveData, pickleFileName.replace('Data', saveSlot + 'Results'))
                 if saveSlot == 'slot1':
