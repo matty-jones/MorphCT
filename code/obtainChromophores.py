@@ -488,7 +488,8 @@ def chromoSort(chromophoreList):
                 newChromophoreList.append(0)
             for chromo in chromophoreList:
                 newChromophoreList[chromo.ID] = chromo
-            chromophoreList = copy.deepcopy(newChromophoreList)
+            chromophoreList = newChromophoreList
+            return chromophoreList
     return chromophoreList
 
 
