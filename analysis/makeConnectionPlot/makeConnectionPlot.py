@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../../../code')
+sys.path.append('../../code')
 import helperFunctions
 import matplotlib.pyplot as plt
 import numpy as np
@@ -41,7 +41,7 @@ def plotConnections(chromophoreList, simExtent, inputFile):
             line = [coords2[0] - coords1[0], coords2[1] - coords1[1], coords2[2] - coords2[1]]
             if (np.abs(coords2[0] - coords1[0]) < simExtent[0] / 2.0) and (np.abs(coords2[1] - coords1[1]) < simExtent[1] / 2.0) and (np.abs(coords2[2] - coords1[2]) < simExtent[2] / 2.0):
                 ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = 'k', linewidth = 0.5)
-    fileName = '3d' + inputFile + '.pdf'
+    fileName = '3d_' + inputFile[:-7] + '.pdf'
     plt.savefig('./' + fileName, bbox_inches='tight')
     print("Figure saved as", "./" + fileName)
     plt.clf()

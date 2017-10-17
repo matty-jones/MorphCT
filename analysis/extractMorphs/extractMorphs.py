@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../../../code')
+sys.path.append('../../code')
 import helperFunctions
 
 if __name__ == "__main__":
