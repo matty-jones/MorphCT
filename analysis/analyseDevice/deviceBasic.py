@@ -85,7 +85,7 @@ def parseDataIncomplete(data):
     dataDict['Iter'] = iterations
     if len(numberOfExtractions) != 0:
         gradient, intercept, rVal, pVal, stdErr = scipy.stats.linregress(timeOfExtractions, numberOfExtractions)
-        jVal = float((elementaryCharge * gradient) / (deviceArea * 10))
+        jVal = float(-(elementaryCharge * gradient) / (deviceArea * 10))
         dataDict['J'] = jVal
         plt.figure()
         plt.scatter(timeOfExtractions, numberOfExtractions)
@@ -98,6 +98,7 @@ def parseDataIncomplete(data):
 
 
 def calculateJ(data, deviceArea):
+    vVal = eval(data[1][:-1])[0]
     numberOfExtractions = [0]
     timeOfExtractions = [0.0]
     for line in data:
@@ -108,14 +109,8 @@ def calculateJ(data, deviceArea):
             if extractionNumber != numberOfExtractions[-1]:
                 numberOfExtractions.append(extractionNumber)
                 timeOfExtractions.append(extractionTime)
-    #plt.figure()
-    #plt.scatter(timeOfExtractions, numberOfExtractions)
-    #plt.xlabel('Time (s)')
-    #plt.ylabel('Number of Extractions (Arb. U)')
-    #plt.xlim([0, 2E-4])
-    #plt.show()
-    #exit()
     gradient, intercept, rVal, pVal, stdErr = scipy.stats.linregress(timeOfExtractions, numberOfExtractions)
+    plotExtractionTimeSeries(timeOfExtractions, numberOfExtractions, gradient, intercept, vVal)
     return -(elementaryCharge * gradient) / deviceArea
 
 
@@ -125,6 +120,21 @@ def quickCheck(data):
         if 'EVENT: Dark Current' in line:
             darkCurrentData = line.split(' ')
             darkCurrentInjs[darkCurrentData[6]].append(int(darkCurrentData[15][:-1]))
+
+
+def plotExtractionTimeSeries(time, number, gradient, intercept, vVal):
+    plt.figure()
+    plt.scatter(time, number)
+    plt.plot(time, [(tVal * gradient) + intercept for tVal in time], c = 'r')
+    plt.xlim([0, 1.2E-10])
+    plt.ylim([0, 5000])
+    plt.xlabel('Time (s)')
+    plt.ylabel('Number of Extractions (Arb. U)')
+    plt.title('V = ' + str(vVal))
+    fileName = sys.argv[1] + '/figures/' + str(vVal) + '/extractionTimeSeries.pdf'
+    plt.savefig(fileName)
+    print('Extraction time series saved to', fileName)
+    plt.close()
 
 
 def plotData(xLabel, xVals, yLabel, yVals, fileName, mode='scatter'):
@@ -142,13 +152,13 @@ def plotData(xLabel, xVals, yLabel, yVals, fileName, mode='scatter'):
 
 def printJVTable(dataDict):
     VData, JData = zip(*sorted(zip(dataDict['V'], dataDict['J'])))
-    print("|" + "-" * 63 + "|")
-    print("|\t\tV\t\t|\t\tJ\t\t|")
-    print("|\t\t(V)\t\t|\t\t(mA cm^{2})\t|")
-    print("|" + "-" * 63 + "|")
+    print("|" + "-" * 103 + "|")
+    print("|\t\tV\t\t|\t\t\tJ\t\t|\t\tExt\t\t|")
+    print("|\t\t(V)\t\t|\t\t(mA cm^{2})\t\t|\t\t(Arb. U.)\t")
+    print("|" + "-" * 103 + "|")
     for index, V in enumerate(VData):
-        print("|\t\t%0.2f\t\t|\t\t%0.4f\t\t|" % (V, JData[index]))
-        print("|" + "-" * 63 + "|")
+        print("|\t\t%5.2f\t\t|\t\t%9.4f\t\t|\t\t%d\t\t|" % (V, JData[index], dataDict['Ext'][index]))
+        print("|" + "-" * 103 + "|")
 
 
 if __name__ == "__main__":
