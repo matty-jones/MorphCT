@@ -22,12 +22,15 @@ if __name__ == "__main__":
         with open(fileName, 'rb') as pickleFile:
             pickledData = pickle.load(pickleFile)
             for key, val in pickledData.items():
-                if val is None:
-                    continue
-                if key not in combinedData:
-                    combinedData[key] = val
-                else:
-                    combinedData[key] += val
+                try:
+                    if val is None:
+                        continue
+                    if key not in combinedData:
+                        combinedData[key] = val
+                    else:
+                        combinedData[key] += val
+                except AttributeError:
+                    pass
     # Write out the combined data
     print("Writing out the combined pickle file...")
     with open(outputDir + '/KMCResults.pickle', 'wb+') as pickleFile:
