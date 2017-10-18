@@ -344,19 +344,23 @@ def updateChromophoreListVoronoi(IDsToUpdate, superCellChromos, neighbourIDs, ch
                     chromophore1.neighbours.append([chromophore2.ID, list(np.array(relativeImage))])
                     chromophore1.neighboursDeltaE.append(None)
                     chromophore1.neighboursTI.append(None)
+                    chromo1NeighbourIDs.append(chromophore2.ID)
                 #else:
                 #    print("I am on chromophore", chromophore1.ID, "and want to add chromophore", chromophore2.ID, "to neighbours but it is already in the neighbourlist (Voronoi).")
                 if (chromophore1.ID not in chromo2NeighbourIDs):
                     chromophore2.neighbours.append([chromophore1.ID, list(-np.array(relativeImage))])
                     chromophore2.neighboursDeltaE.append(None)
                     chromophore2.neighboursTI.append(None)
+                    chromo2NeighbourIDs.append(chromophore1.ID)
                 #else:
                 #    print("I am on chromophore", chromophore2.ID, "and want to add chromophore", chromophore1.ID, "to neighbours but it is already in the neighbourlist (Voronoi).")
             else:
-                if chromophore2.ID not in chromo2DissociationNeighbourIDs:
+                if chromophore2.ID not in chromo1DissociationNeighbourIDs:
                     chromophore1.dissociationNeighbours.append([chromophore2.ID, list(np.array(relativeImage))])
-                if chromophore1.ID not in chromo1DissociationNeighbourIDs:
+                    chromo1DissociationNeighbourIDs.append(chromophore2.ID)
+                if chromophore1.ID not in chromo2DissociationNeighbourIDs:
                     chromophore2.dissociationNeighbours.append([chromophore1.ID, list(-np.array(relativeImage))])
+                    chromo2DissociationNeighbourIDs.append(chromophore1.ID)
     return chromophoreList
 
 
