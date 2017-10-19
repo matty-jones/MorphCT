@@ -127,7 +127,7 @@ def plotExtractionTimeSeries(time, number, gradient, intercept, vVal):
     plt.scatter(time, number)
     plt.plot(time, [(tVal * gradient) + intercept for tVal in time], c = 'r')
     plt.xlim([0, 1.2E-10])
-    plt.ylim([0, 5000])
+    #plt.ylim([0, 5000])
     plt.xlabel('Time (s)')
     plt.ylabel('Number of Extractions (Arb. U)')
     plt.title('V = ' + str(vVal))
@@ -163,7 +163,8 @@ def printJVTable(dataDict):
 
 if __name__ == "__main__":
     #deviceArea = (3 * 7.14E-9)**2
-    deviceArea = (3 * 1E-8)**2
+    #deviceArea = (3 * 1E-8)**2
+    deviceArea = (1 * 1E-8)**2
     print("Using a device area of", str(deviceArea) + ". Make sure this is correct for the system that is being studied!")
     deviceDirectory = sys.argv[1]
     dataFiles = loadDataFiles(deviceDirectory)
