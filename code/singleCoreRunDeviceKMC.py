@@ -263,7 +263,12 @@ class carrier:
             [self.destinationChromophore, self.hopTime, self.relativeImage, self.destinationImage] = self.calculateHop()
             # Update the destination chromophore (if it's a chromophore) so that it's marked as occupied
             if not isinstance(self.destinationChromophore, str):
+                # DEBUG Occupation check
+                #print("Updating", self.destinationChromophore.ID, "'s occupied with", self.destinationImage)
+                #print("BEFOREHAND =", globalChromophoreData.returnSpecificChromophore(self.destinationImage, self.destinationChromophore.ID).occupied)
                 globalChromophoreData.returnSpecificChromophore(self.destinationImage, self.destinationChromophore.ID).occupied.append(self.destinationImage)
+                #debugCheckOccupied(self.destinationChromophore.ID, self.destinationImage)
+                #input("PAUSE")
         except ValueError:
             [self.destinationChromophore, self.hopTime, self.relativeImage, self.destinationImage] = [None, None, None, None]
 
@@ -272,6 +277,7 @@ class carrier:
         hopTimes = []
         # Obtain the reorganisation energy in J (from eV in the parameter file)
         # DEBUG print statements
+        #print("CURRENT POSITION OF CARRIER =", self.currentChromophore.posn)
         #print("There are", len([TI for TI in self.currentChromophore.neighboursTI if ((TI is not None) and (TI > 1E-10))]), "possible hop destinations")
         #print(self.currentChromophore.ID, self.currentChromophore.neighbours)
         for neighbourIndex, transferIntegral in enumerate(self.currentChromophore.neighboursTI):
@@ -279,6 +285,8 @@ class carrier:
             if (transferIntegral is None) or (transferIntegral < 1E-10):
                 continue
             neighbourChromophore = globalChromophoreData.returnSpecificChromophore(self.currentDevicePosn, self.currentChromophore.neighbours[neighbourIndex][0])
+            # DEBUG hop decision print statement
+            #print("Considering hop from", self.currentChromophore.ID, "(", self.currentChromophore.posn, ") to", neighbourChromophore.ID, "(", neighbourChromophore.posn, ")")
             # The destination chromophore will be the actual chromophore we end up on (i.e. not neighbour if we hop across a boundary)
             destinationChromophore = neighbourChromophore
             # Need to determine the relative image between the two (recorded in obtainChromophores) to check if the carrier is hopping out of this morphology cell and into an adjacent one
@@ -286,7 +294,12 @@ class carrier:
             destinationImage = list(np.array(self.currentDevicePosn) + np.array(neighbourRelativeImage))
             # If we're hopping out of this cell and into a new one, make sure that it's in-range if we're not going to wrap it
             skipThisNeighbour = False
-            if self.wrapxy is False:
+            # Skip this neighbour if the destination is already occupied
+            if destinationImage in destinationChromophore.occupied:
+                # DEBUG Hop test is occupied print statement
+                #print("Hop Destination is occupied, skipping this neighbour")
+                continue
+            elif self.wrapxy is False:
                 # Skip this neighbour if we're going to hop out of the device along the non-electrode axes
                 if neighbourRelativeImage != [0, 0, 0]:
                     for axisNo, val in enumerate(destinationImage[:-1]):
@@ -318,21 +331,22 @@ class carrier:
             if hopTime is not None:
                 # Keep track of the chromophoreID and the corresponding tau
                 hopTimes.append([destinationChromophore, hopTime, neighbourRelativeImage, destinationImage, self.prefactor, self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij])
-                if hopTime > 1E20:
-                    helperFunctions.writeToFile(logFile, ["---=== WARNING, EXTREMELY LONG CARRIER HOP ===---", repr(hopTimes[-1])])
         # Sort by ascending hop time
         hopTimes.sort(key = lambda x:x[1])
         # Take the quickest hop
         if len(hopTimes) > 0:
-            if hopTimes[0][1] > 1E98:
+            if hopTimes[0][1] > 1:
+                helperFunctions.writeToFile(logFile, ["---=== WARNING, SELECTED EXTREMELY LONG CARRIER HOP ===---", repr(hopTimes[-1])])
                 helperFunctions.writeToFile(logFile, [repr(hopTimes[0]), repr(globalCarrierDict)])
                 for ID, carrier in globalCarrierDict.items():
                     helperFunctions.writeToFile(logFile, ["ID = " + str(ID) + ", Current Posn = " + repr(carrier.currentDevicePosn) +
                                                           ", currentChromophoreID = " + str(carrier.currentChromophore.ID)])
+                print("NO VIABLE HOPS FOUND")
+                return []
             return hopTimes[0][:4]
         else:
             # We are trapped here, so just return in order to raise the calculateBehaviour exception
-            #print("NO VIABLE HOPS FOUND")
+            print("NO VIABLE HOPS FOUND")
             return []
 
     def performHop(self):
@@ -502,6 +516,9 @@ def calculateCoulomb(absolutePosition, selfID, selfCarrierType, carrierIsRecombi
     coulombConstant = 1.0 / (4 * np.pi * epsilonNought * parameterDict['relativePermittivity'])
     canRecombineHere = False
     recombiningWith = None
+    # DEBUG Print GCD
+    #for key, carrier in globalCarrierDict.items():
+    #    print(key, carrier.currentChromophore.ID, carrier.currentChromophore.posn)
     #print("--== CURRENT GLOBAL CARRIER DICT ==--")
     #print("CURRENT CARRIER =", selfID, absolutePosition)
     for carrierID, carrier in globalCarrierDict.items():
@@ -514,10 +531,13 @@ def calculateCoulomb(absolutePosition, selfID, selfCarrierType, carrierIsRecombi
             # Only consider the current carrier if it is not us!
             separation = helperFunctions.calculateSeparation(absolutePosition, carrierPosn)
             #print("Separation between", selfID, "and", carrier.ID, "=", separation)
-            coulombicPotential += coulombConstant * ((elementaryCharge * ((2 * selfCarrierType) - 1)) * (elementaryCharge * ((2 * carrier.carrierType) - 1)) / separation)
-            if separation == 0.0:
-                print("ZERO SEPARATION BETWEEN CARRIERS, EXITING")
-                exit()
+            # DEBUG (for the perfect crystal test: Permit electrons and holes to have zero separation, and just set the coulomb to 0)
+            if (separation == 0.0):
+                if (selfCarrierType == carrier.carrierType):
+                    print("ZERO SEPARATION BETWEEN LIKE CARRIERS, EXITING")
+                    exit()
+            else:
+                coulombicPotential += coulombConstant * ((elementaryCharge * ((2 * selfCarrierType) - 1)) * (elementaryCharge * ((2 * carrier.carrierType) - 1)) / separation)
             # I'm also going to use this opportunity (as we're iterating over all carriers in the system) to see if we're close enough to any to recombine.
             if carrierIsRecombining is False:
                 # Only do this if we're not currently recombining with something
@@ -926,6 +946,11 @@ def plot3DTrajectory(injectSource, carriersToPlot, parameterDict, deviceArray, o
     plt.close()
 
 
+def debugCheckOccupied(ID, image):
+    print("UPDATED =", globalChromophoreData.returnSpecificChromophore(image, ID).occupied)
+
+
+
 def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal, timeLimit):
     # ---=== PROGRAMMER'S NOTE ===---
     # This `High Resolution' version of the code will permit chromophore-based hopping through the device, rather than just approximating the distribution. We have the proper resolution there, let's just use it!
@@ -1293,9 +1318,9 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
             elif nextEvent[1] == 'carrierHop':
                 hoppingCarrier = nextEvent[2]
                 # DEBUG output carrier hops to log file
-                #outputLine = "EVENT: Carrier #" + str(hoppingCarrier.ID) + " hop from " + repr(hoppingCarrier.currentDevicePosn) + " " + repr(hoppingCarrier.currentChromophore.posn) + " to " + repr(hoppingCarrier.destinationImage) + " "
+                #outputLine = "EVENT: Carrier #" + str(hoppingCarrier.ID) + " hop from " + repr(hoppingCarrier.currentDevicePosn) + " " + repr(hoppingCarrier.currentChromophore.ID) + " " + repr(hoppingCarrier.currentChromophore.posn) + " to " + repr(hoppingCarrier.destinationImage) + " "
                 #if not isinstance(hoppingCarrier.destinationChromophore, str):
-                #    outputLine += repr(hoppingCarrier.destinationChromophore.posn)
+                #    outputLine += repr(hoppingCarrier.destinationChromophore.ID) + " " + repr(hoppingCarrier.destinationChromophore.posn)
                 #else:
                 #    outputLine += hoppingCarrier.destinationChromophore
                 #helperFunctions.writeToFile(logFile, [outputLine])
