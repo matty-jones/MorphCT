@@ -120,12 +120,16 @@ def loadDeviceMorphology(parameterDict):
     for yVal, fileName in enumerate(ySlices):
         # Load the ySlice as-presented in the input files
         ySlice = np.loadtxt(deviceDir + '/' + fileName, dtype=int)
-        # The z-origin is at the top, and we need it at the bottom, so turn the array upside down
-        ySlice = np.flipud(ySlice)
-        # Now populate the array
-        for zVal, zRow in enumerate(ySlice):
-            for xVal, datum in enumerate(zRow):
-                deviceArray[xVal, yVal, zVal] = datum
+        if len(ySlice.shape) > 0:
+            # The z-origin is at the top, and we need it at the bottom, so turn the array upside down
+            ySlice = np.flipud(ySlice)
+            # Now populate the array
+            for zVal, zRow in enumerate(ySlice):
+                for xVal, datum in enumerate(zRow):
+                    deviceArray[xVal, yVal, zVal] = datum
+        else:
+            # Can't flipud and iterate over a zero-length array (one number), so assign it this way instead.
+            deviceArray[0, yVal, 0] = int(ySlice)
     moietyDictionary = {}
     for moietyID in np.unique(deviceArray):
         moietyDictionary[moietyID] = morphologyMoiety(parameterDict['deviceComponents'][moietyID], parameterDict)
