@@ -279,14 +279,16 @@ def getTempVal(string):
 
 
 def getFrameVal(string):
-    underscoreList = helperFunctions.findIndex(string, '_')
-    tempVal = int(string[:underscoreList[0]])
+    hyphenList = helperFunctions.findIndex(string, '-')
+    tempVal = int(string[hyphenList[0]+1:hyphenList[1]])
     return tempVal
 
 
 def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierType, xLabel):
     plt.gcf()
     xvals = tempData
+    # DEBUG
+    #xvals[-1] = 1000
     yvals = list(np.array(mobilityData)[:,0])
     yerrs = list(np.array(mobilityData)[:,1])
     plt.xlabel(xLabel)
@@ -294,7 +296,7 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierTy
     plt.title('p1-L15-f0.0-P0.1-TX.X-e0.1', fontsize = 24)
     #plt.xlim([1.4, 2.6])
     plt.semilogy(xvals, yvals, c = 'b')
-    plt.gca().set_xscale('log')
+    #plt.gca().set_xscale('log')
     plt.errorbar(xvals, yvals, xerr = 0, yerr = yerrs)
     fileName = './mobility' + carrierType + '.pdf'
     plt.savefig(fileName, bbox_inches='tight')
@@ -396,7 +398,7 @@ if __name__ == "__main__":
             #plotHeatMap(carrierHistory, directory)
             if carrierHistory is not None:
                 print("Determining carrier hopping connections...")
-                plotConnections(chromophoreList, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']], carrierHistory, directory, completeCarrierTypes[carrierTypeIndex])
+                #plotConnections(chromophoreList, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']], carrierHistory, directory, completeCarrierTypes[carrierTypeIndex])
             times, MSDs = helperFunctions.parallelSort(times, MSDs)
             print("Calculating MSD...")
             mobility, mobError = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, completeCarrierTypes[carrierTypeIndex])
