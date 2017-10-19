@@ -32,7 +32,6 @@ globalTime = 0               # The total simulation time that is required/update
 globalCarrierDict = {}       # A dictionary of all carriers in the system for the potential/recombination calculations
 currentFieldValue = 0        # The field value calculated from the voltage this child process was given
 numberOfExtractions = 0      # The total number of charges that have hopped out of the device through the `correct' contact
-numberOfElectricalRecombinations = 0  # The total number of charges that have recombined with an injected carrier from the `correct' contact
 KMCIterations = 0
 fastestEventAllowed = 1E-99#1E-15
 slowestEventAllowed = 1E99#1E-9
@@ -1027,6 +1026,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     numberOfHops = []
     numberOfDissociations = 0
     numberOfRecombinations = 0
+    numberOfElectricalRecombinations = 0 # The total number of charges that have recombined with an injected carrier from the `correct' contact
     eventLog = {'photo':[], 'cathode-injection':[], 'anode-injection':[], 'excitonHop':[], 'carrierHop':[], 'recombine':[]}
     alreadyPrinted = False
     outputPrintStatement = False
