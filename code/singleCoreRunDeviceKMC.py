@@ -34,8 +34,8 @@ currentFieldValue = 0        # The field value calculated from the voltage this 
 numberOfExtractions = 0      # The total number of charges that have hopped out of the device through the `correct' contact
 numberOfElectricalRecombinations = 0  # The total number of charges that have recombined with an injected carrier from the `correct' contact
 KMCIterations = 0
-fastestEventAllowed = 1E-15
-slowestEventAllowed = 1E-9
+fastestEventAllowed = 1E-99#1E-15
+slowestEventAllowed = 1E99#1E-9
 
 
 class exciton:
@@ -46,14 +46,20 @@ class exciton:
         self.removedTime = None
         self.T = parameterDict['systemTemperature']
         self.lifetimeParameter = parameterDict['excitonLifetime']
-        self.recombinationTime = -np.log(R.random()) * self.lifetimeParameter
+        # DEBUG excitons live forever
+        self.recombinationTime = 1E99#-np.log(R.random()) * self.lifetimeParameter
         self.rF = parameterDict['forsterRadius']
         self.prefactor = parameterDict['hoppingPrefactor']
         self.numberOfHops = 0
         # NOTE For now, we'll just inject it randomly somewhere in the system
         self.initialDevicePosn = initialPosnDevice
         self.currentDevicePosn = copy.deepcopy(initialPosnDevice)
-        self.initialChromophore = globalChromophoreData.returnRandomChromophore(initialPosnDevice)
+        # DEBUG Prevent photoexcitations from occuring near the edges (remove self.initialChromophore =... from this loop)
+        while True:
+            self.initialChromophore = globalChromophoreData.returnRandomChromophore(initialPosnDevice)
+            if (self.initialChromophore.posn[2] > -30.0) and (self.initialChromophore.posn[2] < 30.0):
+                break
+        # End Debug
         self.currentChromophore = copy.deepcopy(self.initialChromophore)
         self.calculateBehaviour()
         if parameterDict['recordCarrierHistory'] is True:
@@ -118,6 +124,10 @@ class exciton:
 
     def checkDissociation(self):
         # Return True if there are neighbours of the opposing electronic species present, otherwise return False
+        # DEBUG Prevent dissociations from being near the edges
+        if (self.currentChromophore.posn[2] >= 30.0) or (self.currentChromophore.posn[2] <= -30.0):
+            return False
+        # End debug
         if len(self.currentChromophore.dissociationNeighbours) > 0:
             return True
         return False
@@ -261,6 +271,9 @@ class carrier:
         # Determine the hop times to all possible neighbours
         hopTimes = []
         # Obtain the reorganisation energy in J (from eV in the parameter file)
+        # DEBUG print statements
+        #print("There are", len([TI for TI in self.currentChromophore.neighboursTI if ((TI is not None) and (TI > 1E-10))]), "possible hop destinations")
+        #print(self.currentChromophore.ID, self.currentChromophore.neighbours)
         for neighbourIndex, transferIntegral in enumerate(self.currentChromophore.neighboursTI):
             # Ignore any hops with a NoneType transfer integral (usually due to an ORCA error), or zero
             if (transferIntegral is None) or (transferIntegral < 1E-10):
@@ -282,14 +295,18 @@ class carrier:
                             break
                     # Don't need to perform this check if we've already satisfied the first skip condition
                     if skipThisNeighbour is False:
+                        #print("Trying to find closest neighbour to destination", neighbourChromophore.ID, "in image", destinationImage, "at position", neighbourChromophore.posn)
                         destinationChromophore = globalChromophoreData.returnClosestChromophoreToPosition(destinationImage, neighbourChromophore.posn)
                         if destinationChromophore == "Out of Bounds":
                             continue
+                        #elif not isinstance(destinationChromophore, str):
+                        #    print("Destination Found! Chromophore", destinationChromophore.ID, "is located at", destinationImage, neighbourChromophore.posn)
                     else:
                         continue
             # Make sure the destination chromophore is of the correct type and is not occupied, if it is a chromophore and not a string (saying 'Top' or 'Bottom' if it's leaving the device)
             if not isinstance(destinationChromophore, str):
                 if (destinationImage in destinationChromophore.occupied) or (destinationChromophore.species != self.currentChromophore.species):
+                    #print("Cannot hop to neighbour #" + str(destinationChromophore.ID) + " (destinationImage =", destinationImage, "and destinationChromophore.occupied =", destinationChromophore.occupied, ", or destination type", destinationChromophore.species, " != current type", self.currentChromophore.species, ")")
                     continue
             # Otherwise, we're good to go. Calculate the hop as previously (but a hop to the neighbourChromophore)
             deltaEij = self.calculateDeltaE(neighbourChromophore, neighbourRelativeImage, self.currentChromophore.neighboursDeltaE[neighbourIndex])
@@ -315,6 +332,7 @@ class carrier:
             return hopTimes[0][:4]
         else:
             # We are trapped here, so just return in order to raise the calculateBehaviour exception
+            #print("NO VIABLE HOPS FOUND")
             return []
 
     def performHop(self):
@@ -424,6 +442,8 @@ def plotDeviceComponents(deviceArray):
 
 def calculatePhotoinjectionRate(parameterDict, deviceShape):
     # Photoinjection rate is given by the following equation. Calculations will be performed in SI always.
+    # DEBUG!!!
+    return 1E13
     rate = ((parameterDict['incidentFlux'] * 10) *                                                 # mW/cm^{2} to W/m^{2}
            (parameterDict['incidentWavelength'] / (hbar * 2 * np.pi * lightSpeed)) *               # already in m
             deviceShape[0] * deviceShape[1] * parameterDict['morphologyCellSize']**2 *             # area of device in m^{2}
@@ -482,16 +502,22 @@ def calculateCoulomb(absolutePosition, selfID, selfCarrierType, carrierIsRecombi
     coulombConstant = 1.0 / (4 * np.pi * epsilonNought * parameterDict['relativePermittivity'])
     canRecombineHere = False
     recombiningWith = None
+    #print("--== CURRENT GLOBAL CARRIER DICT ==--")
+    #print("CURRENT CARRIER =", selfID, absolutePosition)
     for carrierID, carrier in globalCarrierDict.items():
         # Each carrier feels coulombic effects from every other carrier in the system, along with the image charges induced in the top and bottom contacts, AND the image charges induced by the image charges.
         # The image charges are needed in order to keep a constant field at the interface, correcting for the non-periodic Neumann-like boundary conditions
         # Check papers from Chris Groves (Marsh, Groves and Greenham2007 and beyond), Ben Lyons (2011/2012), and van der Holst (2011) for more details.
         carrierPosn = np.array(carrier.currentDevicePosn)*parameterDict['morphologyCellSize'] + (np.array(carrier.currentChromophore.posn) * 1E-10)
+        #print(carrierID, carrierPosn)
         if carrierID != selfID:
             # Only consider the current carrier if it is not us!
             separation = helperFunctions.calculateSeparation(absolutePosition, carrierPosn)
             #print("Separation between", selfID, "and", carrier.ID, "=", separation)
             coulombicPotential += coulombConstant * ((elementaryCharge * ((2 * selfCarrierType) - 1)) * (elementaryCharge * ((2 * carrier.carrierType) - 1)) / separation)
+            if separation == 0.0:
+                print("ZERO SEPARATION BETWEEN CARRIERS, EXITING")
+                exit()
             # I'm also going to use this opportunity (as we're iterating over all carriers in the system) to see if we're close enough to any to recombine.
             if carrierIsRecombining is False:
                 # Only do this if we're not currently recombining with something
@@ -782,7 +808,7 @@ def pushToQueue(queue, event):
                                               "Event = " + str(event)]
         if event[2].history is not None:
             logLineToWrite.append("This carrier has completed " + str(len(event[2].history)) + " hops.")
-        helperFunctions.writeToFile(logFile, [logLineToWrite])
+        helperFunctions.writeToFile(logFile, logLineToWrite)
         try:
             event[2].__dict__.pop('history')
         except KeyError:
@@ -817,7 +843,7 @@ def plotEventTimeDistribution(eventLog, outputDir, fastest, slowest):
     plt.gca().set_yscale('log')
     plt.xlabel(r'$\mathrm{\tau}$ (s)')
     plt.ylabel('Freq (Arb. U.)')
-    plt.xticks([1E-16, 1E-14, 1E-12, 1E-10, 1E-8, 1E-6, 1E-5, 1E-4])
+    #plt.xticks([1E-16, 1E-14, 1E-12, 1E-10, 1E-8, 1E-6, 1E-5, 1E-4])
     fileName = outputDir + 'EventTimeDist.pdf'
     plt.savefig(fileName)
     print('Event time distribution saved as ' + fileName)
@@ -1114,6 +1140,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         # Update the injected chromophores to be marked as occupied
                         globalChromophoreData.returnSpecificChromophore(injectedExciton.currentDevicePosn, injectedExciton.electronChromophore.ID).occupied.append(injectedExciton.currentDevicePosn)
                         globalChromophoreData.returnSpecificChromophore(injectedExciton.currentDevicePosn, injectedExciton.holeChromophore.ID).occupied.append(injectedExciton.currentDevicePosn)
+                        helperFunctions.writeToFile(logFile, ["Exciton Depositing electron at " + repr(injectedExciton.currentDevicePosn) + " " + repr(injectedExciton.electronChromophore.posn), "Exciton Depositing hole at " + repr(injectedExciton.currentDevicePosn) + " " + repr(injectedExciton.holeChromophore.posn)])
                         # Now determine the behaviour of both carriers, and add their next hops to the KMC queue
                         injectedElectron.calculateBehaviour()
                         if (injectedElectron.hopTime is not None) and (injectedElectron.destinationChromophore is not None):
@@ -1265,6 +1292,13 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
 
             elif nextEvent[1] == 'carrierHop':
                 hoppingCarrier = nextEvent[2]
+                # DEBUG output carrier hops to log file
+                #outputLine = "EVENT: Carrier #" + str(hoppingCarrier.ID) + " hop from " + repr(hoppingCarrier.currentDevicePosn) + " " + repr(hoppingCarrier.currentChromophore.posn) + " to " + repr(hoppingCarrier.destinationImage) + " "
+                #if not isinstance(hoppingCarrier.destinationChromophore, str):
+                #    outputLine += repr(hoppingCarrier.destinationChromophore.posn)
+                #else:
+                #    outputLine += hoppingCarrier.destinationChromophore
+                #helperFunctions.writeToFile(logFile, [outputLine])
                 # Check that the carrier is still in the carrier dictionary. If it's not, then it has already been removed from the system and we can safely ignore it
                 if hoppingCarrier.ID not in globalCarrierDict.keys():
                     continue
@@ -1373,7 +1407,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
         plotEventTimeDistribution(eventLog, outputFiguresDir, fastestEvent, slowestEvent)
         if parameterDict['recordCarrierHistory'] is True:
             plotCarrierZProfiles(allCarriers, parameterDict, deviceArray, outputFiguresDir)
-            #plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputFiguresDir)
+            plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputFiguresDir)
         exit()
     ### THE FOLLOWING CODE WAS USED TO GENERATE THE ANALYSIS DATA USED IN THE MATTYSUMMARIES EXCITON DYNAMICS STUFF
     #print("Plotting Exciton Characteristics")
@@ -1452,7 +1486,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
     plotEventTimeDistribution(eventLog, outputFiguresDir, fastestEvent, slowestEvent)
     if parameterDict['recordCarrierHistory'] is True:
         plotCarrierZProfiles(allCarriers, parameterDict, deviceArray, outputFiguresDir)
-        #plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputFiguresDir)
+        plotCarrierTrajectories(allCarriers, parameterDict, deviceArray, outputFiguresDir)
 
 
 def slurmTimeInS(slurmTime):
@@ -1510,7 +1544,6 @@ if __name__ == "__main__":
     except OSError:
         helperFunctions.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinity..."])
         #helperFunctions.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinity..."])
-
     # Begin the simulation
     for voltageVal in jobsToRun:
         execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltageVal, timeLimit)
