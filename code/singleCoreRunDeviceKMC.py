@@ -71,8 +71,9 @@ class exciton:
         self.canDissociate = self.checkDissociation()
         # Dissociate the exciton immediately after creation if it would be created at an interface
         if self.canDissociate is True:
-            helperFunctions.writeToFile(logFile, ["self.canDissociate is True. self.currentChromophore.species = " +
-                                                  str(self.currentChromophore.species)])
+            # DEBUG dissociation print statements
+            #helperFunctions.writeToFile(logFile, ["self.canDissociate is True. self.currentChromophore.species = " +
+            #                                      str(self.currentChromophore.species)])
             # Determine all potential dissociation options, randomly select one, plop a hole on the donor and electron on the acceptor, then remove this exciton from the system by updating its removedTime
             if self.currentChromophore.species == 'Donor':
                 holeChromophore = globalChromophoreData.returnSpecificChromophore(self.currentDevicePosn, self.currentChromophore.ID)
@@ -83,10 +84,10 @@ class exciton:
                     self.holeChromophore = holeChromophore
                     self.electronChromophore = electronChromophore
                 else:
-                    helperFunctions.writeToFile(logFile, ["Debug: Cannot dissociate after all. currentDevicePosn = " +
-                                                          repr(self.currentDevicePosn) + " holeChromophore.occupied = " +
-                                                          str(holeChromophore.occupied) + "electronChromophore.occupied = " +
-                                                          str(electronChromophore.occupied)])
+                    #helperFunctions.writeToFile(logFile, ["Debug: Cannot dissociate after all. currentDevicePosn = " +
+                    #                                      repr(self.currentDevicePosn) + " holeChromophore.occupied = " +
+                    #                                      str(holeChromophore.occupied) + "electronChromophore.occupied = " +
+                    #                                      str(electronChromophore.occupied)])
                     self.canDissociate = False
             elif self.currentChromophore.species == 'Acceptor':
                 electronChromophore = globalChromophoreData.returnSpecificChromophore(self.currentDevicePosn, self.currentChromophore.ID)
@@ -217,7 +218,9 @@ class exciton:
                 # TODO This carrier has left the simulation volume so we now need to ensure we remove it from the carrier dictionary so it's not included in any of the Coulombic calculations
             elif (newChromophore == 'Out of Bounds'):
                 # Ignore this hop, do a different one instead
-                helperFunctions.writeToFile(logFile, ["Out of bounds Exciton hop discarded"])
+                # DEBUG Out of bounds exciton
+                #helperFunctions.writeToFile(logFile, ["Out of bounds Exciton hop discarded"])
+                pass
             else:
                 self.currentDevicePosn = list(np.array(self.currentDevicePosn) + np.array(self.destinationImage))
                 self.currentChromophore = newChromophore
@@ -542,8 +545,8 @@ def calculateCoulomb(absolutePosition, selfID, selfCarrierType, carrierIsRecombi
                 # Only do this if we're not currently recombining with something
                 if (separation <= parameterDict['coulombCaptureRadius']) and (selfCarrierType != carrier.carrierType):
                     # If carriers are within 1nm of each other, then assume that they are within the Coulomb capture radius and are about to recombine
-                    helperFunctions.writeToFile(logFile, ["CARRIER " + str(selfID) + " CLOSE ENOUGH " +
-                                                          "TO RECOMBINE WITH " + str(carrierID)])
+                    #helperFunctions.writeToFile(logFile, ["CARRIER " + str(selfID) + " CLOSE ENOUGH " +
+                    #                                      "TO RECOMBINE WITH " + str(carrierID)])
                     canRecombineHere = True
                     recombiningWith = carrierID
                     # We don't necessarily need to update the carrier.recombining, since all of the behaviour will be determined in the main program by checking hoppingCarrier.recombining, but just in case, we can update the carrier too as well as self.
@@ -1224,8 +1227,9 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                         exit()
                     if (injectedCarrier.hopTime is not None) and (injectedCarrier.destinationChromophore is not None):
                         eventQueue = pushToQueue(eventQueue, (injectedCarrier.hopTime, 'carrierHop', injectedCarrier))
-                else:
-                    helperFunctions.writeToFile(logFile, ["CANNOT INJECT HERE, DESTINATION CHROMOPHORE IS ALREADY OCCUPIED"])
+                #DEBUG Inject site already occupied
+                #else:
+                #    helperFunctions.writeToFile(logFile, ["CANNOT INJECT HERE, DESTINATION CHROMOPHORE IS ALREADY OCCUPIED"])
 
                 # Now determine the next DC event and queue it
                 if injectSite.electrode == 'Cathode':
@@ -1394,8 +1398,16 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     carrier2.removedTime = globalTime
                     numberOfRecombinations += 1
                     numberOfElectricalRecombinations += deltaElectricalRecombinations
-                    globalCarrierDict.pop(carrier1.ID)
-                    globalCarrierDict.pop(carrier2.ID)
+                    try:
+                        globalCarrierDict.pop(carrier1.ID)
+                    except KeyError:
+                        # Carrier has already been removed (extracted at contacts while waiting for recombination)
+                        pass
+                    try:
+                        globalCarrierDict.pop(carrier2.ID)
+                    except KeyError:
+                        # Carrier has already been removed (extracted at contacts while waiting for recombination)
+                        pass
                     if parameterDict['recordCarrierHistory'] is True:
                         allCarriers += [carrier1, carrier2]
                 else:
