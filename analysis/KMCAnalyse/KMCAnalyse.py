@@ -374,35 +374,35 @@ def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
         fileName = 'AcceptorBandgap.pdf'
 
     elif mode == 'DonorTI':
-        plt.hist(yvals, 20, color = ['b'])
+        plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
         plt.ylabel('Frequency')
         plt.xlabel('Donor Transfer Integral (eV)')
         plt.xlim([0.0, 1.2])
         fileName = 'DonorTI.pdf'
 
     elif mode == 'AcceptorTI':
-        plt.hist(yvals, 20, color = ['b'])
+        plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
         plt.ylabel('Frequency')
         plt.xlabel('Acceptor Transfer Integral (eV)')
         plt.xlim([0.0, 1.2])
         fileName = 'AcceptorTI.pdf'
 
     elif mode == 'DonorTITrimmed':
-        plt.hist(yvals, 20, color = ['b'])
+        plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
         plt.ylabel('Frequency')
         plt.xlabel('Donor Non-Zero Transfer Integral (eV)')
         plt.xlim([0.0, 1.2])
         fileName = 'DonorTITrimmed.pdf'
 
     elif mode == 'AcceptorTITrimmed':
-        plt.hist(yvals, 20, color = ['b'])
+        plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
         plt.ylabel('Frequency')
         plt.xlabel('Acceptor Non-Zero Transfer Integral (eV)')
         plt.xlim([0.0, 1.2])
         fileName = 'AcceptorTITrimmed.pdf'
 
     elif mode == 'DonorDeltaEij':
-        n, bins, patches = plt.hist(yvals, 20, color = ['b'])
+        n, bins, patches = plt.hist(yvals, np.linspace(-0.5,0.5,20), color = ['b'])
         if gaussBins is not None:
             gaussY = gaussian(gaussBins[:-1], *fitArgs)
             scaleFactor = max(n)/max(gaussY)
@@ -413,7 +413,7 @@ def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
         fileName = 'DonorDeltaEij.pdf'
 
     elif mode == 'AcceptorDeltaEij':
-        n, bins, patches = plt.hist(yvals, 20, color = ['b'])
+        n, bins, patches = plt.hist(yvals, np.linspace(-0.5,0.5,20), color = ['b'])
         if gaussBins is not None:
             gaussY = gaussian(gaussBins[:-1], *fitArgs)
             scaleFactor = max(n)/max(gaussY)
@@ -443,7 +443,7 @@ def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
 
     elif mode == 'DonorIntraChainTI':
         if len(yvals) > 0:
-            plt.hist(yvals, 20, color = ['b'])
+            plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
         plt.ylabel('Frequency')
         plt.xlabel('Donor Intra-Chain TI (eV)')
         plt.xlim([0, 1.2])
@@ -451,7 +451,7 @@ def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
 
     elif mode == 'DonorInterChainTI':
         if len(yvals) > 0:
-            plt.hist(yvals, 20, color = ['b'])
+            plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
         plt.ylabel('Frequency')
         plt.xlabel('Donor Inter-Chain TI (eV)')
         plt.xlim([0, 1.2])
@@ -459,7 +459,7 @@ def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
 
     elif mode == 'DonorIntraChainTITrim':
         if len(yvals) > 0:
-            plt.hist(yvals, 20, color = ['b'])
+            plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
         plt.ylabel('Frequency')
         plt.xlabel('Donor Intra-Chain TI (eV)')
         plt.xlim([0, 1.2])
@@ -467,7 +467,7 @@ def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
 
     elif mode == 'DonorInterChainTITrim':
         if len(yvals) > 0:
-            plt.hist(yvals, 20, color = ['b'])
+            plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
         plt.ylabel('Frequency')
         plt.xlabel('Donor Inter-Chain TI (eV)')
         plt.xlim([0, 1.2])

@@ -203,7 +203,7 @@ def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
 
     elif mode == 'AcceptorIntraChainTI':
         if len(yvals) > 0:
-            plt.hist(yvals, 20, color = ['b'])
+            plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
         plt.ylabel('Frequency')
         plt.xlabel('Acceptor Intra-Chain TI (eV)')
         plt.xlim([0, 1.2])
@@ -211,7 +211,7 @@ def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
 
     elif mode == 'AcceptorInterChainTI':
         if len(yvals) > 0:
-            plt.hist(yvals, 20, color = ['b'])
+            plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
         plt.ylabel('Frequency')
         plt.xlabel('Acceptor Inter-Chain TI (eV)')
         plt.xlim([0, 1.2])
@@ -219,7 +219,7 @@ def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
 
     elif mode == 'AcceptorIntraChainTITrim':
         if len(yvals) > 0:
-            plt.hist(yvals, 20, color = ['b'])
+            plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
         plt.ylabel('Frequency')
         plt.xlabel('Acceptor Intra-Chain TI (eV)')
         plt.xlim([0, 1.2])
@@ -227,7 +227,7 @@ def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
 
     elif mode == 'AcceptorInterChainTITrim':
         if len(yvals) > 0:
-            plt.hist(yvals, 20, color = ['b'])
+            plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
         plt.ylabel('Frequency')
         plt.xlabel('Acceptor Inter-Chain TI (eV)')
         plt.xlim([0, 1.2])
