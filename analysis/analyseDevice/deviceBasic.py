@@ -126,7 +126,7 @@ def plotExtractionTimeSeries(time, number, gradient, intercept, vVal):
     plt.figure()
     plt.scatter(time, number)
     plt.plot(time, [(tVal * gradient) + intercept for tVal in time], c = 'r')
-    plt.xlim([0, 1.2E-10])
+    plt.xlim([0, 1.2E-8])
     #plt.ylim([0, 5000])
     plt.xlabel('Time (s)')
     plt.ylabel('Number of Extractions (Arb. U)')
@@ -153,11 +153,11 @@ def plotData(xLabel, xVals, yLabel, yVals, fileName, mode='scatter'):
 def printJVTable(dataDict):
     VData, JData = zip(*sorted(zip(dataDict['V'], dataDict['J'])))
     print("|" + "-" * 103 + "|")
-    print("|\t\tV\t\t|\t\t\tJ\t\t|\t\tExt\t\t|")
-    print("|\t\t(V)\t\t|\t\t(mA cm^{2})\t\t|\t\t(Arb. U.)\t")
+    print("|\t\tV\t\t|\t\tJ\t\t\t|\t\tExt\t\t|")
+    print("|\t\t(V)\t\t|\t\t(mA cm^{2})\t\t|\t\t(Arb. U.)\t|")
     print("|" + "-" * 103 + "|")
     for index, V in enumerate(VData):
-        print("|\t\t%5.2f\t\t|\t\t%9.4f\t\t|\t\t%d\t\t|" % (V, JData[index], dataDict['Ext'][index]))
+        print("|\t\t%5.2f\t\t|\t\t%13.2f\t\t|\t\t%5d\t\t|" % (V, JData[index], dataDict['Ext'][index]))
         print("|" + "-" * 103 + "|")
 
 
