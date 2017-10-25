@@ -1210,6 +1210,7 @@ def loadPickle(pickleLocation):
         with open(pickleLocation, 'rb') as pickleFile:
                 objects = pickle.load(pickleFile)
     except UnicodeDecodeError:  # Python 2/3 fix
+        print("Old pickle! Loading it using Python 2...")
         with open(pickleLocation, 'rb') as pickleFile:
             objects = pickle.load(pickleFile, encoding='latin1')
     print("Pickle loaded successfully!")
