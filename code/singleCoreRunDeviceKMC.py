@@ -33,6 +33,7 @@ globalCarrierDict = {}       # A dictionary of all carriers in the system for th
 currentFieldValue = 0        # The field value calculated from the voltage this child process was given
 numberOfExtractions = 0      # The total number of charges that have hopped out of the device through the `correct' contact
 KMCIterations = 0
+# DEBUG Nothing is forbidden. Everything is permitted.
 fastestEventAllowed = 1E-99#1E-15
 slowestEventAllowed = 1E99#1E-9
 
@@ -46,18 +47,19 @@ class exciton:
         self.T = parameterDict['systemTemperature']
         self.lifetimeParameter = parameterDict['excitonLifetime']
         # DEBUG excitons live forever
-        self.recombinationTime = 1E99#-np.log(R.random()) * self.lifetimeParameter
+        self.recombinationTime = -np.log(R.random()) * self.lifetimeParameter #1E99
         self.rF = parameterDict['forsterRadius']
         self.prefactor = parameterDict['hoppingPrefactor']
         self.numberOfHops = 0
         # NOTE For now, we'll just inject it randomly somewhere in the system
         self.initialDevicePosn = initialPosnDevice
         self.currentDevicePosn = copy.deepcopy(initialPosnDevice)
+        self.initialChromophore = globalChromophoreData.returnRandomChromophore(initialPosnDevice)
         # DEBUG Prevent photoexcitations from occuring near the edges (remove self.initialChromophore =... from this loop)
-        while True:
-            self.initialChromophore = globalChromophoreData.returnRandomChromophore(initialPosnDevice)
-            if (self.initialChromophore.posn[2] > -30.0) and (self.initialChromophore.posn[2] < 30.0):
-                break
+        #while True:
+        #    self.initialChromophore = globalChromophoreData.returnRandomChromophore(initialPosnDevice)
+        #    if (self.initialChromophore.posn[2] > -30.0) and (self.initialChromophore.posn[2] < 30.0):
+        #        break
         # End Debug
         self.currentChromophore = copy.deepcopy(self.initialChromophore)
         self.calculateBehaviour()
@@ -98,10 +100,10 @@ class exciton:
                     self.holeChromophore = holeChromophore
                     self.electronChromophore = electronChromophore
                 else:
-                    helperFunctions.writeToFile(logFile, ["Debug: Cannot dissociate after all. currentDevicePosn = " +
-                                                          repr(self.currentDevicePosn) + " holeChromophore.occupied = " +
-                                                          str(holeChromophore.occupied) + "electronChromophore.occupied = " +
-                                                          str(electronChromophore.occupied)])
+                    #helperFunctions.writeToFile(logFile, ["Debug: Cannot dissociate after all. currentDevicePosn = " +
+                    #                                      repr(self.currentDevicePosn) + " holeChromophore.occupied = " +
+                    #                                      str(holeChromophore.occupied) + "electronChromophore.occupied = " +
+                    #                                      str(electronChromophore.occupied)])
                     self.canDissociate = False
             if self.canDissociate is True:
                 # Notify execute() that this exciton should not be queued up again by setting self.hopTime == None
@@ -125,8 +127,8 @@ class exciton:
     def checkDissociation(self):
         # Return True if there are neighbours of the opposing electronic species present, otherwise return False
         # DEBUG Prevent dissociations from being near the edges
-        if (self.currentChromophore.posn[2] >= 30.0) or (self.currentChromophore.posn[2] <= -30.0):
-            return False
+        #if (self.currentChromophore.posn[2] >= 30.0) or (self.currentChromophore.posn[2] <= -30.0):
+        #    return False
         # End debug
         if len(self.currentChromophore.dissociationNeighbours) > 0:
             return True
@@ -459,7 +461,7 @@ def plotDeviceComponents(deviceArray):
 def calculatePhotoinjectionRate(parameterDict, deviceShape):
     # Photoinjection rate is given by the following equation. Calculations will be performed in SI always.
     # DEBUG!!!
-    return 1E13
+    #return 1E13
     rate = ((parameterDict['incidentFlux'] * 10) *                                                 # mW/cm^{2} to W/m^{2}
            (parameterDict['incidentWavelength'] / (hbar * 2 * np.pi * lightSpeed)) *               # already in m
             deviceShape[0] * deviceShape[1] * parameterDict['morphologyCellSize']**2 *             # area of device in m^{2}
@@ -486,6 +488,8 @@ def plotCarrierZProfiles(allCarriers, parameterDict, deviceArray, outputDir):
     zLen = 1E10 * (np.array(deviceArray.shape[2]) * parameterDict['morphologyCellSize'])
     # Now make the plots
     for carrier in carriersToPlot:
+        if (carrier.injectedFrom == 'Anode') or (carrier.injectedFrom == 'Cathode'):
+            continue
         plotZProfile(carrier, zLen, outputDir)
 
 
@@ -504,7 +508,7 @@ def plotZProfile(carrier, zDimSize, outputDir):
     plt.figure()
     plt.plot(xVals, yVals, color=colour)
     plt.ylim([0, zDimSize])
-    plt.xlim([0, 200])
+    #plt.xlim([0, 200])
     plt.xlabel('Hop Number')
     plt.ylabel('Z-position')
     plt.savefig(fileName)
@@ -535,6 +539,8 @@ def calculateCoulomb(absolutePosition, selfID, selfCarrierType, carrierIsRecombi
             #print("Separation between", selfID, "and", carrier.ID, "=", separation)
             # DEBUG (for the perfect crystal test: Permit electrons and holes to have zero separation, and just set the coulomb to 0)
             if (separation == 0.0):
+                print("ZERO SEPARATION BETWEEN CARRIERS, EXITING")
+                exit()
                 if (selfCarrierType == carrier.carrierType):
                     print("ZERO SEPARATION BETWEEN LIKE CARRIERS, EXITING")
                     exit()
