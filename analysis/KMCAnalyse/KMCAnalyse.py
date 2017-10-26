@@ -8,6 +8,7 @@ from scipy.optimize import curve_fit
 import scipy.stats
 from scipy.sparse import lil_matrix
 sys.path.append('../../code/')
+sys.path.append('../code')
 import helperFunctions
 try:
     import mpl_toolkits.mplot3d as p3
@@ -20,7 +21,8 @@ kB = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}
 hbar = 1.05457173E-34 # m^{2} kg s^{-1}
 temperature = 290  # K
 
-def getData(carrierData):
+
+def getCarrierData(carrierData):
     try:
         carrierHistory = carrierData['carrierHistoryMatrix']
     except:
@@ -56,32 +58,7 @@ def getData(carrierData):
     return carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors
 
 
-def plotHeatMap(carrierHistory, directory):
-    # A simple function that displays the carrier history matrix as a heatmap
-    # First convert carrierHistory from a sparse to a dense, binary matrix
-    binaryHistory = np.zeros(carrierHistory.shape)
-    nonZero = np.nonzero(carrierHistory)
-    for i, xval in enumerate(nonZero[0]):
-        binaryHistory[xval, nonZero[1][i]] = 1.0
-    #carrierHistory = carrierHistory.toarray().astype(float)
-    #carrierHistory /= np.amax(carrierHistory)
-    fig = plt.gcf()
-
-    ax = fig.add_subplot(111)
-    plt.imshow(binaryHistory)
-    ax.set_aspect('equal')
-
-    cax = fig.add_axes([0.12, 0.1, 0.78, 0.8])
-    cax.get_xaxis().set_visible(False)
-    cax.get_yaxis().set_visible(False)
-    cax.patch.set_alpha(0)
-    cax.set_frame_on(False)
-    plt.colorbar(orientation='vertical')
-    plt.savefig(directory + '/figures/heatmap.pdf', bbox_inches='tight')
-    plt.clf()
-
-
-def plotConnections(chromophoreList, simExtent, carrierHistory, directory, carrierType):
+def plotConnections(chromophoreList, simDims, carrierHistory, directory, carrierType):
     # A complicated function that shows connections between carriers in 3D that carriers prefer to hop between.
     # Connections that are frequently used are highlighted in black, whereas rarely used connections are more white.
     # Find a good normalisation factor
@@ -115,10 +92,27 @@ def plotConnections(chromophoreList, simExtent, carrierHistory, directory, carri
                     #ax.scatter(coords1[0], coords1[1], coords1[2], c = 'k', s = '5')
                     #ax.scatter(coords2[0], coords2[1], coords2[2], c = 'k', s = '5')
                     line = [coords2[0] - coords1[0], coords2[1] - coords1[1], coords2[2] - coords2[1]]
-                    if (np.abs(coords2[0] - coords1[0]) < simExtent[0] / 2.0) and (np.abs(coords2[1] - coords1[1]) < simExtent[1] / 2.0) and (np.abs(coords2[2] - coords1[2]) < simExtent[2] / 2.0):
+                    if (np.abs(coords2[0] - coords1[0]) < simDims[0][1]) and (np.abs(coords2[1] - coords1[1]) < simDims[1][1]) and (np.abs(coords2[2] - coords1[2]) < simDims[2][1]):
                         #colourIntensity = value / normalizeTo
                         colourIntensity = np.log10(value) / np.log10(normalizeTo)
                         ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = colormap(colourIntensity), linewidth = 0.5, alpha = colourIntensity)
+    # Draw boxlines
+    # Varying X
+    ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][0]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][1], simDims[1][1]], [simDims[2][0], simDims[2][0]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][1], simDims[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][1], simDims[1][1]], [simDims[2][1], simDims[2][1]], c = 'k', linewidth = 1.0)
+    # Varying Y
+    ax.plot([simDims[0][0], simDims[0][0]], [simDims[1][0], simDims[1][1]], [simDims[2][0], simDims[2][0]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][0], simDims[1][1]], [simDims[2][0], simDims[2][0]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][0], simDims[0][0]], [simDims[1][0], simDims[1][1]], [simDims[2][1], simDims[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][0], simDims[1][1]], [simDims[2][1], simDims[2][1]], c = 'k', linewidth = 1.0)
+    # Varying Z
+    ax.plot([simDims[0][0], simDims[0][0]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][0], simDims[0][0]], [simDims[1][1], simDims[1][1]], [simDims[2][0], simDims[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][1], simDims[1][1]], [simDims[2][0], simDims[2][1]], c = 'k', linewidth = 1.0)
+
     tickLocation = range(0, int(np.log10(maximum)) + 1, 1)
     cbar = plt.colorbar(coloursForMap, ticks=tickLocation)#np.linspace(np.log10(minimum), np.log10(maximum), 6))
     cbar.ax.set_yticklabels([r'10$^{{{}}}$'.format(x) for x in tickLocation])
@@ -226,19 +220,20 @@ def calculateAnisotropy(xvals, yvals, zvals):
 
 
 def plotAnisotropy(carrierData, directory, simDims, carrierType):
+    simExtent = [value[1] - value[0] for value in simDims]
     fig = plt.gcf()
     ax = p3.Axes3D(fig)
     xvals = []
     yvals = []
     zvals = []
     colours = []
-
+    simDimsnm = list(map(list, np.array(simDims) / 10.))
     for carrierNo, posn in enumerate(carrierData['finalPosition']):
         #if bool(sum([x < -3 or x > 3 for x in image])):
         #    continue
         position = [0.0, 0.0, 0.0]
         for axis in range(len(posn)):
-            position[axis] = (carrierData['image'][carrierNo][axis] * simDims[axis]) + posn[axis]
+            position[axis] = (carrierData['image'][carrierNo][axis] * simExtent[axis]) + posn[axis]
         xvals.append(position[0]/10.)
         yvals.append(position[1]/10.)
         zvals.append(position[2]/10.)
@@ -254,6 +249,22 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType):
         zvals = zvals[0:len(zvals):len(zvals)//1000]
     plt.scatter(xvals, yvals, zs = zvals, c = colours, s = 20)
     plt.scatter(0, 0, zs = 0, c = 'r', s = 50)
+    # Draw boxlines
+    # Varying X
+    ax.plot([simDimsnm[0][0], simDimsnm[0][1]], [simDimsnm[1][0], simDimsnm[1][0]], [simDimsnm[2][0], simDimsnm[2][0]], c = 'k', linewidth = 1.0)
+    ax.plot([simDimsnm[0][0], simDimsnm[0][1]], [simDimsnm[1][1], simDimsnm[1][1]], [simDimsnm[2][0], simDimsnm[2][0]], c = 'k', linewidth = 1.0)
+    ax.plot([simDimsnm[0][0], simDimsnm[0][1]], [simDimsnm[1][0], simDimsnm[1][0]], [simDimsnm[2][1], simDimsnm[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDimsnm[0][0], simDimsnm[0][1]], [simDimsnm[1][1], simDimsnm[1][1]], [simDimsnm[2][1], simDimsnm[2][1]], c = 'k', linewidth = 1.0)
+    # Varying Y
+    ax.plot([simDimsnm[0][0], simDimsnm[0][0]], [simDimsnm[1][0], simDimsnm[1][1]], [simDimsnm[2][0], simDimsnm[2][0]], c = 'k', linewidth = 1.0)
+    ax.plot([simDimsnm[0][1], simDimsnm[0][1]], [simDimsnm[1][0], simDimsnm[1][1]], [simDimsnm[2][0], simDimsnm[2][0]], c = 'k', linewidth = 1.0)
+    ax.plot([simDimsnm[0][0], simDimsnm[0][0]], [simDimsnm[1][0], simDimsnm[1][1]], [simDimsnm[2][1], simDimsnm[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDimsnm[0][1], simDimsnm[0][1]], [simDimsnm[1][0], simDimsnm[1][1]], [simDimsnm[2][1], simDimsnm[2][1]], c = 'k', linewidth = 1.0)
+    # Varying Z
+    ax.plot([simDimsnm[0][0], simDimsnm[0][0]], [simDimsnm[1][0], simDimsnm[1][0]], [simDimsnm[2][0], simDimsnm[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDimsnm[0][0], simDimsnm[0][0]], [simDimsnm[1][1], simDimsnm[1][1]], [simDimsnm[2][0], simDimsnm[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDimsnm[0][1], simDimsnm[0][1]], [simDimsnm[1][0], simDimsnm[1][0]], [simDimsnm[2][0], simDimsnm[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDimsnm[0][1], simDimsnm[0][1]], [simDimsnm[1][1], simDimsnm[1][1]], [simDimsnm[2][0], simDimsnm[2][1]], c = 'k', linewidth = 1.0)
     ax.set_xlabel('X (nm)', fontsize = 20, labelpad = 40)
     ax.set_ylabel('Y (nm)', fontsize = 20, labelpad = 40)
     ax.set_zlabel('Z (nm)', fontsize = 20, labelpad = 40)
@@ -700,6 +711,7 @@ if __name__ == "__main__":
         print("Loading chromophoreList...")
         AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle('./' + directory + '/code/' + directory + '.pickle')
         print("ChromophoreList obtained")
+        simDims = [[-AAMorphologyDict[axis] / 2.0, AAMorphologyDict[axis] / 2.0] for axis in ['lx', 'ly', 'lz']]
 #### NOW DO ALL OF THE BELOW BUT FOR ELECTRONS AND HOLES SEPARATELY
         completeCarrierTypes = []
         completeCarrierData = []
@@ -713,15 +725,14 @@ if __name__ == "__main__":
             currentCarrierType = completeCarrierTypes[carrierTypeIndex]
             print("Considering the transport of", currentCarrierType + "...")
             print("Obtaining mean squared displacements...")
-            carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getData(carrierData)
+            carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getCarrierData(carrierData)
             print("MSDs obtained")
             # Create the first figure that will be replotted each time
             plt.figure()
-            anisotropy = plotAnisotropy(carrierData, directory, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']], currentCarrierType)
-            #plotHeatMap(carrierHistory, directory)
+            anisotropy = plotAnisotropy(carrierData, directory, simDims, currentCarrierType)
             if carrierHistory is not None:
                 print("Determining carrier hopping connections...")
-                #plotConnections(chromophoreList, [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']], carrierHistory, directory, currentCarrierType)
+                plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
             times, MSDs = helperFunctions.parallelSort(times, MSDs)
             print("Calculating MSD...")
             mobility, mobError, rSquared = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, currentCarrierType)
