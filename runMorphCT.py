@@ -145,15 +145,17 @@ class simulation:
         print("Copying code...")
         codeDir = os.getcwd()+'/code'
         if self.morphology is not None:
-            print('cp '+codeDir+'/*.py '+self.outputMorphologyDirectory+'/code/')
-            print('cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputMorphologyDirectory+'/code/')
+            print('cp ' + codeDir + '/*.py ' + self.outputMorphologyDirectory + '/code/')
+            print('cp ' + os.getcwd() + '/' + self.parameterFile + ' ' + self.outputMorphologyDirectory + '/code/')
+            print('cp ' + self.inputMorphologyFile + ' ' + self.outputMorphologyDirectory + '/code/input.xml')
             shutil.copy(os.getcwd() + '/' + self.parameterFile, self.outputMorphologyDirectory + '/code')
             for fileName in glob.glob(codeDir + '/*.py'):
                 shutil.copy(fileName, self.outputMorphologyDirectory+'/code/')
             shutil.copy(os.getcwd() + '/' + self.parameterFile, self.outputMorphologyDirectory + '/code/')
+            shutil.copy(self.inputMorphologyFile, self.outputMorphologyDirectory + '/code/input.xml')
         elif self.deviceMorphology is not None:
-            print('cp '+codeDir+'/*.py '+self.outputDeviceDirectory+'/code/')
-            print('cp '+os.getcwd()+'/'+self.parameterFile+' '+self.outputDeviceDirectory+'/code/')
+            print('cp ' + codeDir + '/*.py ' + self.outputDeviceDirectory + '/code/')
+            print('cp ' + os.getcwd() + '/' + self.parameterFile + ' ' + self.outputDeviceDirectory + '/code/')
             shutil.copy(os.getcwd() + '/' + self.parameterFile, self.outputDeviceDirectory + '/code')
             for fileName in glob.glob(codeDir + '/*.py'):
                 shutil.copy(fileName, self.outputDeviceDirectory+'/code/')
