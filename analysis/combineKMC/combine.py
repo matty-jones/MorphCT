@@ -5,26 +5,25 @@ import sys
 from scipy.sparse import lil_matrix
 import glob
 import re
-from fileinput import input
 from shutil import copyfile
 
 def create_results():
-    sp.call("ls -ltr > tmp.txt", shell=True)
     cores_list = []
     for core in glob.glob("KMCData_*.pickle"):
         cores_list.append(re.findall("KMCData_(.*).pickle", core)[0])
     keep_list = []
     for core in cores_list:
         select_list = []
-        with open("tmp.txt", 'r') as f:
-            for line in f:
-                if 'KMCslot' in line and 'Results_'+core in line:
-                    select_list.append([line.split()[-1]])
-        keep_list.append(select_list[-1])
+        size1 = 'KMCslot1Results_'+str(core)+".pickle"
+        size2 = 'KMCslot2Results_'+str(core)+".pickle"
+        if size1 >= size2:
+            keep_list.append(size1)
+        else:
+            keep_list.append(size2)
+    print(keep_list)
     for keeper in zip(cores_list, keep_list):
         new_name = "KMCResults_"+str(keeper[0])+".pickle"
-        copyfile(str(keeper[1][0]), new_name)
-    os.remove('tmp.txt')
+        copyfile(str(keeper[1]), new_name)
 
 if __name__ == "__main__":
     create_results()
