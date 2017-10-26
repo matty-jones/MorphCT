@@ -16,15 +16,15 @@ kB = 1.3806488E-23 # m^{2} kg s^{-2} K^{-1}
 hbar = 1.05457173E-34 # m^{2} kg s^{-1}
 
 
-def getNNCutOff(chromophoreList, outputDir):
+def getNeighbourCutOff(chromophoreList, morphologyShape, outputDir, periodic=True):
     separationDist = []
     for chromo1 in chromophoreList:
-        for chromo2 in chromophoreList:
-            if chromo1.ID == chromo2.ID:
+        for chromo2Details in chromo1.neighbours:
+            if (chromo2Details is None) or ((periodic is False) and (not np.array_equal(chromo2Details[1], [0, 0, 0]))) or (chromo1.ID == chromophoreList[chromo2Details[0]].ID):
                 continue
-            separation = np.linalg.norm(chromo2.posn - chromo1.posn)
-            if separation < 10:
-                separationDist.append(separation)
+            chromo2 = chromophoreList[chromo2Details[0]]
+            separation = np.linalg.norm((np.array(chromo2.posn) + (np.array(chromo2Details[1]) * np.array(morphologyShape))) - chromo1.posn)
+            separationDist.append(separation)
     plt.figure()
     (n, binEdges, patches) = plt.hist(separationDist, bins = 20)
     plt.savefig(outputDir + "/neighbourHist.pdf")
@@ -33,34 +33,24 @@ def getNNCutOff(chromophoreList, outputDir):
     bins = 0.5*(binEdges[1:]+binEdges[:-1])
     bins = np.insert(bins, 0, 0)
     n = np.insert(n, 0, 0)
-    nonZero = False
-    minimumFound = False
-    count = 0
-    lastNonZeroIndex = 0
-    nextNonZeroIndex = 0
-    for index, number in enumerate(n):
-        if count == 2:
-            minimumFound = True
-        if nonZero is True:
-            if number == 0:
-                count += 1
-            else:
-                if minimumFound is True:
-                    nextNonZeroIndex = index
-                    break
-                lastNonZeroIndex = index
-                count = 0
-        if number != 0:
-            nonZero = True
-    print(bins, n)
-    print("Minimum between", bins[lastNonZeroIndex], bins[nextNonZeroIndex])
-    cutOff = 0.5 * (bins[lastNonZeroIndex] + bins[nextNonZeroIndex])
+    dn = np.diff(n)
+    minimaIndices = []
+    maximaIndices = []
+    previousValue = 1E99
+    for index, val in enumerate(dn):
+        if (previousValue <= 0) and (val > 0):
+            minimaIndices.append(index)
+        if (previousValue >= 0) and (val < 0):
+            maximaIndices.append(index)
+        previousValue = val
+    # Minimum is half way between the first maximum and the first minimum of the distribution
+    cutOff = (bins[maximaIndices[0]] + bins[minimaIndices[0]]) / 2.0
     return cutOff
 
 
-def getStacks(chromophoreList, morphologyShape, cutOff):
+def getStacks(chromophoreList, morphologyShape, cutOff, periodic=True):
     # Create a neighbourlist based on the cutoff
-    neighbourDict = createNeighbourList(chromophoreList, morphologyShape, cutOff)
+    neighbourDict = createNeighbourList(chromophoreList, morphologyShape, cutOff, periodic)
     # Do the usual stackList neighbourList stuff
     stackList = [_ for _ in range(len(chromophoreList))]
     for stackID in range(len(stackList)):
@@ -72,10 +62,13 @@ def getStacks(chromophoreList, morphologyShape, cutOff):
     return stackDict
 
 
-def createNeighbourList(chromophoreList, morphologyShape, cutOff):
+def createNeighbourList(chromophoreList, morphologyShape, cutOff, periodic=True):
     neighbourDict = {}
     for chromo1 in chromophoreList:
         for [chromo2ID, relImage] in chromo1.neighbours:
+            if periodic is False:
+                if not np.array_equal(relImage, [0, 0, 0]):
+                    continue
             chromo1Posn = chromo1.posn
             chromo2Posn = np.array(chromophoreList[chromo2ID].posn) + (np.array(relImage) * np.array(morphologyShape))
             separation = np.linalg.norm(chromo2Posn - chromo1Posn)
@@ -101,7 +94,7 @@ def updateStack(atomID, clusterList, neighbourDict):
     return clusterList
 
 
-def plot3DMorphology(outputDir, chromophoreList, stackDict):
+def plot3DMorphology(outputDir, chromophoreList, stackDict, simDims):
     fig = plt.figure()
     ax = p3.Axes3D(fig)
     colours = ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w']
@@ -115,9 +108,9 @@ def plot3DMorphology(outputDir, chromophoreList, stackDict):
     for stackID, chromos in enumerate(stackList.values()):
         for chromo in chromos:
             ax.scatter(chromo.posn[0], chromo.posn[1], chromo.posn[2], c = colours[stackID%8], edgecolors = None, s = 40)
-    ax.set_xlim([-30, 30])
-    ax.set_ylim([-30, 30])
-    ax.set_zlim([-30, 30])
+    ax.set_xlim([simDims[0][0], simDims[0][1]])
+    ax.set_ylim([simDims[1][0], simDims[1][1]])
+    ax.set_zlim([simDims[2][0], simDims[2][1]])
     plt.savefig(outputDir + "/stacks.pdf")
     plt.close()
     print("3D Stack figure saved as", outputDir + "/stacks.pdf")
@@ -132,11 +125,14 @@ def plotMixedHoppingRate(outputDir, chromophoreList, stackDict):
             deltaE = chromo.neighboursDeltaE[index]
             lambdaij = 0.130
             T = 290
-            rate = calculateHopRate(lambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
-            if stackDict[chromo.ID] == stackDict[chromo.neighbours[index][0]]:
-                intraStackRates.append(rate)
-            else:
-                interStackRates.append(rate)
+            try:
+                rate = calculateHopRate(lambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+                if stackDict[chromo.ID] == stackDict[chromo.neighbours[index][0]]:
+                    intraStackRates.append(rate)
+                else:
+                    interStackRates.append(rate)
+            except TypeError:
+                pass
     print(len(intraStackRates), len(interStackRates))
     plt.figure()
     plt.hist([intraStackRates, interStackRates], bins = np.logspace(1, 18, 40), stacked = True, color = ['r', 'b'], label = ['Intra-Stack', 'Inter-Stack'])
@@ -159,22 +155,30 @@ def calculateHopRate(lambdaij, Tij, deltaEij, T):
 
 
 if __name__ == "__main__":
-    tempDirs = []
-    for fileName in os.listdir(os.getcwd()):
-        if ('py' not in fileName) and ('pdf' not in fileName) and ('store' not in fileName):
-            tempDirs.append(fileName)
+    periodic = True
+    try:
+        cutOff = float(sys.argv[1])
+        tempDirs = sys.argv[2:]
+    except ValueError:
+        cutOff = None
+        tempDirs = sys.argv[1:]
+    sys.setrecursionlimit(5000)
     for tempDir in tempDirs:
         print("\n")
         for fileName in os.listdir(os.getcwd() + '/' + tempDir):
             if ("pickle" in fileName) and (tempDir in fileName):
                 mainMorphologyPickleName = os.getcwd() + '/' + tempDir + '/' + fileName
         AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(mainMorphologyPickleName)
+        morphologyShape = np.array([AAMorphologyDict[axis] for axis in ['lx', 'ly', 'lz']])
+        simDims = [[-axis/2.0, axis/2.0] for axis in morphologyShape]
         # Check chromo coherence first
         for index, chromophore in enumerate(chromophoreList):
             assert index == chromophore.ID, "index != chromophore.ID: %r != %r" % (index, chromophore.ID)
-        cutOff = getNNCutOff(chromophoreList, tempDir)
+        if cutOff is None:
+            print("No cut-off manually specified, therefore automatically finding cutOff as the midpoint between the first maxmimum and the first minimum of the neighbour distance distribution.")
+            print("Considering periodic neighbours is", periodic)
+            cutOff = getNeighbourCutOff(chromophoreList, morphologyShape, tempDir, periodic=periodic)
         print("Cut off in Angstroems =", cutOff)
-        morphologyShape = np.array([AAMorphologyDict[_] for _ in ['lx', 'ly', 'lz']])
-        stackDict = getStacks(chromophoreList, morphologyShape, cutOff)
-        plot3DMorphology(tempDir, chromophoreList, stackDict)
+        stackDict = getStacks(chromophoreList, morphologyShape, cutOff, periodic=periodic)
+        plot3DMorphology(tempDir, chromophoreList, stackDict, simDims)
         plotMixedHoppingRate(tempDir, chromophoreList, stackDict)
