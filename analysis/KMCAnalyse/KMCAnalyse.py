@@ -493,7 +493,7 @@ def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
         #plt.ylim([0,8000])
         plt.legend(loc = 2, prop = {'size':18})
         plt.gca().set_xscale('log')
-        fileName = 'DonorHoppingRateMixed.pdf'
+        fileName = 'DonorHoppingRateMixed_Mols.pdf'
 
     elif mode == 'AcceptorIntraChainHop':
         if len(yvals) > 0:
@@ -554,7 +554,7 @@ def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
         #plt.ylim([0,8000])
         plt.legend(loc = 2, prop = {'size':18})
         plt.gca().set_xscale('log')
-        fileName = 'AcceptorHoppingRateMixed.pdf'
+        fileName = 'AcceptorHoppingRateMixed_Mols.pdf'
 
     plt.savefig(saveDir + '/' + fileName)
     plt.clf()
@@ -628,6 +628,357 @@ def updateMolecule(atomID, moleculeList, bondedAtoms):
     return moleculeList
 
 
+def getNeighbourCutOff(chromophoreList, morphologyShape, outputDir, periodic=True):
+    separationDist = []
+    for chromo1 in chromophoreList:
+        for chromo2Details in chromo1.neighbours:
+            if (chromo2Details is None) or ((periodic is False) and (not np.array_equal(chromo2Details[1], [0, 0, 0]))) or (chromo1.ID == chromophoreList[chromo2Details[0]].ID):
+                continue
+            chromo2 = chromophoreList[chromo2Details[0]]
+            separation = np.linalg.norm((np.array(chromo2.posn) + (np.array(chromo2Details[1]) * np.array(morphologyShape))) - chromo1.posn)
+            separationDist.append(separation)
+    plt.figure()
+    (n, binEdges, patches) = plt.hist(separationDist, bins = 20)
+    plt.xlabel("Chromophore Separation (Ang)")
+    plt.ylabel("Frequency (Arb. U.)")
+    plt.savefig(outputDir + "/neighbourHist.pdf")
+    plt.close()
+    print("Neighbour histogram figure saved as", outputDir + "/neighbourHist.pdf")
+    bins = 0.5*(binEdges[1:]+binEdges[:-1])
+    bins = np.insert(bins, 0, 0)
+    n = np.insert(n, 0, 0)
+    dn = np.diff(n)
+    minimaIndices = []
+    maximaIndices = []
+    previousValue = 1E99
+    for index, val in enumerate(dn):
+        if (previousValue <= 0) and (val > 0):
+            minimaIndices.append(index)
+        if (previousValue >= 0) and (val < 0):
+            maximaIndices.append(index)
+        previousValue = val
+    # Minimum is half way between the first maximum and the first minimum of the distribution
+    cutOff = (bins[maximaIndices[0]] + bins[minimaIndices[0]]) / 2.0
+    return cutOff
+
+
+def getStacks(chromophoreList, morphologyShape, cutOff, periodic=True):
+    # Create a neighbourlist based on the cutoff
+    neighbourDict = createNeighbourList(chromophoreList, morphologyShape, cutOff, periodic)
+    # Do the usual stackList neighbourList stuff
+    stackList = [_ for _ in range(len(chromophoreList))]
+    for stackID in range(len(stackList)):
+        stackList = updateStack(stackID, stackList, neighbourDict)
+    print("There are", len(set(stackList)), "stacks in the system")
+    stackDict = {}
+    for index, chromophore in enumerate(chromophoreList):
+        stackDict[chromophore.ID] = stackList[index]
+    return stackDict
+
+
+def createNeighbourList(chromophoreList, morphologyShape, cutOff, periodic=True):
+    neighbourDict = {}
+    for chromo1 in chromophoreList:
+        for [chromo2ID, relImage] in chromo1.neighbours:
+            if periodic is False:
+                if not np.array_equal(relImage, [0, 0, 0]):
+                    continue
+            chromo1Posn = chromo1.posn
+            chromo2Posn = np.array(chromophoreList[chromo2ID].posn) + (np.array(relImage) * np.array(morphologyShape))
+            separation = np.linalg.norm(chromo2Posn - chromo1Posn)
+            if separation < cutOff:
+                if chromo1.ID in neighbourDict.keys():
+                    neighbourDict[chromo1.ID].append(chromo2ID)
+                else:
+                    neighbourDict[chromo1.ID] = [chromo2ID]
+    return neighbourDict
+
+
+def updateStack(atomID, clusterList, neighbourDict):
+    try:
+        for neighbour in neighbourDict[atomID]:
+            if clusterList[neighbour] > clusterList[atomID]:
+                clusterList[neighbour] = clusterList[atomID]
+                clusterList = updateStack(neighbour, clusterList, neighbourDict)
+            elif clusterList[neighbour] < clusterList[atomID]:
+                clusterList[atomID] = clusterList[neighbour]
+                clusterList = updateStack(neighbour, clusterList, neighbourDict)
+    except KeyError:
+        pass
+    return clusterList
+
+
+def plotStacks3D(outputDir, chromophoreList, stackDict, simDims):
+    fig = plt.figure()
+    ax = p3.Axes3D(fig)
+    colours = ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w']
+    stackList = {}
+    for chromophore in chromophoreList:
+        stackID = stackDict[chromophore.ID]
+        if stackID not in stackList.keys():
+            stackList[stackID] = [chromophore]
+        else:
+            stackList[stackID].append(chromophore)
+    for stackID, chromos in enumerate(stackList.values()):
+        for chromo in chromos:
+            ax.scatter(chromo.posn[0], chromo.posn[1], chromo.posn[2], c = colours[stackID%8], edgecolors = None, s = 40)
+    # Draw boxlines
+    # Varying X
+    ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][0]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][1], simDims[1][1]], [simDims[2][0], simDims[2][0]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][1], simDims[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][1], simDims[1][1]], [simDims[2][1], simDims[2][1]], c = 'k', linewidth = 1.0)
+    # Varying Y
+    ax.plot([simDims[0][0], simDims[0][0]], [simDims[1][0], simDims[1][1]], [simDims[2][0], simDims[2][0]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][0], simDims[1][1]], [simDims[2][0], simDims[2][0]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][0], simDims[0][0]], [simDims[1][0], simDims[1][1]], [simDims[2][1], simDims[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][0], simDims[1][1]], [simDims[2][1], simDims[2][1]], c = 'k', linewidth = 1.0)
+    # Varying Z
+    ax.plot([simDims[0][0], simDims[0][0]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][0], simDims[0][0]], [simDims[1][1], simDims[1][1]], [simDims[2][0], simDims[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][1], simDims[1][1]], [simDims[2][0], simDims[2][1]], c = 'k', linewidth = 1.0)
+    ax.set_xlim([simDims[0][0], simDims[0][1]])
+    ax.set_ylim([simDims[1][0], simDims[1][1]])
+    ax.set_zlim([simDims[2][0], simDims[2][1]])
+    plt.savefig(outputDir + "/stacks.pdf", bbox_inches='tight')
+    plt.close()
+    print("3D Stack figure saved as", outputDir + "/stacks.pdf")
+    #plt.show()
+
+
+def determineMoleculeIDs(CGToAAIDMaster, AAMorphologyDict, parameterDict, chromophoreList):
+    print("Determining molecule IDs...")
+    CGIDToMolID = {}
+    if CGToAAIDMaster is not None:
+        # Normal operation with a CGMorphology defined (fine-graining was performed)
+        for molID, molDict in enumerate(CGToAAIDMaster):
+            for CGID in list(molDict.keys()):
+                CGIDToMolID[CGID] = molID
+    elif (len(parameterDict['CGSiteSpecies']) == 1) and (('AARigidBodySpecies' not in parameterDict) or (len(parameterDict['AARigidBodySpecies']) == 0)):   # The not in is a catch for the old PAH systems
+        print("Small-molecule system detected, assuming each chromophore is its own molecule...")
+        # When CGMorphology doesn't exist, and no rigid body species have been specified, then 
+        # every chromophore is its own molecule)
+        for index, chromo in enumerate(chromophoreList):
+            for CGID in chromo.CGIDs:
+                CGIDToMolID[CGID] = chromo.ID
+    else:
+        # No CGMorphology, but not small molecules either, so determine molecules based on bonds
+        print("Polymeric system detected, determining molecules based on AA bonds (slow calculation)...")
+        moleculeAAIDs, moleculeLengths = splitMolecules(AAMorphologyDict)
+        for index, moleculeAAIDList in enumerate(moleculeAAIDs):
+            for AAID in moleculeAAIDList:
+                CGIDToMolID[AAID] = index
+    return CGIDToMolID
+
+
+def plotEnergyLevels(outputDir, chromophoreList, dataDict):
+    HOMOLevels = []
+    LUMOLevels = []
+    donorDeltaEij = []
+    acceptorDeltaEij = []
+    for chromo in chromophoreList:
+        if chromo.species == 'Donor':
+            HOMOLevels.append(chromo.HOMO)
+            for neighbourIndex, deltaEij in enumerate(chromo.neighboursDeltaE):
+                if (deltaEij is not None) and (chromo.neighboursTI[neighbourIndex] is not None):
+                    donorDeltaEij.append(deltaEij)
+        else:
+            LUMOLevels.append(chromo.LUMO)
+            for neighbourIndex, deltaEij in enumerate(chromo.neighboursDeltaE):
+                if (deltaEij is not None) and (chromo.neighboursTI[neighbourIndex] is not None):
+                    acceptorDeltaEij.append(deltaEij)
+    if len(donorDeltaEij) > 0:
+        donorBinEdges, donorFitArgs, donorMean, donorSTD = gaussFit(donorDeltaEij)
+        dataDict['donor_delta_Eij_mean'] = donorMean
+        dataDict['donor_delta_Eij_std'] = donorSTD
+        dataDict['donor_delta_Eij_err'] = donorSTD / np.sqrt(len(donorDeltaEij))
+        HOMOAv = np.average(HOMOLevels)
+        HOMOStd = np.std(HOMOLevels)
+        HOMOErr = HOMOStd / np.sqrt(len(HOMOLevels))
+        dataDict['donor_frontierMO_mean'] = HOMOAv
+        dataDict['donor_frontierMO_std'] = HOMOStd
+        dataDict['donor_frontierMO_err'] = HOMOErr
+        print("Donor HOMO Level =", HOMOAv, "+/-", HOMOErr)
+        print("Donor Delta Eij stats: mean =", donorMean, "+/-", donorSTD / np.sqrt(len(donorDeltaEij)))
+        plotDeltaEij(donorDeltaEij, donorBinEdges, donorFitArgs, 'Donor', outputDir + '/DonorDeltaEij.pdf')
+    if len(acceptorDeltaEij) > 0:
+        acceptorBinEdges, acceptorFitArgs, acceptorMean, acceptorSTD = gaussFit(acceptorDeltaEij)
+        dataDict['acceptor_delta_Eij_mean'] = acceptorMean
+        dataDict['acceptor_delta_Eij_std'] = acceptorSTD
+        dataDict['acceptor_delta_Eij_err'] = acceptorSTD / np.sqrt(len(acceptorDeltaEij))
+        LUMOAv = np.average(LUMOLevels)
+        LUMOStd = np.std(LUMOLevels)
+        LUMOErr = LUMOStd / np.sqrt(len(LUMOLevels))
+        dataDict['acceptor_frontierMO_mean'] = LUMOAv
+        dataDict['acceptor_frontierMO_std'] = LUMOStd
+        dataDict['acceptor_frontierMO_err'] = LUMOErr
+        print("Acceptor LUMO Level =", LUMOAv, "+/-", LUMOErr)
+        print("Acceptor Delta Eij stats: mean =", acceptorMean, "+/-", acceptorSTD / np.sqrt(len(acceptorDeltaEij)))
+        plotDeltaEij(acceptorDeltaEij, acceptorBinEdges, acceptorFitArgs, 'Acceptor', outputDir + '/AcceptorDeltaEij.pdf')
+    return dataDict
+
+
+def generateDataDict():
+        materials = ['donor', 'acceptor']
+        materialInspecificProperties = ['name', 'density']
+        noErrorProperties = ['anisotropy', 'mobility', 'mobility_rSquared']
+        hopTypes = ['intra', 'inter']
+        hopTargets = ['mol', 'stack']
+        hopDependentProperties = ['hops', 'proportion']
+        errorProperties = ['frontierMO', 'deltaEij']
+        dictionaryElements = [(prop, '---') for prop in materialInspecificProperties]
+        dictionaryElements += [(material + '_' + noErrorProperty, '---') for material in materials for noErrorProperty in noErrorProperties]
+        dictionaryElements += [(material + '_' + hopType + '_' + hopTarget + '_' + hopProperty, '---') for material in materials for hopType in hopTypes for hopTarget in hopTargets for hopProperty in hopDependentProperties]
+        dictionaryElements += [(material + '_' + errorProperty + '_' + stat, '---') for material in materials for errorProperty in errorProperties for stat in ['mean', 'std', 'err']]
+        dataDict = OrderedDict(dictionaryElements)
+        return dataDict
+
+
+def plotDeltaEij(deltaEij, gaussBins, fitArgs, dataType, fileName):
+    plt.figure()
+    n, bins, patches = plt.hist(deltaEij, np.linspace(-0.5,0.5,20), color = ['b'])
+    gaussY = gaussian(gaussBins[:-1], *fitArgs)
+    scaleFactor = max(n)/max(gaussY)
+    plt.plot(gaussBins[:-1], gaussY*scaleFactor, 'ro:')
+    plt.ylabel('Frequency')
+    plt.xlabel(dataType + ' Delta Eij (eV)')
+    plt.xlim([-0.5, 0.5])
+    plt.savefig(fileName)
+    plt.close()
+    print("Figure saved as", fileName)
+
+
+def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDict, CGToMolID, dataDict):
+    # Create all the empty lists we need
+    hopTypes = ['intra', 'inter']
+    hopTargets = ['Stack', 'Mol']
+    hopProperties = ['Rates', 'TIs']
+    chromoSpecies = ['Donor', 'Acceptor']
+    propertyLists = {}
+    for propertyName in [hopType + hopTarget + hopProperty + species for hopType in hopTypes for hopTarget in hopTargets for hopProperty in hopProperties for species in chromoSpecies]:
+        propertyLists[propertyName] = []
+    for chromo in chromophoreList:
+        mol1ID = CGToMolID[chromo.CGIDs[0]]
+        for index, Tij in enumerate(chromo.neighboursTI):
+            if (Tij == None) or (Tij == 0):
+                continue
+            chromo2 = chromophoreList[chromo.neighbours[index][0]]
+            mol2ID = CGToMolID[chromo2.CGIDs[0]]
+            deltaE = chromo.neighboursDeltaE[index]
+            try:
+                if parameterDict['reorganisationEnergyDonor'] is not None:
+                    donorLambdaij = parameterDict['reorganisationEnergyDonor'] * elementaryCharge
+                if parameterDict['reorganisationEnergyAcceptor'] is not None:
+                    acceptorLambdaij = parameterDict['reorganisationEnergyAcceptor'] * elementaryCharge
+            except KeyError: # Old MorphCT fix
+                print("Only one reorganisation energy found, assuming donor and continuing")
+                donorLambdaij = parameterDict['reorganisationEnergy'] * elementaryCharge
+            T = 290
+            if chromo.species == 'Donor':
+                rate = calculateHopRate(donorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+            else:
+                rate = calculateHopRate(acceptorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+            try:
+                if chromo2.ID < chromo.ID:
+                    continue
+                # Do intra- / inter- stacks
+                if stackDict[chromo.ID] == stackDict[chromo.neighbours[index][0]]:
+                    if chromo.species == 'Donor':
+                        propertyLists['intraStackRatesDonor'].append(rate)
+                        propertyLists['intraStackTIsDonor'].append(Tij)
+                    else:
+                        propertyLists['intraStackRatesAcceptor'].append(rate)
+                        propertyLists['intraStackTIsAcceptor'].append(Tij)
+                else:
+                    if chromo.species == 'Donor':
+                        propertyLists['interStackRatesDonor'].append(rate)
+                        propertyLists['interStackTIsDonor'].append(rate)
+                    else:
+                        propertyLists['interStackRatesAcceptor'].append(rate)
+                        propertyLists['interStackTIsAcceptor'].append(rate)
+                # Now do intra- / inter- molecules
+                if mol1ID == mol2ID:
+                    if chromo.species == 'Donor':
+                        propertyLists['intraMolRatesDonor'].append(rate)
+                        propertyLists['intraMolTIsDonor'].append(Tij)
+                    else:
+                        propertyLists['intraMolRatesAcceptor'].append(rate)
+                        propertyLists['intraMolTIsAcceptor'].append(Tij)
+                else:
+                    if chromo.species == 'Donor':
+                        propertyLists['interMolRatesDonor'].append(rate)
+                        propertyLists['interMolTIsDonor'].append(rate)
+                    else:
+                        propertyLists['interMolRatesAcceptor'].append(rate)
+                        propertyLists['interMolTIsAcceptor'].append(rate)
+            except TypeError:
+                pass
+    # Donor Stack Plots:
+    if len(propertyLists['intraStackRatesDonor']) > 0:
+        plotStackedHistRates(propertyLists['intraStackRatesDonor'], propertyLists['interStackRatesDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/DonorHoppingRate_Stacks.pdf')
+        plotStackedHistTIs(propertyLists['intraStackTIsDonor'], propertyLists['interStackTIsDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/DonorTransferIntegral_Stacks.pdf')
+    # Acceptor Stack Plots:
+    if len(propertyLists['intraStackRatesAcceptor']) > 0:
+        plotStackedHistRates(propertyLists['intraStackRatesAcceptor'], propertyLists['interStackRatesAcceptor'], ['Intra-Stack', 'Inter-Stack'], 'Acceptor', outputDir + '/AcceptorHoppingRate_Stacks.pdf')
+        plotStackedHistTIs(propertyLists['intraStackTIsAcceptor'], propertyLists['interStackTIsAcceptor'], ['Intra-Stack', 'Inter-Stack'], 'Acceptor', outputDir + '/AcceptorTransferIntegral_Stacks.pdf')
+    # Donor Mol Plots:
+    if len(propertyLists['intraMolRatesDonor']) > 0:
+        plotStackedHistRates(propertyLists['intraMolRatesDonor'], propertyLists['interMolRatesDonor'], ['Intra-Mol', 'Inter-Mol'], 'Donor', outputDir + '/DonorHoppingRate_Mols.pdf')
+        plotStackedHistTIs(propertyLists['intraMolTIsDonor'], propertyLists['interMolTIsDonor'], ['Intra-Mol', 'Inter-Mol'], 'Donor', outputDir + '/DonorTransferIntegral_Mols.pdf')
+    # Acceptor Mol Plots:
+    if len(propertyLists['intraMolRatesAcceptor']) > 0:
+        plotStackedHistRates(propertyLists['intraMolRatesAcceptor'], propertyLists['interMolRatesAcceptor'], ['Intra-Mol', 'Inter-Mol'], 'Acceptor', outputDir + '/AcceptorHoppingRate_Mols.pdf')
+        plotStackedHistTIs(propertyLists['intraMolTIsAcceptor'], propertyLists['interMolTIsAcceptor'], ['Intra-Mol', 'Inter-Mol'], 'Acceptor', outputDir + '/AcceptorTransferIntegral_Mols.pdf')
+    # Update the dataDict
+    for material in chromoSpecies:
+        for hopType in hopTypes:
+            for hopTarget in hopTargets:
+                numberOfHops = len(propertyLists[hopType + hopTarget + "Rates" + material])
+                if numberOfHops == 0:
+                    continue
+                otherHopType = hopTypes[int((hopTypes.index(hopType) * -1) + 1)]
+                proportion = numberOfHops / (numberOfHops + len(propertyLists[otherHopType + hopTarget + "Rates" + material]))
+                dataDict[material.lower() + '_' + hopType + '_' + hopTarget.lower() + "hops"] = numberOfHops
+                dataDict[material.lower() + '_' + hopType + '_' + hopTarget.lower() + "hops"] = proportion
+    return dataDict
+
+
+def plotStackedHistRates(data1, data2, labels, dataType, fileName):
+    plt.figure()
+    if len(data2) > 0:
+        print(labels, ":", len(data1), len(data2))
+        print(data1, data2)
+        exit()
+        plt.hist([data1, data2], bins = np.logspace(1, 18, 40), stacked = True, color = ['r', 'b'], label = labels)
+    else:
+        plt.hist(data1, bins = np.logspace(1, 18, 40), color = 'b')
+    plt.ylabel('Frequency (Arb. U.)')
+    plt.xlabel(dataType + ' Hopping Rate (s' + r'$^{-1}$' + ')')
+    plt.xlim([1,1E18])
+    plt.xticks([1E0, 1E3, 1E6, 1E9, 1E12, 1E15, 1E18])
+    #plt.ylim([0,8000])
+    plt.legend(loc = 2, prop = {'size':18})
+    plt.gca().set_xscale('log')
+    plt.savefig(fileName)
+    plt.close()
+    print("Figure saved as", fileName)
+
+
+def plotStackedHistTIs(data1, data2, labels, dataType, fileName):
+    plt.figure()
+    if len(data2) > 0:
+        plt.hist([data1, data2], bins = np.logspace(1, 18, 40), stacked = True, color = ['r', 'b'], label = labels)
+    else:
+        plt.hist(data1, bins = np.logspace(1, 18, 40), color = 'b')
+    plt.ylabel('Frequency')
+    plt.xlabel(dataType + ' Transfer Integral (eV)')
+    plt.xlim([0, 1.2])
+    plt.legend(loc = 2, prop = {'size':18})
+    plt.savefig(fileName)
+    plt.close()
+    print("Figure saved as", fileName)
+
 
 def writeCSV(dataDict, directory):
     CSVFileName = directory + '/results.csv'
@@ -641,12 +992,14 @@ def writeCSV(dataDict, directory):
 if __name__ == "__main__":
     sys.path.append('../../code')
     sys.path.append('../code')
-    if len(sys.argv) == 1:
-        for directory in os.listdir(os.getcwd()):
-            if ('py' not in directory) and ('pdf' not in directory) and ('store' not in directory) and ('Store' not in directory):
-                directoryList.append(directory)
-    else:
+    periodic = True
+    try:
+        cutOff = float(sys.argv[1])
+        directoryList = sys.argv[2:]
+    except ValueError:
+        cutOff = None
         directoryList = sys.argv[1:]
+    sys.setrecursionlimit(5000)
     tempData = []
     holeMobilityData = []
     holeAnisotropyData = []
@@ -658,9 +1011,7 @@ if __name__ == "__main__":
         # Create the figures directory if it doesn't already exist
         os.makedirs(directory + '/figures', exist_ok=True)
         # Now create the data dictionary
-        dataDict = OrderedDict([('name', '---'), ('density', '---'), ('hole_anisotropy', '---'), ('hole_mobility', '---'), ('hole_mobility_rSquared', '---'), ('electron_anisotropy', '---'), ('electron_mobility', '---'), ('electron_mobility_rSquared', '---'),
-                ('donor_HOMO_mean', '---'), ('donor_HOMO_error', '---'), ('donor_bandgap_mean', '---'), ('donor_bandgap_error', '---'), ('donor_delta_Eij_mean', '---'), ('donor_delta_Eij_std', '---'), ('donor_intra_chain_hops', '---'), ('donor_inter_chain_hops', '---'), ('donor_intra_chain_hop_proportion', '---'),
-                ('acceptor_LUMO_mean', '---'), ('acceptor_LUMO_error', '---'), ('acceptor_bandgap_mean', '---'), ('acceptor_bandgap_error', '---'), ('acceptor_delta_Eij_mean', '---'), ('acceptor_delta_Eij_std', '---'), ('acceptor_intra_chain_hops', '---'), ('acceptor_inter_chain_hops', '---'), ('acceptor_intra_chain_hop_proportion', '---')])
+        dataDict = generateDataDict()
         print("\n")
         try:
             tempData.append(getTempVal(directory))
@@ -711,6 +1062,7 @@ if __name__ == "__main__":
         print("Loading chromophoreList...")
         AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle('./' + directory + '/code/' + directory + '.pickle')
         print("ChromophoreList obtained")
+        morphologyShape = np.array([AAMorphologyDict[axis] for axis in ['lx', 'ly', 'lz']])
         simDims = [[-AAMorphologyDict[axis] / 2.0, AAMorphologyDict[axis] / 2.0] for axis in ['lx', 'ly', 'lz']]
 #### NOW DO ALL OF THE BELOW BUT FOR ELECTRONS AND HOLES SEPARATELY
         completeCarrierTypes = []
@@ -730,9 +1082,9 @@ if __name__ == "__main__":
             # Create the first figure that will be replotted each time
             plt.figure()
             anisotropy = plotAnisotropy(carrierData, directory, simDims, currentCarrierType)
-            if carrierHistory is not None:
-                print("Determining carrier hopping connections...")
-                plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
+            #if carrierHistory is not None:
+            #    print("Determining carrier hopping connections...")
+            #    plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
             times, MSDs = helperFunctions.parallelSort(times, MSDs)
             print("Calculating MSD...")
             mobility, mobError, rSquared = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, currentCarrierType)
@@ -750,190 +1102,17 @@ if __name__ == "__main__":
             dataDict[currentCarrierType.lower() + '_mobility'] = mobility
             dataDict[currentCarrierType.lower() + '_mobility_rSquared'] = rSquared
         # Now we can do the plotTI/plotStacks stuff!
-        # Lazy fix
         tempDir = directory + '/figures'
-        HOMOLevels = []
-        LUMOLevels = []
-        donorBandgap = []
-        donorTransferIntegrals = []
-        donorTransferIntegralsTrimmed = []
-        donorDeltaEij = []
-        acceptorBandgap = []
-        acceptorTransferIntegrals = []
-        acceptorTransferIntegralsTrimmed = []
-        acceptorDeltaEij = []
-        for chromophore in chromophoreList:
-            if chromophore.species == 'Donor':
-                HOMOLevels.append(chromophore.HOMO)
-                donorBandgap.append(chromophore.LUMO - chromophore.HOMO)
-                for neighbourLoc, transferIntegral in enumerate(chromophore.neighboursTI):
-                    if (transferIntegral is not None) and (chromophore.neighboursDeltaE[neighbourLoc] is not None):
-                        donorTransferIntegrals.append(transferIntegral)
-                        donorDeltaEij.append(chromophore.neighboursDeltaE[neighbourLoc])
-                for neighbourTI in chromophore.neighboursTI:
-                    if (neighbourTI != 0) and (neighbourTI is not None):
-                        donorTransferIntegralsTrimmed.append(neighbourTI)
-            else:
-                LUMOLevels.append(chromophore.LUMO)
-                acceptorBandgap.append(chromophore.LUMO - chromophore.HOMO)
-                for neighbourLoc, transferIntegral in enumerate(chromophore.neighboursTI):
-                    if (transferIntegral is not None) and (chromophore.neighboursDeltaE[neighbourLoc] is not None):
-                        acceptorTransferIntegrals.append(transferIntegral)
-                        acceptorDeltaEij.append(chromophore.neighboursDeltaE[neighbourLoc])
-                for neighbourTI in chromophore.neighboursTI:
-                    if (neighbourTI != 0) and (neighbourTI is not None):
-                        acceptorTransferIntegralsTrimmed.append(neighbourTI)
-
-        donorBinEdges, donorFitArgs, donorMean, donorSTD = gaussFit(donorDeltaEij)
-        dataDict['donor_delta_Eij_mean'] = donorMean
-        dataDict['donor_delta_Eij_std'] = donorSTD
-        print("Donor Delta Eij stats: mean =", donorMean, "std =", donorSTD)
-        acceptorBinEdges, acceptorFitArgs, acceptorMean, acceptorSTD = gaussFit(acceptorDeltaEij)
-        dataDict['acceptor_delta_Eij_mean'] = acceptorMean
-        dataDict['acceptor_delta_Eij_std'] = acceptorSTD
-        print("Acceptor Delta Eij stats: mean =", acceptorMean, "std =", acceptorSTD)
-        if len(HOMOLevels) > 0:
-            plotHist(tempDir, HOMOLevels, 'HOMO')
-            plotHist(tempDir, donorTransferIntegrals, 'DonorTI')
-            plotHist(tempDir, donorTransferIntegralsTrimmed, 'DonorTITrimmed')
-            plotHist(tempDir, donorDeltaEij, 'DonorDeltaEij', gaussBins=donorBinEdges, fitArgs=donorFitArgs)
-            plotHist(tempDir, donorBandgap, 'DonorBandgap')
-        if len(LUMOLevels) > 0:
-            plotHist(tempDir, LUMOLevels, 'LUMO')
-            plotHist(tempDir, acceptorTransferIntegrals, 'AcceptorTI')
-            plotHist(tempDir, acceptorTransferIntegralsTrimmed, 'AcceptorTITrimmed')
-            plotHist(tempDir, acceptorDeltaEij, 'AcceptorDeltaEij', gaussBins=acceptorBinEdges, fitArgs=acceptorFitArgs)
-            plotHist(tempDir, acceptorBandgap, 'AcceptorBandgap')
-
-        print("Determining molecule IDs...")
-        CGIDToMolID = {}
-        if CGToAAIDMaster is not None:
-            # Normal operation with a CGMorphology defined (fine-graining was performed)
-            for molID, molDict in enumerate(CGToAAIDMaster):
-                for CGID in list(molDict.keys()):
-                    CGIDToMolID[CGID] = molID
-        elif (len(parameterDict['CGSiteSpecies']) == 1) and (('AARigidBodySpecies' not in parameterDict) or (len(parameterDict['AARigidBodySpecies']) == 0)):   # The not in is a catch for the old PAH systems
-            print("Small-molecule system detected, assuming each chromophore is its own molecule...")
-            # When CGMorphology doesn't exist, and no rigid body species have been specified, then 
-            # every chromophore is its own molecule)
-            for index, chromo in enumerate(chromophoreList):
-                for CGID in chromo.CGIDs:
-                    CGIDToMolID[CGID] = chromo.ID
-        else:
-            # No CGMorphology, but not small molecules either, so determine molecules based on bonds
-            print("Polymeric system detected, determining molecules based on AA bonds (slow calculation)...")
-            moleculeAAIDs, moleculeLengths = splitMolecules(AAMorphologyDict)
-            for index, moleculeAAIDList in enumerate(moleculeAAIDs):
-                for AAID in moleculeAAIDList:
-                    CGIDToMolID[AAID] = index
-        donorInterChainHop = []
-        donorIntraChainHop = []
-        donorInterChainTI = []
-        donorIntraChainTI = []
-        donorInterChainTITrim = []
-        donorIntraChainTITrim = []
-        acceptorInterChainHop = []
-        acceptorIntraChainHop = []
-        acceptorInterChainTI = []
-        acceptorIntraChainTI = []
-        acceptorInterChainTITrim = []
-        acceptorIntraChainTITrim = []
-        try:
-            if parameterDict['reorganisationEnergyDonor'] is not None:
-                donorLambdaij = parameterDict['reorganisationEnergyDonor'] * elementaryCharge
-            if parameterDict['reorganisationEnergyAcceptor'] is not None:
-                acceptorLambdaij = parameterDict['reorganisationEnergyAcceptor'] * elementaryCharge
-        except KeyError: # Old MorphCT fix
-            print("Only one reorganisation energy found, assuming donor and continuing")
-            donorLambdaij = parameterDict['reorganisationEnergy'] * elementaryCharge
-        T = 290
-        for chromophore in chromophoreList:
-            mol1ID = CGIDToMolID[chromophore.CGIDs[0]]
-            for index, neighbour in enumerate(chromophore.neighbours):
-                if chromophore.neighboursTI[index] is None:
-                    continue
-                chromophore2 = chromophoreList[neighbour[0]]
-                mol2ID = CGIDToMolID[chromophore2.CGIDs[0]]
-                if chromophore.species == 'Donor':
-                    hopRate = calculateHopRate(donorLambdaij, chromophore.neighboursTI[index] * elementaryCharge, chromophore.neighboursDeltaE[index] * elementaryCharge, T)
-                elif chromophore.species == 'Acceptor':
-                    hopRate = calculateHopRate(acceptorLambdaij, chromophore.neighboursTI[index] * elementaryCharge, chromophore.neighboursDeltaE[index] * elementaryCharge, T)
-                if mol1ID == mol2ID:
-                    if chromophore2.ID > chromophore.ID:
-                        if chromophore.species == 'Donor':
-                            if hopRate != 0:
-                                donorIntraChainHop.append(hopRate)
-                            donorIntraChainTI.append(chromophore.neighboursTI[index])
-                            if chromophore.neighboursTI[index] != 0:
-                                donorIntraChainTITrim.append(chromophore.neighboursTI[index])
-                        elif chromophore.species == 'Acceptor':
-                            if hopRate != 0:
-                                acceptorIntraChainHop.append(hopRate)
-                            acceptorIntraChainTI.append(chromophore.neighboursTI[index])
-                            if chromophore.neighboursTI[index] != 0:
-                                acceptorIntraChainTITrim.append(chromophore.neighboursTI[index])
-                else:
-                    if chromophore2.ID > chromophore.ID:
-                        if chromophore.species == 'Donor':
-                            if hopRate != 0:
-                                donorInterChainHop.append(hopRate)
-                            donorInterChainTI.append(chromophore.neighboursTI[index])
-                            if chromophore.neighboursTI[index] != 0:
-                                donorInterChainTITrim.append(chromophore.neighboursTI[index])
-                        if chromophore.species == 'Acceptor':
-                            if hopRate != 0:
-                                acceptorInterChainHop.append(hopRate)
-                            acceptorInterChainTI.append(chromophore.neighboursTI[index])
-                            if chromophore.neighboursTI[index] != 0:
-                                acceptorInterChainTITrim.append(chromophore.neighboursTI[index])
-        if len(HOMOLevels) > 0:
-            if len(donorIntraChainHop) > 0:
-                plotHist(tempDir, donorIntraChainHop, 'DonorIntraChainHop')
-                plotHist(tempDir, donorIntraChainTI, 'DonorIntraChainTI')
-                plotHist(tempDir, donorIntraChainTITrim, 'DonorIntraChainTITrim')
-            if len(donorInterChainHop) > 0:
-                plotHist(tempDir, donorInterChainHop, 'DonorInterChainHop')
-                plotHist(tempDir, donorInterChainTI, 'DonorInterChainTI')
-                plotHist(tempDir, donorInterChainTITrim, 'DonorInterChainTITrim')
-            print("Donor intra-chain hops =", len(donorIntraChainHop), "Donor inter-chain hops =", len(donorInterChainHop))
-            intraChainPropn = len(donorIntraChainHop) / (len(donorIntraChainHop) + len(donorInterChainHop))
-            print("Donor intra-chain hop proportion =", intraChainPropn)
-            dataDict['donor_intra_chain_hops'] = len(donorIntraChainHop)
-            dataDict['donor_inter_chain_hops'] = len(donorInterChainHop)
-            dataDict['donor_intra_chain_hop_proportion'] = intraChainPropn
-            plotHist(tempDir, donorIntraChainHop, 'DonorHopMix', xvals=donorInterChainHop)
-        if len(LUMOLevels) > 0:
-            if len(acceptorIntraChainHop) > 0:
-                plotHist(tempDir, acceptorIntraChainHop, 'AcceptorIntraChainHop')
-                plotHist(tempDir, acceptorIntraChainTI, 'AcceptorIntraChainTI')
-                plotHist(tempDir, acceptorIntraChainTITrim, 'AcceptorIntraChainTITrim')
-            if len(acceptorInterChainHop) > 0:
-                plotHist(tempDir, acceptorInterChainHop, 'AcceptorInterChainHop')
-                plotHist(tempDir, acceptorInterChainTI, 'AcceptorInterChainTI')
-                plotHist(tempDir, acceptorInterChainTITrim, 'AcceptorInterChainTITrim')
-            print("Acceptor intra-chain hops =", len(acceptorIntraChainHop), "Acceptor inter-chain hops =", len(acceptorInterChainHop))
-            intraChainPropn = len(donorIntraChainHop) / (len(donorIntraChainHop) + len(donorInterChainHop))
-            print("Acceptor intra-chain hop proportion =", intraChainPropn)
-            dataDict['acceptor_intra_chain_hops'] = len(acceptorIntraChainHop)
-            dataDict['acceptor_inter_chain_hops'] = len(acceptorInterChainHop)
-            dataDict['acceptor_intra_chain_hop_proportion'] = intraChainPropn
-            plotHist(tempDir, acceptorIntraChainHop, 'AcceptorHopMix', xvals=acceptorInterChainHop)
-
-
-        if len(HOMOLevels) > 0:
-            print("DONOR HOMO LEVEL =", np.average(HOMOLevels), "+/-", np.std(HOMOLevels)/np.sqrt(len(HOMOLevels)))
-            print("DONOR BANDGAP =", np.average(donorBandgap), "+/-", np.std(donorBandgap)/np.sqrt(len(donorBandgap)))
-            dataDict['donor_HOMO_mean'] = np.average(HOMOLevels)
-            dataDict['donor_HOMO_error'] = np.std(HOMOLevels)/np.sqrt(len(HOMOLevels))
-            dataDict['donor_bandgap_mean'] = np.average(donorBandgap)
-            dataDict['donor_bandgap_error'] = np.std(donorBandgap)/np.sqrt(len(donorBandgap))
-        if len(LUMOLevels) > 0:
-            print("ACCEPTOR LUMO LEVEL =", np.average(LUMOLevels), "+/-", np.std(LUMOLevels)/np.sqrt(len(LUMOLevels)))
-            print("ACCEPTOR BANDGAP =", np.average(acceptorBandgap), "+/-", np.std(acceptorBandgap)/np.sqrt(len(acceptorBandgap)))
-            dataDict['acceptor_HOMO_mean'] = np.average(LUMOLevels)
-            dataDict['acceptor_HOMO_error'] = np.std(LUMOLevels)/np.sqrt(len(LUMOLevels))
-            dataDict['acceptor_bandgap_mean'] = np.average(acceptorBandgap)
-            dataDict['acceptor_bandgap_error'] = np.std(acceptorBandgap)/np.sqrt(len(acceptorBandgap))
+        CGToMolID = determineMoleculeIDs(CGToAAIDMaster, AAMorphologyDict, parameterDict, chromophoreList)
+        dataDict = plotEnergyLevels(tempDir, chromophoreList, dataDict)
+        if cutOff is None:
+            print("No cut-off manually specified, therefore automatically finding cutOff as the midpoint between the first maxmimum and the first minimum of the neighbour distance distribution.")
+            print("Considering periodic neighbours is", periodic)
+            cutOff = getNeighbourCutOff(chromophoreList, morphologyShape, tempDir, periodic=periodic)
+        print("Cut off in Angstroems =", cutOff)
+        stackDict = getStacks(chromophoreList, morphologyShape, cutOff, periodic=periodic)
+        #plotStacks3D(tempDir, chromophoreList, stackDict, simDims)
+        dataDict = plotMixedHoppingRates(tempDir, chromophoreList, parameterDict, stackDict, CGToMolID, dataDict)
         print("\n")
         print("Writing CSV Output File...")
         writeCSV(dataDict, directory)
