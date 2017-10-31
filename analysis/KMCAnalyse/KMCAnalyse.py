@@ -25,6 +25,58 @@ hbar = 1.05457173E-34 # m^{2} kg s^{-1}
 temperature = 290  # K
 
 
+def loadKMCResultsPickle(directory):
+    try:
+        with open(directory + '/KMC/KMCResults.pickle', 'rb') as pickleFile:
+            carrierData = pickle.load(pickleFile)
+    except FileNotFoundError:
+        print("No final KMCResults.pickle found. Creating it from incomplete parts...")
+        createResultsPickle(directory)
+        with open(directory + '/KMC/KMCResults.pickle', 'rb') as pickleFile:
+            carrierData = pickle.load(pickleFile)
+    except UnicodeDecodeError:
+        with open(directory + '/KMC/KMCResults.pickle', 'rb') as pickleFile:
+            carrierData = pickle.load(pickleFile, encoding='latin1')
+    except:
+        print(sys.exc_info()[0])
+        continue
+    return carrierData
+
+
+def splitCarriersByType(carrierData):
+    # If only one carrier type has been given, call the carriers holes and skip the electron calculations
+    listVariables = ['currentTime', 'ID', 'noHops', 'displacement', 'lifetime', 'finalPosition', 'image', 'initialPosition']
+    try:
+        carrierDataHoles = {'carrierHistoryMatrix': carrierData['holeHistoryMatrix'], 'seed': carrierData['seed']}
+        carrierDataElectrons = {'carrierHistoryMatrix': carrierData['electronHistoryMatrix'], 'seed': carrierData['seed']}
+        for listVar in listVariables:
+            carrierDataHoles[listVar] = []
+            carrierDataElectrons[listVar] = []
+            for carrierIndex, chargeType in enumerate(carrierData['carrierType']):
+                if chargeType == 'Hole':
+                    carrierDataHoles[listVar].append(carrierData[listVar][carrierIndex])
+                elif chargeType == 'Electron':
+                    carrierDataElectrons[listVar].append(carrierData[listVar][carrierIndex])
+    except:
+        print("Multiple charge carriers not found, assuming donor material and holes only")
+        try:
+            carrierDataHoles = {'carrierHistoryMatrix': carrierData['carrierHistoryMatrix'], 'seed': carrierData['seed']}
+        except KeyError:
+            carrierDataHoles = {'carrierHistoryMatrix': carrierData['carrierHistoryMatrix'], 'seed': 0}
+        carrierDataElectrons = None
+        for listVar in listVariables:
+            carrierDataHoles[listVar] = []
+            for carrierIndex, carrierID in enumerate(carrierData['ID']):
+                carrierDataHoles[listVar].append(carrierData[listVar][carrierIndex])
+    return carrierDataHoles, carrierDataElectrons
+
+
+def obtainMobilities(dataDict, completeCarrierTypes, completeCarrierData):
+
+
+
+
+
 def getCarrierData(carrierData):
     try:
         carrierHistory = carrierData['carrierHistoryMatrix']
@@ -1068,47 +1120,11 @@ if __name__ == "__main__":
             except:
                 print("No temp or frame data found in morphology name, skipping combined plots")
                 combinedPlots = False
-        try:
-            with open(directory + '/KMC/KMCResults.pickle', 'rb') as pickleFile:
-                carrierData = pickle.load(pickleFile)
-        except FileNotFoundError:
-            print("No final KMCResults.pickle found. Creating it from incomplete parts...")
-            createResultsPickle(directory)
-            with open(directory + '/KMC/KMCResults.pickle', 'rb') as pickleFile:
-                carrierData = pickle.load(pickleFile)
-        except UnicodeDecodeError:
-            with open(directory + '/KMC/KMCResults.pickle', 'rb') as pickleFile:
-                carrierData = pickle.load(pickleFile, encoding='latin1')
-        except:
-            print(sys.exc_info()[0])
-            continue
+        print("Getting carrier data...")
+        carrierData = loadKMCResultsPickle(directory)
         print("Carrier Data obtained")
         # Now need to split up the carrierData into both electrons and holes
-        # If only one carrier type has been given, call the carriers holes and skip the electron calculations
-        listVariables = ['currentTime', 'ID', 'noHops', 'displacement', 'lifetime', 'finalPosition', 'image', 'initialPosition']
-        try:
-            carrierDataHoles = {'carrierHistoryMatrix': carrierData['holeHistoryMatrix'], 'seed': carrierData['seed']}
-            carrierDataElectrons = {'carrierHistoryMatrix': carrierData['electronHistoryMatrix'], 'seed': carrierData['seed']}
-            for listVar in listVariables:
-                carrierDataHoles[listVar] = []
-                carrierDataElectrons[listVar] = []
-                for carrierIndex, chargeType in enumerate(carrierData['carrierType']):
-                    if chargeType == 'Hole':
-                        carrierDataHoles[listVar].append(carrierData[listVar][carrierIndex])
-                    elif chargeType == 'Electron':
-                        carrierDataElectrons[listVar].append(carrierData[listVar][carrierIndex])
-        except:
-            print("Multiple charge carriers not found, assuming donor material and holes only")
-            try:
-                carrierDataHoles = {'carrierHistoryMatrix': carrierData['carrierHistoryMatrix'], 'seed': carrierData['seed']}
-            except KeyError:
-                carrierDataHoles = {'carrierHistoryMatrix': carrierData['carrierHistoryMatrix'], 'seed': 0}
-            carrierDataElectrons = None
-            for listVar in listVariables:
-                carrierDataHoles[listVar] = []
-                for carrierIndex, carrierID in enumerate(carrierData['ID']):
-                    carrierDataHoles[listVar].append(carrierData[listVar][carrierIndex])
-
+        carrierDataHoles, carrierDataElectrons = splitCarriersByType(carrierData)
         print("Loading chromophoreList...")
         AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle('./' + directory + '/code/' + directory + '.pickle')
         print("ChromophoreList obtained")
