@@ -37,9 +37,6 @@ def loadKMCResultsPickle(directory):
     except UnicodeDecodeError:
         with open(directory + '/KMC/KMCResults.pickle', 'rb') as pickleFile:
             carrierData = pickle.load(pickleFile, encoding='latin1')
-    except:
-        print(sys.exc_info()[0])
-        continue
     return carrierData
 
 
@@ -69,12 +66,6 @@ def splitCarriersByType(carrierData):
             for carrierIndex, carrierID in enumerate(carrierData['ID']):
                 carrierDataHoles[listVar].append(carrierData[listVar][carrierIndex])
     return carrierDataHoles, carrierDataElectrons
-
-
-def obtainMobilities(dataDict, completeCarrierTypes, completeCarrierData):
-
-
-
 
 
 def getCarrierData(carrierData):
@@ -274,10 +265,8 @@ def calculateAnisotropy(xvals, yvals, zvals):
     return anisotropy
 
 
-def plotAnisotropy(carrierData, directory, simDims, carrierType):
+def plotAnisotropy(carrierData, directory, simDims, carrierType, plot3DGraphs):
     simExtent = [value[1] - value[0] for value in simDims]
-    fig = plt.gcf()
-    ax = p3.Axes3D(fig)
     xvals = []
     yvals = []
     zvals = []
@@ -294,10 +283,14 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType):
         zvals.append(position[2]/10.)
         colours.append('b')
     anisotropy = calculateAnisotropy(xvals, yvals, zvals)
+    if not plot3DGraphs:
+        return anisotropy
     print("----------====================----------")
     print(carrierType + " charge transport anisotropy calculated as", anisotropy)
     print("----------====================----------")
     # Reduce number of plot markers
+    fig = plt.gcf()
+    ax = p3.Axes3D(fig)
     if len(xvals) > 1000:
         xvals = xvals[0:len(xvals):len(xvals)//1000]
         yvals = yvals[0:len(yvals):len(yvals)//1000]
@@ -1086,12 +1079,37 @@ def combineResultsPickles(directory, pickleFiles):
     print("Complete data written to", directory + "/KMCResults.pickle.")
 
 
+def calculateMobility(directory, currentCarrierType, carrierData, simDims, plot3DGraphs):
+    print("Considering the transport of", currentCarrierType + "...")
+    print("Obtaining mean squared displacements...")
+    carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getCarrierData(carrierData)
+    print("MSDs obtained")
+    # Create the first figure that will be replotted each time
+    plt.figure()
+    anisotropy = plotAnisotropy(carrierData, directory, simDims, currentCarrierType, plot3DGraphs)
+    if (carrierHistory is not None) and plot3DGraphs:
+        print("Determining carrier hopping connections...")
+        plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
+    times, MSDs = helperFunctions.parallelSort(times, MSDs)
+    print("Calculating MSD...")
+    mobility, mobError, rSquared = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, currentCarrierType)
+    print("----------====================----------")
+    print(currentCarrierType, "mobility for", directory, "= %.2E +- %.2E cm^{2} V^{-1} s^{-1}" % (mobility, mobError))
+    print("----------====================----------")
+    return mobility, mobError, rSquared, anisotropy
+
+
 if __name__ == "__main__":
+    # Plotting Parameter Settings
+    plot3DGraphs = True         # The 3D network, anisotropy, and the stack position plots (take a while to plot)
+    considerPeriodic = True     # Allow periodic connections to add to stack (usually reduces number of stacks)
+    combinedPlots = False       # Plot the evolution of the mobility over multiple statepoints (naming nomenclature will be needed to be hardcoded most likely)
+
+
     sys.path.append('../../code')
     sys.path.append('../code')
-    periodic = True
     try:
-        cutOff = float(sys.argv[1])
+        cutOff = float(sys.argv[1])     # In case a manual cut-off for determining the stacks is defined
         directoryList = sys.argv[2:]
     except ValueError:
         cutOff = None
@@ -1102,7 +1120,6 @@ if __name__ == "__main__":
     holeAnisotropyData = []
     electronMobilityData = []
     electronAnisotropyData = []
-    combinedPlots = True
     dataDictList = []
     for directory in directoryList:
         # Create the figures directory if it doesn't already exist
@@ -1130,7 +1147,7 @@ if __name__ == "__main__":
         print("ChromophoreList obtained")
         morphologyShape = np.array([AAMorphologyDict[axis] for axis in ['lx', 'ly', 'lz']])
         simDims = [[-AAMorphologyDict[axis] / 2.0, AAMorphologyDict[axis] / 2.0] for axis in ['lx', 'ly', 'lz']]
-#### NOW DO ALL OF THE BELOW BUT FOR ELECTRONS AND HOLES SEPARATELY
+        # Calculate the mobilities
         completeCarrierTypes = []
         completeCarrierData = []
         if (carrierDataHoles is not None) and (len(carrierDataHoles['ID']) > 0):
@@ -1141,22 +1158,7 @@ if __name__ == "__main__":
             completeCarrierData.append(carrierDataElectrons)
         for carrierTypeIndex, carrierData in enumerate(completeCarrierData):
             currentCarrierType = completeCarrierTypes[carrierTypeIndex]
-            print("Considering the transport of", currentCarrierType + "...")
-            print("Obtaining mean squared displacements...")
-            carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getCarrierData(carrierData)
-            print("MSDs obtained")
-            # Create the first figure that will be replotted each time
-            plt.figure()
-            anisotropy = plotAnisotropy(carrierData, directory, simDims, currentCarrierType)
-            #if carrierHistory is not None:
-            #    print("Determining carrier hopping connections...")
-            #    plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
-            times, MSDs = helperFunctions.parallelSort(times, MSDs)
-            print("Calculating MSD...")
-            mobility, mobError, rSquared = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, currentCarrierType)
-            print("----------====================----------")
-            print(currentCarrierType, "mobility for", directory, "= %.2E +- %.2E cm^{2} V^{-1} s^{-1}" % (mobility, mobError))
-            print("----------====================----------")
+            mobility, mobError, rSquared, anisotropy = calculateMobility(directory, currentCarrierType, carrierData, simDims, plot3DGraphs)
             if currentCarrierType == 'Hole':
                 holeAnisotropyData.append(anisotropy)
                 holeMobilityData.append([mobility, mobError])
@@ -1167,17 +1169,18 @@ if __name__ == "__main__":
             dataDict[currentCarrierType.lower() + '_anisotropy'] = anisotropy
             dataDict[currentCarrierType.lower() + '_mobility'] = mobility
             dataDict[currentCarrierType.lower() + '_mobility_rSquared'] = rSquared
-        # Now we can do the plotTI/plotStacks stuff!
+        # Now plot the distributions!
         tempDir = directory + '/figures'
         CGToMolID = determineMoleculeIDs(CGToAAIDMaster, AAMorphologyDict, parameterDict, chromophoreList)
         dataDict = plotEnergyLevels(tempDir, chromophoreList, dataDict)
         if cutOff is None:
             print("No cut-off manually specified, therefore automatically finding cutOff as the midpoint between the first maxmimum and the first minimum of the neighbour distance distribution.")
-            print("Considering periodic neighbours is", periodic)
-            cutOff = getNeighbourCutOff(chromophoreList, morphologyShape, tempDir, periodic=periodic)
+            print("Considering periodic neighbours is", considerPeriodic)
+            cutOff = getNeighbourCutOff(chromophoreList, morphologyShape, tempDir, periodic=considerPeriodic)
         print("Cut off in Angstroems =", cutOff)
-        stackDict = getStacks(chromophoreList, morphologyShape, cutOff, periodic=periodic)
-        #plotStacks3D(tempDir, chromophoreList, stackDict, simDims)
+        stackDict = getStacks(chromophoreList, morphologyShape, cutOff, periodic=considerPeriodic)
+        if plot3DGraphs:
+            plotStacks3D(tempDir, chromophoreList, stackDict, simDims)
         dataDict = plotMixedHoppingRates(tempDir, chromophoreList, parameterDict, stackDict, CGToMolID, dataDict)
         print("\n")
         print("Writing CSV Output File...")
@@ -1189,4 +1192,4 @@ if __name__ == "__main__":
         if len(electronAnisotropyData) > 0:
             plotTemperatureProgression(tempData, electronMobilityData, electronAnisotropyData, 'Electron', tempXLabel)
     else:
-        print("Progression plots not possible (probably due to no temperature specified). Cancelling...")
+        print("Skipping plotting mobility evolution.")
