@@ -15,6 +15,9 @@ try:
 except ImportError:
     print("Could not import 3D plotting engine, calling the plotMolecule3D function will result in an error!")
 from collections import OrderedDict
+import shutil
+import glob
+import re
 
 elementaryCharge = 1.60217657E-19  # C
 kB = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}
@@ -984,6 +987,53 @@ def writeCSV(dataDict, directory):
     print("CSV file written to " + CSVFileName)
 
 
+def createResultsPickle(directory):
+    coresList = []
+    for core in glob.glob(directory + '/KMC/KMClog_*.log'):
+        coresList.append(re.findall(directory + '/KMC/KMClog_(.*).log', core)[0])
+    keepList = []
+    for core in coresList:
+        selectList = []
+        slot1 = directory + '/KMC/KMCslot1Results_%02d.pickle' % (int(core))
+        slot2 = directory + '/KMC/KMCslot2Results_%02d.pickle' % (int(core))
+        if os.path.getsize(slot1) >= os.path.getsize(slot2):
+            keepList.append(slot1)
+        else:
+            keepList.append(slot2)
+    resultsPicklesList = []
+    for keeper in zip(coresList, keepList):
+        newName = directory + '/KMC/KMCResults_' + str(keeper[0]) + '.pickle'
+        shutil.copyfile(str(keeper[1]), newName)
+        resultsPicklesList.append(newName)
+    combineResultsPickles(directory, resultsPicklesList)
+
+
+def combineResultsPickles(directory, pickleFiles):
+    combinedData = {}
+    pickleFiles = sorted(pickleFiles)
+    print("%d pickle files found to combine!" % (len(pickleFiles)))
+    for fileName in pickleFiles:
+        # The pickle was repeatedly dumped to, in order to save time.
+        # Each dump stream is self-contained, so iteratively unpickle to add the new data.
+        with open(fileName, 'rb') as pickleFile:
+            pickledData = pickle.load(pickleFile)
+            for key, val in pickledData.items():
+                try:
+                    if val is None:
+                        continue
+                    if key not in combinedData:
+                        combinedData[key] = val
+                    else:
+                        combinedData[key] += val
+                except AttributeError:
+                    pass
+    # Write out the combined data
+    print("Writing out the combined pickle file...")
+    with open(directory + '/KMC/KMCResults.pickle', 'wb+') as pickleFile:
+        pickle.dump(combinedData, pickleFile)
+    print("Complete data written to", directory + "/KMCResults.pickle.")
+
+
 if __name__ == "__main__":
     sys.path.append('../../code')
     sys.path.append('../code')
@@ -1019,6 +1069,11 @@ if __name__ == "__main__":
                 print("No temp or frame data found in morphology name, skipping combined plots")
                 combinedPlots = False
         try:
+            with open(directory + '/KMC/KMCResults.pickle', 'rb') as pickleFile:
+                carrierData = pickle.load(pickleFile)
+        except FileNotFoundError:
+            print("No final KMCResults.pickle found. Creating it from incomplete parts...")
+            createResultsPickle(directory)
             with open(directory + '/KMC/KMCResults.pickle', 'rb') as pickleFile:
                 carrierData = pickle.load(pickleFile)
         except UnicodeDecodeError:
@@ -1077,9 +1132,9 @@ if __name__ == "__main__":
             # Create the first figure that will be replotted each time
             plt.figure()
             anisotropy = plotAnisotropy(carrierData, directory, simDims, currentCarrierType)
-            if carrierHistory is not None:
-                print("Determining carrier hopping connections...")
-                plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
+            #if carrierHistory is not None:
+            #    print("Determining carrier hopping connections...")
+            #    plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
             times, MSDs = helperFunctions.parallelSort(times, MSDs)
             print("Calculating MSD...")
             mobility, mobError, rSquared = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, currentCarrierType)
@@ -1106,7 +1161,7 @@ if __name__ == "__main__":
             cutOff = getNeighbourCutOff(chromophoreList, morphologyShape, tempDir, periodic=periodic)
         print("Cut off in Angstroems =", cutOff)
         stackDict = getStacks(chromophoreList, morphologyShape, cutOff, periodic=periodic)
-        plotStacks3D(tempDir, chromophoreList, stackDict, simDims)
+        #plotStacks3D(tempDir, chromophoreList, stackDict, simDims)
         dataDict = plotMixedHoppingRates(tempDir, chromophoreList, parameterDict, stackDict, CGToMolID, dataDict)
         print("\n")
         print("Writing CSV Output File...")
