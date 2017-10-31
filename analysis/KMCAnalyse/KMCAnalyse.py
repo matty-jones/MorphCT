@@ -638,7 +638,7 @@ def getNeighbourCutOff(chromophoreList, morphologyShape, outputDir, periodic=Tru
             separation = np.linalg.norm((np.array(chromo2.posn) + (np.array(chromo2Details[1]) * np.array(morphologyShape))) - chromo1.posn)
             separationDist.append(separation)
     plt.figure()
-    (n, binEdges, patches) = plt.hist(separationDist, bins = 20)
+    (n, binEdges, patches) = plt.hist(separationDist, bins = 20, color = 'b')
     plt.xlabel("Chromophore Separation (Ang)")
     plt.ylabel("Frequency (Arb. U.)")
     plt.savefig(outputDir + "/neighbourHist.pdf")
@@ -858,6 +858,15 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDict, 
     propertyLists = {}
     for propertyName in [hopType + hopTarget + hopProperty + species for hopType in hopTypes for hopTarget in hopTargets for hopProperty in hopProperties for species in chromoSpecies]:
         propertyLists[propertyName] = []
+    try:
+        if parameterDict['reorganisationEnergyDonor'] is not None:
+            donorLambdaij = parameterDict['reorganisationEnergyDonor']
+        if parameterDict['reorganisationEnergyAcceptor'] is not None:
+            acceptorLambdaij = parameterDict['reorganisationEnergyAcceptor']
+    except KeyError: # Old MorphCT fix
+        print("Only one reorganisation energy found, assuming donor and continuing")
+        donorLambdaij = parameterDict['reorganisationEnergy']
+    T = 290
     for chromo in chromophoreList:
         mol1ID = CGToMolID[chromo.CGIDs[0]]
         for index, Tij in enumerate(chromo.neighboursTI):
@@ -866,54 +875,48 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDict, 
             chromo2 = chromophoreList[chromo.neighbours[index][0]]
             mol2ID = CGToMolID[chromo2.CGIDs[0]]
             deltaE = chromo.neighboursDeltaE[index]
-            try:
-                if parameterDict['reorganisationEnergyDonor'] is not None:
-                    donorLambdaij = parameterDict['reorganisationEnergyDonor'] * elementaryCharge
-                if parameterDict['reorganisationEnergyAcceptor'] is not None:
-                    acceptorLambdaij = parameterDict['reorganisationEnergyAcceptor'] * elementaryCharge
-            except KeyError: # Old MorphCT fix
-                print("Only one reorganisation energy found, assuming donor and continuing")
-                donorLambdaij = parameterDict['reorganisationEnergy'] * elementaryCharge
-            T = 290
-            if chromo.species == 'Donor':
-                rate = calculateHopRate(donorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
-            else:
+            if chromo.species == 'Acceptor':
                 rate = calculateHopRate(acceptorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
-            try:
-                if chromo2.ID < chromo.ID:
-                    continue
-                # Do intra- / inter- stacks
-                if stackDict[chromo.ID] == stackDict[chromo.neighbours[index][0]]:
-                    if chromo.species == 'Donor':
-                        propertyLists['intraStackRatesDonor'].append(rate)
-                        propertyLists['intraStackTIsDonor'].append(Tij)
-                    else:
-                        propertyLists['intraStackRatesAcceptor'].append(rate)
-                        propertyLists['intraStackTIsAcceptor'].append(Tij)
+            else:
+                rate = calculateHopRate(donorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+            #try:
+            if chromo2.ID < chromo.ID:
+                continue
+            # Do intra- / inter- stacks
+            if stackDict[chromo.ID] == stackDict[chromo.neighbours[index][0]]:
+                if chromo.species == 'Acceptor':
+                    propertyLists['intraStackRatesAcceptor'].append(rate)
+                    propertyLists['intraStackTIsAcceptor'].append(Tij)
                 else:
-                    if chromo.species == 'Donor':
-                        propertyLists['interStackRatesDonor'].append(rate)
-                        propertyLists['interStackTIsDonor'].append(rate)
-                    else:
-                        propertyLists['interStackRatesAcceptor'].append(rate)
-                        propertyLists['interStackTIsAcceptor'].append(rate)
-                # Now do intra- / inter- molecules
-                if mol1ID == mol2ID:
-                    if chromo.species == 'Donor':
-                        propertyLists['intraMolRatesDonor'].append(rate)
-                        propertyLists['intraMolTIsDonor'].append(Tij)
-                    else:
-                        propertyLists['intraMolRatesAcceptor'].append(rate)
-                        propertyLists['intraMolTIsAcceptor'].append(Tij)
+                    propertyLists['intraStackRatesDonor'].append(rate)
+                    propertyLists['intraStackTIsDonor'].append(Tij)
+            else:
+                if chromo.species == 'Acceptor':
+                    propertyLists['interStackRatesAcceptor'].append(rate)
+                    propertyLists['interStackTIsAcceptor'].append(Tij)
                 else:
-                    if chromo.species == 'Donor':
-                        propertyLists['interMolRatesDonor'].append(rate)
-                        propertyLists['interMolTIsDonor'].append(rate)
-                    else:
-                        propertyLists['interMolRatesAcceptor'].append(rate)
-                        propertyLists['interMolTIsAcceptor'].append(rate)
-            except TypeError:
-                pass
+                    propertyLists['interStackRatesDonor'].append(rate)
+                    propertyLists['interStackTIsDonor'].append(Tij)
+            # Now do intra- / inter- molecules
+            if mol1ID == mol2ID:
+                if chromo.species == 'Acceptor':
+                    propertyLists['intraMolRatesAcceptor'].append(rate)
+                    propertyLists['intraMolTIsAcceptor'].append(Tij)
+                else:
+                    propertyLists['intraMolRatesDonor'].append(rate)
+                    propertyLists['intraMolTIsDonor'].append(Tij)
+            else:
+                if chromo.species == 'Acceptor':
+                    propertyLists['interMolRatesAcceptor'].append(rate)
+                    propertyLists['interMolTIsAcceptor'].append(Tij)
+                else:
+                    propertyLists['interMolRatesDonor'].append(rate)
+                    propertyLists['interMolTIsDonor'].append(Tij)
+            #except TypeError:
+            #    print(repr(sys.exc_info()))
+            #    print("TYPE ERROR EXCEPTION")
+            #    pass
+    #print(len(propertyLists['intraStackRatesDonor']), len(propertyLists['intraStackRatesAcceptor']), len(propertyLists['intraMolRatesDonor']), len(propertyLists['intraMolRatesAcceptor']))
     # Donor Stack Plots:
     if len(propertyLists['intraStackRatesDonor']) > 0:
         plotStackedHistRates(propertyLists['intraStackRatesDonor'], propertyLists['interStackRatesDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/DonorHoppingRate_Stacks.pdf')
@@ -946,19 +949,13 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDict, 
 
 def plotStackedHistRates(data1, data2, labels, dataType, fileName):
     plt.figure()
-    if len(data2) > 0:
-        print(labels, ":", len(data1), len(data2))
-        print(data1, data2)
-        exit()
-        plt.hist([data1, data2], bins = np.logspace(1, 18, 40), stacked = True, color = ['r', 'b'], label = labels)
-    else:
-        plt.hist(data1, bins = np.logspace(1, 18, 40), color = 'b')
+    (n, bins, patches) = plt.hist([data1, data2], bins = np.logspace(1, 18, 40), stacked = True, color = ['r', 'b'], label = labels)
     plt.ylabel('Frequency (Arb. U.)')
     plt.xlabel(dataType + ' Hopping Rate (s' + r'$^{-1}$' + ')')
     plt.xlim([1,1E18])
     plt.xticks([1E0, 1E3, 1E6, 1E9, 1E12, 1E15, 1E18])
-    #plt.ylim([0,8000])
-    plt.legend(loc = 2, prop = {'size':18})
+    plt.ylim([0, np.max(n) * 1.02])
+    plt.legend(loc = 0, prop = {'size':18})
     plt.gca().set_xscale('log')
     plt.savefig(fileName)
     plt.close()
@@ -967,14 +964,12 @@ def plotStackedHistRates(data1, data2, labels, dataType, fileName):
 
 def plotStackedHistTIs(data1, data2, labels, dataType, fileName):
     plt.figure()
-    if len(data2) > 0:
-        plt.hist([data1, data2], bins = np.logspace(1, 18, 40), stacked = True, color = ['r', 'b'], label = labels)
-    else:
-        plt.hist(data1, bins = np.logspace(1, 18, 40), color = 'b')
+    (n, bins, patches) = plt.hist([data1, data2], bins = np.linspace(0, 1.2, 20), stacked = True, color = ['r', 'b'], label = labels)
     plt.ylabel('Frequency')
     plt.xlabel(dataType + ' Transfer Integral (eV)')
     plt.xlim([0, 1.2])
-    plt.legend(loc = 2, prop = {'size':18})
+    plt.ylim([0, np.max(n) * 1.02])
+    plt.legend(loc = 0, prop = {'size':18})
     plt.savefig(fileName)
     plt.close()
     print("Figure saved as", fileName)
@@ -1082,9 +1077,9 @@ if __name__ == "__main__":
             # Create the first figure that will be replotted each time
             plt.figure()
             anisotropy = plotAnisotropy(carrierData, directory, simDims, currentCarrierType)
-            #if carrierHistory is not None:
-            #    print("Determining carrier hopping connections...")
-            #    plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
+            if carrierHistory is not None:
+                print("Determining carrier hopping connections...")
+                plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
             times, MSDs = helperFunctions.parallelSort(times, MSDs)
             print("Calculating MSD...")
             mobility, mobError, rSquared = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, currentCarrierType)
@@ -1111,7 +1106,7 @@ if __name__ == "__main__":
             cutOff = getNeighbourCutOff(chromophoreList, morphologyShape, tempDir, periodic=periodic)
         print("Cut off in Angstroems =", cutOff)
         stackDict = getStacks(chromophoreList, morphologyShape, cutOff, periodic=periodic)
-        #plotStacks3D(tempDir, chromophoreList, stackDict, simDims)
+        plotStacks3D(tempDir, chromophoreList, stackDict, simDims)
         dataDict = plotMixedHoppingRates(tempDir, chromophoreList, parameterDict, stackDict, CGToMolID, dataDict)
         print("\n")
         print("Writing CSV Output File...")
