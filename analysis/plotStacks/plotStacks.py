@@ -94,7 +94,7 @@ def updateStack(atomID, clusterList, neighbourDict):
     return clusterList
 
 
-def plot3DMorphology(outputDir, chromophoreList, stackDict, simDims):
+def plotStacks3D(outputDir, chromophoreList, stackDict, simDims):
     fig = plt.figure()
     ax = p3.Axes3D(fig)
     colours = ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w']
@@ -196,5 +196,5 @@ if __name__ == "__main__":
             cutOff = getNeighbourCutOff(chromophoreList, morphologyShape, tempDir, periodic=periodic)
         print("Cut off in Angstroems =", cutOff)
         stackDict = getStacks(chromophoreList, morphologyShape, cutOff, periodic=periodic)
-        plot3DMorphology(tempDir, chromophoreList, stackDict, simDims)
+        plotStacks3D(tempDir, chromophoreList, stackDict, simDims)
         plotMixedHoppingRate(tempDir, chromophoreList, stackDict)
