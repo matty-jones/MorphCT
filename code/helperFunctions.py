@@ -9,34 +9,6 @@ import xml.etree.cElementTree as ET
 import time as T
 
 
-def findMagnitude(vector):
-    '''This function simply returns the magnitude of a given vector'''
-    return np.sqrt(vector[0]**2 + vector[1]**2 + vector[2]**2)
-
-
-def updateXMLBoxLength(adjustedInputFileName, boxSize):
-    '''This function opens a hoomd xml and updates it to have a given simulation volume (boxSize)'''
-    with open(adjustedInputFileName, 'r') as xmlFile:
-        xmlData = xmlFile.readlines()
-    for lineNo in range(len(xmlData)):
-        if 'box' in xmlData[lineNo]:
-            newBoxLine = ''
-            quoteMarksLoc = findIndex(xmlData[lineNo], '"')
-            # The quote marks 0 and 1 are around the number for lx, 2 and 3 are ly,
-            # 4 and 5 are lz. Others are for skew (xy, xz, yz)
-            listOfLine = list(xmlData[lineNo])
-            listOfLine[quoteMarksLoc[4] + 1:quoteMarksLoc[5]] = str(boxSize[2])
-            listOfLine[quoteMarksLoc[2] + 1:quoteMarksLoc[3]] = str(boxSize[1])
-            listOfLine[quoteMarksLoc[0] + 1:quoteMarksLoc[1]] = str(boxSize[0])
-            for character in listOfLine:
-                newBoxLine += character
-            newBoxLine += '\n'
-            xmlData[lineNo] = newBoxLine
-            break
-    with open(adjustedInputFileName, 'w+') as xmlFile:
-        xmlFile.writelines(xmlData)
-
-
 def findIndex(string, character):
     '''This function returns the locations of an inputted character in an inputted string'''
     index = 0
@@ -55,24 +27,6 @@ def calculateSeparation(atom1, atom2):
     atom1 = np.array(atom1)
     atom2 = np.array(atom2)
     return np.sqrt(np.sum((atom1 - atom2)**2))
-
-
-def linearInterpDescendingY(targetValue, xArray, yArray):
-    '''This function takes in two numpy arrays, and then linearly interpolates to find the value of X when Y is equal to targetValue. yArray must be a descending array (doesn't have to be monotonic, but the function will report the first point at which the curve is below targetValue so be careful of noise!). The function returns a value of None if the yArray never drops below the targetValue'''
-    xVal = None
-    for index, value in enumerate(yArray):
-        if value > targetValue:
-            continue
-        xLo = xArray[index - 1]
-        xHi = xArray[index]
-        yHi = yArray[index - 1]
-        yLo = yArray[index]
-        yDiff = yHi - yLo
-        xDiff = xHi - xLo
-        yDeltaFrac = (yHi - targetValue) / yDiff
-        xVal = xLo + yDeltaFrac * xDiff
-        break
-    return xVal
 
 
 def calcCOM(listOfPositions, listOfAtomTypes=None, listOfMasses=None):
@@ -140,17 +94,8 @@ def getRotationMatrix(vector1, vector2):
 
 def parallelSort(list1, list2):
     '''This function sorts a pair of lists by the first list in ascending order (for example, atom mass and corresponding position can be input, sorted by ascending mass, and the two lists output, where the mass[atom_i] still corresponds to position[atom_i]'''
-    data = list(zip(list1, list2))
-    data.sort()
-    list1, list2 = [list(t) for t in zip(*data)]
+    list1, list2 = zip(*sorted(zip(list1, list2)))
     return list1, list2
-
-
-def appendCSV(fileName, data):
-    '''Appends a CSV file (fileName) with a row given by data (as a list)'''
-    with open(fileName, 'a+') as csvFile:
-        document = csv.writer(csvFile, delimiter=',')
-        document.writerow(list(data))
 
 
 def writeCSV(fileName, data):
@@ -306,53 +251,6 @@ def getTerminatingPositions(currentAtomPosn, bondedAtomPositions, numberOfUnitsT
                                (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
             hydrogenPositions.append(newHydrogenPosition)
     return hydrogenPositions
-
-
-def addTerminatingHydrogen(inputDictionary, terminatingConnection, terminatingUnit=[['H1', 0, 0, 0]], terminatingUnitBonds=None):
-    '''This function takes a runHoomd.py input dictionary, and the atom that the terminating unit is bonded to'''
-    # Examine the current bonds on the terminating connection
-    previousBondVectors = []
-    for bond in inputDictionary['bond']:
-        if bond[1] == terminatingConnection:
-            previousBondVectors.append(np.array(inputDictionary['unwrapped_position'][bond[2]]) - np.array(inputDictionary['unwrapped_position'][bond[1]]))
-        elif bond[2] == terminatingConnection:
-            previousBondVectors.append(np.array(inputDictionary['unwrapped_position'][bond[1]]) - np.array(inputDictionary['unwrapped_position'][bond[2]]))
-    bondLengths = []
-    for previousBond in previousBondVectors:
-        bondLengths.append(np.linalg.norm(previousBond))
-    terminatingBondLength = np.average(bondLengths)
-    terminatingBondVector = -np.sum(previousBondVectors, 0) / terminatingBondLength
-    # The first atom of the terminatingUnit connects to the terminatingConnection.
-    # Add this atom and the bond
-    terminatingAtomPosn = list(np.array(inputDictionary['unwrapped_position'][terminatingConnection]) + terminatingBondVector + np.array(terminatingUnit[0][1:]))
-    inputDictionary['unwrapped_position'].append(terminatingAtomPosn)
-    inputDictionary['type'].append(terminatingUnit[0][0])
-    # NOTE: This is hardcoded, change to soft when implementing different terminating units
-    inputDictionary['mass'].append(1.007825)
-    inputDictionary['diameter'].append(0.53)
-    inputDictionary['body'].append(-1)
-    inputDictionary['charge'].append(inputDictionary['charge'][terminatingConnection])
-    # Add the wrapped coordinates
-    simulationDimensions = [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']]
-    image = [0, 0, 0]
-    position = copy.deepcopy(terminatingAtomPosn)
-    for axis in range(len(image)):
-        while position[axis] > simulationDimensions[axis] / 2.0:
-            position[axis] -= simulationDimensions[axis]
-            image[axis] += 1
-        while position[axis] < -simulationDimensions[axis] / 2.0:
-            position[axis] += simulationDimensions[axis]
-            image[axis] -= 1
-    inputDictionary['position'].append(position)
-    inputDictionary['image'].append(image)
-    # Add the bond
-    inputDictionary['bond'].append([inputDictionary['type'][terminatingConnection] + '-' + terminatingUnit[0][0], terminatingConnection, len(inputDictionary['type']) - 1])
-    # Add any subsequent atoms and bonds in the terminatingUnit as defined by the terminatingUnitBonds
-    for atom in terminatingUnit[1:]:
-        raise SystemError("Multiple-atom terminating units not yet implemented.")
-    # Finally, update the number of atoms in the system (we just added one!)
-    inputDictionary['natoms'] += 1
-    return inputDictionary, inputDictionary['natoms'] - 1
 
 
 def loadMorphologyXMLETree(xmlPath, sigma=1.0):
@@ -567,6 +465,7 @@ def loadFFXML(xmlPath, mapping = False):
                 FFDict[constraintType][index][0] = '-'.join(constraintName)
     return FFDict
 
+
 def checkConstraintNames(AAMorphologyDict):
     # A function that renames the constraints based on the atom types given in the dictionary
     constraintTypes = ['bond', 'angle', 'dihedral', 'improper']
@@ -581,32 +480,6 @@ def checkConstraintNames(AAMorphologyDict):
             if (constraint[0] != newConstraintName[:-1]):
                 AAMorphologyDict[constraintType][constraintID][0] = newConstraintName[:-1]
     return AAMorphologyDict
-
-
-def removeRigidBodies(inputDictionary):
-    print("Removing rigid bodies...")
-    atomsToRemove = []
-    bondsToRemove = []
-    # First remove the anchor points
-    for index, typeData in enumerate(inputDictionary['type']):
-        if ('T' in typeData) or ('X' in typeData):
-            atomsToRemove.append(index)
-    # Then remove the bonds
-    for index, bondData in enumerate(inputDictionary['bond']):
-        if ('T' in bondData[0]) or ('X' in bondData[0]):
-            bondsToRemove.append(index)
-    for atomIndex in sorted(atomsToRemove, reverse=True):
-        for key in ['position', 'image', 'mass', 'diameter', 'type', 'body', 'charge']:
-            inputDictionary[key].pop(atomIndex)
-    for bondIndex in sorted(bondsToRemove, reverse=True):
-        inputDictionary['bond'].pop(bondIndex)
-    # Undo all of the rigid bodies
-    for index, bodyData in enumerate(inputDictionary['body']):
-        inputDictionary['body'][index] = -1
-    # Finally, update the number of atoms in the morphology
-    inputDictionary['natoms'] -= len(atomsToRemove)
-    print(len(atomsToRemove), "atoms and", len(bondsToRemove), "bonds removed.")
-    return inputDictionary
 
 
 def writeMorphologyXMLETree(inputDictionary, outputFile):
@@ -723,83 +596,6 @@ def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0, checkWrappedPos
     print("XML file written to", str(outputFile) + "!")
 
 
-def writePOSCARFile(inputDict, outputFile):
-    '''This function takes an input dictionary and converts it to a POSCAR for use in DFT calculations'''
-    # This POSCAR is ordered as C, S, H for Izaak.
-    linesToWrite = []
-    atomsByType = [[], [], []]  # C, S, H
-    for atomID in range(len(inputDict['type'])):
-        atomType = inputDict['type'][atomID][0]
-        if atomType == 'C':
-            atomsByType[0].append(atomID)
-        elif atomType == 'S':
-            atomsByType[1].append(atomID)
-        elif atomType == 'H':
-            atomsByType[2].append(atomID)
-
-    # linesToWrite = []
-    # typeList = []
-    # freqList = []
-    # previousType = None
-    # numberOfTypes = 0
-    # for atomID in range(len(inputDict['type'])):
-    #     atomType = inputDict['type'][atomID][0]
-    #     if atomType != previousType:
-    #         if previousType != None:
-    #             typeList.append(previousType)
-    #             freqList.append(numberOfTypes)
-    #         previousType = atomType
-    #         numberOfTypes = 1
-    #     else:
-    #         numberOfTypes += 1
-    # # Now have to add the final lot of atoms:
-    # typeList.append(previousType)
-    # freqList.append(numberOfTypes)
-    # Line 1 = CommentLine
-    slashLocs = findIndex(outputFile, '/')
-    linesToWrite.append(str(outputFile[slashLocs[-3] + 1:slashLocs[-2] + 1]) + str(outputFile[slashLocs[-1] + 1:]).replace('.POSCAR', '') + ' VASP input file.\n')
-    # Line 2 = Scale Factor
-    linesToWrite.append('1.000000000000\n')
-    # Lines 3-5 = Box Dimensions
-    boxDims = []
-    for key in ['lx', 'ly', 'lz']:
-        boxDims.append(inputDict[key])
-    boxDimsMatrix = np.diag(np.array(boxDims))
-    for row in boxDimsMatrix:
-        boxRow = ''
-        for element in row:
-            boxRow += "{:22.15f}".format(element)
-        linesToWrite.append(boxRow + '\n')
-    # Line 6 = Atom Types
-    # linesToWrite.append(' '.join(typeList)+'\n')
-    linesToWrite.append('C S H \n')
-    # Line 7 = Frequency of Types
-    # linesToWrite.append(' '.join(map(str, freqList))+'\n')
-    linesToWrite.append(str(len(atomsByType[0])) + ' ' + str(len(atomsByType[1])) + ' ' + str(len(atomsByType[2])) + '\n')
-    # Line 8 = 'Cartesian'
-    linesToWrite.append('Cartesian\n')
-    # Lines 9+ = Positions
-    # Positions are not set to be origin in the middle, origin is bottom left corner. As such, we need to add L/2 to each coordinate
-    writeOrder = []
-    for atomType in atomsByType:
-        writeOrder += atomType
-    # for position in inputDict['position']:
-    #     coordinates = ''
-    #     for axis in range(3):
-    #         coordinates += "{:22.15f}".format(position[axis]+(boxDims[axis]/2.))
-    #     linesToWrite.append(coordinates+'\n')
-    for atomID in writeOrder:
-        coordinates = ''
-        for axis in range(3):
-            coordinates += "{:22.15f}".format(inputDict['position'][atomID][axis] + (boxDims[axis] / 2.))
-        linesToWrite.append(coordinates + '\n')
-    with open(outputFile, 'w+') as POSCARFile:
-        POSCARFile.writelines(linesToWrite)
-    with open(outputFile.replace('POSCAR', 'pickle'), 'wb+') as bondPickle:
-        pickle.dump(inputDict['bond'], bondPickle)
-    print("POSCAR data written to", str(outputFile) + ". Bond data written to", str(outputFile.replace('POSCAR', 'pickle')) + ".")
-
-
 def writeXYZFile(inputDict, outputFile):
     '''This function takes an input dictionary and converts it to an XYZ for use in DFT calculations'''
     # First line is atom numbers, second line is boiler plate
@@ -822,43 +618,6 @@ def writeXYZFile(inputDict, outputFile):
     with open(outputFile, 'w+') as xyzFile:
         xyzFile.writelines(rowsToWrite)
     print("XYZ data written to", str(outputFile) + ".")
-
-
-def createSlurmSubmissionScript(outputDir, runName, mode):
-    '''This function creates a slurm submission script for Kestrel from a template file sample.sh'''
-    queue = 'batch'
-    jobName = str(runName)
-    outputFile = outputDir + '/' + str(runName)[:-4] + '.o'
-    with open(os.getcwd() + '/templates/sample.sh', 'r') as template:
-        templateLines = template.readlines()
-    for lineNo in range(len(templateLines)):
-        if '-p batch' in templateLines[lineNo]:
-            # This is queue select
-            templateLines[lineNo] = templateLines[lineNo].replace('batch', queue)
-        elif 'JOBNAME' in templateLines[lineNo]:
-            # This is job name
-            templateLines[lineNo] = templateLines[lineNo].replace('JOBNAME', jobName)
-        elif 'OUTFILE' in templateLines[lineNo]:
-            # This is outfile
-            templateLines[lineNo] = templateLines[lineNo].replace('OUTFILE', outputFile)
-        elif 'CHANGEME' in templateLines[lineNo]:
-            # E-mail address
-            templateLines[lineNo] = templateLines[lineNo].replace('CHANGEME', 'mattyjones')
-        elif '-t 12:00:00' in templateLines[lineNo]:
-            # Wallclock time
-            templateLines[lineNo] = templateLines[lineNo].replace('12:00:00', '01:00:00')
-        elif 'cd /scratch/${USER}' in templateLines[lineNo]:
-            templateLines[lineNo] = templateLines[lineNo].replace('/scratch/${USER}', os.getcwd())
-        elif 'myfile.py' in templateLines[lineNo]:
-            # This is actual execute line
-            templateLines[lineNo] = templateLines[lineNo].replace('myfile.py', os.getcwd() + '/code/' + 'runHoomd.py ' + outputDir + '/' + runName)
-            if mode == 'cpu':
-                templateLines[lineNo] = templateLines[lineNo].replace('--mode=gpu --gpu=0', '--mode=cpu')
-        # Finally, sort out the /scratch/ space and move the output files somewhere useful
-    submissionScriptName = outputDir + '/' + runName[:-4] + '.sh'
-    with open(submissionScriptName, 'w+') as submissionScript:
-        submissionScript.writelines(templateLines)
-    return submissionScriptName
 
 
 def incrementAtomIDs(originalInputDictionary, ghostDictionary, increment, modifyGhostDictionary=False):
@@ -960,226 +719,6 @@ def checkWrappedPositions(inputDictionary):
     return inputDictionary
 
 
-def alignMolecule(inputDictionary, vectorToAlignTo):
-    '''This function rotates a molecule such that the vector between the first and last sulfur atoms in the chain (assumed
-    to be the backbone vector) is mapped to vectorToAlignTo'''
-    sulfurAtomIDs = []
-    for atomIndex, atomType in enumerate(inputDictionary['type']):
-        if atomType[0] == 'S':
-            sulfurAtomIDs.append(atomIndex)
-    sulfurAtomIDs.sort()
-    chainOrientationVector = findAxis(inputDictionary['position'][sulfurAtomIDs[0]], inputDictionary['position'][sulfurAtomIDs[-1]])
-    vectorToAlignTo = np.array(vectorToAlignTo)
-    rotationMatrix = getRotationMatrix(chainOrientationVector, vectorToAlignTo)
-    for atomID, pos in enumerate(inputDictionary['position']):
-        positionArray = np.copy(pos)
-        rotatedPosition = np.transpose(rotationMatrix * np.transpose(np.matrix(positionArray)))
-        inputDictionary['position'][atomID] = [rotatedPosition[0, 0], rotatedPosition[0, 1], rotatedPosition[0, 2]]
-    return inputDictionary
-
-
-def cellSearchBonds(moleculeDict):
-    '''This function finds the bonds in the system based on the proximity of atoms to their neighbours'''
-    raise SystemError("THIS FUNCTION DOES NOT WORK AND IT'S NONE-TRIVIAL TO IMPLEMENT")
-    moleculeDict['neighbourCell'] = []
-    maximumBondLength = 1.6  # Bond length in angstroems
-    atomIDs = np.arange(len(moleculeDict['position']))
-    for coordinates in moleculeDict['position']:
-        cellLocation = np.copy(coordinates)
-        moleculeDict['neighbourCell'].append(list(map(int, np.round(cellLocation / maximumBondLength))))
-        print(coordinates, moleculeDict['neighbourCell'][-1])
-    neighbourCells = np.copy(moleculeDict['neighbourCell'])
-    print(calculateSeparation(moleculeDict['position'][0], moleculeDict['position'][1]), calculateSeparation(moleculeDict['position'][1], moleculeDict['position'][2]))
-    parallelSort(neighbourCells, atomIDs)
-    for i in range(len(atomIDs)):
-        print(atomIDs[i], neighbourCells[i])
-
-
-def getAAIDsByMolecule(CGtoAAIDs):
-    '''This function extracts the molecule AAIDs given a dictionary CGtoAAIDs which describes the mapping of all atom particles to each CG site'''
-    moleculeAAIDs = []
-    for moleculeID, CGtoAAIDDict in enumerate(CGtoAAIDs):
-        moleculeAAIDs.append([])
-        for dictionaryValue in list(CGtoAAIDs[moleculeID].values()):
-            moleculeAAIDs[-1] += dictionaryValue[1]
-        moleculeAAIDs[-1].sort()
-    return moleculeAAIDs
-
-
-def getsScale(outputDir, morphologyName):
-    morphologyFiles = os.listdir(outputDir + '/morphology')
-    for fileName in morphologyFiles:
-        if 'scaled' in fileName:
-            scaledXMLName = fileName
-            break
-    underscoreLocs = findIndex(scaledXMLName, '_')
-    inverseScaleFactor = scaledXMLName[underscoreLocs[-2] + 1:underscoreLocs[-1]]
-    return float(inverseScaleFactor)
-
-
-def loadDict(masterDict, moleculeIDs, bondPickleName):
-    '''This function generates a molecule dictionary by picking the relevant data from a masterDict using a list of atomIDs given by moleculeIDs'''
-    moleculeDict = {'position': [], 'unwrapped_position': [], 'type': [], 'diameter': [], 'image': [], 'charge': [], 'mass': []}
-    # First get atom-specific properties
-    for atomID in moleculeIDs:
-        for key in list(moleculeDict.keys()):
-            moleculeDict[key].append(masterDict[key][atomID])
-    # Then add in the simulation properties
-    for key in ['lx', 'ly', 'lz', 'xy', 'xz', 'yz', 'dimensions']:
-        try:
-            moleculeDict[key] = masterDict[key]
-        except:
-            continue
-    # Then load the relevant bonds
-    with open(bondPickleName, 'rb') as bondPickle:
-        moleculeDict['bond'] = pickle.load(bondPickle)
-    # Now need to unwrap the coordinates
-    # moleculeDict = addUnwrappedPositions(moleculeDict)
-    # # Set the unwrapped coordinates to the default 'position' (saves time on rewriting some analyseMolecules functions and shouldn't affect anything)
-    # moleculeDict['position'] = moleculeDict['unwrapped_position']
-    return moleculeDict
-
-
-def loadPoscar(inputFilePath):
-    '''This function loads a poscar file located at inputFilePath, and creates a dictionary of the atomic types and positions.
-    It also loads the pickle file containing the bond information and adds it to the dictionary.'''
-    moleculeDict = {'position': [], 'type': []}
-    with open(inputFilePath, 'r') as poscarFile:
-        poscarData = poscarFile.readlines()
-    simDims = []
-    for unitCellLine in poscarData[2:5]:
-        simDims.append([])
-        for coordinate in unitCellLine[:-1].split(' '):
-            if len(coordinate) > 0:
-                simDims[-1].append(float(coordinate))
-    moleculeDict['lx'] = simDims[0][0]
-    moleculeDict['ly'] = simDims[1][1]
-    moleculeDict['lz'] = simDims[2][2]
-    simBoxDims = ['lx', 'ly', 'lz']
-    typeList = poscarData[5].split('\n')[0].split(' ')
-    freqList = list(map(int, poscarData[6].split('\n')[0].split(' ')))
-    for i in range(len(typeList)):
-        if len(typeList[i]) != 0:  # Catch for the extra space I had to put in to make VMD behave properly
-            moleculeDict['type'] += [typeList[i]] * freqList[i]
-    for atomCoords in poscarData[8:]:
-        moleculeDict['position'].append([])
-        for coordinate in atomCoords.split('\n')[0].split(' '):
-            coordinatesToWrite = []
-            if len(coordinate) > 0:
-                coordinatesToWrite.append(float(coordinate))
-            for i in range(len(coordinatesToWrite)):
-                moleculeDict['position'][-1].append(coordinatesToWrite[i] - (moleculeDict[simBoxDims[i]] / 2.0))
-    with open(inputFilePath.replace('POSCAR', 'pickle'), 'rb') as bondPickle:
-        moleculeDict['bond'] = pickle.load(bondPickle)
-    moleculeDict = addMasses(moleculeDict)
-    return moleculeDict
-
-
-def checkORCAFileStructure(outputDir):
-    '''This function checks that the correct directories are in place for the ORCA transfer-integral calculation and KMC simulations'''
-    morphologyDirList = os.listdir(outputDir)
-    if 'KMC' not in morphologyDirList:
-        os.makedirs(outputDir + '/KMC')
-    if 'chromophores' not in morphologyDirList:
-        print("Making /chromophores directory...")
-        os.makedirs(outputDir + '/chromophores')
-        os.makedirs(outputDir + '/chromophores/inputORCA')
-        os.makedirs(outputDir + '/chromophores/inputORCA/single')
-        os.makedirs(outputDir + '/chromophores/inputORCA/pair')
-        os.makedirs(outputDir + '/chromophores/outputORCA')
-        os.makedirs(outputDir + '/chromophores/outputORCA/single')
-        os.makedirs(outputDir + '/chromophores/outputORCA/pair')
-    else:
-        chromophoresDirList = os.listdir(outputDir + '/chromophores')
-        if 'inputORCA' not in chromophoresDirList:
-            print("Making /inputORCA directory...")
-            os.makedirs(outputDir + '/chromophores/inputORCA')
-            os.makedirs(outputDir + '/chromophores/inputORCA/single')
-            os.makedirs(outputDir + '/chromophores/inputORCA/pair')
-        else:
-            inputDirList = os.listdir(outputDir + '/chromophores/inputORCA')
-            if 'single' not in inputDirList:
-                os.makedirs(outputDir + '/chromophores/inputORCA/single')
-            if 'pair' not in inputDirList:
-                os.makedirs(outputDir + '/chromophores/inputORCA/pair')
-        if 'outputORCA' not in chromophoresDirList:
-            print("Making /outputORCA directory...")
-            os.makedirs(outputDir + '/chromophores/outputORCA')
-            os.makedirs(outputDir + '/chromophores/outputORCA/single')
-            os.makedirs(outputDir + '/chromophores/outputORCA/pair')
-        else:
-            outputDirList = os.listdir(outputDir + '/chromophores/outputORCA')
-            if 'single' not in outputDirList:
-                os.makedirs(outputDir + '/chromophores/outputORCA/single')
-            if 'pair' not in outputDirList:
-                os.makedirs(outputDir + '/chromophores/outputORCA/pair')
-
-
-def writeORCAInp(inputDictList, outputDir, mode):
-    '''This function loads the ORCA input template and creates the segment pair ORCA inputs for this morphology, for running later'''
-    chromophore1 = inputDictList[0]
-    chromo1Name = str(chromophore1['realChromoID'])
-    while len(chromo1Name) < 4:
-        chromo1Name = '0' + chromo1Name
-    if mode == 'pair':
-        chromophore2 = inputDictList[1]
-        # First check that the file doesn't already exist
-        chromo2Name = str(chromophore2['realChromoID'])
-        while len(chromo2Name) < 4:
-            chromo2Name = '0' + chromo2Name
-        ORCAFileName = 'chromo' + chromo1Name + '_chromo' + chromo2Name + '.inp'
-    elif mode == 'single':
-        ORCAFileName = 'chromo' + chromo1Name + '.inp'
-    # Check by opening the file - saves time on regenerating the os.listdirs list for many thousands of files
-    try:
-        with open(outputDir + '/chromophores/inputORCA/' + mode + '/' + ORCAFileName, 'r'):
-            fileExists = True
-    except IOError:
-        fileExists = False
-    inputFileName = outputDir + '/chromophores/inputORCA/' + mode + '/' + ORCAFileName
-    if fileExists is True:
-        print("File", ORCAFileName, "already exists, skipping...")
-        return
-        print("Creating file anyway to check that they are the same")
-        inputFileName = inputFileName.replace('.inp', '_2.inp')
-
-    # chromophore1COM = calcCOM(chromophore1['position'], chromophore1['mass'])
-    # if mode == 'pair':
-    #     # Centre the dimer pair at the origin
-    #     chromophore2COM = calcCOM(chromophore2['position'], chromophore2['mass'])
-    #     COM = calcCOM(chromophore1['position']+chromophore2['position'], chromophore1['mass']+chromophore2['mass'])
-    #     chromophore1 = centre(chromophore1, COM-chromophore1COM)
-    #     chromophore2 = centre(chromophore2, COM-chromophore2COM)
-    # elif mode == 'single':
-    #     # Centre the chromophore at the origin
-    #     COM = chromophore1COM
-    #     chromophore1 = centre(chromophore1, COM)
-
-    # chromophore1 = centre(chromophore1, COM)
-    # if mode == 'pair':
-    #     chromophore2 = centre(chromophore2, COM)
-
-    # Now write the file
-    with open(os.getcwd() + '/templates/template.inp', 'r') as templateFile:
-        inpFileLines = templateFile.readlines()
-    linesToWrite = []
-    for atomID, atomCoords in enumerate(chromophore1['position']):
-        thisAtomData = ' ' + chromophore1['type'][atomID][0] + ' ' + ' '.join(map(str, atomCoords)) + '\n'
-        linesToWrite.append(thisAtomData)
-    if mode == 'pair':
-        for atomID, atomCoords in enumerate(chromophore2['position']):
-            thisAtomData = ' ' + chromophore2['type'][atomID][0] + ' ' + ' '.join(map(str, atomCoords)) + '\n'
-            linesToWrite.append(thisAtomData)
-    linesToWrite = list(set(linesToWrite))  # Randomly the code adds a repeat line which breaks ORCA. No idea why it does this, so this should fix it
-    inpFileLines[-1:-1] = linesToWrite
-    with open(inputFileName, 'w+') as ORCAInputFile:
-        ORCAInputFile.writelines(inpFileLines)
-    print("ORCA input file written to", inputFileName, "\r", end=' ')
-    if fileExists is True:
-        print("\n")
-        input("Hit return to continue...")
-
-
 def getCPUCores():
     # Determine the number of available processors, either by querying the SLURM_NPROCS environment variable, or by using multiprocessing to count the number of visible CPUs.
     try:
@@ -1246,21 +785,3 @@ def convertStringToInt(x):
         except:
             continue
     return 99999
-
-
-def TEMPAddBondedChromos(chromophoreList, CGMorphologyDict):
-    t0 = T.time()
-    for chromo1ID, chromo1 in enumerate(chromophoreList):
-        print("Examining chromophore", chromo1ID + 1, "of", len(chromophoreList))
-        for chromo2ID in [x[0] for x in chromo1.neighbours]:
-            chromo2 = chromophoreList[chromo2ID]
-            for bond in CGMorphologyDict['bond']:
-                if ((bond[1] in chromo1.CGIDs) and (bond[2] in chromo2.CGIDs)) or ((bond[2] in chromo1.CGIDs) and (bond[1] in chromo2.CGIDs)):
-                    if chromo1.ID not in chromo2.bondedChromos:
-                        chromo2.bondedChromos.append(chromo1.ID)
-                    if chromo2.ID not in chromo1.bondedChromos:
-                        chromo1.bondedChromos.append(chromo2.ID)
-                    break
-    t1 = T.time()
-    print("Took %f seconds" % (t1-t0))
-    return chromophoreList
