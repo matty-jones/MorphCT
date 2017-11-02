@@ -1,4 +1,5 @@
-analysis/drawDevice/*/
+utils/drawDevice/*/
+utils/*/storage
 *temp*
 *test*
 *.hoomdxml
