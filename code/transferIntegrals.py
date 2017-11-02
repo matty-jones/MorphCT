@@ -380,11 +380,11 @@ def scaleEnergies(chromophoreList, parameterDict):
         # No energy level scaling necessary, move on to the target DoS width
         pass
     else:
-        if (parameterDict['literatureHOMO'] is not None):
+        if (parameterDict['literatureHOMO'] is not None) and (len(donorLevels) > 0):
             deltaEHOMO = parameterDict['literatureHOMO'] - avHOMO
             donorLevels = list(np.array(donorLevels) + np.array([deltaEHOMO] * len(donorLevels)))
             avHOMO = parameterDict['literatureHOMO']
-        if (parameterDict['literatureLUMO'] is not None):
+        if (parameterDict['literatureLUMO'] is not None) and (len(acceptorLevels) > 0):
             deltaELUMO = parameterDict['literatureLUMO'] - avLUMO
             acceptorLevels = list(np.array(acceptorLevels) + np.array([deltaELUMO] * len(acceptorLevels)))
             avLUMO = parameterDict['literatureLUMO']
