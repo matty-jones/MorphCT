@@ -118,12 +118,25 @@ if __name__ == "__main__":
 
     # Set rigid bodies to be equal to the molID
     moleculeAAIDs, moleculeLengths = splitMolecules(morphology)
+    AAIDToMolID = {}
     for index, moleculeAAIDList in enumerate(moleculeAAIDs):
         for AAID in moleculeAAIDList:
             AAIDToMolID[AAID] = index
 
     for AAID, molID in AAIDToMolID.items():
         morphology['body'][AAID] = molID
+
+    rigidBodies = sorted(list(set(morphology['body'])))
+    try:
+        rigidBodies.remove(-1)
+    except ValueError:
+        pass
+    rigidBodyLookup = {-1: -1}
+    for index, bodyNo in enumerate(rigidBodies):
+        rigidBodyLookup[bodyNo] = index
+    for atomID, rigidBodyID in enumerate(morphology['body']):
+        morphology['body'][atomID] = rigidBodyLookup[rigidBodyID]
+
 
     # Finally, write out the xml
     helperFunctions.writeMorphologyXML(morphology, "bodyFix_" + fileName)
