@@ -380,11 +380,11 @@ def scaleEnergies(chromophoreList, parameterDict):
         # No energy level scaling necessary, move on to the target DoS width
         pass
     else:
-        if (parameterDict['literatureHOMO'] is not None):
+        if (parameterDict['literatureHOMO'] is not None) and (len(donorLevels) > 0):
             deltaEHOMO = parameterDict['literatureHOMO'] - avHOMO
             donorLevels = list(np.array(donorLevels) + np.array([deltaEHOMO] * len(donorLevels)))
             avHOMO = parameterDict['literatureHOMO']
-        if (parameterDict['literatureLUMO'] is not None):
+        if (parameterDict['literatureLUMO'] is not None) and (len(acceptorLevels) > 0):
             deltaELUMO = parameterDict['literatureLUMO'] - avLUMO
             acceptorLevels = list(np.array(acceptorLevels) + np.array([deltaELUMO] * len(acceptorLevels)))
             avLUMO = parameterDict['literatureLUMO']
@@ -401,14 +401,14 @@ def scaleEnergies(chromophoreList, parameterDict):
     # Check the current STD of the DoS for both the donor and the acceptor, and skip the calculation if the current
     # STD is smaller than the literature value
     # First check the donor DoS
-    if (parameterDict['targetDoSSTDHOMO'] is None):
+    if (parameterDict['targetDoSSTDHOMO'] is None) or (len(donorLevels) == 0):
         squeezeHOMO = False
     elif (parameterDict['targetDoSSTDHOMO'] > stdHOMO):
         squeezeHOMO = False
     else:
         squeezeHOMO = True
     # Then check the acceptor DoS
-    if (parameterDict['targetDoSSTDLUMO'] is None):
+    if (parameterDict['targetDoSSTDLUMO'] is None) or (len(acceptorLevels) == 0):
         squeezeLUMO = False
     elif (parameterDict['targetDoSSTDLUMO'] > stdLUMO):
         squeezeLUMO = False
