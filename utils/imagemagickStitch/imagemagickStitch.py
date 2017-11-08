@@ -13,11 +13,16 @@ def stitchImages(montageDims, imagesToStitch, morphologyName):
     print("Converting images and adding annotations...")
     for ID, image in enumerate(imagesToStitch):
         IDStr = "%04d" % (ID)
-        # Load image using supersampling to keep the quality high, and "crop" to add a section of whitespace to the left
-        subprocess.call(["convert", "-density", "500", image, "-resize", "20%", "-gravity", "West", "-bordercolor", "white", "-border", "7%x0", IDStr + "_crop.png"])
-        # Load image using supersampling to keep the quality high, and add annotation
-        #subprocess.call(["convert", "-density", "500", IDStr + "_crop.png", "-resize", "20%", "-font", "Arial-Black", "-pointsize", "10", "-gravity", "NorthWest", "-annotate", "0", str(ID+1) + ")", IDStr + "_temp.png"])
-        subprocess.call(["convert", IDStr + "_crop.png", "-font", "Arial-Black", "-pointsize", "72", "-gravity", "NorthWest", "-annotate", "0", str(ID+1) + ")", IDStr + "_temp.png"])
+        if image[-4:] == '.pdf':
+            # Load image using supersampling to keep the quality high, and "crop" to add a section of whitespace to the left
+            subprocess.call(["convert", "-density", "500", image, "-resize", "20%", "-gravity", "West", "-bordercolor", "white", "-border", "7%x0", IDStr + "_crop.png"])
+            # Now add the annotation
+            subprocess.call(["convert", IDStr + "_crop.png", "-font", "Arial-Black", "-pointsize", "72", "-gravity", "NorthWest", "-annotate", "0", str(ID+1) + ")", IDStr + "_temp.png"])
+        else:
+            # Rasterized format, so no supersampling
+            #subprocess.call(["convert", image, "-gravity", "West", "-bordercolor", "white", "-border", "7%x0", IDStr + "_crop.png"])
+            # Now add the annotation
+            subprocess.call(['convert', image, '-font', 'Arial-Black', '-pointsize', '72', '-gravity', 'NorthWest', '-splice', '0x10%', '-page', '+0+0', '-annotate', '0', str(ID+1) + ')', IDStr + '_temp.png'])
     # Create montage
     print("Creating montage...")
     montage = subprocess.Popen(["montage", "-mode", "concatenate", "-tile", montageDims, "*_temp.png", "miff:-"], stdout=subprocess.PIPE)
