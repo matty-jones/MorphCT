@@ -404,7 +404,7 @@ def gaussFit(data):
     try:
         fitArgs, fitConv = curve_fit(gaussian, binEdges[:-1], hist, p0=[1, mean, std])
     except RuntimeError:
-        return None, None, None, None
+        fitArgs = None
     return binEdges, fitArgs, mean, std
 
 
@@ -685,9 +685,12 @@ def generateDataDict():
 def plotDeltaEij(deltaEij, gaussBins, fitArgs, dataType, fileName):
     plt.figure()
     n, bins, patches = plt.hist(deltaEij, np.linspace(-0.5,0.5,20), color = ['b'])
-    gaussY = gaussian(gaussBins[:-1], *fitArgs)
-    scaleFactor = max(n)/max(gaussY)
-    plt.plot(gaussBins[:-1], gaussY*scaleFactor, 'ro:')
+    if fitArgs is not None:
+        gaussY = gaussian(gaussBins[:-1], *fitArgs)
+        scaleFactor = max(n)/max(gaussY)
+        plt.plot(gaussBins[:-1], gaussY*scaleFactor, 'ro:')
+    else:
+        print("No Gaussian found (probably zero-width delta function")
     plt.ylabel('Frequency (Arb. U.)')
     plt.xlabel(dataType + ' Delta Eij (eV)')
     plt.xlim([-0.5, 0.5])
@@ -954,6 +957,7 @@ if __name__ == "__main__":
         # Now plot the distributions!
         tempDir = directory + '/figures'
         CGToMolID = determineMoleculeIDs(CGToAAIDMaster, AAMorphologyDict, parameterDict, chromophoreList)
+        #print("!!!!!!   I've turned off plotEnergyLevels, FYI! !!!!!!!")
         dataDict = plotEnergyLevels(tempDir, chromophoreList, dataDict)
         if args.cutOff is None:
             print("No cut-off manually specified, therefore automatically finding cutOff as the midpoint between the first maxmimum and the first minimum of the neighbour distance distribution.")
