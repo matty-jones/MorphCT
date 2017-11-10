@@ -116,11 +116,11 @@ if __name__ == "__main__":
     #                  'CH2':[[2, 2]], # If the atom type is CH2 and has only 2 bonds, add 2 hydrogens
     #                  'CE':[[1, 3]]}  # If the atom type is CE and has only one bond, add 3 hydrogens
     #sigmaVal = 1.0
-    # ---==== P3HT ====---
-    print("Using data for P3HT")
-    hydrogensToAdd = {'CA': [[2, 1]],
-                      'CT': [[2, 2],[1, 3]]}
-    sigmaVal = 3.905
+    ## ---==== P3HT ====---
+    #print("Using data for P3HT")
+    #hydrogensToAdd = {'CA': [[2, 1]],
+    #                  'CT': [[2, 2],[1, 3]]}
+    #sigmaVal = 3.905
     # ---==== PERYLENE/PERYLOTHIOPHENE ====---
     #print("Using data for Perylene/Perylothiophene")
     #hydrogensToAdd = {'C': [[2, 1]]}
@@ -132,16 +132,25 @@ if __name__ == "__main__":
     #                  'CT': [[2, 2],[1, 3], [3, 1]],
     #                  'CP': [[2, 1]]}
     #sigmaVal = 3.55
-    ## ---==== P3HT & PCBM ====---
+    # ---==== P3HT & PCBM ====---
     #print("Using Data for P3HT/PCBM")
     #hydrogensToAdd = {'CA': [[2, 1]],
     #                  'CT': [[2, 2], [1, 3]],
     #                  'FCA': [[2, 1]],
     #                  'FCT': [[2, 2], [1, 3]]}
-    #sigmaVal = 3.905
+    print("Using Universal Dictionary (all atom types we've used so far)")
+    hydrogensToAdd = {'CA': [[2, 1]],
+                      'CT': [[2, 2], [3, 1], [1, 3]],
+                      'FCA': [[2, 1]],
+                      'FCT': [[2, 2], [1, 3]]
+                      'CS': [[2, 1]],
+                      'C!': [[2, 1]],
+                      'CP': [[2, 1]],
+                      'C': [[2, 1]]}
+    sigmaVal = 3.905
 
     inputFile = sys.argv[1]
-    print("THIS FUNCTION IS SET UP TO USE A DICTIONARY TO DEFINE HOW MANY HYDROGENS TO ADD TO BONDS OF A SPECIFIC TYPE WITH A CERTAIN NUMBER OF BONDS")
+    print("THIS FUNCTION IS SET UP TO USE A DICTIONARY TO DEFINE HOW MANY HYDROGENS TO ADD TO ATOMS OF A SPECIFIC TYPE THAT HAVE A CERTAIN NUMBER OF BONDS")
     print(hydrogensToAdd)
     print("IF THE ABOVE DICTIONARY DOESN'T LOOK RIGHT, PLEASE TERMINATE NOW AND IGNORE ANY OUTPUTS UNTIL THE DICTIONARY HAS BEEN RECTIFIED")
     print("Additionally, we're using a sigma value of", sigmaVal)
