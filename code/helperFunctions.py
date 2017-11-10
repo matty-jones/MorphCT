@@ -483,6 +483,7 @@ def checkConstraintNames(AAMorphologyDict):
 
 
 def writeMorphologyXMLETree(inputDictionary, outputFile):
+    print("\n \n THIS DOES NOT SUPPORT TILT FACTORS AT ALL!!!!!!!!!!! \n \n")
     print("Checking wrapped positions before writing XML...")
     inputDictionary = checkWrappedPositions(inputDictionary)
     systemProps = ['box']
