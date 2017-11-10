@@ -337,9 +337,12 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     # Finally, update the pickle file with the most recent and realistic
     # AAMorphologyDict so that we can load it again further along the pipeline
     AAMorphologyDict = helperFunctions.loadMorphologyXML(finalXMLName)
-    # Add in the unwrapped positions
+    # Now that we've obtained the final fine-grained morphology, we need to fix the images to prevent
+    # issues with obtaining the chromophores and running them through the ZINDO/S calculations later...
+    AAMorphologyDict = helperFunctions.fixImages(AAMorphologyDict)
+    # ...add in the unwrapped positions...
     AAMorphologyDict = helperFunctions.addUnwrappedPositions(AAMorphologyDict)
-    # Write the pickle file
+    # ...and write the pickle file.
     helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle')
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
 
