@@ -164,9 +164,9 @@ if __name__ == "__main__":
     hydrogensToAdd, sigmaVal = find_information()
 
     # This dictionary has keys of the atom type, and values where the first element is the number of bonds required for us to add a hydrogen to the atom and the second element of the value defines how many hydrogens to add to said atom.
-    #inputFile = sys.argv[1]
     print("THIS FUNCTION IS SET UP TO USE A DICTIONARY TO DEFINE HOW MANY HYDROGENS TO ADD TO BONDS OF A SPECIFIC TYPE WITH A CERTAIN NUMBER OF BONDS")
     print(hydrogensToAdd)
+
     print("IF THE ABOVE DICTIONARY DOESN'T LOOK RIGHT, PLEASE TERMINATE NOW AND IGNORE ANY OUTPUTS UNTIL THE DICTIONARY HAS BEEN RECTIFIED")
     print("Additionally, we're using a sigma value of", sigmaVal)
     morphologyDict = helperFunctions.loadMorphologyXML(inputFile, sigma = sigmaVal)

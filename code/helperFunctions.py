@@ -483,6 +483,7 @@ def checkConstraintNames(AAMorphologyDict):
 
 
 def writeMorphologyXMLETree(inputDictionary, outputFile):
+    print("\n \n THIS DOES NOT SUPPORT TILT FACTORS AT ALL!!!!!!!!!!! \n \n")
     print("Checking wrapped positions before writing XML...")
     inputDictionary = checkWrappedPositions(inputDictionary)
     systemProps = ['box']
@@ -527,13 +528,18 @@ def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0, checkWrappedPos
         inputDictionary = scale(inputDictionary, 1.0 / sigma)
     # Now need to check the positions of the atoms to ensure that everything is correctly contained inside the box
     if checkWrappedPosns is True:
-        print("Checking wrapped positions before writing XML...")
-        inputDictionary = checkWrappedPositions(inputDictionary)
+        tilt_factors = ["xy", "xz", "yz"]
+        if any([inputDictionary[_] for _ in tilt_factors]):
+            print("Can't check atom images for cells with a tilt factor :(")
+        else:
+            print("Checking wrapped positions before writing XML...")
+            inputDictionary = checkWrappedPositions(inputDictionary)
     # inputDictionary['position'], inputDictionary['image'] = pbc.shift_pbc(inputDictionary['position'], [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']])
     # print inputDictionary['image'][:20]
     # raw_input('HALT')
     # Add Boiler Plate first
-    linesToWrite = ['<?xml version="1.0" encoding="UTF-8"?>\n', '<hoomd_xml version="1.4">\n', '<configuration time_step="0" dimensions="3" natoms="' + str(inputDictionary['natoms']) + '" >\n', '<box lx="' + str(inputDictionary['lx']) + '" ly="' + str(inputDictionary['ly']) + '" lz="' + str(inputDictionary['lz']) + '" />\n']
+    linesToWrite = ['<?xml version="1.0" encoding="UTF-8"?>\n', '<hoomd_xml version="1.4">\n', '<configuration time_step="0" dimensions="3" natoms="' + str(inputDictionary['natoms']) + '" >\n', '<box lx="' + str(inputDictionary['lx']) + '" ly="' + str(inputDictionary['ly']) + '" lz="' + str(inputDictionary['lz']) + '" xy="' + str(inputDictionary['xy']) + '" xz="' + str(inputDictionary['xz']) + '" yz="' + str(inputDictionary['yz']) + '" />\n']
+
     # Position
     linesToWrite.append('<position num="' + str(inputDictionary['natoms']) + '">\n')
     for positionData in inputDictionary['position']:
@@ -785,3 +791,59 @@ def convertStringToInt(x):
         except:
             continue
     return 99999
+
+
+def fixImages(originalMorphology):
+    def checkBonds(morphology, bondDict):
+        periodicBonds = []
+        for bond in morphology['bond']:
+            posn1 = np.array(morphology['position'][bond[1]]) + (np.array(morphology['image'][bond[1]]) * np.array([morphology['lx'], morphology['ly'], morphology['lz']]))
+            posn2 = np.array(morphology['position'][bond[2]]) + (np.array(morphology['image'][bond[2]]) * np.array([morphology['lx'], morphology['ly'], morphology['lz']]))
+            separation = calculateSeparation(posn1, posn2)
+            if separation >= morphology['lx'] / 2.0:
+                print("Periodic bond found:", bond, "because separation =", separation, ">=", morphology['lx'] / 2.0)
+                morphology = moveBondedAtoms(bond[1], morphology, bondDict)
+        return morphology
+
+    def zeroOutImages(morphology):
+        for atomID, image in enumerate(morphology['image']):
+            if image != [0, 0, 0]:
+                morphology['image'][atomID] = [0, 0, 0]
+        return morphology
+
+    def getBondDict(morphology):
+        bondDict = {atomID: [] for atomID, atomType in enumerate(morphology['type'])}
+        for bond in morphology['bond']:
+            #if bond[1] < bond[2]:
+            bondDict[bond[1]].append(bond[2])
+            #else:
+            bondDict[bond[2]].append(bond[1])
+        return bondDict
+
+    def moveBondedAtoms(centralAtom, morphology, bondDict):
+        for bondedAtom in bondDict[centralAtom]:
+            atom1Posn = morphology['position'][centralAtom]
+            atom2Posn = morphology['position'][bondedAtom]
+            #print("atom1:", centralAtom, "posn =", atom1Posn, "; atom2:", bondedAtom, "posn =", atom2Posn)
+            sepVec = np.array(atom1Posn) - np.array(atom2Posn)
+            moved = False
+            for axis, value in enumerate(sepVec):
+                if value > morphology['lx'] / 2.0:
+                    morphology['position'][bondedAtom][axis] += morphology['lx']
+                    moved = True
+                if value < -morphology['lx'] / 2.0:
+                    morphology['position'][bondedAtom][axis] -= morphology['lx']
+                    moved = True
+            if moved:
+                #print("Moved", bondedAtom, "to same box as", centralAtom)
+                #print("New Positions: atom1 =", morphology['position'][centralAtom], "atom2 =", morphology['position'][bondedAtom])
+                morphology = moveBondedAtoms(bondedAtom, morphology, bondDict)
+            else:
+                #print("Move was unnecessary")
+                pass
+        return morphology
+
+    zeroedMorphology = zeroOutImages(originalMorphology)
+    bondDict = getBondDict(zeroedMorphology)
+    fixedMorphology = checkBonds(zeroedMorphology, bondDict)
+    return fixedMorphology
