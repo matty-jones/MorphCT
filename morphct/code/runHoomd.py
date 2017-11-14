@@ -224,13 +224,16 @@ class MDPhase:
         else:
             raise SystemError('Non-harmonic bond potentials not yet hard-coded! Please describe how to interpret them on this line.')
         # Set Angle Coeffs
-        if self.angleType == 'harmonic':
-            self.angleClass = angle.harmonic()
-            for angleCoeff in self.angleCoeffs:
-                # [k] = kcal mol^{-1} rad^{-2} * epsilon, [t] = rad
-                self.angleClass.set_coeff(angleCoeff[0], k=angleCoeff[1] * self.eScale, t0=angleCoeff[2])
+        if len(self.angleCoeffs) > 0:
+            if self.angleType == 'harmonic':
+                self.angleClass = angle.harmonic()
+                for angleCoeff in self.angleCoeffs:
+                    # [k] = kcal mol^{-1} rad^{-2} * epsilon, [t] = rad
+                    self.angleClass.set_coeff(angleCoeff[0], k=angleCoeff[1] * self.eScale, t0=angleCoeff[2])
+            else:
+                raise SystemError('Non-harmonic angle potentials not yet hard-coded! Please describe how to interpret them on this line.')
         else:
-            raise SystemError('Non-harmonic angle potentials not yet hard-coded! Please describe how to interpret them on this line.')
+            print("No angles detected!")
         # Set Dihedral Coeffs
         if self.dihedralType == 'table':
             self.dihedralClass = dihedral.table(width=1000)
