@@ -5,19 +5,19 @@ import glob
 import time as T
 import subprocess as sp
 
-sys.path.append(os.getcwd()+'/code')
-import fineGrainer
-import helperFunctions
+#sys.path.append(os.getcwd()+'/code')
+from morphct.code import fineGrainer
+from morphct.code import helperFunctions
 try:
-    import runHoomd
-    import extractMol
+    from morphct.code import runHoomd
+    from morphct.code import extractMol
 except:
     print("HOOMD-Blue not found on this machine! As a result, runHoomd and extractMol will fail.")
-import obtainChromophores
-import executeZINDO
-import transferIntegrals
-import mobilityKMC
-import deviceKMC
+from morphc.code import obtainChromophores
+from morphc.code import executeZINDO
+from morphc.code import transferIntegrals
+from morphc.code import mobilityKMC
+from morphc.code import deviceKMC
 
 
 class simulation:
