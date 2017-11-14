@@ -1,7 +1,7 @@
 import os
 import sys
 import numpy as np
-import helperFunctions
+from morphct.code import helperFunctions
 import subprocess as sp
 import multiprocessing as mp
 import pickle
