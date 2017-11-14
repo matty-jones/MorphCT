@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 import os
-import helperFunctions
+from morphct.code import helperFunctions
 import csv
 import copy
 import subprocess as sp
