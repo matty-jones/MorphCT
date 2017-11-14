@@ -99,6 +99,7 @@ def writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPosns, termina
     for index, position in enumerate(allPositions):
         linesToWrite.append(" %s  %.5f  %.5f  %.5f\n" % (allAtomTypes[index], position[0] - centralPosition[0], position[1] - centralPosition[1], position[2] - centralPosition[2]))
     # Load the ORCA input template
+    # TODO allow a user to spec a template, if none, use a default
     try:
         with open(os.getcwd() + '/templates/template.inp', 'r') as templateFile:
             inpFileLines = templateFile.readlines()
