@@ -1,6 +1,6 @@
 from hoomd_script import *
 import numpy as np
-import helperFunctions
+from morphct.code import helperFunctions
 import sys
 
 class ExitHoomd(Exception):
