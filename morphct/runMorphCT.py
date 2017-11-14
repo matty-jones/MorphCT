@@ -13,11 +13,11 @@ try:
     from morphct.code import extractMol
 except:
     print("HOOMD-Blue not found on this machine! As a result, runHoomd and extractMol will fail.")
-from morphc.code import obtainChromophores
-from morphc.code import executeZINDO
-from morphc.code import transferIntegrals
-from morphc.code import mobilityKMC
-from morphc.code import deviceKMC
+from morphct.code import obtainChromophores
+from morphct.code import executeZINDO
+from morphct.code import transferIntegrals
+from morphct.code import mobilityKMC
+from morphct.code import deviceKMC
 
 
 class simulation:
