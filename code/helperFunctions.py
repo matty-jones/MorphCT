@@ -477,6 +477,7 @@ def checkConstraintNames(AAMorphologyDict):
 
 
 def writeMorphologyXMLETree(inputDictionary, outputFile):
+    print("\n \n THIS DOES NOT SUPPORT TILT FACTORS AT ALL!!!!!!!!!!! \n \n")
     print("Checking wrapped positions before writing XML...")
     inputDictionary = checkWrappedPositions(inputDictionary)
     systemProps = ['box']
@@ -521,13 +522,18 @@ def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0, checkWrappedPos
         inputDictionary = scale(inputDictionary, 1.0 / sigma)
     # Now need to check the positions of the atoms to ensure that everything is correctly contained inside the box
     if checkWrappedPosns is True:
-        print("Checking wrapped positions before writing XML...")
-        inputDictionary = checkWrappedPositions(inputDictionary)
+        tilt_factors = ["xy", "xz", "yz"]
+        if any([inputDictionary[_] for _ in tilt_factors]):
+            print("Can't check atom images for cells with a tilt factor :(")
+        else:
+            print("Checking wrapped positions before writing XML...")
+            inputDictionary = checkWrappedPositions(inputDictionary)
     # inputDictionary['position'], inputDictionary['image'] = pbc.shift_pbc(inputDictionary['position'], [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']])
     # print inputDictionary['image'][:20]
     # raw_input('HALT')
     # Add Boiler Plate first
-    linesToWrite = ['<?xml version="1.0" encoding="UTF-8"?>\n', '<hoomd_xml version="1.4">\n', '<configuration time_step="0" dimensions="3" natoms="' + str(inputDictionary['natoms']) + '" >\n', '<box lx="' + str(inputDictionary['lx']) + '" ly="' + str(inputDictionary['ly']) + '" lz="' + str(inputDictionary['lz']) + '" />\n']
+    linesToWrite = ['<?xml version="1.0" encoding="UTF-8"?>\n', '<hoomd_xml version="1.4">\n', '<configuration time_step="0" dimensions="3" natoms="' + str(inputDictionary['natoms']) + '" >\n', '<box lx="' + str(inputDictionary['lx']) + '" ly="' + str(inputDictionary['ly']) + '" lz="' + str(inputDictionary['lz']) + '" xy="' + str(inputDictionary['xy']) + '" xz="' + str(inputDictionary['xz']) + '" yz="' + str(inputDictionary['yz']) + '" />\n']
+
     # Position
     linesToWrite.append('<position num="' + str(inputDictionary['natoms']) + '">\n')
     for positionData in inputDictionary['position']:
