@@ -8,11 +8,8 @@ import subprocess as sp
 #sys.path.append(os.getcwd()+'/code')
 from morphct.code import fineGrainer
 from morphct.code import helperFunctions
-try:
-    from morphct.code import runHoomd
-    from morphct.code import extractMol
-except:
-    print("HOOMD-Blue not found on this machine! As a result, runHoomd and extractMol will fail.")
+from morphct.code import runHoomd
+from morphct.code import extractMol
 from morphct.code import obtainChromophores
 from morphct.code import executeZINDO
 from morphct.code import transferIntegrals
