@@ -254,6 +254,7 @@ def getTerminatingPositions(currentAtomPosn, bondedAtomPositions, numberOfUnitsT
 
 
 def loadMorphologyXMLETree(xmlPath, sigma=1.0):
+    print("THIS DOES NOT SUPPORT TILT!!!!!!!!")
     atomProps3DFloat = ['position']
     atomProps3DInt = ['image']
     atomPropsInt = ['body']
@@ -294,7 +295,11 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
     # Dihedral as <dihedral
     # Improper as <improper (usually none in xml)
     # Charge as <charge
-    AtomDictionary = {'position': [], 'image': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': []}
+    # Set default tilts so when we use simdims later they exisit always
+    AtomDictionary = {'position': [], 'image': [], 'mass': [], 'diameter': [],
+                      'type': [], 'body': [], 'bond': [], 'angle': [],
+                      'dihedral': [], 'improper': [], 'charge': [], 'xy': 0.0,
+                      'xz': 0.0, 'yz':0.0}
     record = False
     with open(xmlPath, 'r') as xmlFile:
         xmlData = xmlFile.readlines()
