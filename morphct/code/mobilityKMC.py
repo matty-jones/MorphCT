@@ -6,7 +6,7 @@ import random as R
 from scipy.sparse import lil_matrix
 import pickle
 import subprocess as sp
-import helperFunctions
+from morphct.code import helperFunctions
 
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
