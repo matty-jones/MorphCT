@@ -57,7 +57,7 @@ class morphology:
         # back up into individual molecules and monomers.
         # The ghost dictionary contains all of the type T and type X particles that will
         # anchor the thiophene rings to the CG COM positions.
-        ghostDictionary = {'position': [], 'image': [], 'unwrapped_position': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': []} 
+        ghostDictionary = {'position': [], 'image': [], 'unwrapped_position': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': []}
 
         # Need to check for atom-type conflicts and suitably increment the type indices if more than
         # one molecule type is being fine-grained
