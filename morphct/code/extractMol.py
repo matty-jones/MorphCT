@@ -2,7 +2,7 @@ from hoomd_script import *
 import numpy as np
 import copy
 import sys
-import helperFunctions
+from morphct.code import helperFunctions
 
 
 def obtainMoleculeDict(AAMorphologyDict, moleculeAAIDs):
