@@ -51,9 +51,6 @@ def updateMolecule(atomID, moleculeList, bondedAtoms):
     return moleculeList
 
 
-
-
-
 if __name__ == "__main__":
     fileName = sys.argv[1]
     morphology = helperFunctions.loadMorphologyXML(fileName)
@@ -123,8 +120,17 @@ if __name__ == "__main__":
         for AAID in moleculeAAIDList:
             AAIDToMolID[AAID] = index
 
+    molIDs = []
+    # Get only the PCBM molecules:
+    for AAID, atomType in enumerate(morphology['type']):
+        if atomType == 'FCA':
+            molIDs.append(AAIDToMolID[AAID])
+    molIDs = list(set(molIDs))
+
+
     for AAID, molID in AAIDToMolID.items():
-        morphology['body'][AAID] = molID
+        if molID in molIDs:
+            morphology['body'][AAID] = molID + len(morphology['body'])  # To prevent rigid body conflicts
 
     rigidBodies = sorted(list(set(morphology['body'])))
     try:
