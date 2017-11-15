@@ -2,6 +2,7 @@ import os
 import sys
 import numpy as np
 from morphct.code import helperFunctions
+from morphct.definitions import PROJECT_ROOT
 import subprocess as sp
 import multiprocessing as mp
 import pickle
@@ -99,13 +100,14 @@ def writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPosns, termina
     for index, position in enumerate(allPositions):
         linesToWrite.append(" %s  %.5f  %.5f  %.5f\n" % (allAtomTypes[index], position[0] - centralPosition[0], position[1] - centralPosition[1], position[2] - centralPosition[2]))
     # Load the ORCA input template
-    # TODO allow a user to spec a template, if none, use a default
+    orca_temp_dir = os.path.join(PROJECT_ROOT, "templates")
+    orca_temp_test_dir = os.path.join(PROJECT_ROOT, "code/testAssets")
     try:
-        with open(os.getcwd() + '/templates/template.inp', 'r') as templateFile:
+        with open(os.path.join(orca_temp_dir, "template.inp"), 'r') as templateFile:
             inpFileLines = templateFile.readlines()
     # In case running testbed:
     except FileNotFoundError:
-        with open(os.getcwd() + '/testAssets/template.inp', 'r') as templateFile:
+        with open(os.path.join(orca_temp_test_dir, "template.inp"), 'r') as templateFile:
             inpFileLines = templateFile.readlines()
     # Insert the linesToWrite
     inpFileLines[-1:-1] = linesToWrite
