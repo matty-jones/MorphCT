@@ -317,15 +317,9 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
                     quotationLoc = findIndex(splitLine[i], '"')
                     if ('.' in splitLine[i][quotationLoc[0] + 1:quotationLoc[1]]):
                         # Catch float in the value (excludes the = and quotation marks)
-                        if ('<box' in line):
-                            AtomDictionary[splitLine[i][:equalsLoc[0]].lower()] = float(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
-                        else:
-                            AtomDictionary[splitLine[i][:equalsLoc[0]].lower()] = float(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
+                        AtomDictionary[splitLine[i][:equalsLoc[0]].lower()] = float(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
                     else:
-                        if ('<box' in line):
-                            AtomDictionary[splitLine[i][:equalsLoc[0]].lower()] = int(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
-                        else:
-                            AtomDictionary[splitLine[i][:equalsLoc[0]].lower()] = int(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
+                        AtomDictionary[splitLine[i][:equalsLoc[0]].lower()] = int(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
             elif ('<position' in line):
                 record = True
                 recordType = 'position'
