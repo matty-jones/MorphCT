@@ -517,12 +517,12 @@ def writeMorphologyXMLETree(inputDictionary, outputFile):
 
 
 def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0, checkWrappedPosns = True):
+    tilt_factors = ["xy", "xz", "yz"]
     # Firstly, scale everything by the inverse of the provided sigma value
     if sigma != 1.0:
         inputDictionary = scale(inputDictionary, 1.0 / sigma)
     # Now need to check the positions of the atoms to ensure that everything is correctly contained inside the box
     if checkWrappedPosns is True:
-        tilt_factors = ["xy", "xz", "yz"]
         if any([inputDictionary[_] for _ in tilt_factors]):
             print("Can't check atom images for cells with a tilt factor :(")
         else:
@@ -532,8 +532,11 @@ def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0, checkWrappedPos
     # print inputDictionary['image'][:20]
     # raw_input('HALT')
     # Add Boiler Plate first
-    linesToWrite = ['<?xml version="1.0" encoding="UTF-8"?>\n', '<hoomd_xml version="1.4">\n', '<configuration time_step="0" dimensions="3" natoms="' + str(inputDictionary['natoms']) + '" >\n', '<box lx="' + str(inputDictionary['lx']) + '" ly="' + str(inputDictionary['ly']) + '" lz="' + str(inputDictionary['lz']) + '" xy="' + str(inputDictionary['xy']) + '" xz="' + str(inputDictionary['xz']) + '" yz="' + str(inputDictionary['yz']) + '" />\n']
-
+    linesToWrite = ['<?xml version="1.0" encoding="UTF-8"?>\n', '<hoomd_xml version="1.4">\n', '<configuration time_step="0" dimensions="3" natoms="' + str(inputDictionary['natoms']) + '" >\n', '<box lx="' + str(inputDictionary['lx']) + '" ly="' + str(inputDictionary['ly']) + '" lz="' + str(inputDictionary['lz'])]
+    if any([inputDictionary[_] for _ in tilt_factors]):
+        linesToWrite[-1] += '" xy="' + str(inputDictionary['xy']) + '" xz="' + str(inputDictionary['xz']) + '" yz="' + str(inputDictionary['yz']) + '" />\n'
+    else:
+        linesToWrite[-1] += '" />\n'
     # Position
     linesToWrite.append('<position num="' + str(inputDictionary['natoms']) + '">\n')
     for positionData in inputDictionary['position']:
