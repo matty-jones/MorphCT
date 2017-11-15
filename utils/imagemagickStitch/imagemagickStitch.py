@@ -21,7 +21,8 @@ def stitchImages(montageDims, imagesToStitch, morphologyName, title):
             #subprocess.call(["convert", "-density", "500", image, "-resize", "20%", "-gravity", "West", "-bordercolor", "white", "-border", "7%x0", IDStr + "_crop.png"])
             ## Now add the annotation
             #subprocess.call(["convert", IDStr + "_crop.png", "-font", "Arial-Black", "-pointsize", "72", "-gravity", "NorthWest", "-annotate", "0", str(ID+1) + ")", IDStr + "_temp.png"])
-            subprocess.call(["convert", "-density", "500", image, "-resize", "20%", "-font", "Arial-Black", "-pointsize", "72", "-gravity", "NorthWest", "-splice", "0x10%", "-page", "+0+0", "-annotate", "0", str(ID+1) + ")", IDStr + "_temp.png"])
+            print("Vectorized input image detected, using supersampling...")
+            subprocess.call(["convert", "-density", "500", image, "-resize", "20%", "-font", "Arial-Black", "-pointsize", "10", "-gravity", "NorthWest", "-splice", "0x10%", "-page", "+0+0", "-annotate", "0", str(ID+1) + ")", IDStr + "_temp.png"])
         else:
             # Rasterized format, so no supersampling
             #subprocess.call(["convert", image, "-gravity", "West", "-bordercolor", "white", "-border", "7%x0", IDStr + "_crop.png"])
