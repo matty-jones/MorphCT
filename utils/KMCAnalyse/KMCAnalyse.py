@@ -18,6 +18,7 @@ from collections import OrderedDict
 import shutil
 import glob
 import re
+import argparse
 
 elementaryCharge = 1.60217657E-19  # C
 kB = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}
@@ -162,7 +163,7 @@ def plotConnections(chromophoreList, simDims, carrierHistory, directory, carrier
     tickLocation = range(0, int(np.log10(maximum)) + 1, 1)
     cbar = plt.colorbar(coloursForMap, ticks=tickLocation)#np.linspace(np.log10(minimum), np.log10(maximum), 6))
     cbar.ax.set_yticklabels([r'10$^{{{}}}$'.format(x) for x in tickLocation])
-    fileName = '3d' + carrierType + '.pdf'
+    fileName = '01_3d' + carrierType + '.pdf'
     plt.savefig(directory + '/figures/' + fileName, bbox_inches='tight')
     print("Figure saved as", directory + "/figures/" + fileName)
     plt.clf()
@@ -205,8 +206,8 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
     #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
-    fileName = 'LinMSD' + carrierType + '.pdf'
-    plt.savefig(directory + '/figures/' + fileName, bbox_inches='tight')
+    fileName = '17_LinMSD' + carrierType + '.pdf'
+    plt.savefig(directory + '/figures/' + fileName)
     plt.clf()
     print("Figure saved as", directory + "/figures/" + fileName)
     plt.semilogx(times, MSDs)
@@ -215,8 +216,8 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
     #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
-    fileName = 'SemiLogMSD' + carrierType + '.pdf'
-    plt.savefig(directory + '/figures/' + fileName, bbox_inches='tight')
+    fileName = '18_SemiLogMSD' + carrierType + '.pdf'
+    plt.savefig(directory + '/figures/' + fileName)
     plt.clf()
     print("Figure saved as", directory + "/figures/" + fileName)
     plt.plot(times, MSDs)
@@ -227,8 +228,8 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     plt.xscale('log')
     plt.yscale('log')
     #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
-    fileName = 'LogMSD' + carrierType + '.pdf'
-    plt.savefig(directory + '/figures/' + fileName, bbox_inches='tight')
+    fileName = '19_LogMSD' + carrierType + '.pdf'
+    plt.savefig(directory + '/figures/' + fileName)
     plt.clf()
     print("Figure saved as", directory + "/figures/" + fileName)
     return mobility, mobError, rVal**2
@@ -327,7 +328,11 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType, plot3DGraphs):
     #except:
     #    plt.title(carrierType + ' transport for:' + directory, fontsize = 24)
     ax.dist = 11
-    plt.savefig(directory + '/figures/anisotropy' + carrierType + '.pdf', bbox_inches='tight')
+    if carrierType == 'Hole':
+        figureIndex = '08'
+    elif carrierType == 'Electron':
+        figureIndex = '09'
+    plt.savefig(directory + '/figures/' + figureIndex + '_anisotropy' + carrierType + '.pdf', bbox_inches='tight')
     plt.clf()
     print("Figure saved as", directory + "/figures/anisotropy" + carrierType + ".pdf")
     return anisotropy
@@ -360,7 +365,7 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierTy
     #plt.gca().set_xscale('log')
     plt.errorbar(xvals, yvals, xerr = 0, yerr = yerrs)
     fileName = './mobility' + carrierType + '.pdf'
-    plt.savefig(fileName, bbox_inches='tight')
+    plt.savefig(fileName)
     plt.clf()
     print("Figure saved as " + fileName)
 
@@ -368,7 +373,7 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierTy
     fileName = './anisotropy' + carrierType + '.pdf'
     plt.xlabel(xLabel)
     plt.ylabel(r'$\kappa$'+', Arb. U')
-    plt.savefig(fileName, bbox_inches='tight')
+    plt.savefig(fileName)
     plt.clf()
     print("Figure saved as " + fileName)
 
@@ -399,214 +404,8 @@ def gaussFit(data):
     try:
         fitArgs, fitConv = curve_fit(gaussian, binEdges[:-1], hist, p0=[1, mean, std])
     except RuntimeError:
-        return None, None, None, None
+        fitArgs = None
     return binEdges, fitArgs, mean, std
-
-
-def plotHist(saveDir, yvals, mode, xvals=None, gaussBins=None, fitArgs=None):
-    if mode == 'HOMO':
-        plt.hist(yvals, 20, color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('HOMO Level (eV)')
-        plt.xlim([-6.5, -4.0])
-        fileName = 'HOMODoS.pdf'
-
-    if mode == 'LUMO':
-        plt.hist(yvals, 20, color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('LUMO Level (eV)')
-        plt.xlim([-4.0, -2.5])
-        fileName = 'LUMODoS.pdf'
-
-    elif mode == 'DonorBandgap':
-        plt.hist(yvals, 20, color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Donor Bandgap (eV)')
-        plt.xlim([3, 9])
-        fileName = 'DonorBandgap.pdf'
-
-    elif mode == 'AcceptorBandgap':
-        plt.hist(yvals, 20, color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Acceptor Bandgap (eV)')
-        plt.xlim([3, 9])
-        fileName = 'AcceptorBandgap.pdf'
-
-    elif mode == 'DonorTI':
-        plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Donor Transfer Integral (eV)')
-        plt.xlim([0.0, 1.2])
-        fileName = 'DonorTI.pdf'
-
-    elif mode == 'AcceptorTI':
-        plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Acceptor Transfer Integral (eV)')
-        plt.xlim([0.0, 1.2])
-        fileName = 'AcceptorTI.pdf'
-
-    elif mode == 'DonorTITrimmed':
-        plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Donor Non-Zero Transfer Integral (eV)')
-        plt.xlim([0.0, 1.2])
-        fileName = 'DonorTITrimmed.pdf'
-
-    elif mode == 'AcceptorTITrimmed':
-        plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Acceptor Non-Zero Transfer Integral (eV)')
-        plt.xlim([0.0, 1.2])
-        fileName = 'AcceptorTITrimmed.pdf'
-
-    elif mode == 'DonorDeltaEij':
-        n, bins, patches = plt.hist(yvals, np.linspace(-0.5,0.5,20), color = ['b'])
-        if gaussBins is not None:
-            gaussY = gaussian(gaussBins[:-1], *fitArgs)
-            scaleFactor = max(n)/max(gaussY)
-            plt.plot(gaussBins[:-1], gaussY*scaleFactor, 'ro:')
-        plt.ylabel('Frequency')
-        plt.xlabel('Donor Delta Eij (eV)')
-        plt.xlim([-0.5, 0.5])
-        fileName = 'DonorDeltaEij.pdf'
-
-    elif mode == 'AcceptorDeltaEij':
-        n, bins, patches = plt.hist(yvals, np.linspace(-0.5,0.5,20), color = ['b'])
-        if gaussBins is not None:
-            gaussY = gaussian(gaussBins[:-1], *fitArgs)
-            scaleFactor = max(n)/max(gaussY)
-            plt.plot(gaussBins[:-1], gaussY*scaleFactor, 'ro:')
-        plt.ylabel('Frequency')
-        plt.xlabel('Acceptor Delta Eij (eV)')
-        plt.xlim([-0.5, 0.5])
-        fileName = 'AcceptorDeltaEij.pdf'
-
-    elif mode == 'DonorIntraChainHop':
-        if len(yvals) > 0:
-            plt.hist(yvals, bins = np.logspace(1, 18, 40), color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Donor Intra-Chain Hop rate (s' + r'^{-1}' + ')')
-        plt.gca().set_xscale('log')
-        plt.xlim([1, 1E18])
-        fileName = 'DonorIntrakij.pdf'
-
-    elif mode == 'DonorInterChainHop':
-        if len(yvals) > 0:
-            plt.hist(yvals, bins = np.logspace(1, 18, 40), color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Donor Inter-Chain Hop rate (s' + r'$^{-1}$' + ')')
-        plt.gca().set_xscale('log')
-        plt.xlim([1, 1E18])
-        fileName = 'DonorInterkij.pdf'
-
-    elif mode == 'DonorIntraChainTI':
-        if len(yvals) > 0:
-            plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Donor Intra-Chain TI (eV)')
-        plt.xlim([0, 1.2])
-        fileName = 'DonorIntraTij.pdf'
-
-    elif mode == 'DonorInterChainTI':
-        if len(yvals) > 0:
-            plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Donor Inter-Chain TI (eV)')
-        plt.xlim([0, 1.2])
-        fileName = 'DonorInterTij.pdf'
-
-    elif mode == 'DonorIntraChainTITrim':
-        if len(yvals) > 0:
-            plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Donor Intra-Chain TI (eV)')
-        plt.xlim([0, 1.2])
-        fileName = 'DonorIntraTijTrim.pdf'
-
-    elif mode == 'DonorInterChainTITrim':
-        if len(yvals) > 0:
-            plt.hist(yvals, np.linspace(0,1.0,20), color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Donor Inter-Chain TI (eV)')
-        plt.xlim([0, 1.2])
-        fileName = 'DonorInterTijTrim.pdf'
-
-    elif mode == 'DonorHopMix':
-        plt.hist([yvals, xvals], bins = np.logspace(1, 18, 40), stacked = True, color = ['r', 'b'], label = ['Intra-Molecular', 'Inter-Molecular'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Donor Hopping Rate (s' + r'$^{-1}$' + ')')
-        plt.xlim([1,1E18])
-        plt.xticks([1E0, 1E3, 1E6, 1E9, 1E12, 1E15, 1E18])
-        #plt.ylim([0,8000])
-        plt.legend(loc = 2, prop = {'size':18})
-        plt.gca().set_xscale('log')
-        fileName = 'DonorHoppingRateMixed_Mols.pdf'
-
-    elif mode == 'AcceptorIntraChainHop':
-        if len(yvals) > 0:
-            plt.hist(yvals, bins = np.logspace(1, 18, 40), color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Acceptor Intra-Chain Hop rate (s' + r'^{-1}' + ')')
-        plt.gca().set_xscale('log')
-        plt.xlim([1, 1E18])
-        fileName = 'AcceptorIntrakij.pdf'
-
-    elif mode == 'AcceptorInterChainHop':
-        if len(yvals) > 0:
-            plt.hist(yvals, bins = np.logspace(1, 18, 40), color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Acceptor Inter-Chain Hop rate (s' + r'$^{-1}$' + ')')
-        plt.gca().set_xscale('log')
-        plt.xlim([1, 1E18])
-        fileName = 'AcceptorInterkij.pdf'
-
-    elif mode == 'AcceptorIntraChainTI':
-        if len(yvals) > 0:
-            plt.hist(yvals, 20, color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Acceptor Intra-Chain TI (eV)')
-        plt.xlim([0, 1.2])
-        fileName = 'AcceptorIntraTij.pdf'
-
-    elif mode == 'AcceptorInterChainTI':
-        if len(yvals) > 0:
-            plt.hist(yvals, 20, color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Acceptor Inter-Chain TI (eV)')
-        plt.xlim([0, 1.2])
-        fileName = 'AcceptorInterTij.pdf'
-
-    elif mode == 'AcceptorIntraChainTITrim':
-        if len(yvals) > 0:
-            plt.hist(yvals, 20, color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Acceptor Intra-Chain TI (eV)')
-        plt.xlim([0, 1.2])
-        fileName = 'AcceptorIntraTijTrim.pdf'
-
-    elif mode == 'AcceptorInterChainTITrim':
-        if len(yvals) > 0:
-            plt.hist(yvals, 20, color = ['b'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Acceptor Inter-Chain TI (eV)')
-        plt.xlim([0, 1.2])
-        fileName = 'AcceptorInterTijTrim.pdf'
-
-    elif mode == 'AcceptorHopMix':
-        plt.hist([yvals, xvals], bins = np.logspace(1, 18, 40), stacked = True, color = ['r', 'b'], label = ['Intra-Molecular', 'Inter-Molecular'])
-        plt.ylabel('Frequency')
-        plt.xlabel('Acceptor Hopping Rate (s' + r'$^{-1}$' + ')')
-        plt.xlim([1,1E18])
-        plt.xticks([1E0, 1E3, 1E6, 1E9, 1E12, 1E15, 1E18])
-        #plt.ylim([0,8000])
-        plt.legend(loc = 2, prop = {'size':18})
-        plt.gca().set_xscale('log')
-        fileName = 'AcceptorHoppingRateMixed_Mols.pdf'
-
-    plt.savefig(saveDir + '/' + fileName)
-    plt.clf()
-    print("Figure saved as", saveDir + "/" + fileName)
 
 
 def findIndex(string, character):
@@ -689,9 +488,9 @@ def getNeighbourCutOff(chromophoreList, morphologyShape, outputDir, periodic=Tru
     (n, binEdges, patches) = plt.hist(separationDist, bins = 20, color = 'b')
     plt.xlabel("Chromophore Separation (Ang)")
     plt.ylabel("Frequency (Arb. U.)")
-    plt.savefig(outputDir + "/neighbourHist.pdf")
+    plt.savefig(outputDir + "/03_neighbourHist.pdf")
     plt.close()
-    print("Neighbour histogram figure saved as", outputDir + "/neighbourHist.pdf")
+    print("Neighbour histogram figure saved as", outputDir + "/03_neighbourHist.pdf")
     bins = 0.5*(binEdges[1:]+binEdges[:-1])
     bins = np.insert(bins, 0, 0)
     n = np.insert(n, 0, 0)
@@ -789,9 +588,9 @@ def plotStacks3D(outputDir, chromophoreList, stackDict, simDims):
     ax.set_xlim([simDims[0][0], simDims[0][1]])
     ax.set_ylim([simDims[1][0], simDims[1][1]])
     ax.set_zlim([simDims[2][0], simDims[2][1]])
-    plt.savefig(outputDir + "/stacks.pdf", bbox_inches='tight')
+    plt.savefig(outputDir + "/02_stacks.pdf", bbox_inches='tight')
     plt.close()
-    print("3D Stack figure saved as", outputDir + "/stacks.pdf")
+    print("3D Stack figure saved as", outputDir + "/02_stacks.pdf")
     #plt.show()
 
 
@@ -849,7 +648,7 @@ def plotEnergyLevels(outputDir, chromophoreList, dataDict):
         dataDict['donor_frontierMO_err'] = HOMOErr
         print("Donor HOMO Level =", HOMOAv, "+/-", HOMOErr)
         print("Donor Delta Eij stats: mean =", donorMean, "+/-", donorSTD / np.sqrt(len(donorDeltaEij)))
-        plotDeltaEij(donorDeltaEij, donorBinEdges, donorFitArgs, 'Donor', outputDir + '/DonorDeltaEij.pdf')
+        plotDeltaEij(donorDeltaEij, donorBinEdges, donorFitArgs, 'Donor', outputDir + '/05_DonorDeltaEij.pdf')
     if len(acceptorDeltaEij) > 0:
         acceptorBinEdges, acceptorFitArgs, acceptorMean, acceptorSTD = gaussFit(acceptorDeltaEij)
         dataDict['acceptor_delta_Eij_mean'] = acceptorMean
@@ -863,7 +662,7 @@ def plotEnergyLevels(outputDir, chromophoreList, dataDict):
         dataDict['acceptor_frontierMO_err'] = LUMOErr
         print("Acceptor LUMO Level =", LUMOAv, "+/-", LUMOErr)
         print("Acceptor Delta Eij stats: mean =", acceptorMean, "+/-", acceptorSTD / np.sqrt(len(acceptorDeltaEij)))
-        plotDeltaEij(acceptorDeltaEij, acceptorBinEdges, acceptorFitArgs, 'Acceptor', outputDir + '/AcceptorDeltaEij.pdf')
+        plotDeltaEij(acceptorDeltaEij, acceptorBinEdges, acceptorFitArgs, 'Acceptor', outputDir + '/06_AcceptorDeltaEij.pdf')
     return dataDict
 
 
@@ -886,10 +685,13 @@ def generateDataDict():
 def plotDeltaEij(deltaEij, gaussBins, fitArgs, dataType, fileName):
     plt.figure()
     n, bins, patches = plt.hist(deltaEij, np.linspace(-0.5,0.5,20), color = ['b'])
-    gaussY = gaussian(gaussBins[:-1], *fitArgs)
-    scaleFactor = max(n)/max(gaussY)
-    plt.plot(gaussBins[:-1], gaussY*scaleFactor, 'ro:')
-    plt.ylabel('Frequency')
+    if fitArgs is not None:
+        gaussY = gaussian(gaussBins[:-1], *fitArgs)
+        scaleFactor = max(n)/max(gaussY)
+        plt.plot(gaussBins[:-1], gaussY*scaleFactor, 'ro:')
+    else:
+        print("No Gaussian found (probably zero-width delta function")
+    plt.ylabel('Frequency (Arb. U.)')
     plt.xlabel(dataType + ' Delta Eij (eV)')
     plt.xlim([-0.5, 0.5])
     plt.savefig(fileName)
@@ -967,20 +769,20 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDict, 
     #print(len(propertyLists['intraStackRatesDonor']), len(propertyLists['intraStackRatesAcceptor']), len(propertyLists['intraMolRatesDonor']), len(propertyLists['intraMolRatesAcceptor']))
     # Donor Stack Plots:
     if len(propertyLists['intraStackRatesDonor']) > 0:
-        plotStackedHistRates(propertyLists['intraStackRatesDonor'], propertyLists['interStackRatesDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/DonorHoppingRate_Stacks.pdf')
-        plotStackedHistTIs(propertyLists['intraStackTIsDonor'], propertyLists['interStackTIsDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/DonorTransferIntegral_Stacks.pdf')
+        plotStackedHistRates(propertyLists['intraStackRatesDonor'], propertyLists['interStackRatesDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/16_DonorHoppingRate_Stacks.pdf')
+        plotStackedHistTIs(propertyLists['intraStackTIsDonor'], propertyLists['interStackTIsDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/12_DonorTransferIntegral_Stacks.pdf')
     # Acceptor Stack Plots:
     if len(propertyLists['intraStackRatesAcceptor']) > 0:
-        plotStackedHistRates(propertyLists['intraStackRatesAcceptor'], propertyLists['interStackRatesAcceptor'], ['Intra-Stack', 'Inter-Stack'], 'Acceptor', outputDir + '/AcceptorHoppingRate_Stacks.pdf')
-        plotStackedHistTIs(propertyLists['intraStackTIsAcceptor'], propertyLists['interStackTIsAcceptor'], ['Intra-Stack', 'Inter-Stack'], 'Acceptor', outputDir + '/AcceptorTransferIntegral_Stacks.pdf')
+        plotStackedHistRates(propertyLists['intraStackRatesAcceptor'], propertyLists['interStackRatesAcceptor'], ['Intra-Stack', 'Inter-Stack'], 'Acceptor', outputDir + '/18_AcceptorHoppingRate_Stacks.pdf')
+        plotStackedHistTIs(propertyLists['intraStackTIsAcceptor'], propertyLists['interStackTIsAcceptor'], ['Intra-Stack', 'Inter-Stack'], 'Acceptor', outputDir + '/14_AcceptorTransferIntegral_Stacks.pdf')
     # Donor Mol Plots:
     if len(propertyLists['intraMolRatesDonor']) > 0:
-        plotStackedHistRates(propertyLists['intraMolRatesDonor'], propertyLists['interMolRatesDonor'], ['Intra-Mol', 'Inter-Mol'], 'Donor', outputDir + '/DonorHoppingRate_Mols.pdf')
-        plotStackedHistTIs(propertyLists['intraMolTIsDonor'], propertyLists['interMolTIsDonor'], ['Intra-Mol', 'Inter-Mol'], 'Donor', outputDir + '/DonorTransferIntegral_Mols.pdf')
+        plotStackedHistRates(propertyLists['intraMolRatesDonor'], propertyLists['interMolRatesDonor'], ['Intra-Mol', 'Inter-Mol'], 'Donor', outputDir + '/15_DonorHoppingRate_Mols.pdf')
+        plotStackedHistTIs(propertyLists['intraMolTIsDonor'], propertyLists['interMolTIsDonor'], ['Intra-Mol', 'Inter-Mol'], 'Donor', outputDir + '/11_DonorTransferIntegral_Mols.pdf')
     # Acceptor Mol Plots:
     if len(propertyLists['intraMolRatesAcceptor']) > 0:
-        plotStackedHistRates(propertyLists['intraMolRatesAcceptor'], propertyLists['interMolRatesAcceptor'], ['Intra-Mol', 'Inter-Mol'], 'Acceptor', outputDir + '/AcceptorHoppingRate_Mols.pdf')
-        plotStackedHistTIs(propertyLists['intraMolTIsAcceptor'], propertyLists['interMolTIsAcceptor'], ['Intra-Mol', 'Inter-Mol'], 'Acceptor', outputDir + '/AcceptorTransferIntegral_Mols.pdf')
+        plotStackedHistRates(propertyLists['intraMolRatesAcceptor'], propertyLists['interMolRatesAcceptor'], ['Intra-Mol', 'Inter-Mol'], 'Acceptor', outputDir + '/17_AcceptorHoppingRate_Mols.pdf')
+        plotStackedHistTIs(propertyLists['intraMolTIsAcceptor'], propertyLists['interMolTIsAcceptor'], ['Intra-Mol', 'Inter-Mol'], 'Acceptor', outputDir + '/13_AcceptorTransferIntegral_Mols.pdf')
     # Update the dataDict
     for material in chromoSpecies:
         for hopType in hopTypes:
@@ -1013,7 +815,7 @@ def plotStackedHistRates(data1, data2, labels, dataType, fileName):
 def plotStackedHistTIs(data1, data2, labels, dataType, fileName):
     plt.figure()
     (n, bins, patches) = plt.hist([data1, data2], bins = np.linspace(0, 1.2, 20), stacked = True, color = ['r', 'b'], label = labels)
-    plt.ylabel('Frequency')
+    plt.ylabel('Frequency (Arb. U.)')
     plt.xlabel(dataType + ' Transfer Integral (eV)')
     plt.xlim([0, 1.2])
     plt.ylim([0, np.max(n) * 1.02])
@@ -1100,22 +902,15 @@ def calculateMobility(directory, currentCarrierType, carrierData, simDims, plot3
 
 
 if __name__ == "__main__":
-    # Plotting Parameter Settings
-    plot3DGraphs = True         # The 3D network, anisotropy, and the stack position plots (take a while to plot)
-    considerPeriodic = True     # Allow periodic connections to add to stack (usually reduces number of stacks)
-    combinedPlots = False       # Plot the evolution of the mobility over multiple statepoints (naming nomenclature will be needed to be hardcoded most likely)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-t", "--threeD", action="store_true", required=False, help="If present, use matplotlib to plot the 3D graphs (3D network, anisotropy and stack positions. This takes a while (usually a couple of minutes) to plot. Defaults to False.")
+    parser.add_argument("-p", "--periodicStacks", action="store_true", required=False, help="If present, allow periodic connections to add chromophores to stacks, as well as non-periodic connections (this usually reduces the number of stacks in the system). Defaults to False.")
+    parser.add_argument("-c", "--cutOff", type=float, default=None, required=False, help="Specify a manual cut-off for the determination of stacks. Connections with separation > cut-off will be classed as inter-stack. If omitted, stack cut-off will be determined automatically as the first minimum of the RDF.")
+    parser.add_argument("-s", "--sequence", type=lambda s: [float(item) for item in s.split(',')], default=None, required=False, help='Create a figure in the current directory that describes the evolution of the anisotropy/mobility using the specified comma-delimited string as the sequence of x values. For instance -s "1.5,1.75,2.0,2.25,2.5" will assign each of the 5 following directories these x-values when plotting the mobility evolution.')
+    parser.add_argument("-x", "--xlabel", default="Temperature (Arb. U.)", required=False, help='Specify an x-label for the combined plot (only used if -s is specified). Default = "Temperature (Arb. U.)"')
+    args, directoryList = parser.parse_known_args()
 
-
-    sys.path.append('../../code')
-    sys.path.append('../code')
-    try:
-        cutOff = float(sys.argv[1])     # In case a manual cut-off for determining the stacks is defined
-        directoryList = sys.argv[2:]
-    except ValueError:
-        cutOff = None
-        directoryList = sys.argv[1:]
     sys.setrecursionlimit(5000)
-    tempData = []
     holeMobilityData = []
     holeAnisotropyData = []
     electronMobilityData = []
@@ -1127,16 +922,6 @@ if __name__ == "__main__":
         # Now create the data dictionary
         dataDict = generateDataDict()
         print("\n")
-        try:
-            tempData.append(getTempVal(directory))
-            tempXLabel = 'T, Arb. U'
-        except:
-            try:
-                tempData.append(getFrameVal(directory))
-                tempXLabel = r'$\tau$' + ', Arb. U'
-            except:
-                print("No temp or frame data found in morphology name, skipping combined plots")
-                combinedPlots = False
         print("Getting carrier data...")
         carrierData = loadKMCResultsPickle(directory)
         print("Carrier Data obtained")
@@ -1158,7 +943,7 @@ if __name__ == "__main__":
             completeCarrierData.append(carrierDataElectrons)
         for carrierTypeIndex, carrierData in enumerate(completeCarrierData):
             currentCarrierType = completeCarrierTypes[carrierTypeIndex]
-            mobility, mobError, rSquared, anisotropy = calculateMobility(directory, currentCarrierType, carrierData, simDims, plot3DGraphs)
+            mobility, mobError, rSquared, anisotropy = calculateMobility(directory, currentCarrierType, carrierData, simDims, args.threeD)
             if currentCarrierType == 'Hole':
                 holeAnisotropyData.append(anisotropy)
                 holeMobilityData.append([mobility, mobError])
@@ -1172,24 +957,25 @@ if __name__ == "__main__":
         # Now plot the distributions!
         tempDir = directory + '/figures'
         CGToMolID = determineMoleculeIDs(CGToAAIDMaster, AAMorphologyDict, parameterDict, chromophoreList)
+        #print("!!!!!!   I've turned off plotEnergyLevels, FYI! !!!!!!!")
         dataDict = plotEnergyLevels(tempDir, chromophoreList, dataDict)
-        if cutOff is None:
+        if args.cutOff is None:
             print("No cut-off manually specified, therefore automatically finding cutOff as the midpoint between the first maxmimum and the first minimum of the neighbour distance distribution.")
-            print("Considering periodic neighbours is", considerPeriodic)
-            cutOff = getNeighbourCutOff(chromophoreList, morphologyShape, tempDir, periodic=considerPeriodic)
+            print("Considering periodic neighbours is", args.periodicStacks)
+            cutOff = getNeighbourCutOff(chromophoreList, morphologyShape, tempDir, periodic=args.periodicStacks)
         print("Cut off in Angstroems =", cutOff)
-        stackDict = getStacks(chromophoreList, morphologyShape, cutOff, periodic=considerPeriodic)
-        if plot3DGraphs:
+        stackDict = getStacks(chromophoreList, morphologyShape, cutOff, periodic=args.periodicStacks)
+        if args.threeD:
             plotStacks3D(tempDir, chromophoreList, stackDict, simDims)
         dataDict = plotMixedHoppingRates(tempDir, chromophoreList, parameterDict, stackDict, CGToMolID, dataDict)
         print("\n")
         print("Writing CSV Output File...")
         writeCSV(dataDict, directory)
     print("Plotting Mobility and Anisotropy progressions...")
-    if combinedPlots is True:
+    if args.sequence is not None:
         if len(holeAnisotropyData) > 0:
-            plotTemperatureProgression(tempData, holeMobilityData, holeAnisotropyData, 'Hole', tempXLabel)
+            plotTemperatureProgression(args.sequence, holeMobilityData, holeAnisotropyData, 'Hole', args.xlabel)
         if len(electronAnisotropyData) > 0:
-            plotTemperatureProgression(tempData, electronMobilityData, electronAnisotropyData, 'Electron', tempXLabel)
+            plotTemperatureProgression(args.sequence, electronMobilityData, electronAnisotropyData, 'Electron', args.xlabel)
     else:
         print("Skipping plotting mobility evolution.")
