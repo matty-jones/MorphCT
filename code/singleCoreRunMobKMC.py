@@ -184,12 +184,13 @@ if __name__ == '__main__':
     helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
     # Set the affinities for this current process to make sure it's maximising available CPU usage
     currentPID = os.getpid()
-    try:
-        affinityJob = sp.Popen(['taskset', '-pc', str(CPURank), str(currentPID)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE).communicate()
-        # helperFunctions.writeToFile(logFile, affinityJob[0].split('\n')) #stdOut for affinity set
-        # helperFunctions.writeToFile(logFile, affinityJob[1].split('\n')) #stdErr for affinity set
-    except OSError:
-        helperFunctions.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinity..."])
+    print("DEBUG, Removing processor affinity")
+    #try:
+    #    affinityJob = sp.Popen(['taskset', '-pc', str(CPURank), str(currentPID)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE).communicate()
+    #    # helperFunctions.writeToFile(logFile, affinityJob[0].split('\n')) #stdOut for affinity set
+    #    # helperFunctions.writeToFile(logFile, affinityJob[1].split('\n')) #stdErr for affinity set
+    #except OSError:
+    #    helperFunctions.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinity..."])
     # Now load the main morphology pickle (used as a workaround to obtain the chromophoreList without having to save it in each carrier [very memory inefficient!])
     pickleDir = KMCDirectory.replace('/KMC', '/code')
     for fileName in os.listdir(pickleDir):

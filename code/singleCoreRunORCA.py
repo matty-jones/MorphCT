@@ -41,12 +41,13 @@ if __name__ == '__main__':
                 pass
         orcaJob = sp.Popen([str(orcaPath), str(job)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
         jobPID = orcaJob.pid
-        try:
-            affinityJob = sp.Popen(['taskset', '-pc', str(CPURank), str(jobPID)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE).communicate()
-            # helperFunctions.writeToFile(logFile, affinityJob[0].split('\n')) #stdOut for affinity set
-            # helperFunctions.writeToFile(logFile, affinityJob[1].split('\n')) #stdErr for affinity set
-        except OSError:
-            helperFunctions.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinities..."])
+        print("DEBUG, Removing processor affinity")
+        #try:
+        #    affinityJob = sp.Popen(['taskset', '-pc', str(CPURank), str(jobPID)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE).communicate()
+        #    # helperFunctions.writeToFile(logFile, affinityJob[0].split('\n')) #stdOut for affinity set
+        #    # helperFunctions.writeToFile(logFile, affinityJob[1].split('\n')) #stdErr for affinity set
+        #except OSError:
+        #    helperFunctions.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinities..."])
         orcaShellOutput = orcaJob.communicate()
         # Write the outputFile:
         helperFunctions.writeToFile(outputFileName, orcaShellOutput[0].decode().split('\n'), mode='outputFile')
