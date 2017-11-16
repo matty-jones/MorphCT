@@ -2,6 +2,7 @@ import numpy as np
 import sys
 import os
 from morphct.code import helperFunctions
+from morphct.definitions import SINGLE_ORCA_RUN_FILE
 import csv
 import copy
 import subprocess as sp
@@ -178,8 +179,7 @@ def rerunFails(failedChromoFiles, parameterDict, chromophoreList):
         procIDs = procIDs[:len(jobsList)]
     runningJobs = []
     for CPURank in procIDs:
-        print('python ' + os.getcwd() + '/code/singleCoreRunORCA.py ' + outputDir + ' ' + str(CPURank) + ' &')
-        runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunORCA.py', outputDir, str(CPURank), '1'])) # The final argument here tells ORCA to ignore the presence of the output file and recalculate
+        runningJobs.append(sp.Popen(['python', SINGLE_ORCA_RUN_FILE, outputDir, str(CPURank), '1'])) # The final argument here tells ORCA to ignore the presence of the output file and recalculate
     # Wait for running jobs to finish
     [p.wait() for p in runningJobs]
     # Finally, return the failed files list to the main failure handler to see if we need to iterate

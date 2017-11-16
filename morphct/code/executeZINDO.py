@@ -2,7 +2,7 @@ import os
 import sys
 import numpy as np
 from morphct.code import helperFunctions
-from morphct.definitions import PROJECT_ROOT
+from morphct.definitions import PROJECT_ROOT, SINGLE_ORCA_RUN_FILE
 import subprocess as sp
 import multiprocessing as mp
 import pickle
@@ -195,8 +195,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         runningJobs = []
         # Open the required processes to execute the ORCA jobs
         for CPURank, jobs in enumerate(jobsList):
-            print('python ' + __file__ + ' ' + parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + ' ' + str(CPURank) + ' ' + str(int(parameterDict['overwriteCurrentData'])) + ' &')
-            runningJobs.append(sp.Popen(['python', __file__ + ' ', parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4], str(CPURank), str(int(parameterDict['overwriteCurrentData']))]))
+            runningJobs.append(sp.Popen(['python', SINGLE_ORCA_RUN_FILE, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4], str(CPURank), str(int(parameterDict['overwriteCurrentData']))]))
         # Wait for all jobs to complete
         [p.wait() for p in runningJobs]
         # Delete the job pickle
