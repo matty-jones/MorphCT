@@ -15,8 +15,7 @@ if __name__ == '__main__':
     except:
         pass
     morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile, '/')[-1] + 1:]
-    orcaDir = os.getenv('ORCA_BIN', str(os.getcwd()) + '/ORCA')
-    orcaPath = orcaDir + '/orca'
+    orcaPath = os.getenv('ORCA_BIN')
     inputDir = morphologyFile + '/chromophores/inputORCA'
     logFile = inputDir.replace('/inputORCA', '/ORCAlog_' + str(CPURank) + '.log')
     outputDir = morphologyFile + '/chromophores/outputORCA'
@@ -43,16 +42,12 @@ if __name__ == '__main__':
         jobPID = orcaJob.pid
         try:
             affinityJob = sp.Popen(['taskset', '-pc', str(CPURank), str(jobPID)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE).communicate()
-            # helperFunctions.writeToFile(logFile, affinityJob[0].split('\n')) #stdOut for affinity set
-            # helperFunctions.writeToFile(logFile, affinityJob[1].split('\n')) #stdErr for affinity set
         except OSError:
             helperFunctions.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinities..."])
         orcaShellOutput = orcaJob.communicate()
         # Write the outputFile:
         helperFunctions.writeToFile(outputFileName, orcaShellOutput[0].decode().split('\n'), mode='outputFile')
-        # helperFunctions.writeToFile(logFile, orcaShellOutput[0].split('\n'))  # stdOut
         helperFunctions.writeToFile(logFile, orcaShellOutput[1].decode().split('\n'))  # stdErr
-        # os.system(orcaDir+'/orca '+str(job)+' > '+str(outputFileName))
         t2 = T.time()
         elapsedTime = float(t2) - float(t1)
         if elapsedTime < 60:
