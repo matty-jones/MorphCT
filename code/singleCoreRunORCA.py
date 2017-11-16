@@ -41,7 +41,6 @@ if __name__ == '__main__':
                 pass
         orcaJob = sp.Popen([str(orcaPath), str(job)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
         jobPID = orcaJob.pid
-        print("DEBUG, Removing processor affinity")
         #try:
         #    affinityJob = sp.Popen(['taskset', '-pc', str(CPURank), str(jobPID)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE).communicate()
         #    # helperFunctions.writeToFile(logFile, affinityJob[0].split('\n')) #stdOut for affinity set
