@@ -27,7 +27,8 @@ def stitchImages(montageDims, imagesToStitch, morphologyName, title):
             # Rasterized format, so no supersampling
             #subprocess.call(["convert", image, "-gravity", "West", "-bordercolor", "white", "-border", "7%x0", IDStr + "_crop.png"])
             # Now add the annotation
-            subprocess.call(['convert', image, '-font', 'Arial-Black', '-pointsize', '72', '-gravity', 'NorthWest', '-splice', '0x10%', '-page', '+0+0', '-annotate', '0', str(ID+1) + ')', IDStr + '_temp.png'])
+            #subprocess.call(['convert', image, '-font', 'Arial-Black', '-pointsize', '72', '-gravity', 'NorthWest', '-bordercolor', 'white', '-border', '140x80', '-page', '+0+0', '-annotate', '0', str(ID+1) + ')', IDStr + '_temp.png'])
+            subprocess.call(['convert', image, '-resize', '500x500', '-font', 'Arial-Black', '-pointsize', '72', '-gravity', 'NorthWest', '-splice', '100x120', '-page', '+0+0', '-annotate', '+40+0', str(ID+1) + ')', IDStr + '_temp.png'])
     # Create montage
     print("Creating montage...")
     montage = subprocess.Popen(["montage", "-mode", "concatenate", "-tile", montageDims, "*_temp.png", "miff:-"], stdout=subprocess.PIPE)

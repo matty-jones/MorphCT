@@ -34,8 +34,7 @@ class MDPhase:
             # If the phase-specific parameter is specified for this phase then use this parameter
             else:
                 self.__dict__[key[:-1]] = parameterDict[key][phaseNumber]
-        # Load the previous phases' xml for continuation
-        self.system = init.read_xml(filename=inputFile)
+        self.system = self.loadSystem(inputFile)
         # Determine the required groups so we can use the correct integrator each time
         self.rigidGroup, self.nonRigidGroup, self.integrationTypes = self.getIntegrationGroups()
         self.outputLogFileName = self.outputMorphDir + '/' + self.morphology[:-4] + '/morphology/energies_' + self.morphology[:-4] + '.log'
@@ -43,6 +42,31 @@ class MDPhase:
         self.logQuantities = ['temperature', 'pressure', 'volume', 'potential_energy', 'kinetic_energy', 'bond_' + self.bondType + '_energy', 'angle_' + self.angleType + '_energy', 'dihedral_' + self.dihedralType + '_energy']
         # Set the bond coefficients
         self.getFFCoeffs()
+
+    def loadSystem(self, inputFile):
+        # Load the previous phases' xml for continuation
+        systemXML = init.read_xml(filename=inputFile)
+        # A snapshot is needed in order to update the velocities
+        snapshot = systemXML.take_snapshot()
+        # Assign the required velocities based on the requested temperature
+        updatedSnapshot = self.initializeVelocities(snapshot)
+        # Finally, restore the snapshot
+        systemXML.restore_snapshot(updatedSnapshot)
+        return systemXML
+
+    def initializeVelocities(self, snapshot):
+        v = np.random.random((len(snapshot.particles.velocity), 3))
+        v -= 0.5
+        meanv = np.mean(v, 0)
+        meanv2 = np.mean(v ** 2, 0)
+        fs = np.sqrt(self.temperature / meanv2)
+        # Shift the velocities such that the average is zero
+        v = (v - meanv)
+        # Scale the velocities to match the required temperature
+        v *= fs
+        # Assign the velocities for this MD phase
+        snapshot.particles.velocity[:] = v[:]
+        return snapshot
 
     def optimiseStructure(self):
         # Activate the dumping of the trajectory dcd file
