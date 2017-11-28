@@ -334,7 +334,10 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     # and the diameter of the largest atom (makes it easier on HOOMDs calculations
     # and ensures that T = 1.0 is an interesting temperature threshold)
     currentFiles = os.listdir(parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology')
-    sScale, eScale = obtainScaleFactors(parameterDict)
+    # sScale, eScale = obtainScaleFactors(parameterDict)
+    print("Under the hood eScaling and sScaling has been disabled.")
+    sScale = 1.0
+    eScale = 1.0
     # Only scale the morphology if it hasn't been already
     if (parameterDict['overwriteCurrentData'] is False) and ('phase0_' + parameterDict['morphology'] in currentFiles):
         pass
