@@ -60,7 +60,7 @@ class MDPhase:
         v -= 0.5
         meanv = np.mean(v, 0)
         meanv2 = np.mean(v ** 2, 0)
-        fs = np.sqrt(self.temperature / meanv2
+        fs = np.sqrt(self.temperature / meanv2)
         # Shift the velocities such that the average is zero
         v = (v - meanv)
         # Scale the velocities to match the required temperature
