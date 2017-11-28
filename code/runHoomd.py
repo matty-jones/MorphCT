@@ -60,7 +60,7 @@ class MDPhase:
         v -= 0.5
         meanv = np.mean(v, 0)
         meanv2 = np.mean(v ** 2, 0)
-        fs = np.sqrt(self.temperature / (meanv2 * self.eScale))
+        fs = np.sqrt(self.temperature / meanv2
         # Shift the velocities such that the average is zero
         v = (v - meanv)
         # Scale the velocities to match the required temperature
@@ -334,7 +334,10 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     # and the diameter of the largest atom (makes it easier on HOOMDs calculations
     # and ensures that T = 1.0 is an interesting temperature threshold)
     currentFiles = os.listdir(parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology')
-    sScale, eScale = obtainScaleFactors(parameterDict)
+    # sScale, eScale = obtainScaleFactors(parameterDict)
+    print("Under the hood eScaling and sScaling has been disabled.")
+    sScale = 1.0
+    eScale = 1.0
     # Only scale the morphology if it hasn't been already
     if (parameterDict['overwriteCurrentData'] is False) and ('phase0_' + parameterDict['morphology'] in currentFiles):
         pass
