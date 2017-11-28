@@ -12,33 +12,38 @@ def setCoeffs():
     nl = hoomd.md.nlist.cell()
     lj = hoomd.md.pair.lj(r_cut=2.5, nlist=nl)
 
-    # Backbone-Backbone
-    lj.pair_coeff.set('A', 'A', epsilon=2.0, sigma=1.0)
-
-    # Backbone-Side Chain
-    lj.pair_coeff.set('A', 'B', epsilon=0, sigma=1.0)
-    lj.pair_coeff.set('A', 'C', epsilon=0, sigma=1.0)
-
-    # Side Chain-Side Chain
-    lj.pair_coeff.set('B', 'C', epsilon=0.1, sigma=1.0)
-    lj.pair_coeff.set('C', 'C', epsilon=0.1, sigma=1.0)
-    lj.pair_coeff.set('B', 'B', epsilon=0.1, sigma=1.0)
+    lj.pair_coeff.set('CP', 'CP', epsilon=1.0, sigma=1.0)
+    lj.pair_coeff.set('CN', 'CN', epsilon=1.0, sigma=1.0)
+    lj.pair_coeff.set('CP', 'CN', epsilon=1.0, sigma=1.0)
 
     harmonic_bond = hoomd.md.bond.harmonic()
 
-    harmonic_bond.bond_coeff.set('bondA', k=100, r0=1.4)
-    harmonic_bond.bond_coeff.set('bondB', k=100, r0=1.4)
-    harmonic_bond.bond_coeff.set('bondC', k=100, r0=1.4)
+    harmonic_bond.bond_coeff.set('CP-CP', k=30000.0, r0=0.4)
+    harmonic_bond.bond_coeff.set('CP-CN', k=30000.0, r0=0.4)
+    harmonic_bond.bond_coeff.set('CN-CP', k=30000.0, r0=0.4)
+    harmonic_bond.bond_coeff.set('CN-CN', k=30000.0, r0=0.4)
 
     harmonic_angle = hoomd.md.angle.harmonic()
 
-    harmonic_angle.angle_coeff.set('angleA', k=60.0, t0=3.14)
-    harmonic_angle.angle_coeff.set('angleB', k=12.0, t0=2.13)
-    harmonic_angle.angle_coeff.set('angleC', k=12.0, t0=2.13)
-    harmonic_angle.angle_coeff.set('angleD', k=12.0, t0=3.14)
+    harmonic_angle.angle_coeff.set('CN-CN-CN', k=380.0, t0=2.09)
+    harmonic_angle.angle_coeff.set('CN-CN-CP', k=380.0, t0=2.09)
+    harmonic_angle.angle_coeff.set('CN-CP-CP', k=380.0, t0=2.09)
+    harmonic_angle.angle_coeff.set('CP-CN-CN', k=380.0, t0=2.09)
+    harmonic_angle.angle_coeff.set('CP-CN-CP', k=380.0, t0=2.09)
+    harmonic_angle.angle_coeff.set('CP-CP-CN', k=380.0, t0=2.09)
+    harmonic_angle.angle_coeff.set('CP-CP-CP', k=380.0, t0=2.09)
 
-    harmonic_dihedral = hoomd.md.dihedral.harmonic()
-    harmonic_dihedral.dihedral_coeff.set('dihedralA', k=45.0, d=1, n=1)
+    harmonic_dihedral = hoomd.md.dihedral.opls()
+    harmonic_dihedral.dihedral_coeff.set('CN-CN-CN-CN', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
+    harmonic_dihedral.dihedral_coeff.set('CN-CN-CN-CP', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
+    harmonic_dihedral.dihedral_coeff.set('CN-CN-CP-CP', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
+    harmonic_dihedral.dihedral_coeff.set('CN-CP-CP-CP', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
+    harmonic_dihedral.dihedral_coeff.set('CP-CN-CN-CN', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
+    harmonic_dihedral.dihedral_coeff.set('CP-CN-CN-CP', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
+    harmonic_dihedral.dihedral_coeff.set('CP-CN-CP-CP', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
+    harmonic_dihedral.dihedral_coeff.set('CP-CP-CN-CN', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
+    harmonic_dihedral.dihedral_coeff.set('CP-CP-CN-CP', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
+    harmonic_dihedral.dihedral_coeff.set('CP-CP-CP-CN', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
 
 
 def modifyMorphology(morphologyDict):
@@ -97,13 +102,20 @@ def fixAtomTypes(morphologyDict):
         morphologyDict['type'][index] = 'CP'
     for index in negativeIDs:
         morphologyDict['type'][index] = 'CN'
+    # Finally, fix all the constraint names
+    constraintTypes = ['bond', 'angle', 'dihedral', 'improper']
+    for constraintType in constraintTypes:
+        for constraintIndex, constraint in enumerate(morphologyDict[constraintType]):
+            newConstraint = copy.deepcopy(constraint)
+            newConstraint[0] = '-'.join([morphologyDict['type'][atomID] for atomID in newConstraint[1:]])
+            morphologyDict[constraintType][constraintIndex] = newConstraint
     return morphologyDict
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--temperature", type=float, required=True, help="The temperature of the system")
-    parser.add_argument("-p", "--perylothiophene", action="store_true", required=False, help="If present, allow periodic connections to a    dd chromophores to stacks, as well as non-periodic connections (this usually reduces the number of stacks in the system). Defaults to Fa    lse.")
+    #parser.add_argument("-p", "--perylothiophene", action="store_true", required=False, help="If present, allow periodic connections to add chromophores to stacks, as well as non-periodic connections (this usually reduces the number of stacks in the system). Defaults to False.")
     args, fileList = parser.parse_known_args()
 
     for fileName in fileList:
@@ -111,6 +123,7 @@ if __name__ == "__main__":
         morphologyDict = modifyMorphology(morphologyDict)
         newFileName = fileName.split('.')[0] + '_wConsCharge.xml'
         helperFunctions.writeMorphologyXML(morphologyDict, newFileName)
+        exit()
 
         hoomd.context.initialize("")
         system = hoomd.deprecated.init.read_xml(filename=newFileName)
@@ -126,21 +139,16 @@ if __name__ == "__main__":
 
         setCoeffs()
 
-        # Get the initial temperature of the simulation
-        hyphenLocs = helperFunctions.findIndex(fileName, '-')
-        temperature = fileName[hyphenLocs[3]+1:hyphenLocs[4]][1:]  # HARD CODED for the standard Jankowski naming nomenclature
-        exit()
-
         hoomd.md.integrate.mode_standard(dt=0.001);
-        integrator = hoomd.md.integrate.nvt(group=all, tau=1.0, kT=tmperature)
+        integrator = hoomd.md.integrate.nvt(group=all, tau=1.0, kT=args.temperature)
 
-        run_time = 1e6
+        run_time = 1e7
 
-        hoomd.dump.dcd(filename="trajectory.dcd", period=int(run_time/100), overwrite=True)
-        hoomd.analyze.log(filename='mylog.log', quantities=['potential_energy'],
+        hoomd.dump.dcd(filename=fileName.split('.')[0] + ".dcd", period=int(run_time/500), overwrite=True)
+        logQuantities = ['temperature', 'pressure', 'volume', 'potential_energy', 'kinetic_energy', 'bond_harmonic_energy', 'angle_harmonic_energy', 'dihedral_opls_energy']
+        hoomd.analyze.log(filename=fileName.split('.')[0] + ".log", quantities=logQuantities],
                             period=int(run_time/1000), header_prefix='#', overwrite=True)
 
         # Get the initial box size dynamically
-        initialMorphology = helperFunctions.loadMorphologyXML(fileName)
         hoomd.run(run_time)
-        hoomd.deprecated.dump.xml(group=all, filename="posteql_" + fileName, all=True)
+        hoomd.deprecated.dump.xml(group=all, filename="relaxed_" + fileName, all=True)
