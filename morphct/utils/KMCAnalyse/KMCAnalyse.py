@@ -957,12 +957,13 @@ if __name__ == "__main__":
         # Now plot the distributions!
         tempDir = directory + '/figures'
         CGToMolID = determineMoleculeIDs(CGToAAIDMaster, AAMorphologyDict, parameterDict, chromophoreList)
-        #print("!!!!!!   I've turned off plotEnergyLevels, FYI! !!!!!!!")
         dataDict = plotEnergyLevels(tempDir, chromophoreList, dataDict)
         if args.cutOff is None:
             print("No cut-off manually specified, therefore automatically finding cutOff as the midpoint between the first maxmimum and the first minimum of the neighbour distance distribution.")
             print("Considering periodic neighbours is", args.periodicStacks)
             cutOff = getNeighbourCutOff(chromophoreList, morphologyShape, tempDir, periodic=args.periodicStacks)
+        else:
+            cutOff = args.cutOff
         print("Cut off in Angstroems =", cutOff)
         stackDict = getStacks(chromophoreList, morphologyShape, cutOff, periodic=args.periodicStacks)
         if args.threeD:
