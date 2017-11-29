@@ -11,20 +11,17 @@ import hoomd.deprecated
 def setCoeffs():
     nl = hoomd.md.nlist.cell()
     lj = hoomd.md.pair.lj(r_cut=2.5, nlist=nl)
-
     lj.pair_coeff.set('CP', 'CP', epsilon=1.0, sigma=1.0)
     lj.pair_coeff.set('CN', 'CN', epsilon=1.0, sigma=1.0)
     lj.pair_coeff.set('CP', 'CN', epsilon=1.0, sigma=1.0)
 
     harmonic_bond = hoomd.md.bond.harmonic()
-
     harmonic_bond.bond_coeff.set('CP-CP', k=30000.0, r0=0.4)
     harmonic_bond.bond_coeff.set('CP-CN', k=30000.0, r0=0.4)
     harmonic_bond.bond_coeff.set('CN-CP', k=30000.0, r0=0.4)
     harmonic_bond.bond_coeff.set('CN-CN', k=30000.0, r0=0.4)
 
     harmonic_angle = hoomd.md.angle.harmonic()
-
     harmonic_angle.angle_coeff.set('CN-CN-CN', k=380.0, t0=2.09)
     harmonic_angle.angle_coeff.set('CN-CN-CP', k=380.0, t0=2.09)
     harmonic_angle.angle_coeff.set('CN-CP-CP', k=380.0, t0=2.09)
@@ -130,6 +127,7 @@ if __name__ == "__main__":
         all = hoomd.group.all()
         CPAtoms = hoomd.group.type(name='positive-carbons', type='CP')
         CNAtoms = hoomd.group.type(name='negative-carbons', type='CN')
+        pppm = hoomd.md.charge.pppm(group=all)
 
         for p in CPAtoms:
             p.mass = 1.000
@@ -145,7 +143,7 @@ if __name__ == "__main__":
         run_time = 1e7
 
         hoomd.dump.dcd(filename=fileName.split('.')[0] + ".dcd", period=int(run_time/500), overwrite=True)
-        logQuantities = ['temperature', 'pressure', 'volume', 'potential_energy', 'kinetic_energy', 'bond_harmonic_energy', 'angle_harmonic_energy', 'dihedral_opls_energy']
+        logQuantities = ['temperature', 'pressure', 'volume', 'potential_energy', 'kinetic_energy', 'pair_lj_energy', 'pair_ewald_energy', 'pppm_energy', 'bond_harmonic_energy', 'angle_harmonic_energy', 'dihedral_opls_energy']
         hoomd.analyze.log(filename=fileName.split('.')[0] + ".log", quantities=logQuantities],
                             period=int(run_time/1000), header_prefix='#', overwrite=True)
 
