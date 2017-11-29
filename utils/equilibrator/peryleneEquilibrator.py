@@ -120,7 +120,6 @@ if __name__ == "__main__":
         morphologyDict = modifyMorphology(morphologyDict)
         newFileName = fileName.split('.')[0] + '_wConsCharge.xml'
         helperFunctions.writeMorphologyXML(morphologyDict, newFileName)
-        exit()
 
         hoomd.context.initialize("")
         system = hoomd.deprecated.init.read_xml(filename=newFileName)
@@ -144,7 +143,7 @@ if __name__ == "__main__":
 
         hoomd.dump.dcd(filename=fileName.split('.')[0] + ".dcd", period=int(run_time/500), overwrite=True)
         logQuantities = ['temperature', 'pressure', 'volume', 'potential_energy', 'kinetic_energy', 'pair_lj_energy', 'pair_ewald_energy', 'pppm_energy', 'bond_harmonic_energy', 'angle_harmonic_energy', 'dihedral_opls_energy']
-        hoomd.analyze.log(filename=fileName.split('.')[0] + ".log", quantities=logQuantities],
+        hoomd.analyze.log(filename=fileName.split('.')[0] + ".log", quantities=logQuantities,
                             period=int(run_time/1000), header_prefix='#', overwrite=True)
 
         # Get the initial box size dynamically
