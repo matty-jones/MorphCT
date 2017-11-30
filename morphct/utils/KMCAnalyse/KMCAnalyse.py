@@ -877,7 +877,8 @@ def combineResultsPickles(directory, pickleFiles):
     print("Complete data written to", directory + "/KMCResults.pickle.")
 
 
-def calculateMobility(directory, currentCarrierType, carrierData, simDims, plot3DGraphs):
+def calculateMobility(directory, currentCarrierType, carrierData, simDims,
+                      plot3DGraphs, chromophoreList):
     print("Considering the transport of", currentCarrierType + "...")
     print("Obtaining mean squared displacements...")
     carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getCarrierData(carrierData)
@@ -939,7 +940,8 @@ def KMCAnalyse():
             completeCarrierData.append(carrierDataElectrons)
         for carrierTypeIndex, carrierData in enumerate(completeCarrierData):
             currentCarrierType = completeCarrierTypes[carrierTypeIndex]
-            mobility, mobError, rSquared, anisotropy = calculateMobility(directory, currentCarrierType, carrierData, simDims, args.threeD)
+            mobility, mobError, rSquared, anisotropy = calculateMobility(directory, currentCarrierType, carrierData,
+                                                                         simDims, args.threeD, chromophoreList)
             if currentCarrierType == 'Hole':
                 holeAnisotropyData.append(anisotropy)
                 holeMobilityData.append([mobility, mobError])
