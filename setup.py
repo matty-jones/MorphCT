@@ -101,7 +101,8 @@ setup(
     entry_points={
         'console_scripts': [
             'inp2xyz=morphct.utils.inpToXYZ.convertToXYZ:convert',
-            "KMCAnalyse=morphct.utils.KMCAnalyse.KMCAnalyse:KMCAnalyse"
+            "KMCAnalyse=morphct.utils.KMCAnalyse.KMCAnalyse:KMCAnalyse",
+            "KMCMontage=morphct.utils.imagemagickStitch.imagemagickStitch:KMCMontage"
         ],
     },
 )
