@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 import scipy.stats
-from morpct.code import helperFunctions
+from morphct.code import helperFunctions
 try:
     import mpl_toolkits.mplot3d as p3
 except ImportError:
@@ -924,7 +924,7 @@ def KMCAnalyse():
         # Now need to split up the carrierData into both electrons and holes
         carrierDataHoles, carrierDataElectrons = splitCarriersByType(carrierData)
         print("Loading chromophoreList...")
-        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle('./' + directory + '/code/' + directory + '.pickle')
+        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(directory + '/code/' + directory + '.pickle')
         print("ChromophoreList obtained")
         morphologyShape = np.array([AAMorphologyDict[axis] for axis in ['lx', 'ly', 'lz']])
         simDims = [[-AAMorphologyDict[axis] / 2.0, AAMorphologyDict[axis] / 2.0] for axis in ['lx', 'ly', 'lz']]
