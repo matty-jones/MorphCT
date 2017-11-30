@@ -528,8 +528,8 @@ def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0, checkWrappedPos
     # Now need to check the positions of the atoms to ensure that everything is correctly contained inside the box
     if checkWrappedPosns is True:
         tilt_factors = ["xy", "xz", "yz"]
-        if any([inputDictionary[_] for _ in tilt_factors]):
-            print("Can't check atom images for cells with a tilt factor :(")
+        if any([tilt_factor in inputDictionary.keys() for tilt_factor in tilt_factors]) and any([inputDictionary[tilt_factor] != 0 for tilt_factor in tilt_factors]):
+            print("Can't check atom wrapping for cells with a non-zero tilt factor")
         else:
             print("Checking wrapped positions before writing XML...")
             inputDictionary = checkWrappedPositions(inputDictionary)

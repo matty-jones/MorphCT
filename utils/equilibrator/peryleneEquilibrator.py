@@ -9,11 +9,15 @@ import hoomd.deprecated
 
 
 def setCoeffs():
-    nl = hoomd.md.nlist.cell()
-    lj = hoomd.md.pair.lj(r_cut=2.5, nlist=nl)
+    ljnl = hoomd.md.nlist.cell()
+    lj = hoomd.md.pair.lj(r_cut=2.5, nlist=ljnl)
     lj.pair_coeff.set('CP', 'CP', epsilon=1.0, sigma=1.0)
     lj.pair_coeff.set('CN', 'CN', epsilon=1.0, sigma=1.0)
     lj.pair_coeff.set('CP', 'CN', epsilon=1.0, sigma=1.0)
+
+    pppmnl = hoomd.md.nlist.cell()
+    pppm = hoomd.md.charge.pppm(group=hoomd.group.charged(), nlist = pppmnl)
+    pppm.set_params(Nx=64,Ny=64,Nz=64,order=6,rcut=2.70)
 
     harmonic_bond = hoomd.md.bond.harmonic()
     harmonic_bond.bond_coeff.set('CP-CP', k=30000.0, r0=0.4)
@@ -44,6 +48,8 @@ def setCoeffs():
 
 
 def modifyMorphology(morphologyDict):
+    print("Resetting Rigid Bodies...")
+    morphologyDict['body'] = [-1] * len(morphologyDict['type'])
     if len(morphologyDict['bond']) == 0:
         print("Adding Constraints to System...")
         flexibleMorphologyDict = addConstraints(morphologyDict)
@@ -72,8 +78,7 @@ def addConstraints(morphologyDict):
 def addCharges(morphologyDict):
     # Firstly, need to update the atom types based on the number of bonds they have.
     fixedAtomTypesDict = fixAtomTypes(morphologyDict)
-    # Then add the charges
-    # Zero out the old charges first
+    # Then add the charges (zeroed out so that we can incrementally update them)
     fixedAtomTypesDict['charge'] = [0 for _ in range(len(fixedAtomTypesDict['type']))]
     for atomIndex, atomType in enumerate(fixedAtomTypesDict['type']):
         if atomType == 'CP':
@@ -115,6 +120,12 @@ if __name__ == "__main__":
     #parser.add_argument("-p", "--perylothiophene", action="store_true", required=False, help="If present, allow periodic connections to add chromophores to stacks, as well as non-periodic connections (this usually reduces the number of stacks in the system). Defaults to False.")
     args, fileList = parser.parse_known_args()
 
+    charges = {'CP': 3.880, 'CN': -5.820}
+    masses = {'CP': 1.000, 'CN': 0.923}
+    chargeIncrements = 20
+    chargeTimesteps = 10000
+    run_time = 1e7
+
     for fileName in fileList:
         morphologyDict = helperFunctions.loadMorphologyXML(fileName)
         morphologyDict = modifyMorphology(morphologyDict)
@@ -123,29 +134,28 @@ if __name__ == "__main__":
 
         hoomd.context.initialize("")
         system = hoomd.deprecated.init.read_xml(filename=newFileName)
-        all = hoomd.group.all()
-        CPAtoms = hoomd.group.type(name='positive-carbons', type='CP')
-        CNAtoms = hoomd.group.type(name='negative-carbons', type='CN')
-        pppm = hoomd.md.charge.pppm(group=all)
-
-        for p in CPAtoms:
-            p.mass = 1.000
-
-        for p in CNAtoms:
-            p.mass = 0.923
+        # Set the correct atom Masses
+        for atom in system.particles:
+            atom.mass = masses[atom.type]
 
         setCoeffs()
 
         hoomd.md.integrate.mode_standard(dt=0.001);
-        integrator = hoomd.md.integrate.nvt(group=all, tau=1.0, kT=args.temperature)
-
-        run_time = 1e7
+        integrator = hoomd.md.integrate.nvt(group=hoomd.group.all(), tau=1.0, kT=args.temperature)
+        #hoomd.md.nlist.reset_exclusions(exclusions = ['bond', 'angle', 'dihedral', 'body'])
 
         hoomd.dump.dcd(filename=fileName.split('.')[0] + ".dcd", period=int(run_time/500), overwrite=True)
         logQuantities = ['temperature', 'pressure', 'volume', 'potential_energy', 'kinetic_energy', 'pair_lj_energy', 'pair_ewald_energy', 'pppm_energy', 'bond_harmonic_energy', 'angle_harmonic_energy', 'dihedral_opls_energy']
         hoomd.analyze.log(filename=fileName.split('.')[0] + ".log", quantities=logQuantities,
-                            period=int(run_time/1000), header_prefix='#', overwrite=True)
+                            period=int(run_time/10000), header_prefix='#', overwrite=True)
+        # Now incrementally ramp the charges
+        for chargePhase in range(chargeIncrements + 1):
+            print("Incrementing charge phase", chargePhase, "of", chargeIncrements + 1)
+            for atom in system.particles:
+                oldCharge = copy.deepcopy(atom.charge)
+                atom.charge = charges[atom.type] * (chargePhase / float(chargeIncrements))
+            hoomd.run(chargeTimesteps)
 
         # Get the initial box size dynamically
-        hoomd.run(run_time)
-        hoomd.deprecated.dump.xml(group=all, filename="relaxed_" + fileName, all=True)
+        hoomd.run_upto(run_time)
+        hoomd.deprecated.dump.xml(group=hoomd.group.all(), filename="relaxed_" + fileName, all=True)
