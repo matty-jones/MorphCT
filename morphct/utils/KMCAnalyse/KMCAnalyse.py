@@ -897,7 +897,7 @@ def calculateMobility(directory, currentCarrierType, carrierData, simDims, plot3
     return mobility, mobError, rSquared, anisotropy
 
 
-if __name__ == "__main__":
+def KMCAnalyse():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--threeD", action="store_true", required=False, help="If present, use matplotlib to plot the 3D graphs (3D network, anisotropy and stack positions. This takes a while (usually a couple of minutes) to plot. Defaults to False.")
     parser.add_argument("-p", "--periodicStacks", action="store_true", required=False, help="If present, allow periodic connections to add chromophores to stacks, as well as non-periodic connections (this usually reduces the number of stacks in the system). Defaults to False.")

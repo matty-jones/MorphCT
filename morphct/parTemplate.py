@@ -50,7 +50,7 @@ CGToTemplateFiles = {\
 }       # The xml files to use as template
         # (KEYS = CG site type, VALUES = xml template to use)
 CGToTemplateForceFields = {\
-}       # The forcefield files to use as templates 
+}       # The forcefield files to use as templates
         # (KEYS = CG site type, VALUES = forcefield xml)
 CGToTemplateAAIDs = {\
 }       # The mapping of coarse-grained sites to the AAIDs given in the template file. For example, in P3HT the CG site 'A' maps to the thiophene ring which corresponds to AAIDs 0, 1, 2, 3, 4, 24 in the template file.
@@ -87,7 +87,7 @@ pairDPDGammaVal = 0.0  # The value of the dissipative gamma to use during the DP
 # The following parameters describe the structure of the executeMolecularDynamics phase.
 # As a general rule, the length of each parameter should be equal to the specified numberOfPhases, however if only one element is specified then that value will be used for all phases.
 numberOfPhases = 8              # The number of MD phases to run
-temperatures = [1.0]            # The system temperature (dimensionless 
+temperatures = [1.0]            # The system temperature (dimensionless
 taus = [1.0]                    # The thermostat coupling
 pairTypes = ['none', 'dpd', 'lj', 'lj', 'lj', 'lj', 'lj', 'lj']  # The pair interactions to use (permitted: 'none', 'dpd', 'lj')
 bondTypes = ['harmonic']        # The bond constraint equation to use
@@ -107,10 +107,10 @@ DCDFileDumpsteps = [0]          # Select the frequency of DCD writes. [0] defaul
 
 # For AARigidBodySpecies and CGSiteSpecies there are 3 modes of operation:
 #   1) len(AARigidBodySpecies) = 0, len(CGSiteSpecies) > 1:
-#       This is normal operation, where the CGSiteSpecies is a dictionary that maps the <CGSiteType>: <ElectronicType>. This requires the fine-graining module to have been run by MorphCT. 
+#       This is normal operation, where the CGSiteSpecies is a dictionary that maps the <CGSiteType>: <ElectronicType>. This requires the fine-graining module to have been run by MorphCT.
 #       For example in coarse-grained P3HT, CGSiteSpecies = {'A': 'Donor', 'B': 'None', 'C': 'None'}.
 #   2) len(CGSiteSpecies) == 1:
-#       This is the operation for a morphology where there is only a single type of electronic species (e.g. neat small molecule system). All chromophores will be set to this species type and the key does not matter. 
+#       This is the operation for a morphology where there is only a single type of electronic species (e.g. neat small molecule system). All chromophores will be set to this species type and the key does not matter.
 #       For example in neat Perylene, CGSiteSpecies = {'A': Donor}
 #   3) len(AARigidBodySpecies) > 0, len(CGSiteSpecies) == 1:
 #       This is the operation for a more complex atomistic morphology, where multiple species may be present (e.g. block copolymer, or small molecule blend). MorphCT uses the HOOMD rigid bodies to decide which chromophores are which species. Note that non-numpy ranges work too.
@@ -192,7 +192,7 @@ parameterFile = __file__
 if __name__ == "__main__":
     from morphct import runMorphCT
     import sys
-    from morpct.code import helperFunctions
+    from morphct.code import helperFunctions
 
     procIDs = helperFunctions.getCPUCores()
     parameterNames = [i for i in dir() if (not i.startswith('__')) and (i not in ['runMorphCT', 'helperFunctions', 'sys'])]
