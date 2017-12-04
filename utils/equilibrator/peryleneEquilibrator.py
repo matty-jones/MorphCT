@@ -3,6 +3,7 @@ sys.path.append('../../code')
 import helperFunctions
 import copy
 import argparse
+import numpy as np
 import hoomd
 import hoomd.md
 import hoomd.deprecated
@@ -61,7 +62,7 @@ def modifyMorphology(morphologyDict):
 
 
 def addConstraints(morphologyDict):
-    templateMorph = helperFunctions.loadMorphologyXML('./template.xml')
+    templateMorph = helperFunctions.loadMorphologyXML('./PEtemplate.xml')
     # One molecule of Perylene contains 20 atoms.
     # If we assume the molecules are coherent, we can add 20 to the constraint atomIDs for each molecule
     constraintTypes = ['bond', 'angle', 'dihedral', 'improper']
@@ -114,6 +115,21 @@ def fixAtomTypes(morphologyDict):
     return morphologyDict
 
 
+def initializeVelocities(snapshot, temperature):
+    v = np.random.random((len(snapshot.particles.velocity), 3))
+    v -= 0.5
+    meanv = np.mean(v, 0)
+    meanv2 = np.mean(v ** 2, 0)
+    fs = np.sqrt(temperature / meanv2)
+    # Shift the velocities such that the average is zero
+    v = (v - meanv)
+    # Scale the velocities to match the required temperature
+    v *= fs
+    # Assign the velocities for this MD phase
+    snapshot.particles.velocity[:] = v[:]
+    return snapshot
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--temperature", type=float, required=True, help="The temperature of the system")
@@ -137,6 +153,12 @@ if __name__ == "__main__":
         # Set the correct atom Masses
         for atom in system.particles:
             atom.mass = masses[atom.type]
+
+        snapshot = system.take_snapshot()
+        # Assign the required velocities based on the requested temperature
+        updatedSnapshot = initializeVelocities(snapshot, args.temperature)
+        # Finally, restore the snapshot
+        system.restore_snapshot(updatedSnapshot)
 
         setCoeffs()
 
