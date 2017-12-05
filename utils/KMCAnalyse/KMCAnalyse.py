@@ -534,13 +534,15 @@ def getStacks(chromophoreList, morphologyShape, cutOffDonor, cutOffAcceptor, per
         if cutOff is None:
             stackDicts.append(None)
             continue
+        chromoIDs = [chromo.ID for chromo in chromophoreList if chromo.species == materialType]
         # Create a neighbourlist based on the cutoff
         neighbourDict = createNeighbourList(chromophoreList, morphologyShape, cutOff, periodic, materialType)
         # Do the usual stackList neighbourList stuff
         stackList = [_ for _ in range(len(chromophoreList))]
         for stackID in range(len(stackList)):
             stackList = updateStack(stackID, stackList, neighbourDict)
-        print("There are", len(set(stackList)), materialType, "stacks in the system")
+        actualStacks = [stackList[x] for x in chromoIDs]
+        print("There are", len(set(actualStacks)), materialType, "stacks in the system")
         stackDict = {}
         for index, chromophore in enumerate(chromophoreList):
             if chromophore.species != materialType:
@@ -777,7 +779,7 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
                     propertyLists['interStackRatesAcceptor'].append(rate)
                     propertyLists['interStackTIsAcceptor'].append(Tij)
             else:
-                if stackDicts[2][chromo.ID] == stackDicts[2][chromo.neighbours[index][0]]:
+                if stackDicts[0][chromo.ID] == stackDicts[0][chromo.neighbours[index][0]]:
                     propertyLists['intraStackRatesDonor'].append(rate)
                     propertyLists['intraStackTIsDonor'].append(Tij)
                 else:
@@ -803,8 +805,6 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
             #    print("TYPE ERROR EXCEPTION")
             #    pass
     #print(len(propertyLists['intraStackRatesDonor']), len(propertyLists['intraStackRatesAcceptor']), len(propertyLists['intraMolRatesDonor']), len(propertyLists['intraMolRatesAcceptor']))
-    print(len(propertyLists['intraStackRatesDonor']), len(propertyLists['intraStackRatesAcceptor']), len(propertyLists['intraMolRatesDonor']), len(propertyLists['intraMolRatesAcceptor']))
-    exit()
     # Donor Stack Plots:
     if (len(propertyLists['intraStackRatesDonor']) > 0) or (len(propertyLists['interStackRatesDonor']) > 0):
         plotStackedHistRates(propertyLists['intraStackRatesDonor'], propertyLists['interStackRatesDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/16_DonorHoppingRate_Stacks.pdf')
@@ -929,8 +929,7 @@ def calculateMobility(directory, currentCarrierType, carrierData, simDims, plot3
     anisotropy = plotAnisotropy(carrierData, directory, simDims, currentCarrierType, plot3DGraphs)
     if (carrierHistory is not None) and plot3DGraphs:
         print("Determining carrier hopping connections...")
-        print("PLOT CONNECTIONS DEBUG REMOVE 929")
-        #plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
+        plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
     times, MSDs = helperFunctions.parallelSort(times, MSDs)
     print("Calculating MSD...")
     mobility, mobError, rSquared = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, currentCarrierType)
@@ -1015,7 +1014,6 @@ if __name__ == "__main__":
         stackDicts = getStacks(chromophoreList, morphologyShape, cutOffDonor, cutOffAcceptor, periodic=args.periodicStacks)
         if args.threeD:
             plotStacks3D(tempDir, chromophoreList, stackDicts, simDims)
-        raise SystemError("LAST BIT")
         dataDict = plotMixedHoppingRates(tempDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict)
         print("\n")
         print("Writing CSV Output File...")
