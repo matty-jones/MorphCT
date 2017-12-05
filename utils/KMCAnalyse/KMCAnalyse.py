@@ -163,6 +163,7 @@ def plotConnections(chromophoreList, simDims, carrierHistory, directory, carrier
     tickLocation = range(0, int(np.log10(maximum)) + 1, 1)
     cbar = plt.colorbar(coloursForMap, ticks=tickLocation)#np.linspace(np.log10(minimum), np.log10(maximum), 6))
     cbar.ax.set_yticklabels([r'10$^{{{}}}$'.format(x) for x in tickLocation])
+    plt.title('Network (' + carrierType + ')', y = 1.1)
     fileName = '01_3d' + carrierType + '.pdf'
     plt.savefig(directory + '/figures/' + fileName, bbox_inches='tight')
     print("Figure saved as", directory + "/figures/" + fileName)
@@ -205,7 +206,9 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     plt.plot(fitX, fitY, 'r')
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
-    #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
+    mobilityString = '%.3e' % mobility
+    #plt.title(r'$\mu_{0}$' + ' ' + carrierType + ' = ' + mobilityString + ' cm' + r'$^{2}$/Vs' % (mobility), y = 1.1)
+    plt.title(r'$\mu_{0,' + carrierType[0] + r'}$' + ' = ' + mobilityString + ' cm' + r'$^{2}$/Vs' % (mobility), y = 1.1)
     fileName = '18_LinMSD' + carrierType + '.pdf'
     plt.savefig(directory + '/figures/' + fileName)
     plt.clf()
@@ -215,7 +218,8 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     plt.semilogx(fitX, fitY, 'r')
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
-    #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
+    mobilityString = '%.3e' % mobility
+    plt.title(r'$\mu_{0,' + carrierType[0] + r'}$' + ' = ' + mobilityString + ' cm' + r'$^{2}$/Vs' % (mobility), y = 1.1)
     fileName = '19_SemiLogMSD' + carrierType + '.pdf'
     plt.savefig(directory + '/figures/' + fileName)
     plt.clf()
@@ -227,7 +231,8 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     plt.ylabel('MSD (m'+r'$^{2}$)')
     plt.xscale('log')
     plt.yscale('log')
-    #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
+    mobilityString = '%.3e' % mobility
+    plt.title(r'$\mu_{0,' + carrierType[0] + r'}$' + ' = ' + mobilityString + ' cm' + r'$^{2}$/Vs' % (mobility), y = 1.1)
     fileName = '20_LogMSD' + carrierType + '.pdf'
     plt.savefig(directory + '/figures/' + fileName)
     plt.clf()
@@ -332,6 +337,7 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType, plot3DGraphs):
         figureIndex = '08'
     elif carrierType == 'Electron':
         figureIndex = '09'
+    plt.title('Anisotropy (' + carrierType + ')', y = 1.1)
     plt.savefig(directory + '/figures/' + figureIndex + '_anisotropy' + carrierType + '.pdf', bbox_inches='tight')
     plt.clf()
     print("Figure saved as", directory + "/figures/anisotropy" + carrierType + ".pdf")
@@ -767,20 +773,22 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDict, 
             #    print("TYPE ERROR EXCEPTION")
             #    pass
     #print(len(propertyLists['intraStackRatesDonor']), len(propertyLists['intraStackRatesAcceptor']), len(propertyLists['intraMolRatesDonor']), len(propertyLists['intraMolRatesAcceptor']))
+    print(len(propertyLists['intraStackRatesDonor']), len(propertyLists['intraStackRatesAcceptor']), len(propertyLists['intraMolRatesDonor']), len(propertyLists['intraMolRatesAcceptor']))
+    exit()
     # Donor Stack Plots:
-    if len(propertyLists['intraStackRatesDonor']) > 0:
+    if (len(propertyLists['intraStackRatesDonor']) > 0) or (len(propertyLists['interStackRatesDonor']) > 0):
         plotStackedHistRates(propertyLists['intraStackRatesDonor'], propertyLists['interStackRatesDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/16_DonorHoppingRate_Stacks.pdf')
         plotStackedHistTIs(propertyLists['intraStackTIsDonor'], propertyLists['interStackTIsDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/12_DonorTransferIntegral_Stacks.pdf')
     # Acceptor Stack Plots:
-    if len(propertyLists['intraStackRatesAcceptor']) > 0:
+    if (len(propertyLists['intraStackRatesAcceptor']) > 0) or (len(properyLists['interStackRatesAcceptor']) > 0):
         plotStackedHistRates(propertyLists['intraStackRatesAcceptor'], propertyLists['interStackRatesAcceptor'], ['Intra-Stack', 'Inter-Stack'], 'Acceptor', outputDir + '/18_AcceptorHoppingRate_Stacks.pdf')
         plotStackedHistTIs(propertyLists['intraStackTIsAcceptor'], propertyLists['interStackTIsAcceptor'], ['Intra-Stack', 'Inter-Stack'], 'Acceptor', outputDir + '/14_AcceptorTransferIntegral_Stacks.pdf')
     # Donor Mol Plots:
-    if len(propertyLists['intraMolRatesDonor']) > 0:
+    if (len(propertyLists['intraMolRatesDonor']) > 0) or (len(propertyLists['interMolRatesDonor']) > 0):
         plotStackedHistRates(propertyLists['intraMolRatesDonor'], propertyLists['interMolRatesDonor'], ['Intra-Mol', 'Inter-Mol'], 'Donor', outputDir + '/15_DonorHoppingRate_Mols.pdf')
         plotStackedHistTIs(propertyLists['intraMolTIsDonor'], propertyLists['interMolTIsDonor'], ['Intra-Mol', 'Inter-Mol'], 'Donor', outputDir + '/11_DonorTransferIntegral_Mols.pdf')
     # Acceptor Mol Plots:
-    if len(propertyLists['intraMolRatesAcceptor']) > 0:
+    if (len(propertyLists['intraMolRatesAcceptor']) > 0) or (len(propertyLists['interMolRatesAcceptor']) > 0):
         plotStackedHistRates(propertyLists['intraMolRatesAcceptor'], propertyLists['interMolRatesAcceptor'], ['Intra-Mol', 'Inter-Mol'], 'Acceptor', outputDir + '/17_AcceptorHoppingRate_Mols.pdf')
         plotStackedHistTIs(propertyLists['intraMolTIsAcceptor'], propertyLists['interMolTIsAcceptor'], ['Intra-Mol', 'Inter-Mol'], 'Acceptor', outputDir + '/13_AcceptorTransferIntegral_Mols.pdf')
     # Update the dataDict
