@@ -482,60 +482,83 @@ def updateMolecule(atomID, moleculeList, bondedAtoms):
 
 
 def getNeighbourCutOff(chromophoreList, morphologyShape, outputDir, periodic=True):
-    separationDist = []
+    separationDistDonor = []
+    separationDistAcceptor = []
     for chromo1 in chromophoreList:
         for chromo2Details in chromo1.neighbours:
             if (chromo2Details is None) or ((periodic is False) and (not np.array_equal(chromo2Details[1], [0, 0, 0]))) or (chromo1.ID == chromophoreList[chromo2Details[0]].ID):
                 continue
             chromo2 = chromophoreList[chromo2Details[0]]
             separation = np.linalg.norm((np.array(chromo2.posn) + (np.array(chromo2Details[1]) * np.array(morphologyShape))) - chromo1.posn)
-            separationDist.append(separation)
-    plt.figure()
-    (n, binEdges, patches) = plt.hist(separationDist, bins = 20, color = 'b')
-    plt.xlabel("Chromophore Separation (Ang)")
-    plt.ylabel("Frequency (Arb. U.)")
-    plt.savefig(outputDir + "/03_neighbourHist.pdf")
-    plt.close()
-    print("Neighbour histogram figure saved as", outputDir + "/03_neighbourHist.pdf")
-    bins = 0.5*(binEdges[1:]+binEdges[:-1])
-    bins = np.insert(bins, 0, 0)
-    n = np.insert(n, 0, 0)
-    dn = np.diff(n)
-    minimaIndices = []
-    maximaIndices = []
-    previousValue = 1E99
-    for index, val in enumerate(dn):
-        if (previousValue <= 0) and (val > 0):
-            minimaIndices.append(index)
-        if (previousValue >= 0) and (val < 0):
-            maximaIndices.append(index)
-        previousValue = val
-    # Minimum is half way between the first maximum and the first minimum of the distribution
-    cutOff = (bins[maximaIndices[0]] + bins[minimaIndices[0]]) / 2.0
-    return cutOff
+            if chromo1.species == 'Donor':
+                separationDistDonor.append(separation)
+            elif chromo1.species == 'Acceptor':
+                separationDistAcceptor.append(separation)
+    cutOffs = []
+    material = ['Donor', 'Acceptor']
+    for materialType, separationDist in enumerate([separationDistDonor, separationDistAcceptor]):
+        if len(separationDist) == 0:
+            cutOffs.append(None)
+            continue
+        plt.figure()
+        (n, binEdges, patches) = plt.hist(separationDist, bins = 20, color = 'b')
+        plt.xlabel(material[materialType] + " Chromophore Separation (Ang)")
+        plt.ylabel("Frequency (Arb. U.)")
+        plt.savefig(outputDir + "/03_neighbourHist" + material[materialType] + ".pdf")
+        plt.close()
+        print("Neighbour histogram figure saved as", outputDir + "/03_neighbourHist" + material[materialType] + ".pdf")
+        bins = 0.5*(binEdges[1:]+binEdges[:-1])
+        bins = np.insert(bins, 0, 0)
+        n = np.insert(n, 0, 0)
+        dn = np.diff(n)
+        minimaIndices = []
+        maximaIndices = []
+        previousValue = 1E99
+        for index, val in enumerate(dn):
+            if (previousValue <= 0) and (val > 0):
+                minimaIndices.append(index)
+            if (previousValue >= 0) and (val < 0):
+                maximaIndices.append(index)
+            previousValue = val
+        # Minimum is half way between the first maximum and the first minimum of the distribution
+        cutOffs.append((bins[maximaIndices[0]] + bins[minimaIndices[0]]) / 2.0)
+    return cutOffs
 
 
-def getStacks(chromophoreList, morphologyShape, cutOff, periodic=True):
-    # Create a neighbourlist based on the cutoff
-    neighbourDict = createNeighbourList(chromophoreList, morphologyShape, cutOff, periodic)
-    # Do the usual stackList neighbourList stuff
-    stackList = [_ for _ in range(len(chromophoreList))]
-    for stackID in range(len(stackList)):
-        stackList = updateStack(stackID, stackList, neighbourDict)
-    print("There are", len(set(stackList)), "stacks in the system")
-    stackDict = {}
-    for index, chromophore in enumerate(chromophoreList):
-        stackDict[chromophore.ID] = stackList[index]
-    return stackDict
+def getStacks(chromophoreList, morphologyShape, cutOffDonor, cutOffAcceptor, periodic=True):
+    cutOffs = [cutOffDonor, cutOffAcceptor]
+    materialsToCheck = ['Donor', 'Acceptor']
+    stackDicts = []
+    for typeIndex, materialType in enumerate(materialsToCheck):
+        cutOff = cutOffs[typeIndex]
+        if cutOff is None:
+            stackDicts.append(None)
+            continue
+        # Create a neighbourlist based on the cutoff
+        neighbourDict = createNeighbourList(chromophoreList, morphologyShape, cutOff, periodic, materialType)
+        # Do the usual stackList neighbourList stuff
+        stackList = [_ for _ in range(len(chromophoreList))]
+        for stackID in range(len(stackList)):
+            stackList = updateStack(stackID, stackList, neighbourDict)
+        print("There are", len(set(stackList)), materialType, "stacks in the system")
+        stackDict = {}
+        for index, chromophore in enumerate(chromophoreList):
+            if chromophore.species != materialType:
+                continue
+            stackDict[chromophore.ID] = stackList[index]
+        stackDicts.append(stackDict)
+    return stackDicts
 
 
-def createNeighbourList(chromophoreList, morphologyShape, cutOff, periodic=True):
+def createNeighbourList(chromophoreList, morphologyShape, cutOff, periodic, materialType):
     neighbourDict = {}
     for chromo1 in chromophoreList:
         for [chromo2ID, relImage] in chromo1.neighbours:
             if periodic is False:
                 if not np.array_equal(relImage, [0, 0, 0]):
                     continue
+            if chromo1.species != materialType:
+                continue
             chromo1Posn = chromo1.posn
             chromo2Posn = np.array(chromophoreList[chromo2ID].posn) + (np.array(relImage) * np.array(morphologyShape))
             separation = np.linalg.norm(chromo2Posn - chromo1Posn)
@@ -561,10 +584,14 @@ def updateStack(atomID, clusterList, neighbourDict):
     return clusterList
 
 
-def plotStacks3D(outputDir, chromophoreList, stackDict, simDims):
+def plotStacks3D(outputDir, chromophoreList, stackDicts, simDims):
     fig = plt.figure()
     ax = p3.Axes3D(fig)
     colours = ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w']
+    stackDict = {}
+    for dictionary in stackDicts:
+        if dictionary is not None:
+            stackDict.update(dictionary)
     stackList = {}
     for chromophore in chromophoreList:
         stackID = stackDict[chromophore.ID]
@@ -574,7 +601,10 @@ def plotStacks3D(outputDir, chromophoreList, stackDict, simDims):
             stackList[stackID].append(chromophore)
     for stackID, chromos in enumerate(stackList.values()):
         for chromo in chromos:
-            ax.scatter(chromo.posn[0], chromo.posn[1], chromo.posn[2], c = colours[stackID%8], edgecolors = None, s = 40)
+            if chromo.species == 'Donor':
+                ax.scatter(chromo.posn[0], chromo.posn[1], chromo.posn[2], facecolors = 'w', edgecolors = colours[stackID%8], s = 40)
+            elif chromo.species == 'Acceptor':
+                ax.scatter(chromo.posn[0], chromo.posn[1], chromo.posn[2], c = colours[stackID%8], edgecolors = None, s = 40)
     # Draw boxlines
     # Varying X
     ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][0]], c = 'k', linewidth = 1.0)
@@ -705,7 +735,7 @@ def plotDeltaEij(deltaEij, gaussBins, fitArgs, dataType, fileName):
     print("Figure saved as", fileName)
 
 
-def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDict, CGToMolID, dataDict):
+def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict):
     # Create all the empty lists we need
     hopTypes = ['intra', 'inter']
     hopTargets = ['Stack', 'Mol']
@@ -739,17 +769,17 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDict, 
             if chromo2.ID < chromo.ID:
                 continue
             # Do intra- / inter- stacks
-            if stackDict[chromo.ID] == stackDict[chromo.neighbours[index][0]]:
-                if chromo.species == 'Acceptor':
+            if chromo.species == 'Acceptor':
+                if stackDicts[1][chromo.ID] == stackDicts[1][chromo.neighbours[index][0]]:
                     propertyLists['intraStackRatesAcceptor'].append(rate)
                     propertyLists['intraStackTIsAcceptor'].append(Tij)
                 else:
-                    propertyLists['intraStackRatesDonor'].append(rate)
-                    propertyLists['intraStackTIsDonor'].append(Tij)
-            else:
-                if chromo.species == 'Acceptor':
                     propertyLists['interStackRatesAcceptor'].append(rate)
                     propertyLists['interStackTIsAcceptor'].append(Tij)
+            else:
+                if stackDicts[2][chromo.ID] == stackDicts[2][chromo.neighbours[index][0]]:
+                    propertyLists['intraStackRatesDonor'].append(rate)
+                    propertyLists['intraStackTIsDonor'].append(Tij)
                 else:
                     propertyLists['interStackRatesDonor'].append(rate)
                     propertyLists['interStackTIsDonor'].append(Tij)
@@ -899,7 +929,8 @@ def calculateMobility(directory, currentCarrierType, carrierData, simDims, plot3
     anisotropy = plotAnisotropy(carrierData, directory, simDims, currentCarrierType, plot3DGraphs)
     if (carrierHistory is not None) and plot3DGraphs:
         print("Determining carrier hopping connections...")
-        plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
+        print("PLOT CONNECTIONS DEBUG REMOVE 929")
+        #plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
     times, MSDs = helperFunctions.parallelSort(times, MSDs)
     print("Calculating MSD...")
     mobility, mobError, rSquared = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, currentCarrierType)
@@ -913,7 +944,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--threeD", action="store_true", required=False, help="If present, use matplotlib to plot the 3D graphs (3D network, anisotropy and stack positions. This takes a while (usually a couple of minutes) to plot. Defaults to False.")
     parser.add_argument("-p", "--periodicStacks", action="store_true", required=False, help="If present, allow periodic connections to add chromophores to stacks, as well as non-periodic connections (this usually reduces the number of stacks in the system). Defaults to False.")
-    parser.add_argument("-c", "--cutOff", type=float, default=None, required=False, help="Specify a manual cut-off for the determination of stacks. Connections with separation > cut-off will be classed as inter-stack. If omitted, stack cut-off will be determined automatically as the first minimum of the RDF.")
+    parser.add_argument("-d", "--cutOffDonor", type=float, default=None, required=False, help="Specify a manual cut-off for the determination of stacks within the donor material. Connections with separation > cut-off will be classed as inter-stack. If omitted, stack cut-off will be determined automatically as the first minimum of the RDF.")
+    parser.add_argument("-a", "--cutOffAcceptor", type=float, default=None, required=False, help="Specify a manual cut-off for the determination of stacks within the acceptor material. Connections with separation > cut-off will be classed as inter-stack. If omitted, stack cut-off will be determined automatically as the first minimum of the RDF.")
     parser.add_argument("-s", "--sequence", type=lambda s: [float(item) for item in s.split(',')], default=None, required=False, help='Create a figure in the current directory that describes the evolution of the anisotropy/mobility using the specified comma-delimited string as the sequence of x values. For instance -s "1.5,1.75,2.0,2.25,2.5" will assign each of the 5 following directories these x-values when plotting the mobility evolution.')
     parser.add_argument("-x", "--xlabel", default="Temperature (Arb. U.)", required=False, help='Specify an x-label for the combined plot (only used if -s is specified). Default = "Temperature (Arb. U.)"')
     args, directoryList = parser.parse_known_args()
@@ -966,17 +998,25 @@ if __name__ == "__main__":
         tempDir = directory + '/figures'
         CGToMolID = determineMoleculeIDs(CGToAAIDMaster, AAMorphologyDict, parameterDict, chromophoreList)
         dataDict = plotEnergyLevels(tempDir, chromophoreList, dataDict)
-        if args.cutOff is None:
-            print("No cut-off manually specified, therefore automatically finding cutOff as the midpoint between the first maxmimum and the first minimum of the neighbour distance distribution.")
+        if (args.cutOffDonor is None) or (args.cutOffAcceptor is None):
+            print("No cut-off manually specified for either the donor or acceptor material, therefore automatically finding the relevant cutOff as the midpoint between the first maxmimum and the first minimum of the neighbour distance distribution...")
             print("Considering periodic neighbours is", args.periodicStacks)
-            cutOff = getNeighbourCutOff(chromophoreList, morphologyShape, tempDir, periodic=args.periodicStacks)
+            [calculatedCutOffDonor, calculatedCutOffAcceptor] = getNeighbourCutOff(chromophoreList, morphologyShape, tempDir, periodic=args.periodicStacks)
+        if args.cutOffDonor is None:
+            cutOffDonor = calculatedCutOffDonor
         else:
-            cutOff = args.cutOff
-        print("Cut off in Angstroems =", cutOff)
-        stackDict = getStacks(chromophoreList, morphologyShape, cutOff, periodic=args.periodicStacks)
+            cutOffDonor = args.cutOffDonor
+        if args.cutOffAcceptor is None:
+            cutOffAcceptor = calculatedCutOffAcceptor
+        else:
+            cutOffAcceptor = args.cutOffAcceptor
+        print("Cut off in Angstroems (Donor) =", cutOffDonor)
+        print("Cut off in Angstroems (Acceptor) =", cutOffAcceptor)
+        stackDicts = getStacks(chromophoreList, morphologyShape, cutOffDonor, cutOffAcceptor, periodic=args.periodicStacks)
         if args.threeD:
-            plotStacks3D(tempDir, chromophoreList, stackDict, simDims)
-        dataDict = plotMixedHoppingRates(tempDir, chromophoreList, parameterDict, stackDict, CGToMolID, dataDict)
+            plotStacks3D(tempDir, chromophoreList, stackDicts, simDims)
+        raise SystemError("LAST BIT")
+        dataDict = plotMixedHoppingRates(tempDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict)
         print("\n")
         print("Writing CSV Output File...")
         writeCSV(dataDict, directory)
