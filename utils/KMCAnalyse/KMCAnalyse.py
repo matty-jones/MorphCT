@@ -19,6 +19,7 @@ import shutil
 import glob
 import re
 import argparse
+import copy
 
 elementaryCharge = 1.60217657E-19  # C
 kB = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}
@@ -278,7 +279,14 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType, plot3DGraphs):
     zvals = []
     colours = []
     simDimsnm = list(map(list, np.array(simDims) / 10.))
-    for carrierNo, posn in enumerate(carrierData['finalPosition']):
+    # Get the indices of the carriers that travelled the furthest
+    if len(carrierData['finalPosition']) <= 1000:
+        carrierIndicesToUse = range(carrierData['finalPosition'])
+    else:
+        displacements = copy.deepcopy(np.array(carrierData['displacement']))
+        carrierIndicesToUse = displacements.argsort()[-1000:][::-1]
+    for carrierNo in carrierIndicesToUse:
+        posn = carrierData['finalPosition'][carrierNo]
         #if bool(sum([x < -3 or x > 3 for x in image])):
         #    continue
         position = [0.0, 0.0, 0.0]
@@ -338,9 +346,10 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType, plot3DGraphs):
     elif carrierType == 'Electron':
         figureIndex = '09'
     plt.title('Anisotropy (' + carrierType + ')', y = 1.1)
-    plt.savefig(directory + '/figures/' + figureIndex + '_anisotropy' + carrierType + '.pdf', bbox_inches='tight')
+    fileName = directory + '/figures/' + figureIndex + '_anisotropy' + carrierType + '.pdf'
+    plt.savefig(fileName, bbox_inches='tight')
     plt.clf()
-    print("Figure saved as", directory + "/figures/anisotropy" + carrierType + ".pdf")
+    print("Figure saved as", fileName)
     return anisotropy
 
 
@@ -929,7 +938,7 @@ def calculateMobility(directory, currentCarrierType, carrierData, simDims, plot3
     anisotropy = plotAnisotropy(carrierData, directory, simDims, currentCarrierType, plot3DGraphs)
     if (carrierHistory is not None) and plot3DGraphs:
         print("Determining carrier hopping connections...")
-        plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
+        #plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
     times, MSDs = helperFunctions.parallelSort(times, MSDs)
     print("Calculating MSD...")
     mobility, mobError, rSquared = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, currentCarrierType)
