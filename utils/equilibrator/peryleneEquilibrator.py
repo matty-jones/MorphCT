@@ -10,6 +10,7 @@ import hoomd.deprecated
 
 
 def setCoeffs():
+    # Perylene: Sigma = 3.8 Ang, Epsilon = 0.1217 kCal/mol
     ljnl = hoomd.md.nlist.cell()
     lj = hoomd.md.pair.lj(r_cut=2.5, nlist=ljnl)
     lj.pair_coeff.set('CP', 'CP', epsilon=1.0, sigma=1.0)
@@ -48,7 +49,7 @@ def setCoeffs():
     harmonic_dihedral.dihedral_coeff.set('CP-CP-CP-CN', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
 
 
-def modifyMorphology(morphologyDict):
+def modifyMorphology(morphologyDict, charges):
     print("Resetting Rigid Bodies...")
     morphologyDict['body'] = [-1] * len(morphologyDict['type'])
     if len(morphologyDict['bond']) == 0:
@@ -57,7 +58,7 @@ def modifyMorphology(morphologyDict):
     else:
         flexibleMorphologyDict = copy.deepcopy(morphologyDict)
     print("Adding Charges to System...")
-    chargedMorphologyDict = addCharges(flexibleMorphologyDict)
+    chargedMorphologyDict = addCharges(flexibleMorphologyDict, charges)
     return chargedMorphologyDict
 
 
@@ -76,16 +77,16 @@ def addConstraints(morphologyDict):
     return morphologyDict
 
 
-def addCharges(morphologyDict):
+def addCharges(morphologyDict, charges):
     # Firstly, need to update the atom types based on the number of bonds they have.
     fixedAtomTypesDict = fixAtomTypes(morphologyDict)
     # Then add the charges (zeroed out so that we can incrementally update them)
     fixedAtomTypesDict['charge'] = [0 for _ in range(len(fixedAtomTypesDict['type']))]
     for atomIndex, atomType in enumerate(fixedAtomTypesDict['type']):
         if atomType == 'CP':
-            fixedAtomTypesDict['charge'][atomIndex] = 3.880
+            fixedAtomTypesDict['charge'][atomIndex] = charges[atomType]
         elif atomType == 'CN':
-            fixedAtomTypesDict['charge'][atomIndex] = -5.820
+            fixedAtomTypesDict['charge'][atomIndex] = charges[atomType]
     return fixedAtomTypesDict
 
 
@@ -144,7 +145,7 @@ if __name__ == "__main__":
 
     for fileName in fileList:
         morphologyDict = helperFunctions.loadMorphologyXML(fileName)
-        morphologyDict = modifyMorphology(morphologyDict)
+        morphologyDict = modifyMorphology(morphologyDict, charges)
         newFileName = fileName.split('.')[0] + '_wConsCharge.xml'
         helperFunctions.writeMorphologyXML(morphologyDict, newFileName)
 
