@@ -3,50 +3,49 @@ sys.path.append('../../code')
 import helperFunctions
 import copy
 import argparse
-import numpy as np
 import hoomd
 import hoomd.md
 import hoomd.deprecated
+import numpy as np
 
 
-def setCoeffs():
-    # Perylene: Sigma = 3.8 Ang, Epsilon = 0.1217 kCal/mol
+def setCoeffs(morphologyDict):
+    # Perylothiophene: Sigma = 3.8 Ang, Epsilon = 0.358 kCal/mol
+    morphologyBonds = sorted(list(set([x[0] for x in morphologyDict['bond']])))
+    morphologyAngles = sorted(list(set([x[0] for x in morphologyDict['angle']])))
+    morphologyDihedrals = sorted(list(set([x[0] for x in morphologyDict['dihedral']])))
+    morphologyImpropers = sorted(list(set([x[0] for x in morphologyDict['bond']])))
+
     ljnl = hoomd.md.nlist.cell()
     lj = hoomd.md.pair.lj(r_cut=2.5, nlist=ljnl)
-    lj.pair_coeff.set('CP', 'CP', epsilon=1.0, sigma=1.0)
-    lj.pair_coeff.set('CN', 'CN', epsilon=1.0, sigma=1.0)
-    lj.pair_coeff.set('CP', 'CN', epsilon=1.0, sigma=1.0)
+    carbonTypes = ['C' + str(x + 1) for x in range(20)]
+    for carbon1 in carbonTypes:
+        for carbon2 in carbonTypes:
+            lj.pair_coeff.set(carbon1, carbon2, epsilon=0.32, sigma=1.0)
+        lj.pair_coeff.set(carbon1, 'S', epsilon=0.57, sigma=0.96)
+    lj.pair_coeff.set('S', 'S', epsilon=1.0, sigma=0.92)
 
     pppmnl = hoomd.md.nlist.cell()
     pppm = hoomd.md.charge.pppm(group=hoomd.group.charged(), nlist = pppmnl)
     pppm.set_params(Nx=64,Ny=64,Nz=64,order=6,rcut=2.70)
 
     harmonic_bond = hoomd.md.bond.harmonic()
-    harmonic_bond.bond_coeff.set('CP-CP', k=30000.0, r0=0.4)
-    harmonic_bond.bond_coeff.set('CP-CN', k=30000.0, r0=0.4)
-    harmonic_bond.bond_coeff.set('CN-CP', k=30000.0, r0=0.4)
-    harmonic_bond.bond_coeff.set('CN-CN', k=30000.0, r0=0.4)
+    for bond in morphologyBonds:
+        if bond.count('C') == 1:
+            harmonic_bond.bond_coeff.set(bond, k=30000.0, r0=0.45)
+        elif bond.count('C') == 2:
+            harmonic_bond.bond_coeff.set(bond, k=30000.0, r0=0.4)
 
     harmonic_angle = hoomd.md.angle.harmonic()
-    harmonic_angle.angle_coeff.set('CN-CN-CN', k=380.0, t0=2.09)
-    harmonic_angle.angle_coeff.set('CN-CN-CP', k=380.0, t0=2.09)
-    harmonic_angle.angle_coeff.set('CN-CP-CP', k=380.0, t0=2.09)
-    harmonic_angle.angle_coeff.set('CP-CN-CN', k=380.0, t0=2.09)
-    harmonic_angle.angle_coeff.set('CP-CN-CP', k=380.0, t0=2.09)
-    harmonic_angle.angle_coeff.set('CP-CP-CN', k=380.0, t0=2.09)
-    harmonic_angle.angle_coeff.set('CP-CP-CP', k=380.0, t0=2.09)
+    for angle in morphologyAngles:
+        if angle.count('C') == 2:
+            harmonic_angle.angle_coeff.set(angle, k=380.0, t0=1.60)
+        elif angle.count('C') == 3:
+            harmonic_angle.angle_coeff.set(angle, k=380.0, t0=2.09)
 
     harmonic_dihedral = hoomd.md.dihedral.opls()
-    harmonic_dihedral.dihedral_coeff.set('CN-CN-CN-CN', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
-    harmonic_dihedral.dihedral_coeff.set('CN-CN-CN-CP', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
-    harmonic_dihedral.dihedral_coeff.set('CN-CN-CP-CP', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
-    harmonic_dihedral.dihedral_coeff.set('CN-CP-CP-CP', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
-    harmonic_dihedral.dihedral_coeff.set('CP-CN-CN-CN', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
-    harmonic_dihedral.dihedral_coeff.set('CP-CN-CN-CP', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
-    harmonic_dihedral.dihedral_coeff.set('CP-CN-CP-CP', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
-    harmonic_dihedral.dihedral_coeff.set('CP-CP-CN-CN', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
-    harmonic_dihedral.dihedral_coeff.set('CP-CP-CN-CP', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
-    harmonic_dihedral.dihedral_coeff.set('CP-CP-CP-CN', k1=0.0, k2=50.0, k3=0.0, k4=0.0)
+    for dihedral in morphologyDihedrals:
+        harmonic_dihedral.dihedral_coeff.set(dihedral, k1=0.0, k2=50.0, k3=0.0, k4=0.0)
 
 
 def modifyMorphology(morphologyDict, charges):
@@ -63,11 +62,11 @@ def modifyMorphology(morphologyDict, charges):
 
 
 def addConstraints(morphologyDict):
-    templateMorph = helperFunctions.loadMorphologyXML('./PEtemplate.xml')
-    # One molecule of Perylene contains 20 atoms.
-    # If we assume the molecules are coherent, we can add 20 to the constraint atomIDs for each molecule
+    templateMorph = helperFunctions.loadMorphologyXML('./relabeled_PTTemplate.xml')
+    # One molecule of Perylothiophene contains 21 atoms.
+    # If we assume the molecules are coherent, we can add 21 to the constraint atomIDs for each molecule
     constraintTypes = ['bond', 'angle', 'dihedral', 'improper']
-    for IDModifier in range(0, len(morphologyDict['type']), 20):
+    for IDModifier in range(0, len(morphologyDict['type']), 21):
         # Iterate over constraint types
         for constraintType in constraintTypes:
             # Iterate over constraints
@@ -83,29 +82,21 @@ def addCharges(morphologyDict, charges):
     # Then add the charges (zeroed out so that we can incrementally update them)
     fixedAtomTypesDict['charge'] = [0 for _ in range(len(fixedAtomTypesDict['type']))]
     for atomIndex, atomType in enumerate(fixedAtomTypesDict['type']):
-        if atomType == 'CP':
-            fixedAtomTypesDict['charge'][atomIndex] = charges[atomType]
-        elif atomType == 'CN':
-            fixedAtomTypesDict['charge'][atomIndex] = charges[atomType]
+        fixedAtomTypesDict['charge'][atomIndex] = charges[atomType]
+    #print(sorted(list(set([x[0] for x in fixedAtomTypesDict['bond']]))))
+    #print(sorted(list(set([x[0] for x in fixedAtomTypesDict['angle']]))))
+    #print(sorted(list(set([x[0] for x in fixedAtomTypesDict['dihedral']]))))
+    #print(sorted(list(set([x[0] for x in fixedAtomTypesDict['improper']]))))
+    #exit()
     return fixedAtomTypesDict
 
 
 def fixAtomTypes(morphologyDict):
-    # If the carbon has 2 bonds, it is an `outer' atom that should have a positive charge ('CP')
-    # If the carbon has 3 bonds, it is an `inner' atom that should have a negative charge ('CN')
-    bondNumbers = {}
-    for bond in morphologyDict['bond']:
-        for atomID in bond[1:]:
-            if atomID not in bondNumbers:
-                bondNumbers[atomID] = 1
-            else:
-                bondNumbers[atomID] += 1
-    positiveIDs = [atomID for atomID, bondNumber in bondNumbers.items() if bondNumber == 2]
-    negativeIDs = [atomID for atomID, bondNumber in bondNumbers.items() if bondNumber == 3]
-    for index in positiveIDs:
-        morphologyDict['type'][index] = 'CP'
-    for index in negativeIDs:
-        morphologyDict['type'][index] = 'CN'
+    # Iterate through the atom typelist to give the correct atom types
+    print(len(morphologyDict['type']))
+    for AAID, typeName in enumerate(morphologyDict['type']):
+        if typeName == 'C':
+            morphologyDict['type'][AAID] = 'C' + str(AAID%21 + 1)
     # Finally, fix all the constraint names
     constraintTypes = ['bond', 'angle', 'dihedral', 'improper']
     for constraintType in constraintTypes:
@@ -136,9 +127,55 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--temperature", type=float, required=True, help="The temperature of the system")
     #parser.add_argument("-p", "--perylothiophene", action="store_true", required=False, help="If present, allow periodic connections to add chromophores to stacks, as well as non-periodic connections (this usually reduces the number of stacks in the system). Defaults to False.")
     args, fileList = parser.parse_known_args()
-
-    charges = {'CP': 3.880, 'CN': -5.820}
-    masses = {'CP': 1.000, 'CN': 0.923}
+    # PT Charges given by PTCharges_NWChem.out in this directory
+    # Calculated by: CH = <CH>, CC = <C>, S = S, where <> denotes average and CH is the carbon + bonded hydrogen for relevant atoms
+    # C Atoms (+ bonded Hydrogens):
+    # 1 + 22 = -0.232266 + 0.149556 = -0.082710
+    # 2 = 0.157736
+    # 3 + 23 = -0.200920 + 0.160898 = -0.040022
+    # 4 + 24 = -0.142969 + 0.132762 = -0.010207
+    # 5 = 0.016040
+    # 6 = 0.069730
+    # 7 + 25 = -0.238319 + 0.151989 = -0.086330
+    # 8 + 26 = -0.234022 + 0.198674 = -0.035348
+    # 9 = -0.111277
+    # 10 = 0.152129
+    # 11 = 0.055825
+    # 12 = 0.086899
+    # 13 = -0.126481
+    # 14 + 27 = -0.240882 + 0.181823 = -0.059059
+    # 15 + 28 = -0.155182 + 0.140634 = -0.014548
+    # 16 + 29 = -0.177484 + 0.142082 = -0.035402
+    # 17 = 0.112991
+    # 18 + 30 = -0.255068 + 0.152194 = -0.102874
+    # 19 + 31 = -0.228936 + 0.184658 = -0.044278
+    # 20 = 0.182532
+    # S Atoms:
+    # 21 = -0.085347
+    chargesE = {'C1': -0.082710, 'C2': 0.157736, 'C3': -0.040022,
+                'C4': -0.010207, 'C5': 0.016040, 'C6': 0.069730,
+                'C7': -0.086330, 'C8': -0.035348, 'C9': -0.111277,
+                'C10': 0.152129, 'C11': 0.055825, 'C12': 0.086899,
+                'C13': -0.126481, 'C14': -0.059059, 'C15': -0.014548,
+                'C16': -0.035402, 'C17': 0.112991, 'C18': -0.102874,
+                'C19': -0.044278, 'C20': 0.182532, 'S': -0.085346}
+    # Note: I added 1E-6 to the 'S' charge to make it sum to zero (rounding error in NWChem output)
+    charges = {}
+    # Convert DFT outputs to HOOMD dimensionless units. Epsilon = 0.358 kCal/mol = 
+    # 1.498 kJ/mol = 2.48727492E-21 J
+    # Sigma = 3.8E-10 m
+    # E0 = 8.85E-12 [SI]
+    e0 = 8.85418782E-12
+    sigma = 3.8E-10
+    epsilon = 2.48727492E-21
+    chargeFactor = 1.60217662E-19 / (4 * np.pi * e0 * sigma * epsilon)**0.5
+    for atomType, charge in chargesE.items():
+        charges[atomType] = charge * chargeFactor
+    masses = {'S': 1.000}
+    for DFTCHIndex in [1, 3, 4, 7, 8, 14, 16, 18, 19]:
+        masses['C' + str(DFTCHIndex)] = 0.406
+    for DFTCIndex in [2, 5, 6, 9, 10, 11, 12, 13, 15, 17, 20]:
+        masses['C' + str(DFTCIndex)] = 0.375
     chargeIncrements = 20
     chargeTimesteps = 10000
     run_time = 1e7
@@ -161,7 +198,7 @@ if __name__ == "__main__":
         # Finally, restore the snapshot
         system.restore_snapshot(updatedSnapshot)
 
-        setCoeffs()
+        setCoeffs(morphologyDict)
 
         hoomd.md.integrate.mode_standard(dt=0.001);
         integrator = hoomd.md.integrate.nvt(group=hoomd.group.all(), tau=1.0, kT=args.temperature)
