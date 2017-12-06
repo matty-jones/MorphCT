@@ -134,8 +134,9 @@ def plotConnections(chromophoreList, simDims, carrierHistory, directory, carrier
                     if neighbour[0] != chromophoreList[chromo2].ID:
                         continue
                     if neighbour[1] != [0, 0, 0]:
-                        plotConnection = False
-                        break
+                        coords2 = np.array(coords2) + (np.array(neighbour[1]) * np.array([axis[1] - axis[0] for axis in simDims]))
+                        #plotConnection = False
+                        #break
                 if plotConnection is True:
                     #ax.scatter(coords1[0], coords1[1], coords1[2], c = 'k', s = '5')
                     #ax.scatter(coords2[0], coords2[1], coords2[2], c = 'k', s = '5')
@@ -938,7 +939,7 @@ def calculateMobility(directory, currentCarrierType, carrierData, simDims, plot3
     anisotropy = plotAnisotropy(carrierData, directory, simDims, currentCarrierType, plot3DGraphs)
     if (carrierHistory is not None) and plot3DGraphs:
         print("Determining carrier hopping connections...")
-        #plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
+        plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
     times, MSDs = helperFunctions.parallelSort(times, MSDs)
     print("Calculating MSD...")
     mobility, mobError, rSquared = plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, currentCarrierType)
