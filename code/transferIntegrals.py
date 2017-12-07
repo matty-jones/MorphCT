@@ -535,8 +535,10 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         # DEBUG Testing - you can remove these as the assertions in updatePairChromophoreList should
         # already cover them, however they are fast and will ensure that there are no errors in the
         # chromophoreList after calculating the Tij and DeltaEijs
-        checkForwardBackwardHopTij(chromophoreList)
-        checkForwardBackwardHopEij(chromophoreList)
+        TijError = checkForwardBackwardHopTij(chromophoreList)
+        DeltaEError = checkForwardBackwardHopEij(chromophoreList)
+        if TijError or DeltaEError:
+            raise SystemError("Assertions failed, please address in code.")
         # END OF DEBUG Testing
         print("Pair chromophore calculations completed. Saving...")
         helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleName)
@@ -580,10 +582,12 @@ def checkForwardBackwardHopTij(chromophoreList):
                     donorErrors += 1
                 elif chromo1.species == 'Acceptor':
                     acceptorErrors += 1
-    if donorErrors > 0:
-        print("\nThere were", donorErrors, "cases where found in the donor chromophores.")
-    if acceptorErrors > 0:
-        print("There were", acceptorErrors, "total errors found in the acceptor chromophores.")
+    if (donorErrors > 0) or (acceptorErrors > 0):
+        print("--== CRITICAL ERROR ==--")
+        print("\nThere were", donorErrors, "cases where Tij != Tji in the donor chromophores.")
+        print("\nThere were", acceptorErrors, "cases where Tij != Tji in the acceptor chromophores.")
+        return 1
+    return 0
 
 
 def checkForwardBackwardHopEij(chromophoreList):
@@ -615,10 +619,12 @@ def checkForwardBackwardHopEij(chromophoreList):
                     donorErrors += 1
                 elif chromophore.species == 'Acceptor':
                     acceptorErrors += 1
-    if donorErrors > 0:
-        print("\nThere were", donorErrors, "total errors found in the donor chromophores.")
-    if acceptorErrors > 0:
-        print("There were", acceptorErrors, "total errors found in the acceptor chromophores.")
+    if (donorErrors > 0) or (acceptorErrors > 0):
+        print("--== CRITICAL ERROR ==--")
+        print("\nThere were", donorErrors, "cases where Eij != -Eji in the donor chromophores.")
+        print("\nThere were", acceptorErrors, "cases where Eij != -Eji in the acceptor chromophores.")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
