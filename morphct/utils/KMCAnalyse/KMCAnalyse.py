@@ -204,7 +204,7 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
     #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
-    fileName = '17_LinMSD' + carrierType + '.pdf'
+    fileName = '18_LinMSD' + carrierType + '.pdf'
     plt.savefig(directory + '/figures/' + fileName)
     plt.clf()
     print("Figure saved as", directory + "/figures/" + fileName)
@@ -214,7 +214,7 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
     #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
-    fileName = '18_SemiLogMSD' + carrierType + '.pdf'
+    fileName = '19_SemiLogMSD' + carrierType + '.pdf'
     plt.savefig(directory + '/figures/' + fileName)
     plt.clf()
     print("Figure saved as", directory + "/figures/" + fileName)
@@ -226,7 +226,7 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     plt.xscale('log')
     plt.yscale('log')
     #plt.title('Mob = '+str(mobility)+' cm'+r'$^{2}$/Vs', y = 1.1)
-    fileName = '19_LogMSD' + carrierType + '.pdf'
+    fileName = '20_LogMSD' + carrierType + '.pdf'
     plt.savefig(directory + '/figures/' + fileName)
     plt.clf()
     print("Figure saved as", directory + "/figures/" + fileName)
