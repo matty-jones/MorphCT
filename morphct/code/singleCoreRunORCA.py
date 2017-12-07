@@ -34,7 +34,7 @@ if __name__ == '__main__':
             try:
                 with open(outputFileName, 'r') as testFile:
                     pass
-                helperFunctions.writeToFile(logFile, [outputFileName + ' already exists! Skipping...'])
+                helperFunctions.writeToFile(logFile, [outputFileName + ' already exists, and overwriteCurrentData is ' + repr(overwrite) + '! Skipping...'])
                 continue
             except IOError:
                 pass

@@ -38,7 +38,7 @@ def loadORCAOutput(fileName):
                 if len(element) > 1:
                     try:
                         dataInLine.append(float(element))
-                    except:
+                    except ValueError:
                         continue
             if len(dataInLine) == 4:
                 orbitalData.append(dataInLine)
@@ -152,6 +152,7 @@ def rerunFails(failedChromoFiles, parameterDict, chromophoreList):
     procIDs = parameterDict['procIDs']
     outputDir = parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4]
     popList = []
+    permanentlyFailed = {}
     # Firstly, modify the input files to see if numerical tweaks make ORCA happier
     for failedFile, failedData in failedChromoFiles.items():
         failedCount = failedData[0]
@@ -159,6 +160,7 @@ def rerunFails(failedChromoFiles, parameterDict, chromophoreList):
         if errorCode == 1:
             # Don't delete the elements from the list here because we're still trying to iterate over this dict and it cannot change length!
             popList.append(failedFile)
+            permanentlyFailed[failedFile] = failedData
     # Now pop the correct elements from the failedChromoFiles dict
     for failedFile in popList:
         failedChromoFiles.pop(failedFile)
@@ -183,7 +185,7 @@ def rerunFails(failedChromoFiles, parameterDict, chromophoreList):
     # Wait for running jobs to finish
     [p.wait() for p in runningJobs]
     # Finally, return the failed files list to the main failure handler to see if we need to iterate
-    return failedChromoFiles
+    return failedChromoFiles, permanentlyFailed
 
 
 def calculateDeltaE(chromophoreList, chromo1ID, chromo2ID):
@@ -244,7 +246,12 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
     print("")
     # Rerun any failed ORCA jobs
     while len(failedSingleChromos) > 0:
-        failedSingleChromos = rerunFails(failedSingleChromos, parameterDict, chromophoreList)
+        failedSingleChromos, permanentlyFailed = rerunFails(failedSingleChromos, parameterDict, chromophoreList)
+        if len(permanentlyFailed) > 0:
+            print(permanentlyFailed)
+            print("--== CRITICAL ERROR ==--")
+            print("THE ABOVE SINGLE-CHROMOPHORE SYSTEMS FAILED PERMANENTLY. THESE NEED FIXING/REMOVING FROM THE SYSTEM BEFORE ANY FURTHER DATA CAN BE OBTAINED.")
+            raise SystemError("TERMINATING...")
         successfulReruns = []
         # Now check all of the files to see if we can update the chromophoreList
         for chromoName, chromoData in failedSingleChromos.items():
@@ -255,7 +262,7 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
                 chromophoreList[chromoID].HOMO_1, chromophoreList[chromoID].HOMO, chromophoreList[chromoID].LUMO, chromophoreList[chromoID].LUMO_1 = loadORCAOutput(orcaOutputDir + chromoName)
                 # This chromophore didn't fail, so remove it from the failed list
                 successfulReruns.append(chromoName)
-            except:
+            except ORCAError:
                 # This chromophore failed so increment its fail counter
                 failedSingleChromos[chromoName][0] += 1
                 continue
@@ -303,11 +310,44 @@ def updatePairChromophoreList(chromophoreList, parameterDict):
                 chromophoreList[neighbourID].neighboursDeltaE[reverseLoc] = - deltaE
                 chromophore.neighboursTI[neighbourLoc] = TI
                 chromophoreList[neighbourID].neighboursTI[reverseLoc] = TI
+                # DEBUG ASSERTIONS
+                # Check list index corresponds to chromophore ID
+                assert(chromoLocation == chromophoreList[chromoLocation].ID)
+                assert(chromoLocation == chromophore.ID)
+                # Check the neighbourLoc and reverseLoc give the correct chromophoreIDs
+                assert(chromophoreList[chromophore.ID].neighbours[neighbourLoc][0] == chromophoreList[neighbourID].ID)
+                assert(chromophoreList[neighbourID].neighbours[reverseLoc][0] == chromophoreList[chromophore.ID].ID)
+                # Check the chromophoreList has been updated after updating the chromophore instance
+                assert(chromophoreList[chromophore.ID].neighboursTI[neighbourLoc] == chromophore.neighboursTI[neighbourLoc])
+                # Check the TI of the forward and backward hops are the same
+                assert(chromophoreList[chromophore.ID].neighboursTI[neighbourLoc] == chromophoreList[neighbourID].neighboursTI[reverseLoc])
+                # Check the chromophoreList has been updated after updating the chromophore instance
+                assert(chromophoreList[chromophore.ID].neighboursDeltaE[neighbourLoc] == chromophore.neighboursDeltaE[neighbourLoc])
+                # Check the DeltaE of the forward and backward hops are *= -1
+                assert(chromophoreList[chromophore.ID].neighboursDeltaE[neighbourLoc] == -chromophoreList[neighbourID].neighboursDeltaE[reverseLoc])
+                # END DEBUG ASSERTIONS
             except ORCAError:
                 failedPairChromos[fileName] = [1, chromoLocation, neighbourID]
     print("")
     while len(failedPairChromos) > 0:
-        failedPairChromos = rerunFails(failedPairChromos, parameterDict, chromophoreList)
+        failedPairChromos, permanentlyFailed = rerunFails(failedPairChromos, parameterDict, chromophoreList)
+        if len(permanentlyFailed) > 0:
+            print("--== WARNING ==--")
+            print("The above chromophore-pair systems failed permanently. Setting their transfer integrals to zero, preventing these hops from ever taking place in the KMC.")
+            for fileName, chromoData in permanentlyFailed.items():
+                chromo1ID = chromoData[1]
+                chromo2ID = chromoData[2]
+                TI = 0.0
+                deltaE = 0.0
+                # Get the location of the neighbour's ID in the current chromophores's neighbourList
+                neighbourLoc = [neighbourData[0] for neighbourData in chromophoreList[chromo1ID].neighbours].index(chromo2ID)
+                # Get the location of the current chromophore's ID in the neighbour's neighbourList
+                reverseLoc = [neighbourData[0] for neighbourData in chromophoreList[chromo2ID].neighbours].index(chromo1ID)
+                # Update both the current chromophore and the neighbour (for the reverse hop)
+                chromophoreList[chromo1ID].neighboursDeltaE[neighbourLoc] = deltaE
+                chromophoreList[chromo2ID].neighboursDeltaE[reverseLoc] = - deltaE
+                chromophoreList[chromo1ID].neighboursTI[neighbourLoc] = TI
+                chromophoreList[chromo2ID].neighboursTI[reverseLoc] = TI
         successfulReruns = []
         for fileName, chromoData in failedPairChromos.items():
             print("Checking previously failed", fileName)
@@ -322,8 +362,10 @@ def updatePairChromophoreList(chromophoreList, parameterDict):
                     TI = calculateTI(dimerHOMO - dimerHOMO_1, deltaE)
                 elif species == 'Acceptor':
                     TI = calculateTI(dimerLUMO - dimerLUMO_1, deltaE)
-                # Get the location of the current chromophore.ID in the neighbour's neighbourList
-                reverseLoc = [neighbourData[0] for neighbourData in chromophoreList[neighbourID].neighbours].index(chromophore.ID)
+                # Get the location of the neighbour's ID in the current chromophores's neighbourList
+                neighbourLoc = [neighbourData[0] for neighbourData in chromophoreList[chromo1ID].neighbours].index(chromo2ID)
+                # Get the location of the current chromophore's ID in the neighbour's neighbourList
+                reverseLoc = [neighbourData[0] for neighbourData in chromophoreList[chromo2ID].neighbours].index(chromo1ID)
                 # Update both the current chromophore and the neighbour (for the reverse hop)
                 chromophoreList[chromo1ID].neighboursDeltaE[neighbourLoc] = deltaE
                 chromophoreList[chromo2ID].neighboursDeltaE[reverseLoc] = - deltaE
@@ -332,7 +374,16 @@ def updatePairChromophoreList(chromophoreList, parameterDict):
                 # This rerun was successful so remove this chromophore from the rerun list
                 successfulReruns.append(fileName)
                 print(fileName, "was successful!")
-            except:
+                # DEBUG ASSERTIONS
+                # Check the neighbourLoc and reverseLoc give the correct chromophoreIDs
+                assert(chromophoreList[chromo1ID].neighbours[neighbourLoc][0] == chromophoreList[chromo2ID].ID)
+                assert(chromophoreList[chromo2ID].neighbours[reverseLoc][0] == chromophoreList[chromo1ID].ID)
+                # Check the TI of the forward and backward hops are the same
+                assert(chromophoreList[chromo1ID].neighboursTI[neighbourLoc] == chromophoreList[chromo2ID].neighboursTI[reverseLoc])
+                # Check the DeltaE of the forward and backward hops are *= -1
+                assert(chromophoreList[chromo1ID].neighboursDeltaE[neighbourLoc] == -chromophoreList[chromo2ID].neighboursDeltaE[reverseLoc])
+                # END DEBUG ASSERTIONS
+            except ORCAError:
                 # This dimer failed so increment its fail counter
                 failedPairChromos[fileName][0] += 1
                 print(fileName, "still failed, incrementing counter")
@@ -481,6 +532,14 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     if (runPairs is True) or (parameterDict['overwriteCurrentData'] is True):
         print("Beginning analysis of chromophore pairs...")
         chromophoreList = updatePairChromophoreList(chromophoreList, parameterDict)
+        # DEBUG Testing - you can remove these as the assertions in updatePairChromophoreList should
+        # already cover them, however they are fast and will ensure that there are no errors in the
+        # chromophoreList after calculating the Tij and DeltaEijs
+        TijError = checkForwardBackwardHopTij(chromophoreList)
+        DeltaEError = checkForwardBackwardHopEij(chromophoreList)
+        if TijError or DeltaEError:
+            raise SystemError("Assertions failed, please address in code.")
+        # END OF DEBUG Testing
         print("Pair chromophore calculations completed. Saving...")
         helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleName)
     else:
@@ -488,10 +547,90 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
 
 
+def checkForwardBackwardHopTij(chromophoreList):
+    # Check reverse lookup: Tij === Tji
+    donorErrors = 0
+    acceptorErrors = 0
+    for chromo1 in chromophoreList:
+        chromo1ID = chromo1.ID
+        for neighbourIndex, chromo2Deets in enumerate(chromo1.neighbours):
+            chromo2ID = chromo2Deets[0]
+            chromo1To2TI = chromo1.neighboursTI[neighbourIndex]
+            # Sanity check
+            assert(chromo2ID == chromophoreList[chromo2ID].ID)
+            chromo2 = chromophoreList[chromo2ID]
+            neighbour2Index = 0
+            for neighbour2Index, chromo1Deets in enumerate(chromo2.neighbours):
+                if chromo1Deets[0] != chromo1ID:
+                    continue
+                chromo2To1TI = chromo2.neighboursTI[neighbour2Index]
+                break
+            assert(chromo1.species == chromo2.species)
+            try:
+                assert(chromo1To2TI == chromo2To1TI)
+                # Put other assertions in here
+            except AssertionError:
+                print("\n<ERROR FOUND>")
+                print("1 to 2", chromo1To2TI)
+                print("2 to 1", chromo2To1TI)
+                print("Chromo 1 ID =", chromo1ID, "Chromo 2 ID =", chromo2ID)
+                print("Chromo1 Neighbours: Look for index =", neighbourIndex, "in", chromo1.neighbours)
+                print("Chromo2 Neighbours: Look for index =", neighbour2Index, "in", chromo2.neighbours)
+                print("Chromo1 TIs: Look for index =", neighbourIndex, "in", chromo1.neighboursTI)
+                print("Chromo2 TIs: Look for index =", neighbour2Index, "in", chromo2.neighboursTI)
+                if chromo1.species == 'Donor':
+                    donorErrors += 1
+                elif chromo1.species == 'Acceptor':
+                    acceptorErrors += 1
+    if (donorErrors > 0) or (acceptorErrors > 0):
+        print("--== CRITICAL ERROR ==--")
+        print("\nThere were", donorErrors, "cases where Tij != Tji in the donor chromophores.")
+        print("\nThere were", acceptorErrors, "cases where Tij != Tji in the acceptor chromophores.")
+        return 1
+    return 0
+
+
+def checkForwardBackwardHopEij(chromophoreList):
+    # Check reverse lookup: Delta Eij === -Delta Eji
+    donorErrors = 0
+    acceptorErrors = 0
+    for chromophore in chromophoreList:
+        chromoID = chromophore.ID
+        for neighbourLoc, neighbourDeets in enumerate(chromophore.neighbours):
+            neighbourID = neighbourDeets[0]
+            assert(chromoID == chromophoreList[chromoID].ID)
+            assert(neighbourID == chromophoreList[neighbourID].ID)
+            # Get the location of the current chromophore.ID in the neighbour's neighbourList
+            reverseLoc = [neighbourData[0] for neighbourData in chromophoreList[neighbourID].neighbours].index(chromophore.ID)
+            assert(neighbourID == chromophoreList[chromoID].neighbours[neighbourLoc][0])
+            assert(chromoID == chromophoreList[neighbourID].neighbours[reverseLoc][0])
+            ## Update both the current chromophore and the neighbour (for the reverse hop)
+            try:
+                assert(chromophoreList[chromoID].neighboursDeltaE[neighbourLoc] == -chromophoreList[neighbourID].neighboursDeltaE[reverseLoc])
+            except AssertionError:
+                print("\nHOP FROM", chromoID, "TO", neighbourID)
+                print(neighbourID, "should be here", chromophore.neighbours[neighbourLoc])
+                print(chromoID, "should be here", chromophoreList[neighbourID].neighbours[reverseLoc])
+                print("--== Transfer Integrals ==--")
+                print("FORWARD:", chromophoreList[chromoID].neighboursTI[neighbourLoc], "BACKWARD:", chromophoreList[neighbourID].neighboursTI[reverseLoc])
+                print("--== Delta Eij ==--")
+                print("FORWARD:", chromophoreList[chromoID].neighboursDeltaE[neighbourLoc], "BACKWARD:", chromophoreList[neighbourID].neighboursDeltaE[reverseLoc])
+                if chromophore.species == 'Donor':
+                    donorErrors += 1
+                elif chromophore.species == 'Acceptor':
+                    acceptorErrors += 1
+    if (donorErrors > 0) or (acceptorErrors > 0):
+        print("--== CRITICAL ERROR ==--")
+        print("\nThere were", donorErrors, "cases where Eij != -Eji in the donor chromophores.")
+        print("\nThere were", acceptorErrors, "cases where Eij != -Eji in the acceptor chromophores.")
+        return 1
+    return 0
+
+
 if __name__ == "__main__":
     try:
         pickleFile = sys.argv[1]
-    except:
+    except NameError:
         print("Please specify the pickle file to load to continue the pipeline from this point.")
     AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
     execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)

@@ -44,7 +44,6 @@ class MDPhase:
         self.getFFCoeffs()
 
     def loadSystem(self, inputFile):
-        context.initialize()
         # Load the previous phases' xml for continuation
         systemXML = init.read_xml(filename=inputFile)
         # A snapshot is needed in order to update the velocities

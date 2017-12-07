@@ -109,11 +109,11 @@ class carrier:
         for axis in range(3):
             halfBoxLength = (self.simDims[axis][1] - self.simDims[axis][0]) / 2.0
             while deltaPosition[axis] > halfBoxLength:
-                # Crossed over a positive boundary, increment image by 1
+                # Crossed over a negative boundary, decrement image by 1
                 deltaPosition[axis] -= halfBoxLength * 2.0
                 self.image[axis] -= 1
             while deltaPosition[axis] < - halfBoxLength:
-                # Crossed over a negative boundary, decrement image by 1
+                # Crossed over a positive boundary, increment image by 1
                 deltaPosition[axis] += halfBoxLength * 2.0
                 self.image[axis] += 1
         # Carrier image now sorted, so update its current position
