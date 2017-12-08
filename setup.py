@@ -100,7 +100,7 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
         'console_scripts': [
-            'inp2xyz=morphct.utils.inpToXYZ.convertToXYZ:convert',
+            "orca2xyz=morphct.utils.orcaToXYZ.convertToXYZ:execute",
             "KMCAnalyse=morphct.utils.KMCAnalyse.KMCAnalyse:KMCAnalyse",
             "KMCMontage=morphct.utils.imagemagickStitch.imagemagickStitch:KMCMontage"
         ],
