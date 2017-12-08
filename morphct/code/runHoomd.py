@@ -1,6 +1,6 @@
 from hoomd_script import *
 import numpy as np
-import helperFunctions
+from morphct.code import helperFunctions
 import sys
 
 class ExitHoomd(Exception):
@@ -248,24 +248,32 @@ class MDPhase:
         else:
             raise SystemError('Non-harmonic bond potentials not yet hard-coded! Please describe how to interpret them on this line.')
         # Set Angle Coeffs
-        if self.angleType == 'harmonic':
-            self.angleClass = angle.harmonic()
-            for angleCoeff in self.angleCoeffs:
-                # [k] = kcal mol^{-1} rad^{-2} * epsilon, [t] = rad
-                self.angleClass.set_coeff(angleCoeff[0], k=angleCoeff[1] * self.eScale, t0=angleCoeff[2])
+        self.angleClass = None
+        if len(self.angleCoeffs) > 0:
+            if self.angleType == 'harmonic':
+                self.angleClass = angle.harmonic()
+                for angleCoeff in self.angleCoeffs:
+                    # [k] = kcal mol^{-1} rad^{-2} * epsilon, [t] = rad
+                    self.angleClass.set_coeff(angleCoeff[0], k=angleCoeff[1] * self.eScale, t0=angleCoeff[2])
+            else:
+                raise SystemError('Non-harmonic angle potentials not yet hard-coded! Please describe how to interpret them on this line.')
         else:
-            raise SystemError('Non-harmonic angle potentials not yet hard-coded! Please describe how to interpret them on this line.')
+            print("No angles detected!")
         # Set Dihedral Coeffs
-        if self.dihedralType == 'table':
-            self.dihedralClass = dihedral.table(width=1000)
-            for dihedralCoeff in self.dihedralCoeffs:
-                self.dihedralClass.dihedral_coeff.set(dihedralCoeff[0], func=multiHarmonicTorsion, coeff=dict(V0=dihedralCoeff[1] * self.eScale, V1=dihedralCoeff[2] * self.eScale, V2=dihedralCoeff[3] * self.eScale, V3=dihedralCoeff[4] * self.eScale, V4=dihedralCoeff[5] * self.eScale))
-        elif self.dihedralType == 'opls':
-            self.dihedralClass = dihedral.opls()
-            for dihedralCoeff in self.dihedralCoeffs:
-                self.dihedralClass.set_coeff(dihedralCoeff[0], k1=dihedralCoeff[1] * self.eScale, k2=dihedralCoeff[2] * self.eScale, k3=dihedralCoeff[3] * self.eScale, k4=dihedralCoeff[4] * self.eScale)
+        self.dihedralClass = None
+        if len(self.dihedralCoeffs) > 0:
+            if self.dihedralType == 'table':
+                self.dihedralClass = dihedral.table(width=1000)
+                for dihedralCoeff in self.dihedralCoeffs:
+                    self.dihedralClass.dihedral_coeff.set(dihedralCoeff[0], func=multiHarmonicTorsion, coeff=dict(V0=dihedralCoeff[1] * self.eScale, V1=dihedralCoeff[2] * self.eScale, V2=dihedralCoeff[3] * self.eScale, V3=dihedralCoeff[4] * self.eScale, V4=dihedralCoeff[5] * self.eScale))
+            elif self.dihedralType == 'opls':
+                self.dihedralClass = dihedral.opls()
+                for dihedralCoeff in self.dihedralCoeffs:
+                    self.dihedralClass.set_coeff(dihedralCoeff[0], k1=dihedralCoeff[1] * self.eScale, k2=dihedralCoeff[2] * self.eScale, k3=dihedralCoeff[3] * self.eScale, k4=dihedralCoeff[4] * self.eScale)
+            else:
+                raise SystemError('Non-tabulated dihedral potentials not yet hard-coded! Please describe how to interpret them on this line.')
         else:
-            raise SystemError('Non-tabulated dihedral potentials not yet hard-coded! Please describe how to interpret them on this line.')
+            print("No dihedrals detected")
         # Set Improper Coeffs
         self.improperClass = None
         if len(self.improperCoeffs) > 0:

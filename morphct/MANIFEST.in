@@ -1,0 +1,2 @@
+include templates/template.inp
+include code/testAssets/template.inp

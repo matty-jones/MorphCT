@@ -1,6 +1,6 @@
 import numpy as np
 import sys
-import helperFunctions
+from morphct.code import helperFunctions
 import copy
 from scipy.spatial import Delaunay
 from collections import defaultdict

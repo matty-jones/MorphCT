@@ -254,6 +254,7 @@ def getTerminatingPositions(currentAtomPosn, bondedAtomPositions, numberOfUnitsT
 
 
 def loadMorphologyXMLETree(xmlPath, sigma=1.0):
+    print("THIS DOES NOT SUPPORT TILT!!!!!!!!")
     atomProps3DFloat = ['position']
     atomProps3DInt = ['image']
     atomPropsInt = ['body']
@@ -294,7 +295,11 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
     # Dihedral as <dihedral
     # Improper as <improper (usually none in xml)
     # Charge as <charge
-    AtomDictionary = {'position': [], 'image': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': []}
+    # Set default tilts so when we use simdims later they exisit always
+    AtomDictionary = {'position': [], 'image': [], 'mass': [], 'diameter': [],
+                      'type': [], 'body': [], 'bond': [], 'angle': [],
+                      'dihedral': [], 'improper': [], 'charge': [], 'xy': 0.0,
+                      'xz': 0.0, 'yz':0.0}
     record = False
     with open(xmlPath, 'r') as xmlFile:
         xmlData = xmlFile.readlines()
@@ -517,14 +522,13 @@ def writeMorphologyXMLETree(inputDictionary, outputFile):
 
 
 def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0, checkWrappedPosns = True):
-    tilt_factors = ["xy", "xz", "yz"]
     # Firstly, scale everything by the inverse of the provided sigma value
     if sigma != 1.0:
         inputDictionary = scale(inputDictionary, 1.0 / sigma)
     # Now need to check the positions of the atoms to ensure that everything is correctly contained inside the box
     if checkWrappedPosns is True:
-        if any([tilt_factor in inputDictionary.keys() for tilt_factor in tilt_factors]) and\
-                any([inputDictionary[tilt_factor] != 0 for tilt_factor in tilt_factors]):
+        tilt_factors = ["xy", "xz", "yz"]
+        if any([tilt_factor in inputDictionary.keys() for tilt_factor in tilt_factors]) and any([inputDictionary[tilt_factor] != 0 for tilt_factor in tilt_factors]):
             print("Can't check atom wrapping for cells with a non-zero tilt factor")
         else:
             print("Checking wrapped positions before writing XML...")
@@ -533,11 +537,8 @@ def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0, checkWrappedPos
     # print inputDictionary['image'][:20]
     # raw_input('HALT')
     # Add Boiler Plate first
-    linesToWrite = ['<?xml version="1.0" encoding="UTF-8"?>\n', '<hoomd_xml version="1.4">\n', '<configuration time_step="0" dimensions="3" natoms="' + str(inputDictionary['natoms']) + '" >\n', '<box lx="' + str(inputDictionary['lx']) + '" ly="' + str(inputDictionary['ly']) + '" lz="' + str(inputDictionary['lz'])]
-    if all([tilt_factor in inputDictionary.keys() for tilt_factor in tilt_factors]):
-        linesToWrite[-1] += '" xy="' + str(inputDictionary['xy']) + '" xz="' + str(inputDictionary['xz']) + '" yz="' + str(inputDictionary['yz']) + '" />\n'
-    else:
-        linesToWrite[-1] += '" />\n'
+    linesToWrite = ['<?xml version="1.0" encoding="UTF-8"?>\n', '<hoomd_xml version="1.4">\n', '<configuration time_step="0" dimensions="3" natoms="' + str(inputDictionary['natoms']) + '" >\n', '<box lx="' + str(inputDictionary['lx']) + '" ly="' + str(inputDictionary['ly']) + '" lz="' + str(inputDictionary['lz']) + '" xy="' + str(inputDictionary['xy']) + '" xz="' + str(inputDictionary['xz']) + '" yz="' + str(inputDictionary['yz']) + '" />\n']
+
     # Position
     linesToWrite.append('<position num="' + str(inputDictionary['natoms']) + '">\n')
     for positionData in inputDictionary['position']:
