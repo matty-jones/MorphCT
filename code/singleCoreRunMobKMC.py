@@ -45,6 +45,13 @@ class carrier:
         self.simDims = [[-AAMorphologyDict['lx'] / 2.0, AAMorphologyDict['lx'] / 2.0], [-AAMorphologyDict['ly'] / 2.0, AAMorphologyDict['ly'] / 2.0], [-AAMorphologyDict['lz'] / 2.0, AAMorphologyDict['lz'] / 2.0]]
         self.displacement = None
         self.molIDDict = molIDDict
+        # Set the use of average hop rates to false if the key does not exist in the parameter dict
+        try:
+            self.useAverageHopRates = parameterDict['useAverageHopRates']
+            self.averageIntraHopRate = parameterDict['averageIntraHopRate']
+            self.averageInterHopRate = parameterDict['averageInterHopRate']
+        except KeyError:
+            self.useAverageHopRates = False
 
     def calculateHopRate(self, lambdaij, Tij, deltaEij):
         # Semiclassical Marcus Hopping Rate Equation
@@ -70,21 +77,21 @@ class carrier:
         if self.hopLimit is not None:
             if self.noHops + 1 > self.hopLimit:
                 return 1
-        if parameterDict['useAverageHopRates'] is True:
+        # Determine the hop times to all possible neighbours
+        hopTimes = []
+        if self.useAverageHopRates is True:
             # Use the average hop values given in the parameter dict to pick a hop
             for neighbourDetails in self.currentChromophore.neighbours:
                 neighbour = chromophoreList[neighbourDetails[0]]
                 assert(neighbour.ID == neighbourDetails[0])
                 if self.molIDDict[self.currentChromophore.ID] == self.molIDDict[neighbour.ID]:
-                    hopRate = parameterDict['averageIntraHopRate']
+                    hopRate = self.averageIntraHopRate
                 else:
-                    hopRate = parameterDict['averageInterHopRate']
+                    hopRate = self.averageInterHopRate
                 hopTime = self.determineHopTime(hopRate)
                 # Keep track of the chromophoreID and the corresponding tau
                 hopTimes.append([neighbour.ID, hopTime])
         else:
-            # Determine the hop times to all possible neighbours
-            hopTimes = []
             # Obtain the reorganisation energy in J (from eV in the parameter file)
             for neighbourIndex, transferIntegral in enumerate(self.currentChromophore.neighboursTI):
                 # Ignore any hops with a NoneType transfer integral (usually due to an ORCA error)
