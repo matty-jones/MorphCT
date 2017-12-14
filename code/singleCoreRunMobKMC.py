@@ -17,7 +17,7 @@ hbar = 1.05457173E-34 # m^{2} kg s^{-1}
 
 
 class carrier:
-    def __init__(self, chromophoreList, parameterDict, chromoID, lifetime, carrierNo, AAMorphologyDict):
+    def __init__(self, chromophoreList, parameterDict, chromoID, lifetime, carrierNo, AAMorphologyDict, molIDDict):
         self.ID = carrierNo
         self.image = [0, 0, 0]
         self.initialChromophore = chromophoreList[chromoID]
@@ -44,6 +44,7 @@ class carrier:
         self.noHops = 0
         self.simDims = [[-AAMorphologyDict['lx'] / 2.0, AAMorphologyDict['lx'] / 2.0], [-AAMorphologyDict['ly'] / 2.0, AAMorphologyDict['ly'] / 2.0], [-AAMorphologyDict['lz'] / 2.0, AAMorphologyDict['lz'] / 2.0]]
         self.displacement = None
+        self.molIDDict = molIDDict
 
     def calculateHopRate(self, lambdaij, Tij, deltaEij):
         # Semiclassical Marcus Hopping Rate Equation
@@ -69,19 +70,32 @@ class carrier:
         if self.hopLimit is not None:
             if self.noHops + 1 > self.hopLimit:
                 return 1
-        # Determine the hop times to all possible neighbours
-        hopTimes = []
-        # Obtain the reorganisation energy in J (from eV in the parameter file)
-        for neighbourIndex, transferIntegral in enumerate(self.currentChromophore.neighboursTI):
-            # Ignore any hops with a NoneType transfer integral (usually due to an ORCA error)
-            if transferIntegral is None:
-                continue
-            deltaEij = self.currentChromophore.neighboursDeltaE[neighbourIndex]
-            # All of the energies are in eV currently, so convert them to J
-            hopRate = self.calculateHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge)
-            hopTime = self.determineHopTime(hopRate)
-            # Keep track of the chromophoreID and the corresponding tau
-            hopTimes.append([self.currentChromophore.neighbours[neighbourIndex][0], hopTime])
+        if parameterDict['useAverageHopRates'] is True:
+            # Use the average hop values given in the parameter dict to pick a hop
+            for neighbourDetails in self.currentChromophore.neighbours:
+                neighbour = chromophoreList[neighbourDetails[0]]
+                assert(neighbour.ID == neighbourDetails[0])
+                if self.molIDDict[self.currentChromophore.ID] == self.molIDDict[neighbour.ID]:
+                    hopRate = parameterDict['averageIntraHopRate']
+                else:
+                    hopRate = parameterDict['averageInterHopRate']
+                hopTime = self.determineHopTime(hopRate)
+                # Keep track of the chromophoreID and the corresponding tau
+                hopTimes.append([neighbour.ID, hopTime])
+        else:
+            # Determine the hop times to all possible neighbours
+            hopTimes = []
+            # Obtain the reorganisation energy in J (from eV in the parameter file)
+            for neighbourIndex, transferIntegral in enumerate(self.currentChromophore.neighboursTI):
+                # Ignore any hops with a NoneType transfer integral (usually due to an ORCA error)
+                if transferIntegral is None:
+                    continue
+                deltaEij = self.currentChromophore.neighboursDeltaE[neighbourIndex]
+                # All of the energies are in eV currently, so convert them to J
+                hopRate = self.calculateHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge)
+                hopTime = self.determineHopTime(hopRate)
+                # Keep track of the chromophoreID and the corresponding tau
+                hopTimes.append([self.currentChromophore.neighbours[neighbourIndex][0], hopTime])
         # Sort by ascending hop time
         hopTimes.sort(key = lambda x:x[1])
         # Take the quickest hop
@@ -165,6 +179,48 @@ def initialiseSaveData(nChromos, seed):
     return {'seed': seed, 'ID': [], 'image': [], 'lifetime': [], 'currentTime': [], 'noHops': [], 'displacement': [], 'holeHistoryMatrix': lil_matrix((nChromos, nChromos), dtype = int), 'electronHistoryMatrix': lil_matrix((nChromos, nChromos), dtype = int), 'initialPosition': [], 'finalPosition': [], 'carrierType':[]}
 
 
+def splitMolecules(inputDictionary):
+    # Split the full morphology into individual molecules
+    moleculeAAIDs = []
+    moleculeLengths = []
+    # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
+    bondedAtoms = helperFunctions.obtainBondedList(inputDictionary['bond'])
+    moleculeList = [i for i in range(len(inputDictionary['type']))]
+    # Recursively add all atoms in the neighbour list to this molecule
+    for molID in range(len(moleculeList)):
+        moleculeList = updateMolecule(molID, moleculeList, bondedAtoms)
+    # Here we have a list of len(atoms) where each index gives the molID
+    molIDDict = {}
+    for chromo in chromophoreList:
+        AAIDToCheck = chromo.AAIDs[0]
+        molIDDict[chromo.ID] = moleculeList[AAIDToCheck]
+    return molIDDict
+
+
+def updateMolecule(atomID, moleculeList, bondedAtoms):
+    # Recursively add all neighbours of atom number atomID to this molecule
+    try:
+        for bondedAtom in bondedAtoms[atomID]:
+            # If the moleculeID of the bonded atom is larger than that of the current one,
+            # update the bonded atom's ID to the current one's to put it in this molecule,
+            # then iterate through all of the bonded atom's neighbours
+            if moleculeList[bondedAtom] > moleculeList[atomID]:
+                moleculeList[bondedAtom] = moleculeList[atomID]
+                moleculeList = updateMolecule(bondedAtom, moleculeList, bondedAtoms)
+            # If the moleculeID of the current atom is larger than that of the bonded one,
+            # update the current atom's ID to the bonded one's to put it in this molecule,
+            # then iterate through all of the current atom's neighbours
+            elif moleculeList[bondedAtom] < moleculeList[atomID]:
+                moleculeList[atomID] = moleculeList[bondedAtom]
+                moleculeList = updateMolecule(atomID, moleculeList, bondedAtoms)
+            # Else: both the current and the bonded atom are already known to be in this
+            # molecule, so we don't have to do anything else.
+    except KeyError:
+        # This means that there are no bonded CG sites (i.e. it's a single molecule)
+        pass
+    return moleculeList
+
+
 if __name__ == '__main__':
     KMCDirectory = sys.argv[1]
     CPURank = int(sys.argv[2])
@@ -198,6 +254,12 @@ if __name__ == '__main__':
     helperFunctions.writeToFile(logFile, ['Found main morphology pickle file at ' + mainMorphologyPickleName + '! Loading data...'])
     AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(mainMorphologyPickleName)
     helperFunctions.writeToFile(logFile, ['Main morphology pickle loaded!'])
+    if parameterDict['useAverageHopRates'] is True:
+        # Chosen to split hopping by inter-intra molecular hops, so get molecule data
+        molIDDict = splitMolecules(AAMorphologyDict)
+        # molIDDict is a dictionary where the keys are the chromoIDs, and the vals are the molIDs
+    else:
+        molIDDict = None
     # Attempt to catch a kill signal to ensure that we save the pickle before termination
     killer = terminationSignal()
     seed = R.randint(0, sys.maxsize)
@@ -222,7 +284,7 @@ if __name__ == '__main__':
                     continue
                 break
             # Create the carrier instance
-            thisCarrier = carrier(chromophoreList, parameterDict, startChromoID, lifetime, carrierNo, AAMorphologyDict)
+            thisCarrier = carrier(chromophoreList, parameterDict, startChromoID, lifetime, carrierNo, AAMorphologyDict, molIDDict)
             terminateSimulation = False
             while terminateSimulation is False:
                 terminateSimulation = bool(thisCarrier.calculateHop(chromophoreList))
