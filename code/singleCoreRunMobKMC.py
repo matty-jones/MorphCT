@@ -261,11 +261,14 @@ if __name__ == '__main__':
     helperFunctions.writeToFile(logFile, ['Found main morphology pickle file at ' + mainMorphologyPickleName + '! Loading data...'])
     AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(mainMorphologyPickleName)
     helperFunctions.writeToFile(logFile, ['Main morphology pickle loaded!'])
-    if parameterDict['useAverageHopRates'] is True:
-        # Chosen to split hopping by inter-intra molecular hops, so get molecule data
-        molIDDict = splitMolecules(AAMorphologyDict)
-        # molIDDict is a dictionary where the keys are the chromoIDs, and the vals are the molIDs
-    else:
+    try:
+        if parameterDict['useAverageHopRates'] is True:
+            # Chosen to split hopping by inter-intra molecular hops, so get molecule data
+            molIDDict = splitMolecules(AAMorphologyDict)
+            # molIDDict is a dictionary where the keys are the chromoIDs, and the vals are the molIDs
+        else:
+            raise KeyError
+    except KeyError:
         molIDDict = None
     # Attempt to catch a kill signal to ensure that we save the pickle before termination
     killer = terminationSignal()
