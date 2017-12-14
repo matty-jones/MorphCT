@@ -7,6 +7,8 @@ import numpy as np
 from scipy.optimize import curve_fit
 import scipy.stats
 from scipy.sparse import lil_matrix
+sys.path.append('../../../../code/')
+sys.path.append('../../../code/')
 sys.path.append('../../code/')
 sys.path.append('../code')
 import helperFunctions
@@ -512,11 +514,6 @@ def getNeighbourCutOff(chromophoreList, morphologyShape, outputDir, periodic=Tru
             continue
         plt.figure()
         (n, binEdges, patches) = plt.hist(separationDist, bins = 20, color = 'b')
-        plt.xlabel(material[materialType] + " Chromophore Separation (Ang)")
-        plt.ylabel("Frequency (Arb. U.)")
-        plt.savefig(outputDir + "/03_neighbourHist" + material[materialType] + ".pdf")
-        plt.close()
-        print("Neighbour histogram figure saved as", outputDir + "/03_neighbourHist" + material[materialType] + ".pdf")
         bins = 0.5*(binEdges[1:]+binEdges[:-1])
         bins = np.insert(bins, 0, 0)
         n = np.insert(n, 0, 0)
@@ -531,7 +528,14 @@ def getNeighbourCutOff(chromophoreList, morphologyShape, outputDir, periodic=Tru
                 maximaIndices.append(index)
             previousValue = val
         # Minimum is half way between the first maximum and the first minimum of the distribution
-        cutOffs.append((bins[maximaIndices[0]] + bins[minimaIndices[0]]) / 2.0)
+        cutOff = (bins[maximaIndices[0]] + bins[minimaIndices[0]]) / 2.0
+        cutOffs.append(cutOff)
+        plt.axvline(x = cutOff, ls='dashed')
+        plt.xlabel(material[materialType] + " Chromophore Separation (Ang)")
+        plt.ylabel("Frequency (Arb. U.)")
+        plt.savefig(outputDir + "/03_neighbourHist" + material[materialType] + ".pdf")
+        plt.close()
+        print("Neighbour histogram figure saved as", outputDir + "/03_neighbourHist" + material[materialType] + ".pdf")
     return cutOffs
 
 
@@ -820,7 +824,7 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
         plotStackedHistRates(propertyLists['intraStackRatesDonor'], propertyLists['interStackRatesDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/16_DonorHoppingRate_Stacks.pdf')
         plotStackedHistTIs(propertyLists['intraStackTIsDonor'], propertyLists['interStackTIsDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/12_DonorTransferIntegral_Stacks.pdf')
     # Acceptor Stack Plots:
-    if (len(propertyLists['intraStackRatesAcceptor']) > 0) or (len(properyLists['interStackRatesAcceptor']) > 0):
+    if (len(propertyLists['intraStackRatesAcceptor']) > 0) or (len(propertyLists['interStackRatesAcceptor']) > 0):
         plotStackedHistRates(propertyLists['intraStackRatesAcceptor'], propertyLists['interStackRatesAcceptor'], ['Intra-Stack', 'Inter-Stack'], 'Acceptor', outputDir + '/18_AcceptorHoppingRate_Stacks.pdf')
         plotStackedHistTIs(propertyLists['intraStackTIsAcceptor'], propertyLists['interStackTIsAcceptor'], ['Intra-Stack', 'Inter-Stack'], 'Acceptor', outputDir + '/14_AcceptorTransferIntegral_Stacks.pdf')
     # Donor Mol Plots:
