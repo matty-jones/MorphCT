@@ -10,6 +10,14 @@ import helperFunctions
 
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
+    try:
+        if parameterDict['useAverageHopRates']:
+            print("Be advised: useAverageHopRates is set to", repr(parameterDict['useAverageHopRates']) + ".")
+            print("ORCA-calculated energy levels will be ignored, and the following hop rates will be used:")
+            print("Average Intra-molecular hop rate:", parameterDict['averageIntraHopRate'])
+            print("Average Inter-molecular hop rate:", parameterDict['averageInterHopRate'])
+    except KeyError:
+        pass
     # Attempt 2. PROGRAM THIS SERIALLY FIRST SO THAT IT WORKS
     # Determine the maximum simulation times based on the parameter dictionary
     simulationTimes = parameterDict['simulationTimes']
