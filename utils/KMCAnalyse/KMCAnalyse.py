@@ -284,7 +284,7 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType, plot3DGraphs):
     simDimsnm = list(map(list, np.array(simDims) / 10.))
     # Get the indices of the carriers that travelled the furthest
     if len(carrierData['finalPosition']) <= 1000:
-        carrierIndicesToUse = range(carrierData['finalPosition'])
+        carrierIndicesToUse = range(len(carrierData['finalPosition']))
     else:
         displacements = copy.deepcopy(np.array(carrierData['displacement']))
         carrierIndicesToUse = displacements.argsort()[-1000:][::-1]
@@ -493,7 +493,8 @@ def updateMolecule(atomID, moleculeList, bondedAtoms):
     return moleculeList
 
 
-def getNeighbourCutOff(chromophoreList, morphologyShape, outputDir, periodic=True):
+def getNeighbourCutOff(chromophoreList, morphologyShape, outputDir, periodic=True, specifiedCutOffDonor=None, specifiedCutOffAcceptor=None):
+    specifiedCutOffs = {'Donor': specifiedCutOffDonor, 'Acceptor': specifiedCutOffAcceptor}
     separationDistDonor = []
     separationDistAcceptor = []
     for chromo1 in chromophoreList:
@@ -528,9 +529,12 @@ def getNeighbourCutOff(chromophoreList, morphologyShape, outputDir, periodic=Tru
                 maximaIndices.append(index)
             previousValue = val
         # Minimum is half way between the first maximum and the first minimum of the distribution
-        cutOff = (bins[maximaIndices[0]] + bins[minimaIndices[0]]) / 2.0
+        if specifiedCutOffs[material[materialType]] is None:
+            cutOff = (bins[maximaIndices[0]] + bins[minimaIndices[0]]) / 2.0
+        else:
+            cutOff = specifiedCutOffs[material[materialType]]
         cutOffs.append(cutOff)
-        plt.axvline(x = cutOff, ls='dashed')
+        plt.axvline(x = cutOff, ls='dashed', c='k')
         plt.xlabel(material[materialType] + " Chromophore Separation (Ang)")
         plt.ylabel("Frequency (Arb. U.)")
         plt.savefig(outputDir + "/03_neighbourHist" + material[materialType] + ".pdf")
@@ -821,18 +825,26 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
     #print(len(propertyLists['intraStackRatesDonor']), len(propertyLists['intraStackRatesAcceptor']), len(propertyLists['intraMolRatesDonor']), len(propertyLists['intraMolRatesAcceptor']))
     # Donor Stack Plots:
     if (len(propertyLists['intraStackRatesDonor']) > 0) or (len(propertyLists['interStackRatesDonor']) > 0):
+        print("Mean intra-stack Donor rate =", np.mean(propertyLists['intraStackRatesDonor']), "+/-", np.std(propertyLists['intraStackRatesDonor'])/float(len(propertyLists['intraStackRatesDonor'])))
+        print("Mean inter-stack Donor rate =", np.mean(propertyLists['interStackRatesDonor']), "+/-", np.std(propertyLists['interStackRatesDonor'])/float(len(propertyLists['interStackRatesDonor'])))
         plotStackedHistRates(propertyLists['intraStackRatesDonor'], propertyLists['interStackRatesDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/16_DonorHoppingRate_Stacks.pdf')
         plotStackedHistTIs(propertyLists['intraStackTIsDonor'], propertyLists['interStackTIsDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/12_DonorTransferIntegral_Stacks.pdf')
     # Acceptor Stack Plots:
     if (len(propertyLists['intraStackRatesAcceptor']) > 0) or (len(propertyLists['interStackRatesAcceptor']) > 0):
+        print("Mean intra-stack Acceptor rate =", np.mean(propertyLists['intraStackRatesAcceptor']), "+/-", np.std(propertyLists['intraStackRatesAcceptor'])/float(len(propertyLists['intraStackRatesAcceptor'])))
+        print("Mean inter-stack Acceptor rate =", np.mean(propertyLists['interStackRatesAcceptor']), "+/-", np.std(propertyLists['interStackRatesAcceptor'])/float(len(propertyLists['interStackRatesAcceptor'])))
         plotStackedHistRates(propertyLists['intraStackRatesAcceptor'], propertyLists['interStackRatesAcceptor'], ['Intra-Stack', 'Inter-Stack'], 'Acceptor', outputDir + '/18_AcceptorHoppingRate_Stacks.pdf')
         plotStackedHistTIs(propertyLists['intraStackTIsAcceptor'], propertyLists['interStackTIsAcceptor'], ['Intra-Stack', 'Inter-Stack'], 'Acceptor', outputDir + '/14_AcceptorTransferIntegral_Stacks.pdf')
     # Donor Mol Plots:
     if (len(propertyLists['intraMolRatesDonor']) > 0) or (len(propertyLists['interMolRatesDonor']) > 0):
+        print("Mean intra-molecular donor rate =", np.mean(propertyLists['intraMolRatesDonor']), "+/-", np.std(propertyLists['intraMolRatesDonor'])/float(len(propertyLists['intraMolRatesDonor'])))
+        print("Mean inter-molecular donor rate =", np.mean(propertyLists['interMolRatesDonor']), "+/-", np.std(propertyLists['interMolRatesDonor'])/float(len(propertyLists['interMolRatesDonor'])))
         plotStackedHistRates(propertyLists['intraMolRatesDonor'], propertyLists['interMolRatesDonor'], ['Intra-Mol', 'Inter-Mol'], 'Donor', outputDir + '/15_DonorHoppingRate_Mols.pdf')
         plotStackedHistTIs(propertyLists['intraMolTIsDonor'], propertyLists['interMolTIsDonor'], ['Intra-Mol', 'Inter-Mol'], 'Donor', outputDir + '/11_DonorTransferIntegral_Mols.pdf')
     # Acceptor Mol Plots:
     if (len(propertyLists['intraMolRatesAcceptor']) > 0) or (len(propertyLists['interMolRatesAcceptor']) > 0):
+        print("Mean intra-molecular acceptor rate =", np.mean(propertyLists['intraMolRatesAcceptor']), "+/-", np.std(propertyLists['intraMolRatesAcceptor'])/float(len(propertyLists['intraMolRatesAcceptor'])))
+        print("Mean inter-molecular acceptor rate =", np.mean(propertyLists['interMolRatesAcceptor']), "+/-", np.std(propertyLists['interMolRatesAcceptor'])/float(len(propertyLists['interMolRatesAcceptor'])))
         plotStackedHistRates(propertyLists['intraMolRatesAcceptor'], propertyLists['interMolRatesAcceptor'], ['Intra-Mol', 'Inter-Mol'], 'Acceptor', outputDir + '/17_AcceptorHoppingRate_Mols.pdf')
         plotStackedHistTIs(propertyLists['intraMolTIsAcceptor'], propertyLists['interMolTIsAcceptor'], ['Intra-Mol', 'Inter-Mol'], 'Acceptor', outputDir + '/13_AcceptorTransferIntegral_Mols.pdf')
     # Update the dataDict
@@ -844,8 +856,10 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
                     continue
                 otherHopType = hopTypes[int((hopTypes.index(hopType) * -1) + 1)]
                 proportion = numberOfHops / (numberOfHops + len(propertyLists[otherHopType + hopTarget + "Rates" + material]))
-                dataDict[material.lower() + '_' + hopType + '_' + hopTarget.lower() + "hops"] = numberOfHops
-                dataDict[material.lower() + '_' + hopType + '_' + hopTarget.lower() + "hops"] = proportion
+                meanRate = np.mean(propertyLists[hopType + hopTarget + "Rates" + material])
+                dataDict[material.lower() + '_' + hopType + '_' + hopTarget.lower() + "_hops"] = numberOfHops
+                dataDict[material.lower() + '_' + hopType + '_' + hopTarget.lower() + "_proportion"] = proportion
+                dataDict[material.lower() + '_' + hopType + '_' + hopTarget.lower() + "_rate_mean"] = meanRate
     return dataDict
 
 
@@ -881,8 +895,8 @@ def writeCSV(dataDict, directory):
     CSVFileName = directory + '/results.csv'
     with open(CSVFileName, 'w+') as CSVFile:
         CSVWriter = csv.writer(CSVFile)
-        for key, val in dataDict.items():
-            CSVWriter.writerow([key, val])
+        for key in sorted(dataDict.keys()):
+            CSVWriter.writerow([key, dataDict[key]])
     print("CSV file written to " + CSVFileName)
 
 
@@ -899,6 +913,8 @@ def createResultsPickle(directory):
             keepList.append(slot1)
         else:
             keepList.append(slot2)
+    print("%d pickle files found to combine!" % (len(keepList)))
+    print("Combining", keepList)
     resultsPicklesList = []
     for keeper in zip(coresList, keepList):
         newName = directory + '/KMC/KMCResults_' + str(keeper[0]) + '.pickle'
@@ -910,22 +926,21 @@ def createResultsPickle(directory):
 def combineResultsPickles(directory, pickleFiles):
     combinedData = {}
     pickleFiles = sorted(pickleFiles)
-    print("%d pickle files found to combine!" % (len(pickleFiles)))
     for fileName in pickleFiles:
         # The pickle was repeatedly dumped to, in order to save time.
         # Each dump stream is self-contained, so iteratively unpickle to add the new data.
         with open(fileName, 'rb') as pickleFile:
             pickledData = pickle.load(pickleFile)
             for key, val in pickledData.items():
-                try:
-                    if val is None:
-                        continue
-                    if key not in combinedData:
-                        combinedData[key] = val
-                    else:
-                        combinedData[key] += val
-                except AttributeError:
-                    pass
+    #            try:
+                if val is None:
+                    continue
+                if key not in combinedData:
+                    combinedData[key] = val
+                else:
+                    combinedData[key] += val
+    #            except AttributeError:
+    #                pass
     # Write out the combined data
     print("Writing out the combined pickle file...")
     with open(directory + '/KMC/KMCResults.pickle', 'wb+') as pickleFile:
@@ -963,7 +978,7 @@ if __name__ == "__main__":
     parser.add_argument("-x", "--xlabel", default="Temperature (Arb. U.)", required=False, help='Specify an x-label for the combined plot (only used if -s is specified). Default = "Temperature (Arb. U.)"')
     args, directoryList = parser.parse_known_args()
 
-    sys.setrecursionlimit(5000)
+    sys.setrecursionlimit(10000)
     holeMobilityData = []
     holeAnisotropyData = []
     electronMobilityData = []
@@ -983,6 +998,12 @@ if __name__ == "__main__":
         print("Loading chromophoreList...")
         AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle('./' + directory + '/code/' + directory + '.pickle')
         print("ChromophoreList obtained")
+
+
+        print(directory, parameterDict['useAverageHopRates'], parameterDict['averageIntraHopRate'], parameterDict['averageInterHopRate'])
+        raise SystemError("EXIT")
+
+
         morphologyShape = np.array([AAMorphologyDict[axis] for axis in ['lx', 'ly', 'lz']])
         simDims = [[-AAMorphologyDict[axis] / 2.0, AAMorphologyDict[axis] / 2.0] for axis in ['lx', 'ly', 'lz']]
         # Calculate the mobilities
@@ -1011,15 +1032,16 @@ if __name__ == "__main__":
         tempDir = directory + '/figures'
         CGToMolID = determineMoleculeIDs(CGToAAIDMaster, AAMorphologyDict, parameterDict, chromophoreList)
         dataDict = plotEnergyLevels(tempDir, chromophoreList, dataDict)
-        if (args.cutOffDonor is None) or (args.cutOffAcceptor is None):
-            print("No cut-off manually specified for either the donor or acceptor material, therefore automatically finding the relevant cutOff as the midpoint between the first maxmimum and the first minimum of the neighbour distance distribution...")
-            print("Considering periodic neighbours is", args.periodicStacks)
-            [calculatedCutOffDonor, calculatedCutOffAcceptor] = getNeighbourCutOff(chromophoreList, morphologyShape, tempDir, periodic=args.periodicStacks)
+        print("Finding the relevant stack cut off as the midpoint between the first maxmimum and the first minimum of the neighbour distance distribution...")
+        print("Considering periodic neighbours is", args.periodicStacks)
+        [calculatedCutOffDonor, calculatedCutOffAcceptor] = getNeighbourCutOff(chromophoreList, morphologyShape, tempDir, periodic=args.periodicStacks, specifiedCutOffDonor=args.cutOffDonor, specifiedCutOffAcceptor=args.cutOffAcceptor)
         if args.cutOffDonor is None:
+            print("No donor cut off has been specified. Using calculated value...")
             cutOffDonor = calculatedCutOffDonor
         else:
             cutOffDonor = args.cutOffDonor
         if args.cutOffAcceptor is None:
+            print("No acceptor cut off has been specified. Using calculated value...")
             cutOffAcceptor = calculatedCutOffAcceptor
         else:
             cutOffAcceptor = args.cutOffAcceptor
