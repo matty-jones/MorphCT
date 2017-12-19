@@ -4,6 +4,7 @@ import numpy as np
 import helperFunctions
 import subprocess as sp
 import multiprocessing as mp
+import random as R
 import pickle
 
 
@@ -179,6 +180,8 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     inputDir = parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/inputORCA'
     procIDs = parameterDict['procIDs']
     jobsList = getORCAJobs(inputDir, parameterDict, procIDs)
+    # Shuffle the jobsList to spread it out over the cores
+    R.shuffle(jobsList)
     numberOfInputs = sum([len(ORCAFilesToRun) for ORCAFilesToRun in jobsList])
     print("Found", numberOfInputs, "ORCA files to run.")
     if (numberOfInputs > 0):

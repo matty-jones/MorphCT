@@ -48,11 +48,16 @@ class simulation:
             if self.executeFinegraining is False:
             # Load any previous data to allow us to run individual phases
                 try:
-                    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict, chromophoreList = helperFunctions.loadPickle(self.outputMorphologyDirectory+'/code/'+self.morphology[:-4]+'.pickle')
+                    pickleName = self.outputMorphologyDirectory+'/code/'+self.morphology[:-4]+'.pickle'
+                    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict, chromophoreList = helperFunctions.loadPickle(pickleName)
                     # Load in any parameters from the previousParameterDict that have not been already defined in the new parameterDict (e.g. CGTypeMappings):
                     for key, previousValue in previousParameterDict.items():
                         if key not in list(parameterDict.keys()):
+                            print("The key", key, "does not exist in the current parameterDict, but does in the previous parameterDict. Updating current parameterDict[" + str(key) + "] =", str(previousValue) + "...")
                             parameterDict[key] = previousValue
+                    # Now the old and new parameters have been merged, rewrite the pickle (important for the singleCoreRun scripts that
+                    # load the pickle directly
+                    helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleName)
                 except:
                     print("PICKLE NOT FOUND, EXECUTING FINEGRAINING TO OBTAIN REQUIRED PARAMETERS...")
                     self.executeFinegraining = False

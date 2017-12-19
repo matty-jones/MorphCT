@@ -192,7 +192,8 @@ class morphology:
         forceFieldMappings = []
         morphologyAtomTypes = []
         CGToTemplateMappings = {}
-        for CGSite, directory in CGToTemplateDirs.items():
+        for CGSite in sorted(CGToTemplateDirs.keys()):
+            directory = CGToTemplateDirs[CGSite]
             FFLoc = directory + '/' + CGToTemplateForceFields[CGSite]
             if FFLoc not in forceFieldLocations:
                 forceFieldLocations.append(FFLoc)
@@ -235,7 +236,7 @@ class atomistic:
             self.__dict__[key] = value
         self.AATemplatesDictionary = {}
         # Load the template file for each CG atom
-        for CGAtomType in list(self.CGToTemplateFiles.keys()):
+        for CGAtomType in sorted(list(self.CGToTemplateFiles.keys())):
             templateDictionary = helperFunctions.loadMorphologyXML(self.CGToTemplateDirs[CGAtomType] + '/' + self.CGToTemplateFiles[CGAtomType])
             templateDictionary = self.remapAtomTypes(templateDictionary, parameterDict['newTypeMappings'][CGAtomType])
             templateDictionary = helperFunctions.addUnwrappedPositions(templateDictionary)

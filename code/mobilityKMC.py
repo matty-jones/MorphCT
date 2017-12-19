@@ -22,13 +22,24 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     # Determine the maximum simulation times based on the parameter dictionary
     simulationTimes = parameterDict['simulationTimes']
     carrierList = []
-    # Create the carrierList which contains the information that the singleCore program needs to run its jobs
-    for carrierNo in range(parameterDict['numberOfHolesPerSimulationTime']):
-        for lifetime in simulationTimes:
+    # Modification: Rather than being clever here with the carriers, I'm just going to create the master
+    # list of jobs that need running and then randomly shuffle it.
+    # This will hopefully permit a similar number of holes and electrons and lifetimes to be run simultaneously
+    # providing adequate statistics more quickly
+    for lifetime in simulationTimes:
+        for carrierNo in range(parameterDict['numberOfHolesPerSimulationTime']):
             carrierList.append([carrierNo, lifetime, 'Hole'])
-    for carrierNo in range(parameterDict['numberOfElectronsPerSimulationTime']):
-        for lifetime in simulationTimes:
+        for carrierNo in range(parameterDict['numberOfElectronsPerSimulationTime']):
             carrierList.append([carrierNo, lifetime, 'Electron'])
+    R.shuffle(carrierList)
+    # Old method:
+    ## Create the carrierList which contains the information that the singleCore program needs to run its jobs
+    #for carrierNo in range(parameterDict['numberOfHolesPerSimulationTime']):
+    #    for lifetime in simulationTimes:
+    #        carrierList.append([carrierNo, lifetime, 'Hole'])
+    #for carrierNo in range(parameterDict['numberOfElectronsPerSimulationTime']):
+    #    for lifetime in simulationTimes:
+    #        carrierList.append([carrierNo, lifetime, 'Electron'])
     # The carrierList is now like the ORCAJobsList, so split it over each procID
     procIDs = parameterDict['procIDs']
     outputDir = parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/KMC'
