@@ -58,7 +58,7 @@ def splitCarriersByType(carrierData):
                     carrierDataHoles[listVar].append(carrierData[listVar][carrierIndex])
                 elif chargeType == 'Electron':
                     carrierDataElectrons[listVar].append(carrierData[listVar][carrierIndex])
-    except:
+    except KeyError:
         print("Multiple charge carriers not found, assuming donor material and holes only")
         try:
             carrierDataHoles = {'carrierHistoryMatrix': carrierData['carrierHistoryMatrix'], 'seed': carrierData['seed']}
@@ -952,7 +952,26 @@ def createResultsPickle(directory):
         selectList = []
         slot1 = directory + '/KMC/KMCslot1Results_%02d.pickle' % (int(core))
         slot2 = directory + '/KMC/KMCslot2Results_%02d.pickle' % (int(core))
-        if os.path.getsize(slot1) >= os.path.getsize(slot2):
+        slot1Exists = False
+        slot2Exists = False
+        try:
+            os.path.getsize(slot1)
+            slot1Exists = True
+        except FileNotFoundError:
+            pass
+        try:
+            os.path.getsize(slot2)
+            slot2Exists = True
+        except FileNotFoundError:
+            pass
+        if slot1Exists and not slot2Exists:
+            keepList.append(slot1)
+        elif slot2Exists and not slot1Exists:
+            keepList.append(slot2)
+        elif not slot1Exists and not slot2Exists:
+            raise SystemError("No pickle files found to combine! Terminating...")
+        # Beyond this point, both exist
+        elif os.path.getsize(slot1) >= os.path.getsize(slot2):
             keepList.append(slot1)
         else:
             keepList.append(slot2)
