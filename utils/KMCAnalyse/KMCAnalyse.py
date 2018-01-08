@@ -798,7 +798,7 @@ def plotDeltaEij(deltaEij, gaussBins, fitArgs, dataType, fileName):
     print("Figure saved as", fileName)
 
 
-def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict):
+def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict, overrideHopRatePlots=False):
     # Create all the empty lists we need
     hopTypes = ['intra', 'inter']
     hopTargets = ['Stack', 'Mol']
@@ -824,10 +824,16 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
             chromo2 = chromophoreList[chromo.neighbours[index][0]]
             mol2ID = CGToMolID[chromo2.CGIDs[0]]
             deltaE = chromo.neighboursDeltaE[index]
-            if chromo.species == 'Acceptor':
-                rate = calculateHopRate(acceptorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+            if overrideHopRatePlots:
+                if mol1ID == mol2ID:
+                    rate = parameterDict['averageIntraHopRate']
+                else:
+                    rate = parameterDict['averageInterHopRate']
             else:
-                rate = calculateHopRate(donorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+                if chromo.species == 'Acceptor':
+                    rate = calculateHopRate(acceptorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+                else:
+                    rate = calculateHopRate(donorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
             #try:
             if chromo2.ID < chromo.ID:
                 continue
@@ -1037,6 +1043,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--cutOffDonor", type=float, default=None, required=False, help="Specify a manual cut-off for the determination of stacks within the donor material. Connections with separation > cut-off will be classed as inter-stack. If omitted, stack cut-off will be determined automatically as the first minimum of the RDF.")
     parser.add_argument("-a", "--cutOffAcceptor", type=float, default=None, required=False, help="Specify a manual cut-off for the determination of stacks within the acceptor material. Connections with separation > cut-off will be classed as inter-stack. If omitted, stack cut-off will be determined automatically as the first minimum of the RDF.")
     parser.add_argument("-s", "--sequence", type=lambda s: [float(item) for item in s.split(',')], default=None, required=False, help='Create a figure in the current directory that describes the evolution of the anisotropy/mobility using the specified comma-delimited string as the sequence of x values. For instance -s "1.5,1.75,2.0,2.25,2.5" will assign each of the 5 following directories these x-values when plotting the mobility evolution.')
+    #parser.add_argument("-x", "--xlabel", default=r"$\tau$ (Arb. U.)", required=False, help='Specify an x-label for the combined plot (only used if -s is specified). Default = "Temperature (Arb. U.)"')
     parser.add_argument("-x", "--xlabel", default="Temperature (Arb. U.)", required=False, help='Specify an x-label for the combined plot (only used if -s is specified). Default = "Temperature (Arb. U.)"')
     args, directoryList = parser.parse_known_args()
 
@@ -1060,12 +1067,13 @@ if __name__ == "__main__":
         print("Loading chromophoreList...")
         AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle('./' + directory + '/code/' + directory + '.pickle')
         print("ChromophoreList obtained")
-
-
-        print(directory, parameterDict['useAverageHopRates'], parameterDict['averageIntraHopRate'], parameterDict['averageInterHopRate'])
-        raise SystemError("EXIT")
-
-
+        overrideHopRatePlots = False
+        try:
+            if parameterDict['useAverageHopRates'] is True:
+                print("Note: For", directory + ", useAverageHopRates is", repr(parameterDict['useAverageHopRates']) + ": Intra-molecular hop rate =", parameterDict['averageIntraHopRate'], "and inter-molecular hop rate =", parameterDict['averageInterHopRate'])
+                overrideHopRatePlots = True
+        except KeyError:
+            pass
         morphologyShape = np.array([AAMorphologyDict[axis] for axis in ['lx', 'ly', 'lz']])
         simDims = [[-AAMorphologyDict[axis] / 2.0, AAMorphologyDict[axis] / 2.0] for axis in ['lx', 'ly', 'lz']]
         # Calculate the mobilities
@@ -1112,7 +1120,7 @@ if __name__ == "__main__":
         stackDicts = getStacks(chromophoreList, morphologyShape, cutOffDonor, cutOffAcceptor, periodic=args.periodicStacks)
         if args.threeD:
             plotStacks3D(tempDir, chromophoreList, stackDicts, simDims)
-        dataDict = plotMixedHoppingRates(tempDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict)
+        dataDict = plotMixedHoppingRates(tempDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict, overrideHopRatePlots=overrideHopRatePlots)
         print("\n")
         print("Writing CSV Output File...")
         writeCSV(dataDict, directory)

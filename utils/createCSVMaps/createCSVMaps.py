@@ -88,8 +88,12 @@ if __name__ == "__main__":
                 deltaE = chromo1.neighboursDeltaE[index]
                 if (Tij is not None) and (deltaE is not None):
                     Kij = calcHoppingRate(Tij, deltaE)
-                    CGIDs1 = chromo1.CGIDs
-                    CGIDs2 = chromophoreList[chromo2ID].CGIDs
+                    try:
+                        CGIDs1 = chromo1.CGIDs
+                        CGIDs2 = chromophoreList[chromo2ID].CGIDs
+                    except:
+                        CGIDs1 = "UA input morphology has no CGIDs"
+                        CGIDs2 = "UA input morphology has no CGIDs"
                     if Kij > 1E5:
                         CSVData.append([str(chromo1.ID), str(chromo2ID), str(Kij), repr(CGIDs1), repr(CGIDs2)])
         print("Writing CSV file...")
