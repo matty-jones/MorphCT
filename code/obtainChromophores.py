@@ -48,6 +48,12 @@ class chromophore:
                     if AAMorphologyDict['body'][electronicallyActiveCGSites[0]] in rigidBodies:
                         self.species = species
                         break
+                try:
+                    self.species
+                except AttributeError:
+                    for key, val in self.__dict__:
+                        print(key, val)
+                    raise SystemError("Chromophore " + str(self.ID) + " has no species! Exiting...")
             else:
                 raise SystemError("Multiple electronic species defined, but no way to map them without a coarse-grained morphology (no CG morph has been given)")
             self.AAIDs = chromophoreCGSites
