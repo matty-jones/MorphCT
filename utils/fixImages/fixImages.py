@@ -58,9 +58,10 @@ def moveBondedAtoms(centralAtom, morphology, bondDict):
 
 
 if __name__ == "__main__":
-    fileName = sys.argv[1]
-    morphology = helperFunctions.loadMorphologyXML(fileName)
-    morphology = zeroOutImages(morphology)
-    bondDict = getBondDict(morphology)
-    morphology = checkBonds(morphology, bondDict)
-    helperFunctions.writeMorphologyXML(morphology, "imageFix_" + fileName)
+    fileNames = sys.argv[1:]
+    for fileName in fileNames:
+        morphology = helperFunctions.loadMorphologyXML(fileName)
+        morphology = zeroOutImages(morphology)
+        bondDict = getBondDict(morphology)
+        morphology = checkBonds(morphology, bondDict)
+        helperFunctions.writeMorphologyXML(morphology, "imageFix_" + fileName)

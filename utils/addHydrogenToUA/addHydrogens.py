@@ -116,13 +116,13 @@ def find_information():
         None
     Returns:
         Dictionary of atom types and number of hydrogens
-        sigma 
+        sigma
     """
 
     built_ins = {"PCBM":[{'CHA':[[2, 1]],
         'CH2':[[2, 2]],
         'CE': [[1,3]]}, 1.0],
-        "P3HT":[{'CA':[[2, 1]], 
+        "P3HT":[{'CA':[[2, 1]],
             'CT': [[2, 2], [1, 3]]}, 3.905],
         "DBP":[{'C':[[2, 1]],
             'CA': [[2, 1]],
@@ -158,20 +158,19 @@ def find_information():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-mol", "--molecule_source", required=False, help="Specify the source of the addHydrogens dictionary and sigma value. This can be in the form of a python script which returns a function of the dictionary and sigma or the name of the molecule.")
-    args, inputFile = parser.parse_known_args()
-    inputFile = inputFile[0]
+    parser.add_argument("-m", "--molecule_source", required=False, help="Specify the source of the addHydrogens dictionary and sigma value. This can be in the form of a python script which returns a function of the dictionary and sigma or the name of the molecule.")
+    args, inputFiles = parser.parse_known_args()
     hydrogensToAdd, sigmaVal = find_information()
+    for inputFile in inputFiles:
+        # This dictionary has keys of the atom type, and values where the first element is the number of bonds required for us to add a hydrogen to the atom and the second element of the value defines how many hydrogens to add to said atom.
+        print("THIS FUNCTION IS SET UP TO USE A DICTIONARY TO DEFINE HOW MANY HYDROGENS TO ADD TO BONDS OF A SPECIFIC TYPE WITH A CERTAIN NUMBER OF BONDS")
+        print(hydrogensToAdd)
 
-    # This dictionary has keys of the atom type, and values where the first element is the number of bonds required for us to add a hydrogen to the atom and the second element of the value defines how many hydrogens to add to said atom.
-    print("THIS FUNCTION IS SET UP TO USE A DICTIONARY TO DEFINE HOW MANY HYDROGENS TO ADD TO BONDS OF A SPECIFIC TYPE WITH A CERTAIN NUMBER OF BONDS")
-    print(hydrogensToAdd)
-
-    print("IF THE ABOVE DICTIONARY DOESN'T LOOK RIGHT, PLEASE TERMINATE NOW AND IGNORE ANY OUTPUTS UNTIL THE DICTIONARY HAS BEEN RECTIFIED")
-    print("Additionally, we're using a sigma value of", sigmaVal)
-    morphologyDict = helperFunctions.loadMorphologyXML(inputFile, sigma = sigmaVal)
-    morphologyDict = helperFunctions.addUnwrappedPositions(morphologyDict)
-    hydrogenPositions = calculateHydrogenPositions(morphologyDict, hydrogensToAdd)
-    morphologyDict = addHydrogensToMorph(morphologyDict, hydrogenPositions)
-    morphologyDict = helperFunctions.addWrappedPositions(morphologyDict)
-    helperFunctions.writeMorphologyXML(morphologyDict, inputFile.replace('.xml','_AA.xml'), checkWrappedPosns=False)#, sigma = sigmaVal)
+        print("IF THE ABOVE DICTIONARY DOESN'T LOOK RIGHT, PLEASE TERMINATE NOW AND IGNORE ANY OUTPUTS UNTIL THE DICTIONARY HAS BEEN RECTIFIED")
+        print("Additionally, we're using a sigma value of", sigmaVal)
+        morphologyDict = helperFunctions.loadMorphologyXML(inputFile, sigma = sigmaVal)
+        morphologyDict = helperFunctions.addUnwrappedPositions(morphologyDict)
+        hydrogenPositions = calculateHydrogenPositions(morphologyDict, hydrogensToAdd)
+        morphologyDict = addHydrogensToMorph(morphologyDict, hydrogenPositions)
+        morphologyDict = helperFunctions.addWrappedPositions(morphologyDict)
+        helperFunctions.writeMorphologyXML(morphologyDict, inputFile.replace('.xml','_AA.xml'), checkWrappedPosns=False)#, sigma = sigmaVal)
