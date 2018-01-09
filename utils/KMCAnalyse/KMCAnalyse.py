@@ -58,7 +58,7 @@ def splitCarriersByType(carrierData):
                     carrierDataHoles[listVar].append(carrierData[listVar][carrierIndex])
                 elif chargeType == 'Electron':
                     carrierDataElectrons[listVar].append(carrierData[listVar][carrierIndex])
-    except KeyError:
+    except:
         print("Multiple charge carriers not found, assuming donor material and holes only")
         try:
             carrierDataHoles = {'carrierHistoryMatrix': carrierData['carrierHistoryMatrix'], 'seed': carrierData['seed']}
@@ -107,91 +107,46 @@ def getCarrierData(carrierData):
         MSDStandardErrors.append(np.std(disps) / len(disps))
     return carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors
 
-def createArrayforplotConnections(chromophoreList, carrierHistory, simDims):
-    """
-    Function to create an array of with a starting point, a vector
-    and the number of hops that occured.
-    Requires:
-        chromophoreList,
-        carrierHistory
-        simDims
-    Returns:
-        7xN array
-    """
-    #Create an "empty" array to store data.
-    ConnectionsArray = np.zeros(7)
-    
-    #Iterate through the chromophoreList
-    for i, chrome in enumerate(chromophoreList):
-        #Iterate through the neighbors of the chromophore
-        for neighbor in zip(chrome.neighbours):
-            index = neighbor[0][0] #Index of the neighbor
-            image = neighbor[0][1] #Check to see if they are in the same relative image
-            
-            #Only consider one direction.
-            if i < index:
-                #Get the vector between the two chromophores.
-                if not np.count_nonzero(image):
-                    vector = chromophoreList[index].posn-chrome.posn 
-                #Account for periodic boundary conditions if not in same relative image.
-                else: 
-                    vector = chromophoreList[index].posn-chrome.posn
-                    vector+=image*np.array([2*simDims[0][1], 2*simDims[1][1], 2*simDims[2][1]])
-
-                #Get the net number of times the path was travelled.
-                forward = carrierHistory[index, i]
-                reverse = carrierHistory[i,index]
-                TimesTravelled = abs(forward-reverse)
-
-                #Append the array if the net times travelled is greater than 0
-                if TimesTravelled > 0:
-                    datum = np.hstack((chrome.posn, vector, np.array([np.log10(TimesTravelled)])))
-                    ConnectionsArray = np.vstack((ConnectionsArray, datum))
-    return ConnectionsArray[1:] #Return the array excluding the zeros first line.
 
 def plotConnections(chromophoreList, simDims, carrierHistory, directory, carrierType):
-    #Import matplotlib color modules to set up color bar.
-    import matplotlib.colors 
-    import matplotlib.cm as cmx
-    
-    #Create a figure class
-    fig = plt.figure(figsize = (7,6))
-    #Make a 3D subplot
-    ax = fig.add_subplot(111, projection = '3d')
-    
-    #Create the array for all the chromophore connections
-    ConnectionsArray = createArrayforplotConnections(chromophoreList, carrierHistory, simDims)
-    
-    #Determine the smalles, non-zero number of times two chromophores are connected.
-    vmin = np.min(np.array(ConnectionsArray)[:,6])
-    #Determine the max number of times two chormophores are connected.
-    vmax = np.max(np.array(ConnectionsArray)[:,6])
-
-    #Set up the color bar.
-    plasma = cm = plt.get_cmap('plasma')
-    cNorm = matplotlib.colors.Normalize(vmin=vmin, vmax = vmax)
-    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=plasma)
-    Hopcolors = scalarMap.to_rgba(ConnectionsArray[:,6])
-
-    #Set up the intensity for the hops so more travelled paths are more intense
-    alphas = ConnectionsArray[:,6]/vmax
-    Hopcolors[:, 3] = alphas
-
-    #Plot the vectors between two chromophores
-    VectorPlot = ax.quiver(ConnectionsArray[:,0], 
-            ConnectionsArray[:,1], 
-            ConnectionsArray[:,2], 
-            ConnectionsArray[:,3], 
-            ConnectionsArray[:,4], 
-            ConnectionsArray[:,5], 
-            color = Hopcolors, 
-            arrow_length_ratio = 0, linewidth = 0.7)
-
-    #Plot the color bar
-    scalarMap.set_array(ConnectionsArray[:,6])
-    tickLocation = np.arange(0, int(vmax) + 1, 1)
-    cb = fig.colorbar(scalarMap, ticks=tickLocation, shrink=0.8, aspect=20)
-
+    # A complicated function that shows connections between carriers in 3D that carriers prefer to hop between.
+    # Connections that are frequently used are highlighted in black, whereas rarely used connections are more white.
+    # Find a good normalisation factor
+    carrierHistory = carrierHistory.toarray()
+    normalizeTo = np.max(carrierHistory)
+    # Try to get the colour map first
+    colormap = plt.cm.plasma
+    minimum = np.min(carrierHistory[np.nonzero(carrierHistory)])
+    maximum = np.max(carrierHistory[np.nonzero(carrierHistory)])
+    plt.gcf()
+    levels = np.linspace(np.log10(minimum), np.log10(maximum), 100)
+    coloursForMap = plt.contourf([[0, 0], [0, 0]], levels, cmap = colormap)
+    plt.clf()
+    # Now for the actual plot
+    fig = plt.gcf()
+    ax = p3.Axes3D(fig)
+    for chromo1, row in enumerate(carrierHistory):
+        for chromo2, value in enumerate(row):
+            if value > 0:
+                coords1 = chromophoreList[chromo1].posn
+                coords2 = chromophoreList[chromo2].posn
+                # Only plot connections between chromophores in the same image
+                plotConnection = True
+                for neighbour in chromophoreList[chromo1].neighbours:
+                    if neighbour[0] != chromophoreList[chromo2].ID:
+                        continue
+                    if neighbour[1] != [0, 0, 0]:
+                        coords2 = np.array(coords2) + (np.array(neighbour[1]) * np.array([axis[1] - axis[0] for axis in simDims]))
+                        #plotConnection = False
+                        #break
+                if plotConnection is True:
+                    #ax.scatter(coords1[0], coords1[1], coords1[2], c = 'k', s = '5')
+                    #ax.scatter(coords2[0], coords2[1], coords2[2], c = 'k', s = '5')
+                    line = [coords2[0] - coords1[0], coords2[1] - coords1[1], coords2[2] - coords2[1]]
+                    if (np.abs(coords2[0] - coords1[0]) < simDims[0][1]) and (np.abs(coords2[1] - coords1[1]) < simDims[1][1]) and (np.abs(coords2[2] - coords1[2]) < simDims[2][1]):
+                        #colourIntensity = value / normalizeTo
+                        colourIntensity = np.log10(value) / np.log10(normalizeTo)
+                        ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = colormap(colourIntensity), linewidth = 0.5, alpha = colourIntensity)
     # Draw boxlines
     # Varying X
     ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][0]], c = 'k', linewidth = 1.0)
@@ -209,7 +164,9 @@ def plotConnections(chromophoreList, simDims, carrierHistory, directory, carrier
     ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][1]], c = 'k', linewidth = 1.0)
     ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][1], simDims[1][1]], [simDims[2][0], simDims[2][1]], c = 'k', linewidth = 1.0)
 
-    #Name and save the figure.
+    tickLocation = range(0, int(np.log10(maximum)) + 1, 1)
+    cbar = plt.colorbar(coloursForMap, ticks=tickLocation)#np.linspace(np.log10(minimum), np.log10(maximum), 6))
+    cbar.ax.set_yticklabels([r'10$^{{{}}}$'.format(x) for x in tickLocation])
     plt.title('Network (' + carrierType + ')', y = 1.1)
     fileName = '01_3d' + carrierType + '.pdf'
     plt.savefig(directory + '/figures/' + fileName, bbox_inches='tight')
@@ -798,7 +755,7 @@ def plotDeltaEij(deltaEij, gaussBins, fitArgs, dataType, fileName):
     print("Figure saved as", fileName)
 
 
-def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict, overrideHopRatePlots=False):
+def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict):
     # Create all the empty lists we need
     hopTypes = ['intra', 'inter']
     hopTargets = ['Stack', 'Mol']
@@ -824,16 +781,10 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
             chromo2 = chromophoreList[chromo.neighbours[index][0]]
             mol2ID = CGToMolID[chromo2.CGIDs[0]]
             deltaE = chromo.neighboursDeltaE[index]
-            if overrideHopRatePlots:
-                if mol1ID == mol2ID:
-                    rate = parameterDict['averageIntraHopRate']
-                else:
-                    rate = parameterDict['averageInterHopRate']
+            if chromo.species == 'Acceptor':
+                rate = calculateHopRate(acceptorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
             else:
-                if chromo.species == 'Acceptor':
-                    rate = calculateHopRate(acceptorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
-                else:
-                    rate = calculateHopRate(donorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+                rate = calculateHopRate(donorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
             #try:
             if chromo2.ID < chromo.ID:
                 continue
@@ -958,26 +909,7 @@ def createResultsPickle(directory):
         selectList = []
         slot1 = directory + '/KMC/KMCslot1Results_%02d.pickle' % (int(core))
         slot2 = directory + '/KMC/KMCslot2Results_%02d.pickle' % (int(core))
-        slot1Exists = False
-        slot2Exists = False
-        try:
-            os.path.getsize(slot1)
-            slot1Exists = True
-        except FileNotFoundError:
-            pass
-        try:
-            os.path.getsize(slot2)
-            slot2Exists = True
-        except FileNotFoundError:
-            pass
-        if slot1Exists and not slot2Exists:
-            keepList.append(slot1)
-        elif slot2Exists and not slot1Exists:
-            keepList.append(slot2)
-        elif not slot1Exists and not slot2Exists:
-            raise SystemError("No pickle files found to combine! Terminating...")
-        # Beyond this point, both exist
-        elif os.path.getsize(slot1) >= os.path.getsize(slot2):
+        if os.path.getsize(slot1) >= os.path.getsize(slot2):
             keepList.append(slot1)
         else:
             keepList.append(slot2)
@@ -1025,7 +957,7 @@ def calculateMobility(directory, currentCarrierType, carrierData, simDims, plot3
     plt.figure()
     anisotropy = plotAnisotropy(carrierData, directory, simDims, currentCarrierType, plot3DGraphs)
     if (carrierHistory is not None) and plot3DGraphs:
-        print("Determining net carrier hopping connections...")
+        print("Determining carrier hopping connections...")
         plotConnections(chromophoreList, simDims, carrierHistory, directory, currentCarrierType)
     times, MSDs = helperFunctions.parallelSort(times, MSDs)
     print("Calculating MSD...")
@@ -1043,7 +975,6 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--cutOffDonor", type=float, default=None, required=False, help="Specify a manual cut-off for the determination of stacks within the donor material. Connections with separation > cut-off will be classed as inter-stack. If omitted, stack cut-off will be determined automatically as the first minimum of the RDF.")
     parser.add_argument("-a", "--cutOffAcceptor", type=float, default=None, required=False, help="Specify a manual cut-off for the determination of stacks within the acceptor material. Connections with separation > cut-off will be classed as inter-stack. If omitted, stack cut-off will be determined automatically as the first minimum of the RDF.")
     parser.add_argument("-s", "--sequence", type=lambda s: [float(item) for item in s.split(',')], default=None, required=False, help='Create a figure in the current directory that describes the evolution of the anisotropy/mobility using the specified comma-delimited string as the sequence of x values. For instance -s "1.5,1.75,2.0,2.25,2.5" will assign each of the 5 following directories these x-values when plotting the mobility evolution.')
-    #parser.add_argument("-x", "--xlabel", default=r"$\tau$ (Arb. U.)", required=False, help='Specify an x-label for the combined plot (only used if -s is specified). Default = "Temperature (Arb. U.)"')
     parser.add_argument("-x", "--xlabel", default="Temperature (Arb. U.)", required=False, help='Specify an x-label for the combined plot (only used if -s is specified). Default = "Temperature (Arb. U.)"')
     args, directoryList = parser.parse_known_args()
 
@@ -1067,13 +998,12 @@ if __name__ == "__main__":
         print("Loading chromophoreList...")
         AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle('./' + directory + '/code/' + directory + '.pickle')
         print("ChromophoreList obtained")
-        overrideHopRatePlots = False
-        try:
-            if parameterDict['useAverageHopRates'] is True:
-                print("Note: For", directory + ", useAverageHopRates is", repr(parameterDict['useAverageHopRates']) + ": Intra-molecular hop rate =", parameterDict['averageIntraHopRate'], "and inter-molecular hop rate =", parameterDict['averageInterHopRate'])
-                overrideHopRatePlots = True
-        except KeyError:
-            pass
+
+
+        print(directory, parameterDict['useAverageHopRates'], parameterDict['averageIntraHopRate'], parameterDict['averageInterHopRate'])
+        raise SystemError("EXIT")
+
+
         morphologyShape = np.array([AAMorphologyDict[axis] for axis in ['lx', 'ly', 'lz']])
         simDims = [[-AAMorphologyDict[axis] / 2.0, AAMorphologyDict[axis] / 2.0] for axis in ['lx', 'ly', 'lz']]
         # Calculate the mobilities
@@ -1120,7 +1050,7 @@ if __name__ == "__main__":
         stackDicts = getStacks(chromophoreList, morphologyShape, cutOffDonor, cutOffAcceptor, periodic=args.periodicStacks)
         if args.threeD:
             plotStacks3D(tempDir, chromophoreList, stackDicts, simDims)
-        dataDict = plotMixedHoppingRates(tempDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict, overrideHopRatePlots=overrideHopRatePlots)
+        dataDict = plotMixedHoppingRates(tempDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict)
         print("\n")
         print("Writing CSV Output File...")
         writeCSV(dataDict, directory)
