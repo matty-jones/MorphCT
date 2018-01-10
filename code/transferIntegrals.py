@@ -208,12 +208,7 @@ def calculateDeltaE(chromophoreList, chromo1ID, chromo2ID):
     elif chromo2.species == 'Acceptor':
         # Electron transporter
         chromo2E = chromo2.LUMO
-    #### NOTE: SANITY CHECK  ####
-    if chromo1.species != chromo2.species:
-        print("chromo1.species (" + str(chromo1.species) + ") != chromo2.species (" + str(chromo2.species) + ")! CHECK CODE!")
-        exit()
-    #### END OF SANITY CHECK ####
-    return chromo2E - chromo1E, chromo1.species
+    return chromo2E - chromo1E
 
 
 def calculateTI(orbitalSplitting, deltaE):
@@ -296,38 +291,49 @@ def updatePairChromophoreList(chromophoreList, parameterDict):
             sys.stdout.flush()
             try:
                 dimerHOMO_1, dimerHOMO, dimerLUMO, dimerLUMO_1 = loadORCAOutput(orcaOutputDir + fileName)
-                # Calculate the deltaE between the two single chromophores
-                deltaE, species = calculateDeltaE(chromophoreList, chromophore.ID, neighbourID)
-                # Calculate the TI using the ESD method
-                if species == 'Donor':
-                    TI = calculateTI(dimerHOMO - dimerHOMO_1, deltaE)
-                elif species == 'Acceptor':
-                    TI = calculateTI(dimerLUMO - dimerLUMO_1, deltaE)
-                # Get the location of the current chromophore.ID in the neighbour's neighbourList
-                reverseLoc = [neighbourData[0] for neighbourData in chromophoreList[neighbourID].neighbours].index(chromophore.ID)
-                # Update both the current chromophore and the neighbour (for the reverse hop)
-                chromophore.neighboursDeltaE[neighbourLoc] = deltaE
-                chromophoreList[neighbourID].neighboursDeltaE[reverseLoc] = - deltaE
-                chromophore.neighboursTI[neighbourLoc] = TI
-                chromophoreList[neighbourID].neighboursTI[reverseLoc] = TI
-                # DEBUG ASSERTIONS
-                # Check list index corresponds to chromophore ID
-                assert(chromoLocation == chromophoreList[chromoLocation].ID)
-                assert(chromoLocation == chromophore.ID)
-                # Check the neighbourLoc and reverseLoc give the correct chromophoreIDs
-                assert(chromophoreList[chromophore.ID].neighbours[neighbourLoc][0] == chromophoreList[neighbourID].ID)
-                assert(chromophoreList[neighbourID].neighbours[reverseLoc][0] == chromophoreList[chromophore.ID].ID)
-                # Check the chromophoreList has been updated after updating the chromophore instance
-                assert(chromophoreList[chromophore.ID].neighboursTI[neighbourLoc] == chromophore.neighboursTI[neighbourLoc])
-                # Check the TI of the forward and backward hops are the same
-                assert(chromophoreList[chromophore.ID].neighboursTI[neighbourLoc] == chromophoreList[neighbourID].neighboursTI[reverseLoc])
-                # Check the chromophoreList has been updated after updating the chromophore instance
-                assert(chromophoreList[chromophore.ID].neighboursDeltaE[neighbourLoc] == chromophore.neighboursDeltaE[neighbourLoc])
-                # Check the DeltaE of the forward and backward hops are *= -1
-                assert(chromophoreList[chromophore.ID].neighboursDeltaE[neighbourLoc] == -chromophoreList[neighbourID].neighboursDeltaE[reverseLoc])
-                # END DEBUG ASSERTIONS
             except ORCAError:
                 failedPairChromos[fileName] = [1, chromoLocation, neighbourID]
+                continue
+            # Calculate the deltaE between the two single chromophores
+            try:
+                if parameterDict['useKoopmansApproximation']:
+                    deltaE = 0.0
+                else:
+                    # Calculate DeltaE normally
+                    raise KeyError
+            except KeyError:
+                deltaE = calculateDeltaE(chromophoreList, chromophore.ID, neighbourID)
+            # Check the chromophore species
+            assert(chromophoreList[chromophore.ID].species == chromophoreList[neighbourID].species)
+            species = chromophoreList[chromophore.ID].species
+            # Calculate the TI using the ESD method
+            if species == 'Donor':
+                TI = calculateTI(dimerHOMO - dimerHOMO_1, deltaE)
+            elif species == 'Acceptor':
+                TI = calculateTI(dimerLUMO - dimerLUMO_1, deltaE)
+            # Get the location of the current chromophore.ID in the neighbour's neighbourList
+            reverseLoc = [neighbourData[0] for neighbourData in chromophoreList[neighbourID].neighbours].index(chromophore.ID)
+            # Update both the current chromophore and the neighbour (for the reverse hop)
+            chromophore.neighboursDeltaE[neighbourLoc] = deltaE
+            chromophoreList[neighbourID].neighboursDeltaE[reverseLoc] = - deltaE
+            chromophore.neighboursTI[neighbourLoc] = TI
+            chromophoreList[neighbourID].neighboursTI[reverseLoc] = TI
+            # DEBUG ASSERTIONS
+            # Check list index corresponds to chromophore ID
+            assert(chromoLocation == chromophoreList[chromoLocation].ID)
+            assert(chromoLocation == chromophore.ID)
+            # Check the neighbourLoc and reverseLoc give the correct chromophoreIDs
+            assert(chromophoreList[chromophore.ID].neighbours[neighbourLoc][0] == chromophoreList[neighbourID].ID)
+            assert(chromophoreList[neighbourID].neighbours[reverseLoc][0] == chromophoreList[chromophore.ID].ID)
+            # Check the chromophoreList has been updated after updating the chromophore instance
+            assert(chromophoreList[chromophore.ID].neighboursTI[neighbourLoc] == chromophore.neighboursTI[neighbourLoc])
+            # Check the TI of the forward and backward hops are the same
+            assert(chromophoreList[chromophore.ID].neighboursTI[neighbourLoc] == chromophoreList[neighbourID].neighboursTI[reverseLoc])
+            # Check the chromophoreList has been updated after updating the chromophore instance
+            assert(chromophoreList[chromophore.ID].neighboursDeltaE[neighbourLoc] == chromophore.neighboursDeltaE[neighbourLoc])
+            # Check the DeltaE of the forward and backward hops are *= -1
+            assert(chromophoreList[chromophore.ID].neighboursDeltaE[neighbourLoc] == -chromophoreList[neighbourID].neighboursDeltaE[reverseLoc])
+            # END DEBUG ASSERTIONS
     print("")
     while len(failedPairChromos) > 0:
         failedPairChromos, permanentlyFailed = rerunFails(failedPairChromos, parameterDict, chromophoreList)
@@ -355,39 +361,49 @@ def updatePairChromophoreList(chromophoreList, parameterDict):
             chromo2ID = chromoData[2]
             try:
                 dimerHOMO_1, dimerHOMO, dimerLUMO, dimerLUMO_1 = loadORCAOutput(orcaOutputDir + fileName)
-                # Calculate the deltaE between the two single chromophores
-                deltaE, species = calculateDeltaE(chromophoreList, chromophore.ID, neighbourID)
-                # Calculate the TI using the ESD method
-                if species == 'Donor':
-                    TI = calculateTI(dimerHOMO - dimerHOMO_1, deltaE)
-                elif species == 'Acceptor':
-                    TI = calculateTI(dimerLUMO - dimerLUMO_1, deltaE)
-                # Get the location of the neighbour's ID in the current chromophores's neighbourList
-                neighbourLoc = [neighbourData[0] for neighbourData in chromophoreList[chromo1ID].neighbours].index(chromo2ID)
-                # Get the location of the current chromophore's ID in the neighbour's neighbourList
-                reverseLoc = [neighbourData[0] for neighbourData in chromophoreList[chromo2ID].neighbours].index(chromo1ID)
-                # Update both the current chromophore and the neighbour (for the reverse hop)
-                chromophoreList[chromo1ID].neighboursDeltaE[neighbourLoc] = deltaE
-                chromophoreList[chromo2ID].neighboursDeltaE[reverseLoc] = - deltaE
-                chromophoreList[chromo1ID].neighboursTI[neighbourLoc] = TI
-                chromophoreList[chromo2ID].neighboursTI[reverseLoc] = TI
-                # This rerun was successful so remove this chromophore from the rerun list
-                successfulReruns.append(fileName)
-                print(fileName, "was successful!")
-                # DEBUG ASSERTIONS
-                # Check the neighbourLoc and reverseLoc give the correct chromophoreIDs
-                assert(chromophoreList[chromo1ID].neighbours[neighbourLoc][0] == chromophoreList[chromo2ID].ID)
-                assert(chromophoreList[chromo2ID].neighbours[reverseLoc][0] == chromophoreList[chromo1ID].ID)
-                # Check the TI of the forward and backward hops are the same
-                assert(chromophoreList[chromo1ID].neighboursTI[neighbourLoc] == chromophoreList[chromo2ID].neighboursTI[reverseLoc])
-                # Check the DeltaE of the forward and backward hops are *= -1
-                assert(chromophoreList[chromo1ID].neighboursDeltaE[neighbourLoc] == -chromophoreList[chromo2ID].neighboursDeltaE[reverseLoc])
-                # END DEBUG ASSERTIONS
             except ORCAError:
                 # This dimer failed so increment its fail counter
                 failedPairChromos[fileName][0] += 1
                 print(fileName, "still failed, incrementing counter")
                 continue
+            # Calculate the deltaE between the two single chromophores
+            try:
+                if parameterDict['useKoopmansApproximation']:
+                    deltaE = 0.0
+                else:
+                    # Calculate DeltaE normally
+                    raise KeyError
+            except KeyError:
+                deltaE = calculateDeltaE(chromophoreList, chromophore.ID, neighbourID)
+            # Check the chromophore species
+            assert(chromophoreList[chromophore.ID].species == chromophoreList[neighbourID].species)
+            species = chromophoreList[chromophore.ID].species
+            # Calculate the TI using the ESD method
+            if species == 'Donor':
+                TI = calculateTI(dimerHOMO - dimerHOMO_1, deltaE)
+            elif species == 'Acceptor':
+                TI = calculateTI(dimerLUMO - dimerLUMO_1, deltaE)
+            # Get the location of the neighbour's ID in the current chromophores's neighbourList
+            neighbourLoc = [neighbourData[0] for neighbourData in chromophoreList[chromo1ID].neighbours].index(chromo2ID)
+            # Get the location of the current chromophore's ID in the neighbour's neighbourList
+            reverseLoc = [neighbourData[0] for neighbourData in chromophoreList[chromo2ID].neighbours].index(chromo1ID)
+            # Update both the current chromophore and the neighbour (for the reverse hop)
+            chromophoreList[chromo1ID].neighboursDeltaE[neighbourLoc] = deltaE
+            chromophoreList[chromo2ID].neighboursDeltaE[reverseLoc] = - deltaE
+            chromophoreList[chromo1ID].neighboursTI[neighbourLoc] = TI
+            chromophoreList[chromo2ID].neighboursTI[reverseLoc] = TI
+            # This rerun was successful so remove this chromophore from the rerun list
+            successfulReruns.append(fileName)
+            print(fileName, "was successful!")
+            # DEBUG ASSERTIONS
+            # Check the neighbourLoc and reverseLoc give the correct chromophoreIDs
+            assert(chromophoreList[chromo1ID].neighbours[neighbourLoc][0] == chromophoreList[chromo2ID].ID)
+            assert(chromophoreList[chromo2ID].neighbours[reverseLoc][0] == chromophoreList[chromo1ID].ID)
+            # Check the TI of the forward and backward hops are the same
+            assert(chromophoreList[chromo1ID].neighboursTI[neighbourLoc] == chromophoreList[chromo2ID].neighboursTI[reverseLoc])
+            # Check the DeltaE of the forward and backward hops are *= -1
+            assert(chromophoreList[chromo1ID].neighboursDeltaE[neighbourLoc] == -chromophoreList[chromo2ID].neighboursDeltaE[reverseLoc])
+            # END DEBUG ASSERTIONS
         print(len(failedPairChromos))
         for fileName in successfulReruns:
             failedPairChromos.pop(fileName)

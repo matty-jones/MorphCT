@@ -52,10 +52,19 @@ class carrier:
             self.averageInterHopRate = parameterDict['averageInterHopRate']
         except KeyError:
             self.useAverageHopRates = False
+        # Set the use of Koopmans' approximation to false if the key does not exist in the parameter dict
+        try:
+            self.useKoopmansApproximation = parameterDict['useKoopmansApproximation']
+            if self.useKoopmansApproximation:
+                self.koopmansHoppingPrefactor = parameterDict['koopmansHoppingPrefactor']
+            else:
+                self.koopmansHoppingPrefactor = 1.0
+        except KeyError:
+            self.useKoopmansApproximation = False
 
-    def calculateHopRate(self, lambdaij, Tij, deltaEij):
+    def calculateHopRate(self, lambdaij, Tij, deltaEij, prefactor):
         # Semiclassical Marcus Hopping Rate Equation
-        kij = ((2 * np.pi) / hbar) * (Tij ** 2) * np.sqrt(1.0 / (4 * lambdaij * np.pi * kB * self.T)) * np.exp(-((deltaEij + lambdaij)**2) / (4 * lambdaij * kB * self.T))
+        kij = prefactor * ((2 * np.pi) / hbar) * (Tij ** 2) * np.sqrt(1.0 / (4 * lambdaij * np.pi * kB * self.T)) * np.exp(-((deltaEij + lambdaij)**2) / (4 * lambdaij * kB * self.T))
         return kij
 
     def determineHopTime(self, rate):
@@ -98,8 +107,12 @@ class carrier:
                 if transferIntegral is None:
                     continue
                 deltaEij = self.currentChromophore.neighboursDeltaE[neighbourIndex]
+                # Create a hopping prefactor that can be modified if we're using Koopmans' approximation
+                prefactor = 1.0
+                if self.useKoopmansApproximation:
+                    prefactor *= self.koopmansHoppingPrefactor
                 # All of the energies are in eV currently, so convert them to J
-                hopRate = self.calculateHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge)
+                hopRate = self.calculateHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge, prefactor)
                 hopTime = self.determineHopTime(hopRate)
                 # Keep track of the chromophoreID and the corresponding tau
                 hopTimes.append([self.currentChromophore.neighbours[neighbourIndex][0], hopTime])
