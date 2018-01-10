@@ -1045,10 +1045,6 @@ if __name__ == "__main__":
         print("ChromophoreList obtained")
 
 
-        print(directory, parameterDict['useAverageHopRates'], parameterDict['averageIntraHopRate'], parameterDict['averageInterHopRate'])
-        raise SystemError("EXIT")
-
-
         morphologyShape = np.array([AAMorphologyDict[axis] for axis in ['lx', 'ly', 'lz']])
         simDims = [[-AAMorphologyDict[axis] / 2.0, AAMorphologyDict[axis] / 2.0] for axis in ['lx', 'ly', 'lz']]
         # Calculate the mobilities
