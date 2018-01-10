@@ -134,7 +134,8 @@ def createArrayforplotConnections(chromophoreList, carrierHistory, simDims):
                 if not np.count_nonzero(image):
                     vector = chromophoreList[index].posn-chrome.posn 
                 #Account for periodic boundary conditions if not in same relative image.
-                else: vector = chromophoreList[index].posn-chrome.posn
+                else: 
+                    vector = chromophoreList[index].posn-chrome.posn
                     vector+=image*np.array([2*simDims[0][1], 2*simDims[1][1], 2*simDims[2][1]])
 
                 #Get the net number of times the path was travelled.
