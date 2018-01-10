@@ -148,7 +148,7 @@ class exciton:
             if transferIntegral is None:
                 continue
             # For the hop, we need to know the change in Eij for the boltzmann factor, as well as the distance rij being hopped
-            # Durham code has a prefactor of 1.414 here, not sure why
+            # In Durham we used a prefactor of 1.414 here, can't remember why
             deltaEij = self.currentChromophore.neighboursDeltaE[neighbourIndex]
             # The current posn inside the wrapped morphology is easy
             currentChromoPosn = self.currentChromophore.posn
@@ -785,7 +785,6 @@ def calculateFRETHopRate(prefactor, lifetimeParameter, rF, rij, deltaEij, T):
         boltzmannFactor = 1
     else:
         boltzmannFactor = np.exp(-(elementaryCharge * deltaEij)/(kB * T))
-
     kFRET = prefactor * (1/lifetimeParameter) * (rF / rij)**6 * boltzmannFactor
     return kFRET
 
