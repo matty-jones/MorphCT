@@ -122,6 +122,8 @@ CGSiteSpecies = {\
 useVoronoiNeighbours = True         # If true, the voronoi analysis will be used to find hopping neighbours. Otherwise, defaults to cut-off with distances specified below.
 maximumHoleHopDistance = 10.0       # Set maximum hop distance for holes (unused if useVoronoiNeighbours == True)
 maximumElectronHopDistance = 10.0   # Set maximum hop distance for electrons (unused if useVoronoiNeighbours == True)
+permitHopsThroughOpposingChromophores = False
+                                    # If true, obtainChromophores will ignore the opposing chromophore type when determining the neighbours of a chromophore. This manifests as the ability of a carrier to hop from one donor to another 'through' an acceptor (or vice versa) as if the intermediate chromophore was not there.
 removeORCAInputs = True             # Set ORCA input files to be deleted after the transfer integrals have been correctly obtained (recommended)
 removeORCAOutputs = True            # Set ORCA output files to be deleted after the transfer integrals have been correctly obtained (not recommended for systems with < 10,000 chromophore outputs as it makes it easier to debug)
 chromophoreLength = 3               # This parameter is no longer supported on the master branch due to lack of testing. Check the MorphCT "variableChromoLengths" if you'd like to.
