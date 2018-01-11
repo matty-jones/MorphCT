@@ -440,11 +440,6 @@ def determineNeighboursVoronoi(chromophoreList, parameterDict, simDims):
     allNeighbours = getVoronoiNeighbours(Delaunay(allPositions), allChromos)
     print("Updating the chromophore list for dissociation neighbours")
     chromophoreList = updateChromophoreListVoronoi(originalAllChromoIDs, allChromos, allNeighbours, chromophoreList, simDims)
-    if (len(donorPositions) > 0) and (len(acceptorPositions) > 0):
-        print("Calculating Neighbours of All Moieties")
-        allNeighbours = getVoronoiNeighbours(Delaunay(allPositions), allChromos)
-        print("Updating the chromophore list for dissociation neighbours")
-        chromophoreList = updateChromophoreListVoronoi(originalAllChromoIDs, allChromos, allNeighbours, chromophoreList, simDims)
     return chromophoreList
 
 
