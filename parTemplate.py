@@ -146,7 +146,7 @@ koopmansHoppingPrefactor = 1E-3     # When Koopmans' approximation is active, th
 systemTemperature = 290                 # Device temperature (RTP)
 reorganisationEnergyDonor = 0.3063      # Donor reorganisation energy (eV)
 reorganisationEnergyAcceptor = 0.1496   # Acceptor reorganisation energy (eV)
-useSimpleEnergeticPenalty = True        # Replaces the exponential term in the Marcus hopping rate with a simple Boltzmann penalty for hops upstream in energy (similar to that in Miller Abraham's hopping.
+useSimpleEnergeticPenalty = False        # Replaces the exponential term in the Marcus hopping rate with a simple Boltzmann penalty for hops upstream in energy (similar to that in Miller Abraham's hopping).
                                         # Mathematically: \exp^{\frac{- ((\Delta E_{ij} + \lambda_{ij})**2}{4 \lambda_{ij} k_{B} T}} becomes \exp^{\frac{- \Delta E_{ij}}{k_{B} T}}.
 recordCarrierHistory = True             # Required to plot connectivity graphs, but drastically increases pickle size, processing time and memory usage (although uses scipy's sparse matrices so it's not too bad)
 # The following parameters are concerned with the presence of 'variable range hopping', i.e. providing an energetic penalty for long hops.
