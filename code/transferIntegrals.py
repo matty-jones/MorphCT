@@ -165,7 +165,7 @@ def rerunFails(failedChromoFiles, parameterDict, chromophoreList):
         failedChromoFiles.pop(failedFile)
     # If there are no files left, then everything has failed so this function has completed its task
     if len(failedChromoFiles) == 0:
-        return failedChromoFiles
+        return failedChromoFiles, permanentlyFailed
     # Otherwise, rerun those failed files.
     # First, find the correct locations of the input Files
     inputFiles = [outputDir + '/chromophores/inputORCA/' + fileName.replace('.out', '.inp') for fileName in list(failedChromoFiles.keys())]
