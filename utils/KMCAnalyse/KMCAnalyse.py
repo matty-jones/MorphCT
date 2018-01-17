@@ -484,12 +484,6 @@ def findIndex(string, character):
     return locations
 
 
-def calculateHopRate(lambdaij, Tij, deltaEij, T):
-    # Semiclassical Marcus Hopping Rate Equation
-    kij = ((2 * np.pi) / hbar) * (Tij ** 2) * np.sqrt(1.0 / (4 * lambdaij * np.pi * kB * T)) * np.exp(-((deltaEij + lambdaij)**2) / (4 * lambdaij * kB * T))
-    return kij
-
-
 def splitMolecules(inputDictionary):
     # Split the full morphology into individual molecules
     moleculeAAIDs = []
@@ -800,7 +794,7 @@ def plotDeltaEij(deltaEij, gaussBins, fitArgs, dataType, fileName):
     print("Figure saved as", fileName)
 
 
-def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict):
+def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict, AAMorphologyDict):
     # Create all the empty lists we need
     hopTypes = ['intra', 'inter']
     hopTargets = ['Stack', 'Mol']
@@ -827,9 +821,37 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
             mol2ID = CGToMolID[chromo2.CGIDs[0]]
             deltaE = chromo.neighboursDeltaE[index]
             if chromo.species == 'Acceptor':
-                rate = calculateHopRate(acceptorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+                lambdaij = acceptorLambdaij
             else:
-                rate = calculateHopRate(donorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+                lambdaij = donorLambdaij
+            # Now take into account the various behaviours we can have from the parameter file
+            prefactor = 1.0
+            # Apply the koopmans prefactor
+            try:
+                useKoop = parameterDict['useKoopmansApproximation']
+                if useKoop:
+                    prefactor *= parameterDict['koopmansHoppingPrefactor']
+            except KeyError:
+                pass
+            # Apply the simple energetic penalty model
+            try:
+                boltzPen = parameterDict['useSimpleEnergeticPenalty']
+            except KeyError:
+                boltzPen = False
+            # Apply the distance penalty due to VRH
+            try:
+                VRH = parameterDict['useVRH']
+                if VRH is True:
+                    VRHPrefactor = 1.0 / parameterDict['VRHDelocalisation']
+            except KeyError:
+                VRH = False
+            if VRH is True:
+                relativeImage = chromo.neighbours[index][1]
+                neighbourChromoPosn = chromo2.posn + (np.array(relativeImage) * np.array([AAMorphologyDict[axis] for axis in ['lx', 'ly', 'lz']]))
+                chromophoreSeparation = helperFunctions.calculateSeparation(chromo.posn, neighbourChromoPosn) * 1E-10
+                rate = helperFunctions.calculateCarrierHopRate(lambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, prefactor, T, useVRH=VRH, rij=chromophoreSeparation, VRHPrefactor=VRHPrefactor, boltzPen=boltzPen)
+            else:
+                rate = helperFunctions.calculateCarrierHopRate(lambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, prefactor, T, boltzPen=boltzPen)
             #try:
             if chromo2.ID < chromo.ID:
                 continue
@@ -1091,7 +1113,7 @@ if __name__ == "__main__":
         stackDicts = getStacks(chromophoreList, morphologyShape, cutOffDonor, cutOffAcceptor, periodic=args.periodicStacks)
         if args.threeD:
             plotStacks3D(tempDir, chromophoreList, stackDicts, simDims)
-        dataDict = plotMixedHoppingRates(tempDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict)
+        dataDict = plotMixedHoppingRates(tempDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict, AAMorphologyDict)
         print("\n")
         print("Writing CSV Output File...")
         writeCSV(dataDict, directory)

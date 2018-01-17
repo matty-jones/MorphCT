@@ -174,8 +174,8 @@ class exciton:
             #    print(neighbourID, neighbourPosn, neighbourUnwrappedPosn, neighbourImage, neighbourRelativeImage, rij)
             # Note, separations are recorded in angstroems, so spin this down to metres.
             # Additionally, all of the energies are in eV currently, so convert them to J
-            hopRate = calculateFRETHopRate(self.prefactor, self.lifetimeParameter, self.rF, rij, deltaEij * elementaryCharge, self.T)
-            hopTime = determineEventTau(hopRate, 'exciton-hop')
+            hopRate = helperFunctions.calculateFRETHopRate(self.prefactor, self.lifetimeParameter, self.rF, rij, deltaEij * elementaryCharge, self.T)
+            hopTime = helperFunctions.determineEventTau(hopRate, eventType='exciton-hop', slowestEventAllowed=slowestEventAllowed, fastestEvent=fastestEventAllowed, maximumAttempts=100)
             # Keep track of the destination chromophore ID, the corresponding tau, and the relative image (to see if we're hopping over a boundary)
             if hopTime is not None:
                 hopTimes.append([globalChromophoreData.returnSpecificChromophore(self.currentDevicePosn, self.currentChromophore.neighbours[neighbourIndex][0]), hopTime, neighbourRelativeImage])
@@ -261,6 +261,27 @@ class carrier:
             self.history = [[self.initialDevicePosn, initialChromophore.posn]]
         else:
             self.history = None
+        # Set the use of Koopmans' approximation to false if the key does not exist in the parameter dict
+        try:
+            self.useKoopmansApproximation = parameterDict['useKoopmansApproximation']
+            if self.useKoopmansApproximation:
+                self.koopmansHoppingPrefactor = parameterDict['koopmansHoppingPrefactor']
+            else:
+                self.koopmansHoppingPrefactor = 1.0
+        except KeyError:
+            self.useKoopmansApproximation = False
+        # Are we using a simple Boltzmann penalty?
+        try:
+            self.useSimpleEnergeticPenalty = parameterDict['useSimpleEnergeticPenalty']
+        except KeyError:
+            self.useSimpleEnergeticPenalty = False
+        # Are we applying a distance penalty beyond the transfer integral?
+        try:
+            self.useVRH = parameterDict['useVRH']
+        except KeyError:
+            self.useVRH = False
+        if self.useVRH is True:
+            self.VRHScaling = 1.0 / parameterDict['VRHDelocalisation']
 
     def calculateBehaviour(self):
         try:
@@ -327,11 +348,20 @@ class carrier:
                     continue
             # Otherwise, we're good to go. Calculate the hop as previously (but a hop to the neighbourChromophore)
             deltaEij = self.calculateDeltaE(neighbourChromophore, neighbourRelativeImage, self.currentChromophore.neighboursDeltaE[neighbourIndex])
+            # Create a hopping prefactor that can be modified if we're using Koopmans' approximation
+            if self.useKoopmansApproximation:
+                self.prefactor *= self.koopmansHoppingPrefactor
             # All of the energies (EXCEPT EIJ WHICH IS ALREADY IN J) are in eV currently, so convert them to J
-            hopRate = calculateMarcusHopRate(self.prefactor, self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij, self.T)
+            if self.useVRH is True:
+                relativeImage = np.array(destinationImage) - np.array(self.currentDevicePosn)
+                destinationChromoPosn = destinationChromo.posn + (np.array(relativeImage) * np.array([axis[1] - axis[0] for axis in self.simDims]))
+                chromophoreSeparation = helperFunctions.calculateSeparation(self.currentChromophore.posn, destinationChromoPosn) * 1E-10 # Convert to m
+                hopRate = helperFunctions.calculateCarrierHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij, self.prefactor, self.T, useVRH=True, rij=chromophoreSeparation, VRHPrefactor=self.VRHScaling, boltzPen=self.useSimpleEnergeticPenalty)
+            else:
+                hopRate = helperFunctions.calculateCarrierHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij, self.prefactor, self.T, boltzPen=self.useSimpleEnergeticPenalty)
             #print(hopRate, self.prefactor, self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij)
             #print(self.currentChromophore.ID, "to", destinationChromophore.ID)
-            hopTime = determineEventTau(hopRate, 'carrier-hop')
+            hopTime = helperFunctions.determineEventTau(hopRate, eventType='carrier-hop', slowestEventAllowed=slowestEventAllowed, fastestEvent=fastestEventAllowed, maximumAttempts=100)
             if hopTime is not None:
                 # Keep track of the chromophoreID and the corresponding tau
                 hopTimes.append([destinationChromophore, hopTime, neighbourRelativeImage, destinationImage, self.prefactor, self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij])
@@ -436,7 +466,7 @@ class injectSite:
 
     def calculateInjectTime(self):
         #self.injectTime = np.float64(1.0 / self.injectRate)
-        self.injectTime = determineEventTau(self.injectRate, self.electrode + '-injection')
+        self.injectTime = helperFunctions.determineEventTau(self.injectRate, eventType=self.electrode + '-injection', slowestEventAllowed=slowestEventAllowed, fastestEvent=fastestEventAllowed, maximumAttempts=100)
 
 
 def plotHopDistance(distribution):
@@ -645,7 +675,7 @@ def calculateDarkCurrentInjections(deviceArray, parameterDict):
                     #print("Difficult HOLE inject from Cathode =", deltaE / elementaryCharge)
                     #input("PAUSE...")
                 #print("CATHODE DELTA E", deltaE, chromophore.species)
-                injectRate = calculateMillerAbrahamsHopRate(parameterDict['MAPrefactor'], separation, parameterDict['MALocalisationRadius'], deltaE, parameterDict['systemTemperature'])
+                injectRate = helperFunctions.calculateMillerAbrahamsHopRate(parameterDict['MAPrefactor'], separation, parameterDict['MALocalisationRadius'], deltaE, parameterDict['systemTemperature'])
                 #print("CATHODE", injectRate)
                 cathodeInjectRatesData.append(injectRate)
                 # Create inject site object
@@ -679,7 +709,7 @@ def calculateDarkCurrentInjections(deviceArray, parameterDict):
                     #deltaE = elementaryCharge * (holeInjectBarrier + (chromophore.HOMO - parameterDict['donorHOMO']))
                     #print("Easy HOLE Inject from Anode =", deltaE / elementaryCharge)
                 #print("ANODE DELTA E", deltaE, chromophore.species)
-                injectRate = calculateMillerAbrahamsHopRate(parameterDict['MAPrefactor'], separation, parameterDict['MALocalisationRadius'], deltaE, parameterDict['systemTemperature'])
+                injectRate = helperFunctions.calculateMillerAbrahamsHopRate(parameterDict['MAPrefactor'], separation, parameterDict['MALocalisationRadius'], deltaE, parameterDict['systemTemperature'])
                 anodeInjectRatesData.append(injectRate)
                 # Create inject site object
                 site = injectSite([xVal, yVal, zVal], chromophore, injectRate, 'Anode')
@@ -747,77 +777,6 @@ def estimateTransferIntegral(chromophoreList):
     #    raise SystemError("INTERPOLATION FAIL")
     #input("PAUSE")
     #return interpolatedTI
-
-
-def calculateMillerAbrahamsHopRate(prefactor, separation, radius, deltaEij, T):
-    kij = prefactor * np.exp(-2 * separation/radius)
-    if deltaEij > 0:
-        kij *= np.exp(-deltaEij / (kB * T))
-    #print("kij =", kij)
-    #print("prefactor =", prefactor)
-    #print("separation =", separation)
-    #print("radius =", radius)
-    #input("PAUSE")
-    return kij
-
-
-def calculateMarcusHopRate(prefactor, lambdaij, Tij, deltaEij, T):
-    ## Semiclassical Marcus Hopping Rate Equation
-    #print("\nLambdaij =", lambdaij)
-    #print("Tij =", Tij)
-    #print("DeltaEij =", deltaEij)
-    #print("Marcus components:")
-    #print(((2 * np.pi) / hbar) * (Tij ** 2))
-    #print(np.sqrt(1.0 / (4 * lambdaij * np.pi * kB * T)))
-    #print(np.exp(-((deltaEij + lambdaij)**2) / (4 * lambdaij * kB * T)))
-    #print((deltaEij + lambdaij) ** 2)
-    #print(4 * lambdaij * kB * T)
-    kij = prefactor * ((2 * np.pi) / hbar) * (Tij ** 2) * np.sqrt(1.0 / (4 * lambdaij * np.pi * kB * T)) * np.exp(-((deltaEij + lambdaij)**2) / (4 * lambdaij * kB * T))
-    #print(kij)
-    #input("PAUSE...")
-    return kij
-
-
-def calculateFRETHopRate(prefactor, lifetimeParameter, rF, rij, deltaEij, T):
-    # Foerster Transport Hopping Rate Equation
-    # The prefactor included here is a bit of a bodge to try and get the mean-free paths of the excitons more in line with the 5nm of experiment. Possible citation: 10.3390/ijms131217019 (they do not do the simulation they just point out some limitations of FRET which assumes point-dipoles which does not necessarily work in all cases)
-    if deltaEij <= 0:
-        boltzmannFactor = 1
-    else:
-        boltzmannFactor = np.exp(-(elementaryCharge * deltaEij)/(kB * T))
-    kFRET = prefactor * (1/lifetimeParameter) * (rF / rij)**6 * boltzmannFactor
-    return kFRET
-
-
-def determineEventTau(rate, eventType):
-    # Use the KMC algorithm to determine the wait time to this event
-    if rate != 0:
-        counter = 0
-        while True:
-            if counter == 100:
-                if 'hop' in eventType:
-                    return None
-                else:
-                    if 'injection' not in eventType:
-                        helperFunctions.writeToFile(logFile, ["Attempted 100 times to obtain a '" + str(eventType) +
-                                                              "'-type event timescale within the tolerances: " +
-                                                              str(fastestEventAllowed) + " <= tau < " +
-                                                              str(slowestEventAllowed) + " with the given rate " +
-                                                              str(rate) + " all without success.",
-                                                              "Permitting the event anyway with the next random number."])
-            x = R.random()
-            # Ensure that we do not get exactly 0.0 or 1.0, which would break our logarithm
-            if (x == 0) or (x == 1):
-                continue
-            tau = - np.log(x) / rate
-            if ((tau > fastestEventAllowed) and (tau < slowestEventAllowed)) or (counter == 100):
-                break
-            else:
-                counter += 1
-    else:
-        # If rate == 0, then make the event wait time extremely long
-        tau = np.float64(1E99)
-    return tau
 
 
 def pushToQueue(queue, event):
@@ -1089,7 +1048,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 # Therefore, queue up one photoinjection and one dark current injection to get us rolling.
                 # These are the only available kinetic starting points for the simulation. Everything else stems from these.
                 # Photoinjection
-                photoinjectionTime = determineEventTau(photoinjectionRate, 'photoinjection')
+                photoinjectionTime = helperFunctions.determineEventTau(photoinjectionRate, eventType='photoinjection', slowestEventAllowed=slowestEventAllowed, fastestEvent=fastestEventAllowed, maximumAttempts=100)
                 eventQueue = pushToQueue(eventQueue, (photoinjectionTime, 'photo', None))
                 numberOfPhotoinjections += 1
                 if parameterDict['disableDarkInjection'] is False:
@@ -1101,14 +1060,14 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     # This means that the wait times in cathodeInjectWaitTimes and anodeInjectWaitTimes are actually only used to determine the order of the chromophores onto which we inject from each electrode, and do not increment the globalTime.
                     # The global time is incremented according to cathodeInjectionTime and anodeInjectionTime instead.
                     # First, deal with the cathode injection
-                    cathodeInjectionTime = determineEventTau(cathodeInjectRate, 'cathode-injection')
+                    cathodeInjectionTime = helperFunctions.determineEventTau(cathodeInjectRate, eventType='cathode-injection', slowestEventAllowed=slowestEventAllowed, fastestEvent=fastestEventAllowed, maximumAttempts=100)
                     # Sort out the cathodeInjectQueue by getting the next inject site, and requeueing it with a new time to update the queue.
                     nextCathodeEvent, cathodeInjectQueue = getNextDarkEvent(cathodeInjectQueue, 'Cathode')
                     # Now push the cathode event to the main queue
                     eventQueue = pushToQueue(eventQueue, (cathodeInjectionTime, 'cathode-injection', nextCathodeEvent[2]))
 
                     # Now, deal with the anode injection
-                    anodeInjectionTime = determineEventTau(anodeInjectRate, 'anode-injection')
+                    anodeInjectionTime = helperFunctions.determineEventTau(anodeInjectRate, eventType='anode-injection', slowestEventAllowed=slowestEventAllowed, fastestEvent=fastestEventAllowed, maximumAttempts=100)
                     # Sort out the anodeInjectQueue by popping the next inject site, decrementing the queue and re-queueing the inject site
                     nextAnodeEvent, anodeInjectQueue = getNextDarkEvent(anodeInjectQueue, 'Anode')
                     # Now push the anode event to the main queue
@@ -1191,7 +1150,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                     # Push the exciton to the queue
                     eventQueue = pushToQueue(eventQueue, (injectedExciton.hopTime, 'excitonHop', injectedExciton))
                 # A photoinjection has just occured, so now queue up a new one
-                photoinjectionTime = determineEventTau(photoinjectionRate, 'photoinjection')
+                photoinjectionTime = helperFunctions.determineEventTau(photoinjectionRate, eventType='photoinjection', slowestEventAllowed=slowestEventAllowed, fastestEvent=fastestEventAllowed, maximumAttempts=100)
                 eventQueue = pushToQueue(eventQueue, (photoinjectionTime, 'photo', None))
                 # Increment the exciton and photoinjection counters
                 excitonIndex += 1
@@ -1357,7 +1316,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 if (hoppingCarrier.recombining is True) and (hoppingCarrier.ID not in recombiningCarrierIDs) and (hoppingCarrier.recombiningWith not in recombiningCarrierIDs):
                     recombiningCarrierIDs.append(hoppingCarrier.ID)
                     recombiningCarrierIDs.append(hoppingCarrier.recombiningWith)
-                    recombinationTime = determineEventTau(parameterDict['recombinationRate'], 'carrier-recombination')
+                    recombinationTime = helperFunctions.determineEventTau(parameterDict['recombinationRate'], eventType='carrier-recombination', slowestEventAllowed=slowestEventAllowed, fastestEvent=fastestEventAllowed, maximumAttempts=100)
                     eventQueue = pushToQueue(eventQueue, (recombinationTime, 'recombine', hoppingCarrier))
                 ## If this carrier was injected, requeue this injection site in the darkInjectQueue to allow another injection
                 ## Only re-queueing up the dark inject site after the carrier has hopped prevents double injection onto the same

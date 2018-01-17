@@ -61,25 +61,18 @@ class carrier:
                 self.koopmansHoppingPrefactor = 1.0
         except KeyError:
             self.useKoopmansApproximation = False
-
-    def calculateHopRate(self, lambdaij, Tij, deltaEij, prefactor):
-        # Semiclassical Marcus Hopping Rate Equation
-        kij = prefactor * ((2 * np.pi) / hbar) * (Tij ** 2) * np.sqrt(1.0 / (4 * lambdaij * np.pi * kB * self.T)) * np.exp(-((deltaEij + lambdaij)**2) / (4 * lambdaij * kB * self.T))
-        return kij
-
-    def determineHopTime(self, rate):
-        # Use the KMC algorithm to determine the wait time to this hop
-        if rate != 0:
-            while True:
-                x = R.random()
-                # Ensure that we don't get exactly 0.0 or 1.0, which would break our logarithm
-                if (x != 0.0) and (x != 1.0):
-                    break
-            tau = - np.log(x) / rate
-        else:
-            # If rate == 0, then make the hopping time extremely long
-            tau = 1E99
-        return tau
+        # Are we using a simple Boltzmann penalty?
+        try:
+            self.useSimpleEnergeticPenalty = parameterDict['useSimpleEnergeticPenalty']
+        except KeyError:
+            self.useSimpleEnergeticPenalty = False
+        # Are we applying a distance penalty beyond the transfer integral?
+        try:
+            self.useVRH = parameterDict['useVRH']
+        except KeyError:
+            self.useVRH = False
+        if self.useVRH is True:
+            self.VRHScaling = 1.0 / parameterDict['VRHDelocalisation']
 
     def calculateHop(self, chromophoreList):
         # Terminate if the next hop would be more than the termination limit
@@ -97,7 +90,7 @@ class carrier:
                     hopRate = self.averageIntraHopRate
                 else:
                     hopRate = self.averageInterHopRate
-                hopTime = self.determineHopTime(hopRate)
+                hopTime = helperFunctions.determineEventTau(hopRate)
                 # Keep track of the chromophoreID and the corresponding tau
                 hopTimes.append([neighbour.ID, hopTime])
         else:
@@ -112,8 +105,15 @@ class carrier:
                 if self.useKoopmansApproximation:
                     prefactor *= self.koopmansHoppingPrefactor
                 # All of the energies are in eV currently, so convert them to J
-                hopRate = self.calculateHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge, prefactor)
-                hopTime = self.determineHopTime(hopRate)
+                if self.useVRH is True:
+                    neighbourChromo = chromophoreList[self.currentChromophore.neighbours[neighbourIndex][0]]
+                    relativeImage = self.currentChromophore.neighbours[neighbourIndex][1]
+                    neighbourChromoPosn = neighbourChromo.posn + (np.array(relativeImage) * np.array([axis[1] - axis[0] for axis in self.simDims]))
+                    chromophoreSeparation = helperFunctions.calculateSeparation(self.currentChromophore.posn, neighbourChromoPosn) * 1E-10 # Convert to m
+                    hopRate = helperFunctions.calculateCarrierHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge, prefactor, self.T, useVRH=True, rij=chromophoreSeparation, VRHPrefactor=self.VRHScaling, boltzPen=self.useSimpleEnergeticPenalty)
+                else:
+                    hopRate = helperFunctions.calculateCarrierHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge, prefactor, self.T, boltzPen=self.useSimpleEnergeticPenalty)
+                hopTime = helperFunctions.determineEventTau(hopRate)
                 # Keep track of the chromophoreID and the corresponding tau
                 hopTimes.append([self.currentChromophore.neighbours[neighbourIndex][0], hopTime])
         # Sort by ascending hop time
