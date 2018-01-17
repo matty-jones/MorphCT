@@ -866,9 +866,6 @@ def calculateCarrierHopRate(lambdaij, Tij, deltaEij, prefactor, temp, useVRH=Fal
     # VRH?
     if useVRH is True:
         kij *= np.exp(-(VRHPrefactor * rij))
-    print(VRHPrefactor)
-    print(rij)
-    print(np.exp(-(VRHPrefactor * rij)))
     # Simple Boltzmann energy penalty?
     if boltzPen is True:
         # Only apply the penalty if deltaEij is positive
@@ -877,8 +874,6 @@ def calculateCarrierHopRate(lambdaij, Tij, deltaEij, prefactor, temp, useVRH=Fal
         # Otherwise, kij *= 1
     else:
         kij *= np.exp(-((deltaEij + lambdaij)**2) / (4 * lambdaij * kB * temp))
-    print(kij)
-    print("\n")
     return kij
 
 
