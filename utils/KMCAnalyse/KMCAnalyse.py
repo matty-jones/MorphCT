@@ -764,7 +764,6 @@ def plotEnergyLevels(outputDir, chromophoreList, dataDict):
 def generateDataDict():
         materials = ['donor', 'acceptor']
         materialInspecificProperties = ['name', 'density']
-        noErrorProperties = ['anisotropy', 'mobility', 'mobility_rSquared']
         hopTypes = ['intra', 'inter']
         hopTargets = ['mol', 'stack']
         hopDependentProperties = ['hops', 'proportion']
