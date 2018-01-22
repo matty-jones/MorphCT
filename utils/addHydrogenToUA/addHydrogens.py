@@ -135,7 +135,10 @@ def find_information():
         "P3HT/PCBM":[{'CA':[[2, 1]],
             'CT': [[2, 2], [1, 3]],
             'FCA': [[2, 1 ]],
-            'FCT': [[2, 2], [1, 3]]}, 3.905]}
+            'FCT': [[2, 2], [1, 3]]}, 3.905],
+        "mid3HT":[{'C1':[[2, 1]],
+                   'C10':[[2, 1]]}, 1.0]
+                 }
 
     if args.molecule_source == None:
         print("You have not specified the dictionary you want to use to add hydrogens.")
