@@ -769,7 +769,6 @@ def generateDataDict():
         hopDependentProperties = ['hops', 'proportion']
         errorProperties = ['frontierMO', 'deltaEij']
         dictionaryElements = [(prop, '---') for prop in materialInspecificProperties]
-        dictionaryElements += [(material + '_' + noErrorProperty, '---') for material in materials for noErrorProperty in noErrorProperties]
         dictionaryElements += [(material + '_' + hopType + '_' + hopTarget + '_' + hopProperty, '---') for material in materials for hopType in hopTypes for hopTarget in hopTargets for hopProperty in hopDependentProperties]
         dictionaryElements += [(material + '_' + errorProperty + '_' + stat, '---') for material in materials for errorProperty in errorProperties for stat in ['mean', 'std', 'err']]
         dataDict = OrderedDict(dictionaryElements)
