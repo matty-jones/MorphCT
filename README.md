@@ -1,4 +1,4 @@
-![alt-text](logo.png "MorphCT Logo" =500x)
+![alt-text](morphCTLogo.png "MorphCT Logo" =500x)
 
 # PLEASE NOTE, README IS A WORK IN PROGRESS. #
 
