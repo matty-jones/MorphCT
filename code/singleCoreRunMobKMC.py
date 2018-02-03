@@ -15,6 +15,7 @@ elementaryCharge = 1.60217657E-19 # C
 kB = 1.3806488E-23 # m^{2} kg s^{-2} K^{-1}
 hbar = 1.05457173E-34 # m^{2} kg s^{-1}
 
+logFile = None
 
 class carrier:
     def __init__(self, chromophoreList, parameterDict, chromoID, lifetime, carrierNo, AAMorphologyDict, molIDDict):
@@ -104,10 +105,11 @@ class carrier:
                 prefactor = 1.0
                 if self.useKoopmansApproximation:
                     prefactor *= self.koopmansHoppingPrefactor
+                # Get the relative image so we can update the carrier image after the hop
+                relativeImage = self.currentChromophore.neighbours[neighbourIndex][1]
                 # All of the energies are in eV currently, so convert them to J
                 if self.useVRH is True:
                     neighbourChromo = chromophoreList[self.currentChromophore.neighbours[neighbourIndex][0]]
-                    relativeImage = self.currentChromophore.neighbours[neighbourIndex][1]
                     neighbourChromoPosn = neighbourChromo.posn + (np.array(relativeImage) * np.array([axis[1] - axis[0] for axis in self.simDims]))
                     chromophoreSeparation = helperFunctions.calculateSeparation(self.currentChromophore.posn, neighbourChromoPosn) * 1E-10 # Convert to m
                     hopRate = helperFunctions.calculateCarrierHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge, prefactor, self.T, useVRH=True, rij=chromophoreSeparation, VRHPrefactor=self.VRHScaling, boltzPen=self.useSimpleEnergeticPenalty)
@@ -115,7 +117,7 @@ class carrier:
                     hopRate = helperFunctions.calculateCarrierHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge, prefactor, self.T, boltzPen=self.useSimpleEnergeticPenalty)
                 hopTime = helperFunctions.determineEventTau(hopRate)
                 # Keep track of the chromophoreID and the corresponding tau
-                hopTimes.append([self.currentChromophore.neighbours[neighbourIndex][0], hopTime])
+                hopTimes.append([self.currentChromophore.neighbours[neighbourIndex][0], hopTime, relativeImage])
         # Sort by ascending hop time
         hopTimes.sort(key = lambda x:x[1])
         # Take the quickest hop
@@ -123,7 +125,7 @@ class carrier:
             destinationChromophore = chromophoreList[hopTimes[0][0]]
         else:
             # We are trapped here, so create a dummy hop with time 1E99
-            hopTimes = [[self.currentChromophore.ID, 1E99]]
+            hopTimes = [[self.currentChromophore.ID, 1E99, [0, 0, 0]]]
         # As long as we're not limiting by the number of hops:
         if self.hopLimit is None:
             # Ensure that the next hop does not put the carrier over its lifetime
@@ -131,25 +133,28 @@ class carrier:
                 # Send the termination signal to singleCoreRunKMC.py
                 return 1
         # Move the carrier and send the contiuation signal to singleCoreRunKMC.py
-        self.performHop(destinationChromophore, hopTimes[0][1])
+        self.performHop(destinationChromophore, hopTimes[0][1], hopTimes[0][2])
         return 0
 
-    def performHop(self, destinationChromophore, hopTime):
+    def performHop(self, destinationChromophore, hopTime, relativeImage):
         initialID = self.currentChromophore.ID
         destinationID = destinationChromophore.ID
-        initialPosition = self.currentChromophore.posn
-        destinationPosition = destinationChromophore.posn
-        deltaPosition = destinationPosition - initialPosition
-        for axis in range(3):
-            halfBoxLength = (self.simDims[axis][1] - self.simDims[axis][0]) / 2.0
-            while deltaPosition[axis] > halfBoxLength:
-                # Crossed over a negative boundary, decrement image by 1
-                deltaPosition[axis] -= halfBoxLength * 2.0
-                self.image[axis] -= 1
-            while deltaPosition[axis] < - halfBoxLength:
-                # Crossed over a positive boundary, increment image by 1
-                deltaPosition[axis] += halfBoxLength * 2.0
-                self.image[axis] += 1
+        self.image = list(np.array(self.image) + np.array(relativeImage))
+        ### OLD WAY TO CALCULATE SELF.IMAGE ###
+        #initialPosition = self.currentChromophore.posn
+        #destinationPosition = destinationChromophore.posn
+        #deltaPosition = destinationPosition - initialPosition
+        #for axis in range(3):
+        #    halfBoxLength = (self.simDims[axis][1] - self.simDims[axis][0]) / 2.0
+        #    while deltaPosition[axis] > halfBoxLength:
+        #        # Crossed over a negative boundary, decrement image by 1
+        #        deltaPosition[axis] -= halfBoxLength * 2.0
+        #        self.image[axis] -= 1
+        #    while deltaPosition[axis] < - halfBoxLength:
+        #        # Crossed over a positive boundary, increment image by 1
+        #        deltaPosition[axis] += halfBoxLength * 2.0
+        #        self.image[axis] += 1
+        #######################################
         # Carrier image now sorted, so update its current position
         self.currentChromophore = destinationChromophore
         # Increment the simulation time
