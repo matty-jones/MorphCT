@@ -1,6 +1,6 @@
 import sys
 import os
-import helperFunctions
+from morphct.code import helperFunctions
 import time as T
 import subprocess as sp
 import pickle
