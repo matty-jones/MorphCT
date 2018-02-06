@@ -29,11 +29,11 @@ OLD*
 *~
 *.pickle
 relaxedP3HT.xml
-outputFiles/*
 *store*
 *Store*
 storage/*
 input*/*
+output*/*
 profiling*
 
 # Created by https://www.gitignore.io/api/vim,python
