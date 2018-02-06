@@ -9,6 +9,12 @@ import xml.etree.cElementTree as ET
 import time as T
 
 
+# UNIVERSAL CONSTANTS, DO NOT CHANGE!
+elementaryCharge = 1.60217657E-19 # C
+kB = 1.3806488E-23 # m^{2} kg s^{-2} K^{-1}
+hbar = 1.05457173E-34 # m^{2} kg s^{-1}
+
+
 def findIndex(string, character):
     '''This function returns the locations of an inputted character in an inputted string'''
     index = 0
@@ -527,8 +533,9 @@ def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0, checkWrappedPos
         inputDictionary = scale(inputDictionary, 1.0 / sigma)
     # Now need to check the positions of the atoms to ensure that everything is correctly contained inside the box
     if checkWrappedPosns is True:
-        tilt_factors = ["xy", "xz", "yz"]
-        if any([tilt_factor in inputDictionary.keys() for tilt_factor in tilt_factors]) and any([inputDictionary[tilt_factor] != 0 for tilt_factor in tilt_factors]):
+        tilt_factors = ["xy", "yz", "xz"]
+        if any([tilt_factor in inputDictionary.keys() for tilt_factor in tilt_factors]) and\
+                any([inputDictionary[tilt_factor] != 0 for tilt_factor in tilt_factors]):
             print("Can't check atom wrapping for cells with a non-zero tilt factor")
         else:
             print("Checking wrapped positions before writing XML...")
@@ -537,8 +544,11 @@ def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0, checkWrappedPos
     # print inputDictionary['image'][:20]
     # raw_input('HALT')
     # Add Boiler Plate first
-    linesToWrite = ['<?xml version="1.0" encoding="UTF-8"?>\n', '<hoomd_xml version="1.4">\n', '<configuration time_step="0" dimensions="3" natoms="' + str(inputDictionary['natoms']) + '" >\n', '<box lx="' + str(inputDictionary['lx']) + '" ly="' + str(inputDictionary['ly']) + '" lz="' + str(inputDictionary['lz']) + '" xy="' + str(inputDictionary['xy']) + '" xz="' + str(inputDictionary['xz']) + '" yz="' + str(inputDictionary['yz']) + '" />\n']
-
+    linesToWrite = ['<?xml version="1.0" encoding="UTF-8"?>\n', '<hoomd_xml version="1.4">\n', '<configuration time_step="0" dimensions="3" natoms="' + str(inputDictionary['natoms']) + '" >\n', '<box lx="' + str(inputDictionary['lx']) + '" ly="' + str(inputDictionary['ly']) + '" lz="' + str(inputDictionary['lz'])]
+    if all([tilt_factor in inputDictionary.keys() for tilt_factor in tilt_factors]):
+        linesToWrite[-1] += '" xy="' + str(inputDictionary['xy']) + '" xz="' + str(inputDictionary['xz']) + '" yz="' + str(inputDictionary['yz']) + '" />\n'
+    else:
+        linesToWrite[-1] += '" />\n'
     # Position
     linesToWrite.append('<position num="' + str(inputDictionary['natoms']) + '">\n')
     for positionData in inputDictionary['position']:
@@ -846,3 +856,82 @@ def fixImages(originalMorphology):
     bondDict = getBondDict(zeroedMorphology)
     fixedMorphology = checkBonds(zeroedMorphology, bondDict)
     return fixedMorphology
+
+
+# ---============================---
+# ---=== KMC HELPER FUNCTIONS ===---
+# ---============================---
+def calculateCarrierHopRate(lambdaij, Tij, deltaEij, prefactor, temp, useVRH=False, rij=0.0, VRHPrefactor=1.0, boltzPen=False):
+    # Based on the input parameters, can make this the semiclassical Marcus Hopping Rate Equation, or a more generic Miller Abrahams-based hop
+    # Firstly, to prevent divide-by-zero errors:
+    if (Tij == 0.0):
+        return 0
+    # Regardless of hopping type, sort out the prefactor first:
+    kij = prefactor * ((2 * np.pi) / hbar) * (Tij ** 2) * np.sqrt(1.0 / (4 * lambdaij * np.pi * kB * temp))
+    # VRH?
+    if useVRH is True:
+        kij *= np.exp(-(VRHPrefactor * rij))
+    # Simple Boltzmann energy penalty?
+    if boltzPen is True:
+        # Only apply the penalty if deltaEij is positive
+        if deltaEij > 0.0:
+            kij *= np.exp(-(deltaEij / (kB * temp)))
+        # Otherwise, kij *= 1
+    else:
+        kij *= np.exp(-((deltaEij + lambdaij)**2) / (4 * lambdaij * kB * temp))
+    return kij
+
+
+def calculateFRETHopRate(prefactor, lifetimeParameter, rF, rij, deltaEij, T):
+    # Foerster Transport Hopping Rate Equation
+    # The prefactor included here is a bit of a bodge to try and get the mean-free paths of the excitons more in line with the 5nm of experiment. Possible citation: 10.3390/ijms131217019 (they do not do the simulation they just point out some limitations of FRET which assumes point-dipoles which does not necessarily work in all cases)
+    if deltaEij <= 0:
+        boltzmannFactor = 1
+    else:
+        boltzmannFactor = np.exp(-(elementaryCharge * deltaEij)/(kB * T))
+    kFRET = prefactor * (1/lifetimeParameter) * (rF / rij)**6 * boltzmannFactor
+    return kFRET
+
+
+def calculateMillerAbrahamsHopRate(prefactor, separation, radius, deltaEij, T):
+    kij = prefactor * np.exp(-2 * separation/radius)
+    if deltaEij > 0:
+        kij *= np.exp(-deltaEij / (kB * T))
+    return kij
+
+
+def determineEventTau(rate, eventType='None', slowestEvent=None, fastestEvent=None, maximumAttempts=None):
+    # Use the KMC algorithm to determine the wait time to this hop
+    if rate != 0:
+        counter = 0
+        while True:
+            if maximumAttempts is not None:
+                # Write an error if we've hit the maximum number of attempts
+                if counter == maximumAttempts:
+                    if 'hop' in eventType:
+                        return None
+                    else:
+                        if 'injection' not in eventType:
+                            helperFunctions.writeToFile(logFile, ["Attempted " + str(maximumAttempts) + " times to obtain a '" +
+                                                                  str(eventType) + "'-type event timescale within the tolerances: " +
+                                                                  str(fastestEvent) + " <= tau < " +
+                                                                  str(slowestEvent) + " with the given rate " +
+                                                                  str(rate) + " all without success.",
+                                                                  "Permitting the event anyway with the next random number."])
+
+            x = np.random.random()
+            # Ensure that we don't get exactly 0.0 or 1.0, which would break our logarithm
+            if (x == 0.0) or (x == 1.0):
+                continue
+            tau = - np.log(x) / rate
+            if (fastestEvent is not None) and (slowestEvent is not None) and (maximumAttempts is not None):
+                if ((tau > fastestEvent) and (tau < slowestEvent)) or (counter == maximumAttempts):
+                    break
+                else:
+                    counter += 1
+                    continue
+            break
+    else:
+        # If rate == 0, then make the hopping time extremely long
+        tau = 1E99
+    return tau

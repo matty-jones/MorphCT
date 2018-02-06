@@ -48,6 +48,12 @@ class chromophore:
                     if AAMorphologyDict['body'][electronicallyActiveCGSites[0]] in rigidBodies:
                         self.species = species
                         break
+                try:
+                    self.species
+                except AttributeError:
+                    for key, val in self.__dict__:
+                        print(key, val)
+                    raise SystemError("Chromophore " + str(self.ID) + " has no species! Exiting...")
             else:
                 raise SystemError("Multiple electronic species defined, but no way to map them without a coarse-grained morphology (no CG morph has been given)")
             self.AAIDs = chromophoreCGSites
@@ -388,43 +394,52 @@ def determineNeighboursVoronoi(chromophoreList, parameterDict, simDims):
             allChromos.append(chromo)
     # Now obtain the positions and send them to the Delaunay Triangulation
     # Then get the voronoi neighbours
-    donorPositions = [chromo.position for chromo in donorChromos]
-    acceptorPositions = [chromo.position for chromo in acceptorChromos]
     allPositions = [chromo.position for chromo in allChromos]
     # Initialise the neighbour dictionaries
-    donorNeighbours = {}
-    acceptorNeighbours = {}
     allNeighbours = {}
     # Update the relevant neighbour dictionaries if we have the right chromophore types in the system
     # Also log the chromophoreIDs from the original simulation volume (non-periodic)
     # Chromophores in the original simulation volume will be every 27th (there are 27 periodic images in the triple range(-1,2)),
     # beginning from #13 ((0, 0, 0) is the thirteenth element of the triple range(-1,2))
     # up to the length of the list in question.
-    originalDonorChromoIDs = []
-    originalAcceptorChromoIDs = []
     originalAllChromoIDs = []
-    for chromophore in allChromos:
-        if np.array_equal(chromophore.image, [0, 0, 0]):
-            originalAllChromoIDs.append(chromophore.periodicID)
-            if chromophore.species == 'Donor':
-                originalDonorChromoIDs.append(chromophore.periodicID)
-            elif chromophore.species == 'Acceptor':
-                originalAcceptorChromoIDs.append(chromophore.periodicID)
-    if len(donorPositions) > 0:
-        print("Calculating Neighbours of Donor Moieties")
-        donorNeighbours = getVoronoiNeighbours(Delaunay(donorPositions), donorChromos)
-        print("Updating the chromophore list for donor chromos")
-        chromophoreList = updateChromophoreListVoronoi(originalDonorChromoIDs, allChromos, donorNeighbours, chromophoreList, simDims)
-    if len(acceptorPositions) > 0:
-        print("Calculating Neighbours of Acceptor Moieties")
-        acceptorNeighbours = getVoronoiNeighbours(Delaunay(acceptorPositions), acceptorChromos)
-        print("Updating the chromophore list for acceptor chromos")
-        chromophoreList = updateChromophoreListVoronoi(originalAcceptorChromoIDs, allChromos, acceptorNeighbours, chromophoreList, simDims)
-    if (len(donorPositions) > 0) and (len(acceptorPositions) > 0):
-        print("Calculating Neighbours of All Moieties")
-        allNeighbours = getVoronoiNeighbours(Delaunay(allPositions), allChromos)
-        print("Updating the chromophore list for dissociation neighbours")
-        chromophoreList = updateChromophoreListVoronoi(originalAllChromoIDs, allChromos, allNeighbours, chromophoreList, simDims)
+    try:
+        if parameterDict['permitHopsThroughOpposingChromophores']:
+            # Need to only consider the neighbours of like chromophore species
+            donorPositions = [chromo.position for chromo in donorChromos]
+            acceptorPositions = [chromo.position for chromo in acceptorChromos]
+            donorNeighbours = {}
+            acceptorNeighbours = {}
+            originalDonorChromoIDs = []
+            originalAcceptorChromoIDs = []
+            for chromophore in allChromos:
+                if np.array_equal(chromophore.image, [0, 0, 0]):
+                    originalAllChromoIDs.append(chromophore.periodicID)
+                    if chromophore.species == 'Donor':
+                        originalDonorChromoIDs.append(chromophore.periodicID)
+                    elif chromophore.species == 'Acceptor':
+                        originalAcceptorChromoIDs.append(chromophore.periodicID)
+            if len(donorPositions) > 0:
+                print("Calculating Neighbours of Donor Moieties")
+                donorNeighbours = getVoronoiNeighbours(Delaunay(donorPositions), donorChromos)
+                print("Updating the chromophore list for donor chromos")
+                chromophoreList = updateChromophoreListVoronoi(originalDonorChromoIDs, allChromos, donorNeighbours, chromophoreList, simDims)
+            if len(acceptorPositions) > 0:
+                print("Calculating Neighbours of Acceptor Moieties")
+                acceptorNeighbours = getVoronoiNeighbours(Delaunay(acceptorPositions), acceptorChromos)
+                print("Updating the chromophore list for acceptor chromos")
+                chromophoreList = updateChromophoreListVoronoi(originalAcceptorChromoIDs, allChromos, acceptorNeighbours, chromophoreList, simDims)
+        else:
+            raise KeyError
+    except KeyError:
+        # Default behaviour - carriers are blocked by the opposing species
+        for chromophore in allChromos:
+            if np.array_equal(chromophore.image, [0, 0, 0]):
+                originalAllChromoIDs.append(chromophore.periodicID)
+    print("Calculating Neighbours of All Moieties")
+    allNeighbours = getVoronoiNeighbours(Delaunay(allPositions), allChromos)
+    print("Updating the chromophore list for dissociation neighbours")
+    chromophoreList = updateChromophoreListVoronoi(originalAllChromoIDs, allChromos, allNeighbours, chromophoreList, simDims)
     return chromophoreList
 
 
