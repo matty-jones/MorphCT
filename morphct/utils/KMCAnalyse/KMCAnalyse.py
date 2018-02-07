@@ -79,6 +79,7 @@ def getCarrierData(carrierData):
     totalDataPointsAveragedOver = 0
     squaredDisps = {}
     actualTimes = {}
+    carrierTypes = {}
     for carrierIndex, displacement in enumerate(carrierData['displacement']):
         if (carrierData['currentTime'][carrierIndex] > carrierData['lifetime'][carrierIndex] * 2) or (carrierData['currentTime'][carrierIndex] < carrierData['lifetime'][carrierIndex] / 2.0) or (carrierData['noHops'][carrierIndex] == 1):
             totalDataPoints += 1
@@ -104,45 +105,93 @@ def getCarrierData(carrierData):
         MSDStandardErrors.append(np.std(disps) / len(disps))
     return carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors
 
+def createArrayforplotConnections(chromophoreList, carrierHistory, simDims):
+    """
+    Function to create an array of with a starting point, a vector
+    and the number of hops that occured.
+    Requires:
+        chromophoreList,
+        carrierHistory
+        simDims
+    Returns:
+        7xN array
+    """
+    #Create an "empty" array to store data.
+    ConnectionsArray = np.zeros(7)
+    
+    #Iterate through the chromophoreList
+    for i, chrome in enumerate(chromophoreList):
+        #Iterate through the neighbors of the chromophore
+        for neighbor in zip(chrome.neighbours):
+            index = neighbor[0][0] #Index of the neighbor
+            image = neighbor[0][1] #Check to see if they are in the same relative image
+            
+            #Only consider one direction.
+            if i < index:
+                #Get the vector between the two chromophores.
+                if not np.count_nonzero(image):
+                    vector = chromophoreList[index].posn-chrome.posn 
+                #Account for periodic boundary conditions if not in same relative image.
+                else: 
+                    vector = chromophoreList[index].posn-chrome.posn
+                    vector+=image*np.array([2*simDims[0][1], 2*simDims[1][1], 2*simDims[2][1]])
+
+                #Get the net number of times the path was travelled.
+                forward = carrierHistory[index, i]
+                reverse = carrierHistory[i,index]
+                TimesTravelled = abs(forward-reverse)
+
+                #Append the array if the net times travelled is greater than 0
+                if TimesTravelled > 0:
+                    datum = np.hstack((chrome.posn, vector, np.array([np.log10(TimesTravelled)])))
+                    ConnectionsArray = np.vstack((ConnectionsArray, datum))
+    return ConnectionsArray[1:] #Return the array excluding the zeros first line.
 
 def plotConnections(chromophoreList, simDims, carrierHistory, directory, carrierType):
     # A complicated function that shows connections between carriers in 3D that carriers prefer to hop between.
     # Connections that are frequently used are highlighted in black, whereas rarely used connections are more white.
-    # Find a good normalisation factor
-    carrierHistory = carrierHistory.toarray()
-    normalizeTo = np.max(carrierHistory)
-    # Try to get the colour map first
-    colormap = plt.cm.plasma
-    minimum = np.min(carrierHistory[np.nonzero(carrierHistory)])
-    maximum = np.max(carrierHistory[np.nonzero(carrierHistory)])
-    plt.gcf()
-    levels = np.linspace(np.log10(minimum), np.log10(maximum), 100)
-    coloursForMap = plt.contourf([[0, 0], [0, 0]], levels, cmap=colormap)
-    plt.clf()
-    # Now for the actual plot
-    fig = plt.gcf()
-    ax = p3.Axes3D(fig)
-    for chromo1, row in enumerate(carrierHistory):
-        for chromo2, value in enumerate(row):
-            if value > 0:
-                coords1 = chromophoreList[chromo1].posn
-                coords2 = chromophoreList[chromo2].posn
-                # Only plot connections between chromophores in the same image
-                plotConnection = True
-                for neighbour in chromophoreList[chromo1].neighbours:
-                    if neighbour[0] != chromophoreList[chromo2].ID:
-                        continue
-                    if neighbour[1] != [0, 0, 0]:
-                        coords2 = np.array(coords2) + (np.array(neighbour[1]) * np.array([axis[1] - axis[0] for axis in simDims]))
-                        #plotConnection = False
-                        #break
-                if plotConnection is True:
-                    #ax.scatter(coords1[0], coords1[1], coords1[2], c = 'k', s = '5')
-                    #ax.scatter(coords2[0], coords2[1], coords2[2], c = 'k', s = '5')
-                    if (np.abs(coords2[0] - coords1[0]) < simDims[0][1]) and (np.abs(coords2[1] - coords1[1]) < simDims[1][1]) and (np.abs(coords2[2] - coords1[2]) < simDims[2][1]):
-                        #colourIntensity = value / normalizeTo
-                        colourIntensity = np.log10(value) / np.log10(normalizeTo)
-                        ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c=colormap(colourIntensity), linewidth=0.5, alpha=colourIntensity)
+    #Import matplotlib color modules to set up color bar.
+    import matplotlib.colors
+    import matplotlib.cm as cmx
+
+    #Create a figure class
+    fig = plt.figure(figsize = (7,6))
+    #Make a 3D subplot
+    ax = fig.add_subplot(111, projection = '3d')
+
+    #Create the array for all the chromophore connections
+    ConnectionsArray = createArrayforplotConnections(chromophoreList, carrierHistory, simDims)
+
+    #Determine the smalles, non-zero number of times two chromophores are connected.
+    vmin = np.min(np.array(ConnectionsArray)[:,6])
+    #Determine the max number of times two chormophores are connected.
+    vmax = np.max(np.array(ConnectionsArray)[:,6])
+
+    #Set up the color bar.
+    plasma = cm = plt.get_cmap('plasma')
+    cNorm = matplotlib.colors.Normalize(vmin=vmin, vmax = vmax)
+    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=plasma)
+    Hopcolors = scalarMap.to_rgba(ConnectionsArray[:,6])
+
+    #Set up the intensity for the hops so more travelled paths are more intense
+    alphas = ConnectionsArray[:,6]/vmax
+    Hopcolors[:, 3] = alphas
+
+    #Plot the vectors between two chromophores
+    VectorPlot = ax.quiver(ConnectionsArray[:,0], 
+            ConnectionsArray[:,1], 
+            ConnectionsArray[:,2], 
+            ConnectionsArray[:,3], 
+            ConnectionsArray[:,4], 
+            ConnectionsArray[:,5], 
+            color = Hopcolors, 
+            arrow_length_ratio = 0, linewidth = 0.7)
+
+    #Plot the color bar
+    scalarMap.set_array(ConnectionsArray[:,6])
+    tickLocation = np.arange(0, int(vmax) + 1, 1)
+    cb = fig.colorbar(scalarMap, ticks=tickLocation, shrink=0.8, aspect=20)
+
     # Draw boxlines
     # Varying X
     ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][0]], c='k', linewidth=1.0)
@@ -160,9 +209,7 @@ def plotConnections(chromophoreList, simDims, carrierHistory, directory, carrier
     ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][1]], c='k', linewidth=1.0)
     ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][1], simDims[1][1]], [simDims[2][0], simDims[2][1]], c='k', linewidth=1.0)
 
-    tickLocation = range(0, int(np.log10(maximum)) + 1, 1)
-    cbar = plt.colorbar(coloursForMap, ticks=tickLocation)#np.linspace(np.log10(minimum), np.log10(maximum), 6))
-    cbar.ax.set_yticklabels([r'10$^{{{}}}$'.format(x) for x in tickLocation])
+    #Name and save the figure.
     plt.title('Network (' + carrierType + ')', y = 1.1)
     fileName = '01_3d' + carrierType + '.pdf'
     plt.savefig(directory + '/figures/' + fileName, bbox_inches='tight')
@@ -280,7 +327,7 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType, plot3DGraphs):
     simDimsnm = list(map(list, np.array(simDims) / 10.))
     # Get the indices of the carriers that travelled the furthest
     if len(carrierData['finalPosition']) <= 1000:
-        carrierIndicesToUse = range(carrierData['finalPosition'])
+        carrierIndicesToUse = range(len(carrierData['finalPosition']))
     else:
         displacements = copy.deepcopy(np.array(carrierData['displacement']))
         carrierIndicesToUse = displacements.argsort()[-1000:][::-1]
@@ -411,6 +458,7 @@ def gaussian(x, a, x0, sigma):
 
 
 def gaussFit(data):
+    n = len(data)
     mean = np.mean(data)
     std = np.std(data)
     hist, binEdges = np.histogram(data, bins=100)
@@ -432,12 +480,6 @@ def findIndex(string, character):
     if len(locations) == 0:
         return None
     return locations
-
-
-def calculateHopRate(lambdaij, Tij, deltaEij, T):
-    # Semiclassical Marcus Hopping Rate Equation
-    kij = ((2 * np.pi) / hbar) * (Tij ** 2) * np.sqrt(1.0 / (4 * lambdaij * np.pi * kB * T)) * np.exp(-((deltaEij + lambdaij)**2) / (4 * lambdaij * kB * T))
-    return kij
 
 
 def splitMolecules(inputDictionary):
@@ -488,7 +530,8 @@ def updateMolecule(atomID, moleculeList, bondedAtoms):
     return moleculeList
 
 
-def getNeighbourCutOff(chromophoreList, morphologyShape, outputDir, periodic=True):
+def getNeighbourCutOff(chromophoreList, morphologyShape, outputDir, periodic=True, specifiedCutOffDonor=None, specifiedCutOffAcceptor=None):
+    specifiedCutOffs = {'Donor': specifiedCutOffDonor, 'Acceptor': specifiedCutOffAcceptor}
     separationDistDonor = []
     separationDistAcceptor = []
     for chromo1 in chromophoreList:
@@ -509,11 +552,6 @@ def getNeighbourCutOff(chromophoreList, morphologyShape, outputDir, periodic=Tru
             continue
         plt.figure()
         (n, binEdges, patches) = plt.hist(separationDist, bins = 20, color = 'b')
-        plt.xlabel(material[materialType] + " Chromophore Separation (Ang)")
-        plt.ylabel("Frequency (Arb. U.)")
-        plt.savefig(outputDir + "/03_neighbourHist" + material[materialType] + ".pdf")
-        plt.close()
-        print("Neighbour histogram figure saved as", outputDir + "/03_neighbourHist" + material[materialType] + ".pdf")
         bins = 0.5*(binEdges[1:]+binEdges[:-1])
         bins = np.insert(bins, 0, 0)
         n = np.insert(n, 0, 0)
@@ -528,7 +566,17 @@ def getNeighbourCutOff(chromophoreList, morphologyShape, outputDir, periodic=Tru
                 maximaIndices.append(index)
             previousValue = val
         # Minimum is half way between the first maximum and the first minimum of the distribution
-        cutOffs.append((bins[maximaIndices[0]] + bins[minimaIndices[0]]) / 2.0)
+        if specifiedCutOffs[material[materialType]] is None:
+            cutOff = (bins[maximaIndices[0]] + bins[minimaIndices[0]]) / 2.0
+        else:
+            cutOff = specifiedCutOffs[material[materialType]]
+        cutOffs.append(cutOff)
+        plt.axvline(x = cutOff, ls='dashed', c='k')
+        plt.xlabel(material[materialType] + " Chromophore Separation (Ang)")
+        plt.ylabel("Frequency (Arb. U.)")
+        plt.savefig(outputDir + "/03_neighbourHist" + material[materialType] + ".pdf")
+        plt.close()
+        print("Neighbour histogram figure saved as", outputDir + "/03_neighbourHist" + material[materialType] + ".pdf")
     return cutOffs
 
 
@@ -714,13 +762,11 @@ def plotEnergyLevels(outputDir, chromophoreList, dataDict):
 def generateDataDict():
         materials = ['donor', 'acceptor']
         materialInspecificProperties = ['name', 'density']
-        noErrorProperties = ['anisotropy', 'mobility', 'mobility_rSquared']
         hopTypes = ['intra', 'inter']
         hopTargets = ['mol', 'stack']
         hopDependentProperties = ['hops', 'proportion']
         errorProperties = ['frontierMO', 'deltaEij']
         dictionaryElements = [(prop, '---') for prop in materialInspecificProperties]
-        dictionaryElements += [(material + '_' + noErrorProperty, '---') for material in materials for noErrorProperty in noErrorProperties]
         dictionaryElements += [(material + '_' + hopType + '_' + hopTarget + '_' + hopProperty, '---') for material in materials for hopType in hopTypes for hopTarget in hopTargets for hopProperty in hopDependentProperties]
         dictionaryElements += [(material + '_' + errorProperty + '_' + stat, '---') for material in materials for errorProperty in errorProperties for stat in ['mean', 'std', 'err']]
         dataDict = OrderedDict(dictionaryElements)
@@ -744,7 +790,7 @@ def plotDeltaEij(deltaEij, gaussBins, fitArgs, dataType, fileName):
     print("Figure saved as", fileName)
 
 
-def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict):
+def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict, AAMorphologyDict):
     # Create all the empty lists we need
     hopTypes = ['intra', 'inter']
     hopTargets = ['Stack', 'Mol']
@@ -771,9 +817,37 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
             mol2ID = CGToMolID[chromo2.CGIDs[0]]
             deltaE = chromo.neighboursDeltaE[index]
             if chromo.species == 'Acceptor':
-                rate = calculateHopRate(acceptorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+                lambdaij = acceptorLambdaij
             else:
-                rate = calculateHopRate(donorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+                lambdaij = donorLambdaij
+            # Now take into account the various behaviours we can have from the parameter file
+            prefactor = 1.0
+            # Apply the koopmans prefactor
+            try:
+                useKoop = parameterDict['useKoopmansApproximation']
+                if useKoop:
+                    prefactor *= parameterDict['koopmansHoppingPrefactor']
+            except KeyError:
+                pass
+            # Apply the simple energetic penalty model
+            try:
+                boltzPen = parameterDict['useSimpleEnergeticPenalty']
+            except KeyError:
+                boltzPen = False
+            # Apply the distance penalty due to VRH
+            try:
+                VRH = parameterDict['useVRH']
+                if VRH is True:
+                    VRHPrefactor = 1.0 / parameterDict['VRHDelocalisation']
+            except KeyError:
+                VRH = False
+            if VRH is True:
+                relativeImage = chromo.neighbours[index][1]
+                neighbourChromoPosn = chromo2.posn + (np.array(relativeImage) * np.array([AAMorphologyDict[axis] for axis in ['lx', 'ly', 'lz']]))
+                chromophoreSeparation = helperFunctions.calculateSeparation(chromo.posn, neighbourChromoPosn) * 1E-10
+                rate = helperFunctions.calculateCarrierHopRate(lambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, prefactor, T, useVRH=VRH, rij=chromophoreSeparation, VRHPrefactor=VRHPrefactor, boltzPen=boltzPen)
+            else:
+                rate = helperFunctions.calculateCarrierHopRate(lambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, prefactor, T, boltzPen=boltzPen)
             #try:
             if chromo2.ID < chromo.ID:
                 continue
@@ -814,18 +888,26 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
     #print(len(propertyLists['intraStackRatesDonor']), len(propertyLists['intraStackRatesAcceptor']), len(propertyLists['intraMolRatesDonor']), len(propertyLists['intraMolRatesAcceptor']))
     # Donor Stack Plots:
     if (len(propertyLists['intraStackRatesDonor']) > 0) or (len(propertyLists['interStackRatesDonor']) > 0):
+        print("Mean intra-stack Donor rate =", np.mean(propertyLists['intraStackRatesDonor']), "+/-", np.std(propertyLists['intraStackRatesDonor'])/float(len(propertyLists['intraStackRatesDonor'])))
+        print("Mean inter-stack Donor rate =", np.mean(propertyLists['interStackRatesDonor']), "+/-", np.std(propertyLists['interStackRatesDonor'])/float(len(propertyLists['interStackRatesDonor'])))
         plotStackedHistRates(propertyLists['intraStackRatesDonor'], propertyLists['interStackRatesDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/16_DonorHoppingRate_Stacks.pdf')
         plotStackedHistTIs(propertyLists['intraStackTIsDonor'], propertyLists['interStackTIsDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/12_DonorTransferIntegral_Stacks.pdf')
     # Acceptor Stack Plots:
-    if (len(propertyLists['intraStackRatesAcceptor']) > 0) or (len(properyLists['interStackRatesAcceptor']) > 0):
+    if (len(propertyLists['intraStackRatesAcceptor']) > 0) or (len(propertyLists['interStackRatesAcceptor']) > 0):
+        print("Mean intra-stack Acceptor rate =", np.mean(propertyLists['intraStackRatesAcceptor']), "+/-", np.std(propertyLists['intraStackRatesAcceptor'])/float(len(propertyLists['intraStackRatesAcceptor'])))
+        print("Mean inter-stack Acceptor rate =", np.mean(propertyLists['interStackRatesAcceptor']), "+/-", np.std(propertyLists['interStackRatesAcceptor'])/float(len(propertyLists['interStackRatesAcceptor'])))
         plotStackedHistRates(propertyLists['intraStackRatesAcceptor'], propertyLists['interStackRatesAcceptor'], ['Intra-Stack', 'Inter-Stack'], 'Acceptor', outputDir + '/18_AcceptorHoppingRate_Stacks.pdf')
         plotStackedHistTIs(propertyLists['intraStackTIsAcceptor'], propertyLists['interStackTIsAcceptor'], ['Intra-Stack', 'Inter-Stack'], 'Acceptor', outputDir + '/14_AcceptorTransferIntegral_Stacks.pdf')
     # Donor Mol Plots:
     if (len(propertyLists['intraMolRatesDonor']) > 0) or (len(propertyLists['interMolRatesDonor']) > 0):
+        print("Mean intra-molecular donor rate =", np.mean(propertyLists['intraMolRatesDonor']), "+/-", np.std(propertyLists['intraMolRatesDonor'])/float(len(propertyLists['intraMolRatesDonor'])))
+        print("Mean inter-molecular donor rate =", np.mean(propertyLists['interMolRatesDonor']), "+/-", np.std(propertyLists['interMolRatesDonor'])/float(len(propertyLists['interMolRatesDonor'])))
         plotStackedHistRates(propertyLists['intraMolRatesDonor'], propertyLists['interMolRatesDonor'], ['Intra-Mol', 'Inter-Mol'], 'Donor', outputDir + '/15_DonorHoppingRate_Mols.pdf')
         plotStackedHistTIs(propertyLists['intraMolTIsDonor'], propertyLists['interMolTIsDonor'], ['Intra-Mol', 'Inter-Mol'], 'Donor', outputDir + '/11_DonorTransferIntegral_Mols.pdf')
     # Acceptor Mol Plots:
     if (len(propertyLists['intraMolRatesAcceptor']) > 0) or (len(propertyLists['interMolRatesAcceptor']) > 0):
+        print("Mean intra-molecular acceptor rate =", np.mean(propertyLists['intraMolRatesAcceptor']), "+/-", np.std(propertyLists['intraMolRatesAcceptor'])/float(len(propertyLists['intraMolRatesAcceptor'])))
+        print("Mean inter-molecular acceptor rate =", np.mean(propertyLists['interMolRatesAcceptor']), "+/-", np.std(propertyLists['interMolRatesAcceptor'])/float(len(propertyLists['interMolRatesAcceptor'])))
         plotStackedHistRates(propertyLists['intraMolRatesAcceptor'], propertyLists['interMolRatesAcceptor'], ['Intra-Mol', 'Inter-Mol'], 'Acceptor', outputDir + '/17_AcceptorHoppingRate_Mols.pdf')
         plotStackedHistTIs(propertyLists['intraMolTIsAcceptor'], propertyLists['interMolTIsAcceptor'], ['Intra-Mol', 'Inter-Mol'], 'Acceptor', outputDir + '/13_AcceptorTransferIntegral_Mols.pdf')
     # Update the dataDict
@@ -837,8 +919,10 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
                     continue
                 otherHopType = hopTypes[int((hopTypes.index(hopType) * -1) + 1)]
                 proportion = numberOfHops / (numberOfHops + len(propertyLists[otherHopType + hopTarget + "Rates" + material]))
-                dataDict[material.lower() + '_' + hopType + '_' + hopTarget.lower() + "hops"] = numberOfHops
-                dataDict[material.lower() + '_' + hopType + '_' + hopTarget.lower() + "hops"] = proportion
+                meanRate = np.mean(propertyLists[hopType + hopTarget + "Rates" + material])
+                dataDict[material.lower() + '_' + hopType + '_' + hopTarget.lower() + "_hops"] = numberOfHops
+                dataDict[material.lower() + '_' + hopType + '_' + hopTarget.lower() + "_proportion"] = proportion
+                dataDict[material.lower() + '_' + hopType + '_' + hopTarget.lower() + "_rate_mean"] = meanRate
     return dataDict
 
 
@@ -885,12 +969,15 @@ def createResultsPickle(directory):
         coresList.append(re.findall(directory + '/KMC/KMClog_(.*).log', core)[0])
     keepList = []
     for core in coresList:
+        selectList = []
         slot1 = directory + '/KMC/KMCslot1Results_%02d.pickle' % (int(core))
         slot2 = directory + '/KMC/KMCslot2Results_%02d.pickle' % (int(core))
         if os.path.getsize(slot1) >= os.path.getsize(slot2):
             keepList.append(slot1)
         else:
             keepList.append(slot2)
+    print("%d pickle files found to combine!" % (len(keepList)))
+    print("Combining", keepList)
     resultsPicklesList = []
     for keeper in zip(coresList, keepList):
         newName = directory + '/KMC/KMCResults_' + str(keeper[0]) + '.pickle'
@@ -902,22 +989,21 @@ def createResultsPickle(directory):
 def combineResultsPickles(directory, pickleFiles):
     combinedData = {}
     pickleFiles = sorted(pickleFiles)
-    print("%d pickle files found to combine!" % (len(pickleFiles)))
     for fileName in pickleFiles:
         # The pickle was repeatedly dumped to, in order to save time.
         # Each dump stream is self-contained, so iteratively unpickle to add the new data.
         with open(fileName, 'rb') as pickleFile:
             pickledData = pickle.load(pickleFile)
             for key, val in pickledData.items():
-                try:
-                    if val is None:
-                        continue
-                    if key not in combinedData:
-                        combinedData[key] = val
-                    else:
-                        combinedData[key] += val
-                except AttributeError:
-                    pass
+    #            try:
+                if val is None:
+                    continue
+                if key not in combinedData:
+                    combinedData[key] = val
+                else:
+                    combinedData[key] += val
+    #            except AttributeError:
+    #                pass
     # Write out the combined data
     print("Writing out the combined pickle file...")
     with open(directory + '/KMC/KMCResults.pickle', 'wb+') as pickleFile:
@@ -925,8 +1011,7 @@ def combineResultsPickles(directory, pickleFiles):
     print("Complete data written to", directory + "/KMCResults.pickle.")
 
 
-def calculateMobility(directory, currentCarrierType, carrierData, simDims,
-                      plot3DGraphs, chromophoreList):
+def calculateMobility(directory, currentCarrierType, carrierData, simDims, plot3DGraphs):
     print("Considering the transport of", currentCarrierType + "...")
     print("Obtaining mean squared displacements...")
     carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getCarrierData(carrierData)
@@ -956,7 +1041,7 @@ def KMCAnalyse():
     parser.add_argument("-x", "--xlabel", default="Temperature (Arb. U.)", required=False, help='Specify an x-label for the combined plot (only used if -s is specified). Default = "Temperature (Arb. U.)"')
     args, directoryList = parser.parse_known_args()
 
-    sys.setrecursionlimit(5000)
+    sys.setrecursionlimit(10000)
     holeMobilityData = []
     holeAnisotropyData = []
     electronMobilityData = []
@@ -1005,15 +1090,16 @@ def KMCAnalyse():
         tempDir = directory + '/figures'
         CGToMolID = determineMoleculeIDs(CGToAAIDMaster, AAMorphologyDict, parameterDict, chromophoreList)
         dataDict = plotEnergyLevels(tempDir, chromophoreList, dataDict)
-        if (args.cutOffDonor is None) or (args.cutOffAcceptor is None):
-            print("No cut-off manually specified for either the donor or acceptor material, therefore automatically finding the relevant cutOff as the midpoint between the first maxmimum and the first minimum of the neighbour distance distribution...")
-            print("Considering periodic neighbours is", args.periodicStacks)
-            [calculatedCutOffDonor, calculatedCutOffAcceptor] = getNeighbourCutOff(chromophoreList, morphologyShape, tempDir, periodic=args.periodicStacks)
+        print("Finding the relevant stack cut off as the midpoint between the first maxmimum and the first minimum of the neighbour distance distribution...")
+        print("Considering periodic neighbours is", args.periodicStacks)
+        [calculatedCutOffDonor, calculatedCutOffAcceptor] = getNeighbourCutOff(chromophoreList, morphologyShape, tempDir, periodic=args.periodicStacks, specifiedCutOffDonor=args.cutOffDonor, specifiedCutOffAcceptor=args.cutOffAcceptor)
         if args.cutOffDonor is None:
+            print("No donor cut off has been specified. Using calculated value...")
             cutOffDonor = calculatedCutOffDonor
         else:
             cutOffDonor = args.cutOffDonor
         if args.cutOffAcceptor is None:
+            print("No acceptor cut off has been specified. Using calculated value...")
             cutOffAcceptor = calculatedCutOffAcceptor
         else:
             cutOffAcceptor = args.cutOffAcceptor
@@ -1022,7 +1108,7 @@ def KMCAnalyse():
         stackDicts = getStacks(chromophoreList, morphologyShape, cutOffDonor, cutOffAcceptor, periodic=args.periodicStacks)
         if args.threeD:
             plotStacks3D(tempDir, chromophoreList, stackDicts, simDims)
-        dataDict = plotMixedHoppingRates(tempDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict)
+        dataDict = plotMixedHoppingRates(tempDir, chromophoreList, parameterDict, stackDicts, CGToMolID, dataDict, AAMorphologyDict)
         print("\n")
         print("Writing CSV Output File...")
         writeCSV(dataDict, directory)
