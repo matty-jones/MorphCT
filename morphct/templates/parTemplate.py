@@ -2,8 +2,9 @@
 # ---======== Directory and File Structure ========---
 # ---==============================================---
 
-# The following parameters describe the location of the required input and eventual output files.
-# Note that Morph directories must be specified, even for device files to ensure the correct device components are loaded
+# The following parameters describe the location of the required input and
+# eventual output files. Note that Morph directories must be specified, even
+# for device files to ensure the correct device components are loaded.
 inputMorphDir = '/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/inputMolMorphs'
 outputMorphDir = '/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/outputMolFiles'
 inputDeviceDir = '/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/inputDeviceMorphs'

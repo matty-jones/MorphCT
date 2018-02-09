@@ -176,9 +176,9 @@ def calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, pa
 
 def calculateChromophoresAA(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims, rigidBodies = None):
     # If rigidBodies == None:
-    # This function works in the same way as the coarse-grained version above, except 
+    # This function works in the same way as the coarse-grained version above, except
     # this one iterates through the AA bonds instead. This is FAR SLOWER and so shouldn't
-    # be done, except in the case where the coarse-grained morphology does not exist 
+    # be done, except in the case where the coarse-grained morphology does not exist
     # (because we started with an atomistic morphology and are only interested in running
     # KMC on it)
     # If rigidBodies == AAMorphologyDict['body']:
@@ -525,7 +525,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         chromophoreList = calculateChromophoresAA(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims, rigidBodies=AAMorphologyDict['body'])
     #### SANITY CHECK  ####
     chromophoreList = chromoSort(chromophoreList)
-    #### END OF SANITY CHECK ####     
+    #### END OF SANITY CHECK ####
     if parameterDict['useVoronoiNeighbours'] == True:
         chromophoreList = determineNeighboursVoronoi(chromophoreList, parameterDict, simDims)
     else:
