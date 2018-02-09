@@ -204,10 +204,9 @@ outputLogToSTDOUT = True        # Divert log output to the terminal rather than 
 parameterFile = __file__
 
 if __name__ == "__main__":
-    import runMorphCT
+    from morphct import runMorphCT
     import sys
-    sys.path.append('./code')
-    import helperFunctions
+    from morphct.code import helperFunctions
 
     procIDs = helperFunctions.getCPUCores()
     parameterNames = [i for i in dir() if (not i.startswith('__')) and (i not in ['runMorphCT', 'helperFunctions', 'sys'])]
