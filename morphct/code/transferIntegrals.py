@@ -3,18 +3,15 @@ import sys
 import os
 from morphct.code import helperFunctions
 from morphct.definitions import SINGLE_ORCA_RUN_FILE
-import csv
-import copy
 import subprocess as sp
-import multiprocessing as mp
 import pickle
-import time as T
 import glob
 
 
 class ORCAError(Exception):
     def __init__(self, fileName):
         self.string = "No molecular orbital data present for "+str(fileName)
+
     def __str__(self):
         return self.string
 
@@ -29,7 +26,7 @@ def loadORCAOutput(fileName):
             # Next line begins the MO data
             recordMOData = True
             continue
-        if recordMOData == True:
+        if recordMOData is True:
             if 'MOLECULAR ORBITALS' in line:
                 # Don't need anything else from the output file
                 break
@@ -51,7 +48,7 @@ def loadORCAOutput(fileName):
             LUMO_1 = orbitalData[i+1][3]
             # Don't need any other orbitals
             break
-    if recordMOData == False:
+    if recordMOData is False:
         # Molecular orbital data not present in this file
         raise ORCAError(fileName)
     return HOMO_1, HOMO, LUMO, LUMO_1
@@ -181,7 +178,7 @@ def rerunFails(failedChromoFiles, parameterDict, chromophoreList):
         procIDs = procIDs[:len(jobsList)]
     runningJobs = []
     for CPURank in procIDs:
-        runningJobs.append(sp.Popen(['python', SINGLE_ORCA_RUN_FILE, outputDir, str(CPURank), '1'])) # The final argument here tells ORCA to ignore the presence of the output file and recalculate
+        runningJobs.append(sp.Popen(['python', SINGLE_ORCA_RUN_FILE, outputDir, str(CPURank), '1']))  # The final argument here tells ORCA to ignore the presence of the output file and recalculate
     # Wait for running jobs to finish
     [p.wait() for p in runningJobs]
     # Finally, return the failed files list to the main failure handler to see if we need to iterate
@@ -191,11 +188,11 @@ def rerunFails(failedChromoFiles, parameterDict, chromophoreList):
 def calculateDeltaE(chromophoreList, chromo1ID, chromo2ID):
     chromo1 = chromophoreList[chromo1ID]
     chromo2 = chromophoreList[chromo2ID]
-    #### NOTE: SANITY CHECK  ####
+    # NOTE: SANITY CHECK
     if (chromo1.ID != chromo1ID) or (chromo2.ID != chromo2ID):
         print("chromo1.ID (" + str(chromo1.ID) + ") != chromo1ID (" + str(chromo1ID) + "), or chromo2.ID (" + str(chromo2.ID) + ") != chromo2ID (" + str(chromo2ID) + ")! CHECK CODE!")
         exit()
-    #### END OF SANITY CHECK ####
+    # END OF SANITY CHECK
     if chromo1.species == 'Donor':
         # Hole transporter
         chromo1E = chromo1.HOMO
@@ -422,8 +419,10 @@ def updatePairChromophoreList(chromophoreList, parameterDict):
 
 
 def scaleEnergies(chromophoreList, parameterDict):
-    # Shorter chromophores have significantly deeper HOMOs because they are treated as small molecules instead of chain segments.
-    # To rectify this, find the average energy level for each chromophore and then map that average to the literature value
+    # Shorter chromophores have significantly deeper HOMOs because they are
+    # treated as small molecules instead of chain segments. To rectify this,
+    # find the average energy level for each chromophore and then map that
+    # average to the literature value.
     # First, get the energy level data
     donorLevels = []
     acceptorLevels = []
@@ -440,9 +439,14 @@ def scaleEnergies(chromophoreList, parameterDict):
         avLUMO = np.average(acceptorLevels)
         stdLUMO = np.std(np.array(acceptorLevels))
         deltaELUMO = 0.0
-    # Then add the lateral shift to to the energy levels to put the mean in line with the literature value
-    # This is justified because we treat each chromophore in exactly the same way. Any deviation between the average of the calculated MOs and the literature one is therefore a systematic error arising from the short chromophore lengths and the frequency of the terminating groups in order to perform the DFT calculations.
-    # By shifting the mean back to the literature value, we are accounting for this systematic error.
+    # Then add the lateral shift to to the energy levels to put the mean in
+    # line with the literature value This is justified because we treat each
+    # chromophore in exactly the same way. Any deviation between the average
+    # of the calculated MOs and the literature one is therefore a systematic
+    # error arising from the short chromophore lengths and the frequency of
+    # the terminating groups in order to perform the DFT calculations. By
+    # shifting the mean back to the literature value, we are accounting for
+    # this systematic error.
     if (parameterDict['literatureHOMO'] is None) and (parameterDict['literatureLUMO'] is None):
         # No energy level scaling necessary, move on to the target DoS width
         pass
@@ -521,15 +525,20 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     # First, check that we need to examine the single chromophores
     runSingles = False
     if parameterDict['overwriteCurrentData'] is False:
-        # Only perform this check if the user hasn't already specified to overwrite the data (in which case it runs anyway)
-        # Run all singles if any of the single's data is missing (i.e. the HOMO level should suffice because all energy levels are updated at the same time, so we don't need to check all of them individually)
+        # Only perform this check if the user hasn't already specified to
+        # overwrite the data (in which case it runs anyway)
+        # Run all singles if any of the single's data is missing (i.e. the
+        # HOMO level should suffice because all energy levels are updated at
+        # the same time, so we don't need to check all of them individually)
         for chromophore in chromophoreList:
             if chromophore.HOMO is None:
                 runSingles = True
     if (runSingles is True) or (parameterDict['overwriteCurrentData'] is True):
         print("Beginning analysis of single chromophores...")
         chromophoreList = updateSingleChromophoreList(chromophoreList, parameterDict)
-        # Now include any scaling to narrow the DoS or modulate the mean to match the literature HOMO/LUMO levels (which helps to negate the effect of short chromophores with additional hydrogens/terminating groups
+        # Now include any scaling to narrow the DoS or modulate the mean to
+        # match the literature HOMO/LUMO levels (which helps to negate the
+        # effect of short chromophores with additional hydrogens/terminating groups
         print("Scaling energies...")
         chromophoreList = scaleEnergies(chromophoreList, parameterDict)
         print("Single chromophore calculations completed. Saving...")
@@ -620,7 +629,7 @@ def checkForwardBackwardHopEij(chromophoreList):
             reverseLoc = [neighbourData[0] for neighbourData in chromophoreList[neighbourID].neighbours].index(chromophore.ID)
             assert(neighbourID == chromophoreList[chromoID].neighbours[neighbourLoc][0])
             assert(chromoID == chromophoreList[neighbourID].neighbours[reverseLoc][0])
-            ## Update both the current chromophore and the neighbour (for the reverse hop)
+            # Update both the current chromophore and the neighbour (for the reverse hop)
             try:
                 assert(chromophoreList[chromoID].neighboursDeltaE[neighbourLoc] == -chromophoreList[neighbourID].neighboursDeltaE[reverseLoc])
             except AssertionError:
@@ -628,9 +637,11 @@ def checkForwardBackwardHopEij(chromophoreList):
                 print(neighbourID, "should be here", chromophore.neighbours[neighbourLoc])
                 print(chromoID, "should be here", chromophoreList[neighbourID].neighbours[reverseLoc])
                 print("--== Transfer Integrals ==--")
-                print("FORWARD:", chromophoreList[chromoID].neighboursTI[neighbourLoc], "BACKWARD:", chromophoreList[neighbourID].neighboursTI[reverseLoc])
+                print("FORWARD:", chromophoreList[chromoID].neighboursTI[neighbourLoc],
+                      "BACKWARD:", chromophoreList[neighbourID].neighboursTI[reverseLoc])
                 print("--== Delta Eij ==--")
-                print("FORWARD:", chromophoreList[chromoID].neighboursDeltaE[neighbourLoc], "BACKWARD:", chromophoreList[neighbourID].neighboursDeltaE[reverseLoc])
+                print("FORWARD:", chromophoreList[chromoID].neighboursDeltaE[neighbourLoc],
+                      "BACKWARD:", chromophoreList[neighbourID].neighboursDeltaE[reverseLoc])
                 if chromophore.species == 'Donor':
                     donorErrors += 1
                 elif chromophore.species == 'Acceptor':
