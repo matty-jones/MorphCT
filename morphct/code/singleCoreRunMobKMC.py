@@ -72,7 +72,7 @@ class carrier:
         except KeyError:
             self.useVRH = False
         if self.useVRH is True:
-            self.VRHScaling = 1.0 / parameterDict['VRHDelocalisation']
+            self.VRHScaling = 1.0 / self.currentChromophore.VRH_delocalisation
 
     def calculateHop(self, chromophoreList):
         # Terminate if the next hop would be more than the termination limit

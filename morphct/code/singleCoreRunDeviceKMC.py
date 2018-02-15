@@ -284,7 +284,7 @@ class carrier:
         except KeyError:
             self.useVRH = False
         if self.useVRH is True:
-            self.VRHScaling = 1.0 / parameterDict['VRHDelocalisation']
+            self.VRHScaling = 1.0 / self.currentChromophore.VRH_delocalisation
 
     def calculateBehaviour(self):
         try:

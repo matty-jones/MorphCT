@@ -49,6 +49,7 @@ class chromophore:
                         self.sub_species = sub_species
                         self.species = parameterDict["chromophore_species"][sub_species]["species"]
                         self.reorganisation_energy = parameterDict["chromophore_species"][sub_species]["reorganisationEnergy"]
+                        self.VRH_delocalisation = parameterDict["chromophore_species"][sub_species]["VRHDelocalisation"]
                         break
                 try:
                     self.species
