@@ -753,14 +753,6 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
     propertyLists = {}
     for propertyName in [hopType + hopTarget + hopProperty + species for hopType in hopTypes for hopTarget in hopTargets for hopProperty in hopProperties for species in chromoSpecies]:
         propertyLists[propertyName] = []
-    try:
-        if parameterDict['reorganisationEnergyDonor'] is not None:
-            donorLambdaij = parameterDict['reorganisationEnergyDonor']
-        if parameterDict['reorganisationEnergyAcceptor'] is not None:
-            acceptorLambdaij = parameterDict['reorganisationEnergyAcceptor']
-    except KeyError: # Old MorphCT fix
-        print("Only one reorganisation energy found, assuming donor and continuing")
-        donorLambdaij = parameterDict['reorganisationEnergy']
     T = 290
     for chromo in chromophoreList:
         mol1ID = CGToMolID[chromo.CGIDs[0]]
@@ -771,9 +763,9 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
             mol2ID = CGToMolID[chromo2.CGIDs[0]]
             deltaE = chromo.neighboursDeltaE[index]
             if chromo.species == 'Acceptor':
-                rate = calculateHopRate(acceptorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+                rate = calculateHopRate(chromo.reorganisation_energy * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
             else:
-                rate = calculateHopRate(donorLambdaij * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+                rate = calculateHopRate(chromo.reorganisation_energy * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
             #try:
             if chromo2.ID < chromo.ID:
                 continue

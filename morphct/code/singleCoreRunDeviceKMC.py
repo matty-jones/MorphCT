@@ -195,7 +195,7 @@ class exciton:
         if len(hopTimes) > 0:
             return hopTimes[0]
         else:
-            # The exciton has not yet recombined, but there are no legal hops that can be performed so the only fate for this exciton is recombination through photoluminescence 
+            # The exciton has not yet recombined, but there are no legal hops that can be performed so the only fate for this exciton is recombination through photoluminescence
             return []
 
     def performHop(self):
@@ -249,13 +249,12 @@ class carrier:
         self.T = parameterDict['systemTemperature']
         self.wrapxy = parameterDict['wrapDeviceXY']
         self.disableCoulombic = parameterDict['disableCoulombic']
+        self.lambdaij = self.currentChromophore.reorganisation_energy
         # self.carrierType: Set carrier type to be == 0 if Electron and == 1 if Hole. This allows us to do quick arithmetic to get the signs correct in the potential calculations without having to burn through a ton of conditionals.
         if self.currentChromophore.species == 'Donor':
             self.carrierType = HOLE
-            self.lambdaij = parameterDict['reorganisationEnergyDonor']
         elif self.currentChromophore.species == 'Acceptor':
             self.carrierType = ELECTRON
-            self.lambdaij = parameterDict['reorganisationEnergyAcceptor']
         self.relativePermittivity = parameterDict['relativePermittivity']
         if parameterDict['recordCarrierHistory'] is True:
             self.history = [[self.initialDevicePosn, initialChromophore.posn]]
@@ -429,7 +428,7 @@ class carrier:
             self.history.append([self.currentDevicePosn, self.currentChromophore.posn])
 
     def calculateDeltaE(self, destinationChromophore, neighbourRelativeImage, chromoEij):
-        # DeltaEij has 3 main components: 1) the energetic disorder (difference in HOMO/LUMO levels), 
+        # DeltaEij has 3 main components: 1) the energetic disorder (difference in HOMO/LUMO levels),
         # 2) the field within the device, and 3) the Coulombic effect from nearby charges
         deltaEij = 0.0  # Report this in J
         # 1) Energetic Disorder
@@ -897,7 +896,7 @@ def plot3DTrajectory(injectSource, carriersToPlot, parameterDict, deviceArray, o
         try:
             for hopIndex, hop in enumerate(carrier.history[:-1]):
                 # Note that conversion factors are needed as hop[0] * morphCellSize is in m, and hop[1] is in ang.
-                # Additionally, we need to add half of the morphCellSize to whatever hop[0] is as the origin is in the centre of the box 
+                # Additionally, we need to add half of the morphCellSize to whatever hop[0] is as the origin is in the centre of the box
                 currentPosn = (1E10 * ((np.array(hop[0]) + np.array([0.5, 0.5, 0.5])) * parameterDict['morphologyCellSize'])) + np.array(hop[1])
                 nextHop = carrier.history[hopIndex + 1]
                 nextPosn = (1E10 * ((np.array(nextHop[0]) + np.array([0.5, 0.5, 0.5])) * parameterDict['morphologyCellSize'])) + np.array(nextHop[1])
@@ -936,7 +935,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
         fastestEventAllowed = parameterDict['fastestEventAllowed']
     if parameterDict['slowestEventAllowed'] is not None:
         slowestEventAllowed = parameterDict['slowestEventAllowed']
-    # Given a voltage, the field value corresponding to it = (((bandgap - el_inj_barrier - ho_inj_barrier) - Voltage) / z-extent) 
+    # Given a voltage, the field value corresponding to it = (((bandgap - el_inj_barrier - ho_inj_barrier) - Voltage) / z-extent)
     currentFieldValue = (
         # Bandgap:
         ((parameterDict['acceptorLUMO'] - parameterDict['donorHOMO']) -
@@ -1218,7 +1217,7 @@ def execute(deviceArray, chromophoreData, morphologyData, parameterDict, voltage
                 #    break
 
                 hoppingExciton = nextEvent[2]
-                # There is a sporadic (rare) bug that causes excitons to sometimes get queued up to hop 
+                # There is a sporadic (rare) bug that causes excitons to sometimes get queued up to hop
                 # even though they have already recombined.
                 # The following is similar to the check we do before the carrier hop, and should fix that.
                 if hoppingExciton.removedTime is not None:

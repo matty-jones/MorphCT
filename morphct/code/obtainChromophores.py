@@ -44,9 +44,11 @@ class chromophore:
                         electronicallyActiveAAIDs.append(AAID)
                 electronicallyActiveCGSites = copy.deepcopy(electronicallyActiveAAIDs)
                 # Now work out what the species is:
-                for species, rigidBodies in parameterDict['AARigidBodySpecies'].items():
+                for sub_species, rigidBodies in parameterDict['AARigidBodySpecies'].items():
                     if AAMorphologyDict['body'][electronicallyActiveCGSites[0]] in rigidBodies:
-                        self.species = species
+                        self.sub_species = sub_species
+                        self.species = parameterDict["chromophore_species"][sub_species]["species"]
+                        self.reorganisation_energy = parameterDict["chromophore_species"][sub_species]["reorganisationEnergy"]
                         break
                 try:
                     self.species

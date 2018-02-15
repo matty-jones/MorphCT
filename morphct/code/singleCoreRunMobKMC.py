@@ -32,14 +32,13 @@ class carrier:
         self.currentTime = 0.0
         self.holeHistoryMatrix = None
         self.electronHistoryMatrix = None
+        self.lambdaij = self.currentChromophore.reorganisation_energy
         if self.currentChromophore.species == 'Donor':
             self.carrierType = 'Hole'
-            self.lambdaij = parameterDict['reorganisationEnergyDonor']
             if parameterDict['recordCarrierHistory'] is True:
                 self.holeHistoryMatrix = lil_matrix((len(chromophoreList), len(chromophoreList)), dtype=int)
         elif self.currentChromophore.species == 'Acceptor':
             self.carrierType = 'Electron'
-            self.lambdaij = parameterDict['reorganisationEnergyAcceptor']
             if parameterDict['recordCarrierHistory'] is True:
                 self.electronHistoryMatrix = lil_matrix((len(chromophoreList), len(chromophoreList)), dtype=int)
         self.noHops = 0
