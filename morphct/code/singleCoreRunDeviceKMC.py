@@ -249,7 +249,11 @@ class carrier:
         self.T = parameterDict['systemTemperature']
         self.wrapxy = parameterDict['wrapDeviceXY']
         self.disableCoulombic = parameterDict['disableCoulombic']
-        self.lambdaij = self.currentChromophore.reorganisation_energy
+        if self.currentChromophore.sub_species == self.initialChromophore.sub_species:
+            self.lambdaij = self.currentChromophore.reorganisation_energy
+        else:
+            self.lambdaij = (self.currentChromophore.reorganisation_energy
+                             + self.initialChromophore.reorganisation_energy) / 2
         # self.carrierType: Set carrier type to be == 0 if Electron and == 1 if Hole. This allows us to do quick arithmetic to get the signs correct in the potential calculations without having to burn through a ton of conditionals.
         if self.currentChromophore.species == 'Donor':
             self.carrierType = HOLE
