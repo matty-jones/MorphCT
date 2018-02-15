@@ -762,10 +762,12 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
             chromo2 = chromophoreList[chromo.neighbours[index][0]]
             mol2ID = CGToMolID[chromo2.CGIDs[0]]
             deltaE = chromo.neighboursDeltaE[index]
-            if chromo.species == 'Acceptor':
-                rate = calculateHopRate(chromo.reorganisation_energy * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+            if chromo.sub_species == chromo2.sub_species:
+                rate = calculateHopRate(chromo.reorganisation_energy * elementaryCharge, Tij * elementaryCharge, deltaE
+                                        * elementaryCharge, T)
             else:
-                rate = calculateHopRate(chromo.reorganisation_energy * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+                rate = calculateHopRate((chromo.reorganisation_energy + chromo2.reorganisation_energy)/2
+                                        * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
             #try:
             if chromo2.ID < chromo.ID:
                 continue
