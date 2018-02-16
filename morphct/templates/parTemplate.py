@@ -328,8 +328,6 @@ used (look in the Device KMC Parameters section).
 # ---=== Universal KMC Parameters ===---
 # The following parameters are universally relevant for both morphology and device simulations
 systemTemperature = 290                 # Device temperature (RTP)
-reorganisationEnergyDonor = 0.3063      # Donor reorganisation energy (eV)
-reorganisationEnergyAcceptor = 0.1496   # Acceptor reorganisation energy (eV)
 useSimpleEnergeticPenalty = False
 '''
 Replaces the exponential term in the Marcus hopping rate with a simple Boltzmann penalty for hops upstream in
