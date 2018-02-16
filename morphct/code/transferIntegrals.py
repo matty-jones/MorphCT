@@ -424,99 +424,43 @@ def scaleEnergies(chromophoreList, parameterDict):
     # find the average energy level for each chromophore and then map that
     # average to the literature value.
     # First, get the energy level data
-    donorLevels = []
-    acceptorLevels = []
+    chromophore_species = {k: [] for k in parameterDict["chromophore_species"].keys()}  # Dictionary of empty lists
+    chromophore_MO_info = {k: [] for k in parameterDict["chromophore_species"].keys()}  # Same keys, but will use it differently
     for chromo in chromophoreList:
-        if (chromo.species == 'Donor'):
-            donorLevels.append(chromo.HOMO)
-        elif (chromo.species == 'Acceptor'):
-            acceptorLevels.append(chromo.LUMO)
-    if len(donorLevels) > 0:
-        avHOMO = np.average(donorLevels)
-        stdHOMO = np.std(np.array(donorLevels))
-        deltaEHOMO = 0.0
-    if len(acceptorLevels) > 0:
-        avLUMO = np.average(acceptorLevels)
-        stdLUMO = np.std(np.array(acceptorLevels))
-        deltaELUMO = 0.0
-    # Then add the lateral shift to to the energy levels to put the mean in
-    # line with the literature value This is justified because we treat each
-    # chromophore in exactly the same way. Any deviation between the average
-    # of the calculated MOs and the literature one is therefore a systematic
-    # error arising from the short chromophore lengths and the frequency of
-    # the terminating groups in order to perform the DFT calculations. By
-    # shifting the mean back to the literature value, we are accounting for
-    # this systematic error.
-    if (parameterDict['literatureHOMO'] is None) and (parameterDict['literatureLUMO'] is None):
-        # No energy level scaling necessary, move on to the target DoS width
-        pass
-    else:
-        if (parameterDict['literatureHOMO'] is not None) and (len(donorLevels) > 0):
-            deltaEHOMO = parameterDict['literatureHOMO'] - avHOMO
-            donorLevels = list(np.array(donorLevels) + np.array([deltaEHOMO] * len(donorLevels)))
-            avHOMO = parameterDict['literatureHOMO']
-        if (parameterDict['literatureLUMO'] is not None) and (len(acceptorLevels) > 0):
-            deltaELUMO = parameterDict['literatureLUMO'] - avLUMO
-            acceptorLevels = list(np.array(acceptorLevels) + np.array([deltaELUMO] * len(acceptorLevels)))
-            avLUMO = parameterDict['literatureLUMO']
-        for chromo in chromophoreList:
-            if (chromo.species == 'Donor'):
-                deltaE = deltaEHOMO
-            elif (chromo.species == 'Acceptor'):
-                deltaE = deltaELUMO
-            chromo.HOMO_1 += deltaE
-            chromo.HOMO += deltaE
-            chromo.LUMO += deltaE
-            chromo.LUMO_1 += deltaE
-    # Now squeeze the DoS of the distribution to account for the noise in these ZINDO/S calculations
-    # Check the current STD of the DoS for both the donor and the acceptor, and skip the calculation if the current
-    # STD is smaller than the literature value
-    # First check the donor DoS
-    if (parameterDict['targetDoSSTDHOMO'] is None) or (len(donorLevels) == 0):
-        squeezeHOMO = False
-    elif (parameterDict['targetDoSSTDHOMO'] > stdHOMO):
-        squeezeHOMO = False
-    else:
-        squeezeHOMO = True
-    # Then check the acceptor DoS
-    if (parameterDict['targetDoSSTDLUMO'] is None) or (len(acceptorLevels) == 0):
-        squeezeLUMO = False
-    elif (parameterDict['targetDoSSTDLUMO'] > stdLUMO):
-        squeezeLUMO = False
-    else:
-        squeezeLUMO = True
-    if squeezeHOMO is True:
-        for chromo in chromophoreList:
-            if chromo.species == 'Donor':
-                # Determine how many sigmas away from the mean this datapoint is
-                sigma = (chromo.HOMO - avHOMO) / float(stdHOMO)
-                # Calculate the new deviation from the mean based on the target STD and sigma
-                newDeviation = parameterDict['targetDoSSTDHOMO'] * sigma
-                # Work out the change in energy to be applied to meet this target energy level
-                deltaE = (avHOMO + newDeviation) - chromo.HOMO
-            else:
-                continue
+        chromophore_species[chromo.sub_species].append(chromo.get_mo_energy())
+
+    for sub_species, chromo_energy in chromophore_species.items():
+        lit_DoSSTD = parameterDict["chromophore_species"][sub_species]["targetDoSSTD"]
+        lit_MO = parameterDict["chromophore_species"][sub_species]["literatureMO"]
+        chromophore_MO_info[sub_species]["target_DoSSTD"] = lit_DoSSTD
+        chromophore_MO_info[sub_species]["av_MO"] = np.average(chromo_energy)
+        chromophore_MO_info[sub_species]["std_MO"] = np.std(chromo_energy)
+        chromophore_MO_info[sub_species]["e_shift"] = lit_MO - chromophore_MO_info[sub_species]["av_MO"]
+
+    for chromo in chromophoreList:
+        e_shift = chromophore_MO_info[chromo.sub_species]["e_shift"]
+        target_DoSSTD = chromophore_MO_info[chromo.sub_species]["target_DoSSTD"]
+        std_MO = chromophore_MO_info[chromo.sub_species]["std_MO"]
+        av_MO = chromophore_MO_info[chromo.sub_species]["av_MO"]
+
+        chromo.HOMO_1 += e_shift
+        chromo.HOMO += e_shift
+        chromo.LUMO += e_shift
+        chromo.LUMO_1 += e_shift
+
+        if target_DoSSTD > std_MO:
+            # Determine how many sigmas away from the mean this datapoint is
+            sigma = (chromo.get_mo_energy() - av_MO) / std_MO
+            # Calculate the new deviation from the mean based on the target STD and sigma
+            newDeviation = target_DoSSTD * sigma
+            # Work out the change in energy to be applied to meet this target energy level
+            deltaE = (av_MO + newDeviation) - chromo.get_mo_energy()
             # Apply the energy level displacement
             chromo.HOMO_1 += deltaE
             chromo.HOMO += deltaE
             chromo.LUMO += deltaE
             chromo.LUMO_1 += deltaE
-    if squeezeLUMO is True:
-        for chromo in chromophoreList:
-            if chromo.species == 'Acceptor':
-                # Determine how many sigmas away from the mean this datapoint is
-                sigma = (chromo.LUMO - avLUMO) / float(stdLUMO)
-                # Calculate the new deviation from the mean based on the target STD and sigma
-                newDeviation = parameterDict['targetDoSSTDLUMO'] * sigma
-                # Work out the change in energy to be applied to meet this target energy level
-                deltaE = (avLUMO + newDeviation) - chromo.LUMO
-            else:
-                continue
-            # Apply the energy level displacement
-            chromo.HOMO_1 += deltaE
-            chromo.HOMO += deltaE
-            chromo.LUMO += deltaE
-            chromo.LUMO_1 += deltaE
+
     return chromophoreList
 
 

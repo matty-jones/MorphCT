@@ -137,6 +137,13 @@ class chromophore:
                     electronicallyActiveSites.append(CGSiteID)
         return electronicallyActiveSites, currentChromophoreSpecies
 
+    def get_mo_energy(self):
+        if self.species == "Acceptor":
+            return self.LUMO
+        elif self.species == "Donor":
+            return self.HOMO
+        else:
+            raise Exception("Chromo MUST be Donor OR Acceptor")
 
 def calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims):
     # We make the assumption that a chromophore consists of one of each of the CG site types
