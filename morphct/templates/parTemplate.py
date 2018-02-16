@@ -257,17 +257,54 @@ Check the MorphCT "variableChromoLengths" if you'd like to.
 '''
 
 # ---=== Chromophore Energy Scaling Parameters ===---
-literatureHOMO = -5.0               # HOMO level of the donor
-literatureLUMO = -3.7               # LUMO level of the acceptor
-targetDoSSTDHOMO = 0.1
 '''
-Gaussian width of the donor HOMO density of states (100 meV recommended for polymers, small molecules can be less)
+targetDoSSTD (float, eV)
+    Gaussian width of the donor HOMO/LUMO density of states (100 meV recommended for polymers,
+    small molecules can be less)
+
+VRHDelocalisation (float, meters)
+    The carrier delocalisation length for VRH (in m) such that \alpha -> \alpha * (1.0 / VRHDelocalisation)
+
+literatureMO (float, eV)
+    Literature value of the HOMO/LUMO of the donor/acceptor
+
+species (string)
+    Donor type or Acceptor type
+
+reorganisationEnergy (float, eV)
 '''
 
-targetDoSSTDLUMO = 0.05
-'''
-Gaussian width of the acceptor LUMO density of states (100 meV recommended for polymers, small molecules can be less)
-'''
+
+chromophore_species = {
+  "D1": {
+    "literatureMO": -5.0,
+    "targetDoSSTD": 0.1,
+    "reorganisationEnergy": 0.3064,
+    "species": "Donor",
+    "VRHDelocalisation": 2e-10,
+  },
+  "D2": {
+    "literatureMO": -5.0,
+    "targetDoSSTD": 0.1,
+    "reorganisationEnergy": 0.3064,
+    "species": "Donor",
+    "VRHDelocalisation": 2e-10,
+  },
+  "A1": {
+    "literatureMO": -4.7,
+    "targetDoSSTD": 0.1,
+    "reorganisationEnergy": 0.1496,
+    "species": "Acceptor",
+    "VRHDelocalisation": 4e-10,
+  },
+  "A2": {
+    "literatureMO": -3.7,
+    "targetDoSSTD": 0.1,
+    "reorganisationEnergy": 0.2496,
+    "species": "Acceptor",
+    "VRHDelocalisation": 4e-10,
+  },
+}
 
 useKoopmansApproximation = False
 '''
@@ -317,10 +354,6 @@ Include an explicit consideration of hop distance into the hopping rate equation
 decay is entirely determined by the transfer integral)
 '''
 
-VRHDelocalisation = 4.0E-10
-'''
-The carrier delocalisation length for VRH (in m) such that \alpha -> \alpha * (1.0 / VRHDelocalisation)
-'''
 
 # ---=== Mobility Specific KMC Parameters ===---
 numberOfHolesPerSimulationTime = 0      # The total number of holes to simulate
