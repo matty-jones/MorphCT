@@ -1,5 +1,5 @@
 import sys
-import os
+
 
 def convert_inp(file_name):
     with open(file_name, 'r') as inp_file:
@@ -9,7 +9,7 @@ def convert_inp(file_name):
         if line[0] == ' ':
             xyz_data.append(line)
     xyz_data.insert(0, str(len(xyz_data))+'\n')
-    xyz_data.insert(1, 'CommentLine\n')
+    xyz_data.insert(1, 'comment_line\n')
     with open(file_name.replace('.inp', '.xyz'), 'w+') as xyz_file:
         xyz_file.writelines(xyz_data)
 
@@ -35,7 +35,7 @@ def convert_out(file_name):
     for line_no in sorted(pop_list, reverse=True):
         xyz_data.pop(line_no)
     xyz_data.insert(0, str(len(xyz_data))+'\n')
-    xyz_data.insert(1, 'CommentLine\n')
+    xyz_data.insert(1, 'comment_line\n')
     with open(file_name.replace('.out', '.xyz'), 'w+') as xyz_file:
         xyz_file.writelines(xyz_data)
 
