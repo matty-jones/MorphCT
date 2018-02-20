@@ -419,10 +419,11 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierTy
     yvals = list(np.array(mobilityData)[:,0])
     yerrs = list(np.array(mobilityData)[:,1])
     plt.xlabel(xLabel)
-    plt.ylabel('Mobility, cm'+r'$^{2}$ '+'V'+r'$^{-1}$'+r's$^{-1}$')
-    plt.title('p1-L15-f0.0-P0.1-TX.X-e0.1', fontsize = 24)
+    plt.ylabel('Mobility (cm'+r'$^{2}$ '+'V'+r'$^{-1}$'+r's$^{-1}$)')
+    #plt.title('p1-L15-f0.0-P0.1-TX.X-e0.1', fontsize = 24)
     #plt.xlim([1.4, 2.6])
-    plt.semilogy(xvals, yvals, c = 'b')
+    #plt.xlim([0.01, 1.0])
+    plt.semilogy(xvals, yvals, c='k')
     #plt.gca().set_xscale('log')
     plt.errorbar(xvals, yvals, xerr = 0, yerr = yerrs)
     fileName = './mobility' + carrierType + '.pdf'
@@ -433,7 +434,7 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierTy
     plt.plot(tempData, anisotropyData, c = 'r')
     fileName = './anisotropy' + carrierType + '.pdf'
     plt.xlabel(xLabel)
-    plt.ylabel(r'$\kappa$'+', Arb. U')
+    plt.ylabel(r'$\kappa$'+' (Arb. U)')
     plt.savefig(fileName)
     plt.clf()
     print("Figure saved as " + fileName)

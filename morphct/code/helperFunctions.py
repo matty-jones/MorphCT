@@ -529,11 +529,11 @@ def writeMorphologyXMLETree(inputDictionary, outputFile):
 
 def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0, checkWrappedPosns = True):
     # Firstly, scale everything by the inverse of the provided sigma value
+    tilt_factors = ["xy", "yz", "xz"]
     if sigma != 1.0:
         inputDictionary = scale(inputDictionary, 1.0 / sigma)
     # Now need to check the positions of the atoms to ensure that everything is correctly contained inside the box
     if checkWrappedPosns is True:
-        tilt_factors = ["xy", "yz", "xz"]
         if any([tilt_factor in inputDictionary.keys() for tilt_factor in tilt_factors]) and\
                 any([inputDictionary[tilt_factor] != 0 for tilt_factor in tilt_factors]):
             print("Can't check atom wrapping for cells with a non-zero tilt factor")
