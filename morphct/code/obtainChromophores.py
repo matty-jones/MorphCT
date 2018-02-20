@@ -47,9 +47,9 @@ class chromophore:
                 for sub_species, rigidBodies in parameterDict['AARigidBodySpecies'].items():
                     if AAMorphologyDict['body'][electronicallyActiveCGSites[0]] in rigidBodies:
                         self.sub_species = sub_species
-                        self.species = parameterDict["chromophore_species"][sub_species]["species"]
-                        self.reorganisation_energy = parameterDict["chromophore_species"][sub_species]["reorganisationEnergy"]
-                        self.VRH_delocalisation = parameterDict["chromophore_species"][sub_species]["VRHDelocalisation"]
+                        self.species = parameterDict["chromophore_species"][self.sub_species]["species"]
+                        self.reorganisation_energy = parameterDict["chromophore_species"][self.sub_species]["reorganisationEnergy"]
+                        self.VRH_delocalisation = parameterDict["chromophore_species"][self.sub_species]["VRHDelocalisation"]
                         break
                 try:
                     self.species
