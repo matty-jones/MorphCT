@@ -1,8 +1,7 @@
 import numpy as np
 import os
 import sys
-sys.path.append('../../code')
-import helperFunctions
+from morphct.code import helperFunctions
 import argparse
 
 def calculateHydrogenPositions(morphologyDict, hydrogensToAdd):
@@ -132,6 +131,11 @@ def find_information():
             'C!': [[2, 1]],
             'CT': [[2, 2],[1, 3], [3, 1]],
             'CP': [[2, 1]]}, 3.55],
+        "BDT-TPD/PCBM":[{'CS':[[2, 1]],
+            'C!': [[2, 1]],
+            'CT': [[2, 2],[1, 3], [3, 1]],
+            'CP': [[2, 1]],
+            'FCT': [[2, 2], [1, 3]]}, 3.55],
         "P3HT/PCBM":[{'CA':[[2, 1]],
             'CT': [[2, 2], [1, 3]],
             'FCA': [[2, 1 ]],
