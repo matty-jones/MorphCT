@@ -425,7 +425,7 @@ def scaleEnergies(chromophoreList, parameterDict):
     # average to the literature value.
     # First, get the energy level data
     chromophore_species = {k: [] for k in parameterDict["chromophore_species"].keys()}  # Dictionary of empty lists
-    chromophore_MO_info = {k: [] for k in parameterDict["chromophore_species"].keys()}  # Same keys, but will use it differently
+    chromophore_MO_info = {k: {} for k in parameterDict["chromophore_species"].keys()}  # Same keys, but will use it differently
     for chromo in chromophoreList:
         chromophore_species[chromo.sub_species].append(chromo.get_mo_energy())
 
