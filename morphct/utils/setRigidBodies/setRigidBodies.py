@@ -1,6 +1,5 @@
 import sys
-sys.path.append('../../code')
-import helperFunctions
+from morphct.code import helperFunctions
 
 
 def splitMolecules(inputDictionary):
