@@ -884,7 +884,7 @@ def createResultsPickle(directory):
     coresList = []
     for fileName in glob.glob(directory + '/KMC/*'):
         try:
-            coresList.append(re.findall("([_])(.*)([\.])", fileName)[0][1])
+            coresList.append(re.findall("([_])(..)([\.])", fileName)[0][1])
         except IndexError:
             pass
     coresList = list(set(coresList))
