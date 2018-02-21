@@ -258,7 +258,7 @@ if __name__ == '__main__':
     pickleFileName = KMCDirectory + '/KMCData_%02d.pickle' % (CPURank)
     with open(pickleFileName, 'rb') as pickleFile:
         jobsToRun = pickle.load(pickleFile)
-    logFile = KMCDirectory + '/KMClog_' + str(CPURank) + '.log'
+    logFile = KMCDirectory + '/KMClog_%02d.log' % (CPURank)
     # Reset the log file
     with open(logFile, 'wb+') as logFileHandle:
         pass
