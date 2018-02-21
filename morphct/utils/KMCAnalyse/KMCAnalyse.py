@@ -876,8 +876,12 @@ def writeCSV(dataDict, directory):
 
 def createResultsPickle(directory):
     coresList = []
-    for core in glob.glob(directory + '/KMC/KMClog_*.log'):
-        coresList.append(re.findall(directory + '/KMC/KMClog_(.*).log', core)[0])
+    for fileName in glob.glob(directory + '/KMC/*'):
+        try:
+            coresList.append(re.findall("([_])(.*)([\.])", fileName)[0][1])
+        except IndexError:
+            pass
+    coresList = list(set(coresList))
     keepList = []
     for core in coresList:
         slot1 = directory + '/KMC/KMCslot1Results_%02d.pickle' % (int(core))
