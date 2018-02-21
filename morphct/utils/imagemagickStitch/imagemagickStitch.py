@@ -10,7 +10,7 @@ def stitchImages(montageDims, imagesToStitch, morphologyName, title):
         title = morphologyName
     try:
         os.remove("./" + title.replace(" ", "_") + ".png")
-    except:
+    except(FileNotFoundError):
         pass
     # Then load all the files
     print("Converting images and adding annotations...")
