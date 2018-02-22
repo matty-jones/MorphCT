@@ -255,10 +255,10 @@ if __name__ == '__main__':
     except:
         pass
     # Load `jobsToRun' which is a list, where each element contains the [carrier.ID, carrier.lifetime, carrier.carrierType]
-    pickleFileName = KMCDirectory + '/KMCData_%02d.pickle' % (CPURank)
+    pickleFileName = KMCDirectory + '/KMC_data_%02d.pickle' % (CPURank)
     with open(pickleFileName, 'rb') as pickleFile:
         jobsToRun = pickle.load(pickleFile)
-    logFile = KMCDirectory + '/KMClog_' + str(CPURank) + '.log'
+    logFile = KMCDirectory + '/KMC_log_%02d.log' % (CPURank)
     # Reset the log file
     with open(logFile, 'wb+') as logFileHandle:
         pass
@@ -351,7 +351,7 @@ if __name__ == '__main__':
                 elapsedTime /= 86400.0
                 timeunits = 'days.'
             elapsedTime = '%.1f' % (float(elapsedTime))
-            helperFunctions.writeToFile(logFile, [str(thisCarrer.carrierType).capitalize() + ' hopped ' + str(thisCarrier.noHops) + ' times, over ' + str(thisCarrier.currentTime) + ' seconds, into image ' + str(thisCarrier.image) + ', for a displacement of ' + str(thisCarrier.displacement) + ', in ' + str(elapsedTime) + ' wall-clock ' + str(timeunits)])
+            helperFunctions.writeToFile(logFile, [str(thisCarrier.carrierType).capitalize() + ' hopped ' + str(thisCarrier.noHops) + ' times, over ' + str(thisCarrier.currentTime) + ' seconds, into image ' + str(thisCarrier.image) + ', for a displacement of ' + str(thisCarrier.displacement) + ', in ' + str(elapsedTime) + ' wall-clock ' + str(timeunits)])
             # Save the pickle file every hour
             if (t2 - saveTime) > 3600:
                 print("Completed", jobNumber, "of", len(jobsToRun), "jobs. Making checkpoint at %3d%%" % (np.round((jobNumber + 1) / float(len(jobsToRun)) * 100)))
