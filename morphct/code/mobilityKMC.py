@@ -48,10 +48,10 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     print("Writing job pickles for each CPU...")
     runningJobs = []
     for procID, jobs in enumerate(jobsList):
-        pickleName = outputDir + '/KMCData_%02d.pickle' % (procID)
+        pickleName = outputDir + '/KMC_data_%02d.pickle' % (procID)
         with open(pickleName, 'wb+') as pickleFile:
             pickle.dump(jobs, pickleFile)
-        print("KMC jobs for procID", procID, "written to KMCData_%02d.pickle" % (procID))
+        print("KMC jobs for procID", procID, "written to KMC_data_%02d.pickle" % (procID))
         # Open the required processes to execute the KMC jobs
         #print('python ' + os.getcwd() + '/code/singleCoreRunMobKMC.py ' + outputDir + ' ' + str(procID) + ' &')
         runningJobs.append(sp.Popen(['python', SINGLE_RUN_MOBKMC_FILE, outputDir, str(procID)]))
@@ -63,7 +63,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         print("Combining outputs...")
         combinedData = {}
         for procID, jobs in enumerate(jobsList):
-            fileName = outputDir + '/KMCResults_%02d.pickle' % (procID)
+            fileName = outputDir + '/KMC_results_%02d.pickle' % (procID)
             # The pickle was repeatedly dumped to, in order to save time.
             # Each dump stream is self-contained, so iteratively unpickle to add the new data.
             with open(fileName, 'rb') as pickleFile:
@@ -74,16 +74,16 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
                     else:
                         combinedData[key] += val
         # Write out the combined data
-        with open(outputDir + '/KMCResults.pickle', 'wb+') as pickleFile:
+        with open(outputDir + '/KMC_results.pickle', 'wb+') as pickleFile:
             pickle.dump(combinedData, pickleFile)
-        print("Complete data written to", outputDir + "/KMCResults.pickle.")
+        print("Complete data written to", outputDir + "/KMC_results.pickle.")
         print("Cleaning up...")
         # Delete any unneeded files
-        for fileName in glob.glob(outputDir + '/KMCResults_*'):
+        for fileName in glob.glob(outputDir + '/KMC_results_*'):
             os.remove(fileName)
-        for fileName in glob.glob(outputDir + '/KMCslot_*'):
+        for fileName in glob.glob(outputDir + '/KMC_slot_*'):
             os.remove(fileName)
-    for fileName in glob.glob(outputDir + '/KMCData*'):
+    for fileName in glob.glob(outputDir + '/KMC_data*'):
         os.remove(fileName)
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
 

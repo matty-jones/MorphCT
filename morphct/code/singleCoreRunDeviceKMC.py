@@ -1514,7 +1514,7 @@ if __name__ == "__main__":
     if timeLimit is not None:
         timeLimit = slurmTimeInS(timeLimit)
 
-    jobsFileName = KMCDirectory + '/KMCData_%02d.pickle' % (CPURank)
+    jobsFileName = KMCDirectory + '/KMC_data_%02d.pickle' % (CPURank)
     deviceDataFileName = KMCDirectory.replace('/KMC', '/code/deviceData.pickle')
 
     with open(deviceDataFileName, 'rb') as pickleFile:
@@ -1525,7 +1525,7 @@ if __name__ == "__main__":
         print("Redirecting log to standard out.")
         logFile = 'stdout'
     else:
-        logFile = KMCDirectory + '/KMClog_' + str(CPURank) + '.log'
+        logFile = KMCDirectory + '/KMC_log_' + str(CPURank) + '.log'
         # Reset the log file
         with open(logFile, 'wb+') as logFileHandle:
             pass

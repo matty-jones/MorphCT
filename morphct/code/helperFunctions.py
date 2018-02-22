@@ -15,7 +15,7 @@ kB = 1.3806488E-23 # m^{2} kg s^{-2} K^{-1}
 hbar = 1.05457173E-34 # m^{2} kg s^{-1}
 
 
-def findIndex(string, character):
+def find_index(string, character):
     '''This function returns the locations of an inputted character in an inputted string'''
     index = 0
     locations = []
@@ -28,14 +28,14 @@ def findIndex(string, character):
     return locations
 
 
-def calculateSeparation(atom1, atom2):
+def calculate_separation(atom1, atom2):
     '''This function calculates the distance between two input points (either as lists or np.arrays)'''
     atom1 = np.array(atom1)
     atom2 = np.array(atom2)
     return np.sqrt(np.sum((atom1 - atom2)**2))
 
 
-def calcCOM(listOfPositions, listOfAtomTypes=None, listOfMasses=None):
+def calc_COM(listOfPositions, listOfAtomTypes=None, listOfMasses=None):
     '''This function calculates the centre of mass of a collection of sites/atoms (listOfPositions) with corresponding type (listOfAtomTypes) or mass (listOfMasses)
     If listOfMasses is not specified, then listOfAtomTypes MUST be.'''
     massWeighted = np.array([0.0, 0.0, 0.0])
@@ -70,7 +70,7 @@ def calcCOM(listOfPositions, listOfAtomTypes=None, listOfMasses=None):
     return massWeighted / float(totalMass)
 
 
-def findAxis(atom1, atom2, normalise=True):
+def find_axis(atom1, atom2, normalise=True):
     '''This function determines the normalised vector from the location of atom1 to atom2. The positions can enter as lists or arrays, but are output as arrays'''
     xSep = atom2[0] - atom1[0]
     ySep = atom2[1] - atom1[1]
@@ -82,12 +82,12 @@ def findAxis(atom1, atom2, normalise=True):
     return axisVector
 
 
-def normaliseVec(vector):
+def normalise_vec(vector):
     '''This function normalises an input vector to unit magnitude'''
     return vector / float(np.sqrt(np.sum(vector)**2))
 
 
-def getRotationMatrix(vector1, vector2):
+def get_rotation_matrix(vector1, vector2):
     '''This function returns the rotation matrix around the origin that maps vector1 to vector 2'''
     crossProduct = np.cross(vector1, vector2)
     sinAngle = np.sqrt(((crossProduct[0]**2) + ((crossProduct[1])**2) + ((crossProduct[2])**2)))
@@ -98,13 +98,13 @@ def getRotationMatrix(vector1, vector2):
     return rotMatrix
 
 
-def parallelSort(list1, list2):
+def parallel_sort(list1, list2):
     '''This function sorts a pair of lists by the first list in ascending order (for example, atom mass and corresponding position can be input, sorted by ascending mass, and the two lists output, where the mass[atom_i] still corresponds to position[atom_i]'''
     list1, list2 = zip(*sorted(zip(list1, list2)))
     return list1, list2
 
 
-def writeCSV(fileName, data):
+def write_CSV(fileName, data):
     '''Writes a CSV file given a 2D array `data' of arbitrary size'''
     with open(fileName, 'w+') as csvFile:
         document = csv.writer(csvFile, delimiter=',')
@@ -113,7 +113,7 @@ def writeCSV(fileName, data):
     print("CSV written to", fileName)
 
 
-def rotationMatrix(vector1, vector2):
+def rotation_matrix(vector1, vector2):
     '''A function to return the rotation matrix around the origin that maps vector1 to vector 2'''
     crossProduct = np.cross(vector1, vector2)
     sinAngle = np.sqrt(((crossProduct[0]**2) + ((crossProduct[1])**2) + ((crossProduct[2])**2)))
@@ -124,7 +124,7 @@ def rotationMatrix(vector1, vector2):
     return rotMatrix
 
 
-def addUnwrappedPositions(inputDictionary):
+def add_unwrapped_positions(inputDictionary):
     '''This function takes a runHoomd.py input dictionary and updates the 'unwrapped_position' key based on the values of the 'position' and 'image' keys'''
     simulationDimensions = [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']]
     inputDictionary['unwrapped_position'] = [0] * len(inputDictionary['position'])
@@ -141,7 +141,7 @@ def addUnwrappedPositions(inputDictionary):
     return inputDictionary
 
 
-def replaceWrappedPositions(inputDictionary):
+def replace_wrapped_positions(inputDictionary):
     '''This function takes a morphCT input dictionary and replaces the 'position' and 'image' keys with the 'unwrapped_position' key and '[0, 0, 0]' respectively.'''
     for atomID, unwrapped_position in enumerate(inputDictionary['unwrapped_position']):
         inputDictionary['position'][atomID] = unwrapped_position
@@ -149,7 +149,7 @@ def replaceWrappedPositions(inputDictionary):
     return inputDictionary
 
 
-def addWrappedPositions(inputDictionary):
+def add_wrapped_positions(inputDictionary):
     '''This function takes a runHoomd.py input dictionary and updates the 'position' and 'image' keys based on the values of the 'unwrapped_position' key'''
     simulationDimensions = [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']]
     inputDictionary['position'] = [0] * len(inputDictionary['unwrapped_position'])
@@ -171,7 +171,7 @@ def addWrappedPositions(inputDictionary):
     return inputDictionary
 
 
-def addMasses(inputDictionary):
+def add_masses(inputDictionary):
     '''This function takes a runHoomd.py input dictionary and updates the 'mass' key based on the values of the 'type' key. Note that more hardcoding is required to add aditional atom types'''
     inputDictionary['mass'] = [1.0] * len(inputDictionary['type'])
     for atomID in range(len(inputDictionary['type'])):
@@ -184,7 +184,7 @@ def addMasses(inputDictionary):
     return inputDictionary
 
 
-def addDiameters(inputDictionary):
+def add_diameters(inputDictionary):
     '''This function takes a runHoomd.py input dictionary and updates the 'diameter' key based on the values of the 'type' key. Note that more hardcoding is required to add aditional atom types'''
     inputDictionary['diameter'] = [1.0] * len(inputDictionary['type'])
     for atomID in range(len(inputDictionary['type'])):
@@ -197,7 +197,7 @@ def addDiameters(inputDictionary):
     return inputDictionary
 
 
-def getTerminatingPositions(currentAtomPosn, bondedAtomPositions, numberOfUnitsToAdd):
+def get_terminating_positions(currentAtomPosn, bondedAtomPositions, numberOfUnitsToAdd):
     # Given a currentAtomPosn and several bondedAtomPositions we can add numberOfUnitsToAdd different terminating units to the currentAtom through a series of geometric checks.
     # First get the vector to the average position of the bonded neighbours
     hydrogenPositions = []
@@ -259,7 +259,7 @@ def getTerminatingPositions(currentAtomPosn, bondedAtomPositions, numberOfUnitsT
     return hydrogenPositions
 
 
-def loadMorphologyXMLETree(xmlPath, sigma=1.0):
+def load_morphology_XML_etree(xmlPath, sigma=1.0):
     print("THIS DOES NOT SUPPORT TILT!!!!!!!!")
     atomProps3DFloat = ['position']
     atomProps3DInt = ['image']
@@ -288,7 +288,7 @@ def loadMorphologyXMLETree(xmlPath, sigma=1.0):
     return atomDictionary
 
 
-def loadMorphologyXML(xmlPath, sigma=1.0):
+def load_morphology_XML(xmlPath, sigma=1.0):
     # XML has SimDims as <box
     # Positions as <position and <image
     # Velocities as <velocity
@@ -416,7 +416,7 @@ def loadMorphologyXML(xmlPath, sigma=1.0):
     return AtomDictionary
 
 
-def loadFFXML(xmlPath, mapping = False):
+def load_FF_XML(xmlPath, mapping = False):
     FFDict = {'lj':[], 'dpd':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[]}
     with open(xmlPath, 'r') as xmlFile:
         xmlData = xmlFile.readlines()
@@ -471,7 +471,7 @@ def loadFFXML(xmlPath, mapping = False):
     return FFDict
 
 
-def checkConstraintNames(AAMorphologyDict):
+def check_constraint_names(AAMorphologyDict):
     # A function that renames the constraints based on the atom types given in the dictionary
     constraintTypes = ['bond', 'angle', 'dihedral', 'improper']
     for constraintType in constraintTypes:
@@ -487,7 +487,7 @@ def checkConstraintNames(AAMorphologyDict):
     return AAMorphologyDict
 
 
-def writeMorphologyXMLETree(inputDictionary, outputFile):
+def write_morphology_XML_etree(inputDictionary, outputFile):
     print("\n \n THIS DOES NOT SUPPORT TILT FACTORS AT ALL!!!!!!!!!!! \n \n")
     print("Checking wrapped positions before writing XML...")
     inputDictionary = checkWrappedPositions(inputDictionary)
@@ -527,7 +527,7 @@ def writeMorphologyXMLETree(inputDictionary, outputFile):
     print("XML file written to", str(outputFile) + "!")
 
 
-def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0, checkWrappedPosns = True):
+def write_morphology_XML(inputDictionary, outputFile, sigma = 1.0, checkWrappedPosns = True):
     # Firstly, scale everything by the inverse of the provided sigma value
     tilt_factors = ["xy", "yz", "xz"]
     if sigma != 1.0:
@@ -611,7 +611,7 @@ def writeMorphologyXML(inputDictionary, outputFile, sigma = 1.0, checkWrappedPos
     print("XML file written to", str(outputFile) + "!")
 
 
-def writeXYZFile(inputDict, outputFile):
+def write_XYZ_file(inputDict, outputFile):
     '''This function takes an input dictionary and converts it to an XYZ for use in DFT calculations'''
     # First line is atom numbers, second line is boiler plate
     rowsToWrite = [str(inputDict['natoms']) + '\n', 'XYZ file generated from XML using helperFunctions.XMLToXYZ\n']
@@ -635,7 +635,7 @@ def writeXYZFile(inputDict, outputFile):
     print("XYZ data written to", str(outputFile) + ".")
 
 
-def incrementAtomIDs(originalInputDictionary, ghostDictionary, increment, modifyGhostDictionary=False):
+def increment_atom_IDs(originalInputDictionary, ghostDictionary, increment, modifyGhostDictionary=False):
     inputDictionary = copy.deepcopy(originalInputDictionary)
     constraintTypes = ['bond', 'angle', 'dihedral', 'improper']
     for constraintType in constraintTypes:
@@ -692,7 +692,7 @@ def centre(inputDictionary, centreOfMass):
     return inputDictionary
 
 
-def checkWrappedPositions(inputDictionary):
+def check_wrapped_positions(inputDictionary):
     atomPositions = np.array(inputDictionary['position'])
     atomImages = np.array(inputDictionary['image'])
     xhi = inputDictionary['lx'] / 2.0
@@ -734,7 +734,7 @@ def checkWrappedPositions(inputDictionary):
     return inputDictionary
 
 
-def getCPUCores():
+def get_CPU_cores():
     # Determine the number of available processors, either by querying the SLURM_NPROCS environment variable, or by using multiprocessing to count the number of visible CPUs.
     try:
         procIDs = list(np.arange(int(os.environ.get('SLURM_NPROCS'))))
@@ -744,7 +744,7 @@ def getCPUCores():
     return procIDs
 
 
-def writeToFile(logFile, stringList, mode='logFile'):
+def write_to_file(logFile, stringList, mode='logFile'):
     if mode == 'outputFile':
         openAs = 'w+'
     else:
@@ -758,7 +758,7 @@ def writeToFile(logFile, stringList, mode='logFile'):
                 logWrite.writelines(line + '\n')
 
 
-def loadPickle(pickleLocation):
+def load_pickle(pickleLocation):
     print("Loading Pickle from", str(pickleLocation) + "...")
     try:
         with open(pickleLocation, 'rb') as pickleFile:
@@ -771,14 +771,14 @@ def loadPickle(pickleLocation):
     return objects[0], objects[1], objects[2], objects[3], objects[4]
 
 
-def writePickle(toPickle, pickleFileName):
+def write_pickle(toPickle, pickleFileName):
     print("Writing pickle file...")
     with open(pickleFileName, 'wb+') as pickleFile:
         pickle.dump(toPickle, pickleFile)
     print("Pickle file written to", pickleFileName)
 
 
-def obtainBondedList(bondList):
+def obtain_bonded_list(bondList):
     # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
     bondedAtoms = {}
     for bond in bondList:
@@ -793,7 +793,7 @@ def obtainBondedList(bondList):
     return bondedAtoms
 
 
-def convertStringToInt(x):
+def convert_string_to_int(x):
     for i in range(len(x)):
         try:
             return int(x[i:])
@@ -802,8 +802,8 @@ def convertStringToInt(x):
     return 99999
 
 
-def fixImages(originalMorphology):
-    def checkBonds(morphology, bondDict):
+def fix_images(originalMorphology):
+    def check_bonds(morphology, bondDict):
         periodicBonds = []
         for bond in morphology['bond']:
             posn1 = np.array(morphology['position'][bond[1]]) + (np.array(morphology['image'][bond[1]]) * np.array([morphology['lx'], morphology['ly'], morphology['lz']]))
@@ -814,13 +814,13 @@ def fixImages(originalMorphology):
                 morphology = moveBondedAtoms(bond[1], morphology, bondDict)
         return morphology
 
-    def zeroOutImages(morphology):
+    def zero_out_images(morphology):
         for atomID, image in enumerate(morphology['image']):
             if image != [0, 0, 0]:
                 morphology['image'][atomID] = [0, 0, 0]
         return morphology
 
-    def getBondDict(morphology):
+    def get_bond_dict(morphology):
         bondDict = {atomID: [] for atomID, atomType in enumerate(morphology['type'])}
         for bond in morphology['bond']:
             #if bond[1] < bond[2]:
@@ -829,7 +829,7 @@ def fixImages(originalMorphology):
             bondDict[bond[2]].append(bond[1])
         return bondDict
 
-    def moveBondedAtoms(centralAtom, morphology, bondDict):
+    def move_bonded_atoms(centralAtom, morphology, bondDict):
         for bondedAtom in bondDict[centralAtom]:
             atom1Posn = morphology['position'][centralAtom]
             atom2Posn = morphology['position'][bondedAtom]
@@ -861,7 +861,8 @@ def fixImages(originalMorphology):
 # ---============================---
 # ---=== KMC HELPER FUNCTIONS ===---
 # ---============================---
-def calculateCarrierHopRate(lambdaij, Tij, deltaEij, prefactor, temp, useVRH=False, rij=0.0, VRHPrefactor=1.0, boltzPen=False):
+def calculate_carrier_hop_rate(lambdaij, Tij, deltaEij, prefactor, temp, useVRH=False, rij=0.0, VRHPrefactor=1.0,
+                               boltz_pen=False):
     # Based on the input parameters, can make this the semiclassical Marcus Hopping Rate Equation, or a more generic Miller Abrahams-based hop
     # Firstly, to prevent divide-by-zero errors:
     if (Tij == 0.0):
@@ -872,7 +873,7 @@ def calculateCarrierHopRate(lambdaij, Tij, deltaEij, prefactor, temp, useVRH=Fal
     if useVRH is True:
         kij *= np.exp(-(VRHPrefactor * rij))
     # Simple Boltzmann energy penalty?
-    if boltzPen is True:
+    if boltz_pen is True:
         # Only apply the penalty if deltaEij is positive
         if deltaEij > 0.0:
             kij *= np.exp(-(deltaEij / (kB * temp)))
@@ -882,7 +883,7 @@ def calculateCarrierHopRate(lambdaij, Tij, deltaEij, prefactor, temp, useVRH=Fal
     return kij
 
 
-def calculateFRETHopRate(prefactor, lifetimeParameter, rF, rij, deltaEij, T):
+def calculate_FRET_hop_rate(prefactor, lifetimeParameter, rF, rij, deltaEij, T):
     # Foerster Transport Hopping Rate Equation
     # The prefactor included here is a bit of a bodge to try and get the mean-free paths of the excitons more in line with the 5nm of experiment. Possible citation: 10.3390/ijms131217019 (they do not do the simulation they just point out some limitations of FRET which assumes point-dipoles which does not necessarily work in all cases)
     if deltaEij <= 0:
@@ -893,14 +894,14 @@ def calculateFRETHopRate(prefactor, lifetimeParameter, rF, rij, deltaEij, T):
     return kFRET
 
 
-def calculateMillerAbrahamsHopRate(prefactor, separation, radius, deltaEij, T):
+def calculate_miller_abrahams_hop_rate(prefactor, separation, radius, deltaEij, T):
     kij = prefactor * np.exp(-2 * separation/radius)
     if deltaEij > 0:
         kij *= np.exp(-deltaEij / (kB * T))
     return kij
 
 
-def determineEventTau(rate, eventType='None', slowestEvent=None, fastestEvent=None, maximumAttempts=None):
+def determine_event_tau(rate, eventType='None', slowestEvent=None, fastestEvent=None, maximumAttempts=None):
     # Use the KMC algorithm to determine the wait time to this hop
     if rate != 0:
         counter = 0
