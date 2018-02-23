@@ -170,6 +170,8 @@ def getORCAJobs(inputDir, parameterDict, procIDs):
             ORCAFilesToRun.pop(popIndex)
     if len(ORCAFilesToRun) == 0:
         return []
+    # Shuffle the ORCAFilesToRun to spread it out over the cores
+    R.shuffle(ORCAFilesToRun)
     # Create a jobslist for each procID
     jobsList = [ORCAFilesToRun[i:i + (int(np.ceil(len(ORCAFilesToRun) / len(procIDs))))] for i in range(0, len(ORCAFilesToRun), int(np.ceil(len(ORCAFilesToRun) / float(len(procIDs)))))]
     return jobsList
@@ -180,8 +182,6 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     inputDir = parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/inputORCA'
     procIDs = parameterDict['procIDs']
     jobsList = getORCAJobs(inputDir, parameterDict, procIDs)
-    # Shuffle the jobsList to spread it out over the cores
-    R.shuffle(jobsList)
     numberOfInputs = sum([len(ORCAFilesToRun) for ORCAFilesToRun in jobsList])
     print("Found", numberOfInputs, "ORCA files to run.")
     if (numberOfInputs > 0):
