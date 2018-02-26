@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 import scipy.stats
-from morphct.code import helperFunctions as hf
+from morphct.code import helper_functions as hf
 from collections import OrderedDict
 try:
     import mpl_toolkits.mplot3d as p3
@@ -56,8 +56,9 @@ def split_carriers_by_type(carrier_data):
                     carrier_data_holes[list_var].append(carrier_data[list_var][carrier_index])
                 elif charge_type == 'electron':
                     carrier_data_electrons[list_var].append(carrier_data[list_var][carrier_index])
-    except:
-        print("Multiple charge carriers not found, assuming donor material and holes only")
+    except KeyError:
+        print("This is an old-style pickle!")
+        print("Multiple charge carriers not found, assuming donor material and holes only.")
         try:
             carrier_data_holes = {'carrier_history_matrix': carrier_data['carrier_history_matrix'],
                                   'seed': carrier_data['seed']}
@@ -171,8 +172,8 @@ def plot_connections(chromophore_list, sim_dims, carrier_history, directory, car
 
     # Set up the color bar.
     plasma = plt.get_cmap('plasma')
-    c_norm = matplotlib.colors.normalize(vmin=vmin, vmax=vmax)
-    scalar_map = cmx.scalar_mappable(norm=c_norm, cmap=plasma)
+    c_norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
+    scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=plasma)
     hopcolors = scalar_map.to_rgba(connections_array[:, 6])
 
     # Set up the intensity for the hops so more travelled paths are more intense
@@ -357,7 +358,7 @@ def plot_anisotropy(carrier_data, directory, sim_dims, carrier_type, plot3D_grap
     if not plot3D_graphs:
         return anisotropy
     print("----------====================----------")
-    print(carrier_type + " charge transport anisotropy calculated as", anisotropy)
+    print(carrier_type.capitalize() + " charge transport anisotropy calculated as", anisotropy)
     print("----------====================----------")
     # Reduce number of plot markers
     fig = plt.gcf()
@@ -410,8 +411,8 @@ def plot_anisotropy(carrier_data, directory, sim_dims, carrier_type, plot3D_grap
         figure_index = '08'
     elif carrier_type == 'electron':
         figure_index = '09'
-    plt.title('anisotropy (' + carrier_type + ')', y=1.1)
-    file_name = directory + '/figures/' + figure_index + '_anisotropy' + carrier_type + '.pdf'
+    plt.title('Anisotropy (' + carrier_type.capitalize() + ')', y=1.1)
+    file_name = directory + '/figures/' + figure_index + '_anisotropy_' + carrier_type + '.pdf'
     plt.savefig(file_name, bbox_inches='tight')
     plt.clf()
     print("Figure saved as", file_name)
@@ -1104,7 +1105,7 @@ def calculate_mobility(directory, current_carrier_type, carrier_data, sim_dims, 
     mobility, mob_error, r_squared = plot_MSD(times, MSDs, time_standard_errors, MSD_standard_errors, directory,
                                               current_carrier_type)
     print("----------====================----------")
-    print(current_carrier_type, "mobility for", directory,
+    print(current_carrier_type.capitalize(), "mobility for", directory,
           "= %.2E +- %.2E cm^{2} V^{-1} s^{-1}" % (mobility, mob_error))
     print("----------====================----------")
     return mobility, mob_error, r_squared, anisotropy
