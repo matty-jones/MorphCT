@@ -10,8 +10,8 @@ import time as T
 
 
 # UNIVERSAL CONSTANTS, DO NOT CHANGE!
-elementaryCharge = 1.60217657E-19 # C
-kB = 1.3806488E-23 # m^{2} kg s^{-2} K^{-1}
+elementary_charge = 1.60217657E-19 # C
+k_B = 1.3806488E-23 # m^{2} kg s^{-2} K^{-1}
 hbar = 1.05457173E-34 # m^{2} kg s^{-1}
 
 
@@ -35,51 +35,51 @@ def calculate_separation(atom1, atom2):
     return np.sqrt(np.sum((atom1 - atom2)**2))
 
 
-def calc_COM(listOfPositions, listOfAtomTypes=None, listOfMasses=None):
+def calc_com(list_of_positions, list_of_atom_types=None, list_of_atom_masses=None):
     '''This function calculates the centre of mass of a collection of sites/atoms (listOfPositions) with corresponding type (listOfAtomTypes) or mass (listOfMasses)
-    If listOfMasses is not specified, then listOfAtomTypes MUST be.'''
-    massWeighted = np.array([0.0, 0.0, 0.0])
-    if listOfMasses is None:
-        listOfMasses = []
-        for atomType in listOfAtomTypes:
+    if list_of_atom_masses is not specified, then list_of_atom_types must be.'''
+    mass_weighted = np.array([0.0, 0.0, 0.0])
+    if list_of_atom_masses is None:
+        list_of_atom_masses = []
+        for atom_type in list_of_atom_types:
             # Masses obtained from nist.gov, for the atoms we are likely to simulate the most.
             # Add in new atoms here if your molecule requires it!
-            if ('BR' in atomType) or ('Br' in atomType) or ('br' in atomType):
-                print("Br 79 being used as the preferred isotope, change in helperFunctions.calcCOM if not!")
-                listOfMasses.append(78.918338)
-            elif ('SI' in atomType) or ('Si' in atomType) or ('si' in atomType):
-                listOfMasses.append(27.976926)
-            elif ('C' in atomType) or ('c' in atomType):
-                listOfMasses.append(12.000000)
-            elif ('H' in atomType) or ('h' in atomType):
-                listOfMasses.append(1.007825)
-            elif ('S' in atomType) or ('s' in atomType):
-                listOfMasses.append(31.972071)
-            elif ('O' in atomType) or ('o' in atomType):
-                listOfMasses.append(15.994914)
-            elif ('N' in atomType) or ('n' in atomType):
-                listOfMasses.append(14.003074)
-            elif (atomType == 'D') or (atomType == 'A'):
-                listOfMasses.append(1.0)
+            if atom_type.lower == 'br':
+                print("Br 79 being used as the preferred isotope, change in helper_functions.calc_com if not!")
+                list_of_atom_masses.append(78.918338)
+            elif atom_type.lower() == 'si':
+                list_of_atom_masses.append(27.976926)
+            elif atom_type.lower() == 'c':
+                list_of_atom_masses.append(12.000000)
+            elif atom_type.lower() == 'h':
+                list_of_atom_masses.append(1.007825)
+            elif atom_type.lower() == 's':
+                list_of_atom_masses.append(31.972071)
+            elif atom_type.lower() == 'o':
+                list_of_atom_masses.append(15.994914)
+            elif atom_type.lower() == 'n':
+                list_of_atom_masses.append(14.003074)
+            elif (atom_type.lower() == 'd') or (atom_type.lower() == 'a'):
+                list_of_atom_masses.append(1.0)
             else:
-                raise SystemError("Unknown atomic mass", atomType, "please hardcode into helperFunctions.calcCOM.")
-    totalMass = np.sum(listOfMasses)
-    for atomID, position in enumerate(listOfPositions):
+                raise system_error("unknown atomic mass", atom_type, "please hardcode into helper_functions.calc_com.")
+    total_mass = np.sum(list_of_atom_masses)
+    for atom_ID, position in enumerate(list_of_positions):
         for axis in range(3):
-            massWeighted[axis] += position[axis] * listOfMasses[atomID]
-    return massWeighted / float(totalMass)
+            mass_weighted[axis] += position[axis] * list_of_atom_masses[atom_ID]
+    return mass_weighted / float(total_mass)
 
 
 def find_axis(atom1, atom2, normalise=True):
     '''This function determines the normalised vector from the location of atom1 to atom2. The positions can enter as lists or arrays, but are output as arrays'''
-    xSep = atom2[0] - atom1[0]
-    ySep = atom2[1] - atom1[1]
-    zSep = atom2[2] - atom1[2]
+    x_sep = atom2[0] - atom1[0]
+    y_sep = atom2[1] - atom1[1]
+    z_sep = atom2[2] - atom1[2]
     if normalise is True:
-        axisVector = normaliseVec(np.array([xSep, ySep, zSep]))
+        axis_vector = normalise_vec(np.array([x_sep, y_sep, z_sep]))
     else:
-        axisVector = np.array([xSep, ySep, zSep])
-    return axisVector
+        axis_vector = np.array([x_sep, y_sep, z_sep])
+    return axis_vector
 
 
 def normalise_vec(vector):
@@ -89,13 +89,13 @@ def normalise_vec(vector):
 
 def get_rotation_matrix(vector1, vector2):
     '''This function returns the rotation matrix around the origin that maps vector1 to vector 2'''
-    crossProduct = np.cross(vector1, vector2)
-    sinAngle = np.sqrt(((crossProduct[0]**2) + ((crossProduct[1])**2) + ((crossProduct[2])**2)))
-    cosAngle = np.dot(vector1, vector2)
-    skewMatrix = np.matrix([[0, -crossProduct[2], crossProduct[1]], [crossProduct[2], 0, -crossProduct[0]], [-crossProduct[1], crossProduct[0], 0]])
-    skewMatrixSquared = skewMatrix * skewMatrix
-    rotMatrix = np.matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]]) + skewMatrix + skewMatrixSquared * ((1 - cosAngle) / (sinAngle**2))
-    return rotMatrix
+    cross_product = np.cross(vector1, vector2)
+    sin_angle = np.sqrt(((cross_product[0]**2) + ((cross_product[1])**2) + ((cross_product[2])**2)))
+    cos_angle = np.dot(vector1, vector2)
+    skew_matrix = np.matrix([[0, -cross_product[2], cross_product[1]], [cross_product[2], 0, -cross_product[0]], [-cross_product[1], cross_product[0], 0]])
+    skew_matrix_squared = skew_matrix * skew_matrix
+    rot_matrix = np.matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]]) + skew_matrix + skew_matrix_squared * ((1 - cos_angle) / (sin_angle**2))
+    return rot_matrix
 
 
 def parallel_sort(list1, list2):
@@ -104,191 +104,189 @@ def parallel_sort(list1, list2):
     return list1, list2
 
 
-def write_CSV(fileName, data):
+def write_CSV(file_name, data, test=False):
     '''Writes a CSV file given a 2D array `data' of arbitrary size'''
-    with open(fileName, 'w+') as csvFile:
-        document = csv.writer(csvFile, delimiter=',')
+    with open(file_name, 'w+') as csv_file:
+        document = csv.writer(csv_file, delimiter=',')
         for row in data:
             document.writerow(list(row))
-    print("CSV written to", fileName)
+    if not test:
+        print("CSV written to", file_name)
 
 
-def rotation_matrix(vector1, vector2):
-    '''A function to return the rotation matrix around the origin that maps vector1 to vector 2'''
-    crossProduct = np.cross(vector1, vector2)
-    sinAngle = np.sqrt(((crossProduct[0]**2) + ((crossProduct[1])**2) + ((crossProduct[2])**2)))
-    cosAngle = np.dot(vector1, vector2)
-    skewMatrix = np.matrix([[0, -crossProduct[2], crossProduct[1]], [crossProduct[2], 0, -crossProduct[0]], [-crossProduct[1], crossProduct[0], 0]])
-    skewMatrixSquared = skewMatrix * skewMatrix
-    rotMatrix = np.matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]]) + skewMatrix + skewMatrixSquared * ((1 - cosAngle) / (sinAngle**2))
-    return rotMatrix
-
-
-def add_unwrapped_positions(inputDictionary):
+def add_unwrapped_positions(input_dictionary):
     '''This function takes a runHoomd.py input dictionary and updates the 'unwrapped_position' key based on the values of the 'position' and 'image' keys'''
-    simulationDimensions = [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']]
-    inputDictionary['unwrapped_position'] = [0] * len(inputDictionary['position'])
-    for i in range(len(inputDictionary['position'])):
-        position = inputDictionary['position'][i]
-        if len(inputDictionary['image']) > 0:
-            image = inputDictionary['image'][i]
+    simulation_dimensions = [input_dictionary['lx'], input_dictionary['ly'], input_dictionary['lz']]
+    input_dictionary['unwrapped_position'] = [0] * len(input_dictionary['position'])
+    for i in range(len(input_dictionary['position'])):
+        position = input_dictionary['position'][i]
+        if len(input_dictionary['image']) > 0:
+            image = input_dictionary['image'][i]
         else:
             image = [0, 0, 0]
-        unwrappedPosition = []
+        unwrapped_position = []
         for axis in range(len(image)):
-            unwrappedPosition.append((image[axis] * simulationDimensions[axis]) + position[axis])
-        inputDictionary['unwrapped_position'][i] = unwrappedPosition
-    return inputDictionary
+            unwrapped_position.append((image[axis] * simulation_dimensions[axis]) + position[axis])
+        input_dictionary['unwrapped_position'][i] = unwrapped_position
+    return input_dictionary
 
 
-def replace_wrapped_positions(inputDictionary):
-    '''This function takes a morphCT input dictionary and replaces the 'position' and 'image' keys with the 'unwrapped_position' key and '[0, 0, 0]' respectively.'''
-    for atomID, unwrapped_position in enumerate(inputDictionary['unwrapped_position']):
-        inputDictionary['position'][atomID] = unwrapped_position
-        inputDictionary['image'][atomID] = [0, 0, 0]
-    return inputDictionary
+def replace_wrapped_positions(input_dictionary):
+    '''This function takes a MorphCT input dictionary and replaces the 'position' and 'image' keys with the 'unwrapped_position' key and '[0, 0, 0]' respectively.'''
+    for atom_ID, unwrapped_position in enumerate(input_dictionary['unwrapped_position']):
+        input_dictionary['position'][atom_ID] = unwrapped_position
+        input_dictionary['image'][atom_ID] = [0, 0, 0]
+    return input_dictionary
 
 
-def add_wrapped_positions(inputDictionary):
+def add_wrapped_positions(input_dictionary):
     '''This function takes a runHoomd.py input dictionary and updates the 'position' and 'image' keys based on the values of the 'unwrapped_position' key'''
-    simulationDimensions = [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']]
-    inputDictionary['position'] = [0] * len(inputDictionary['unwrapped_position'])
-    inputDictionary['image'] = [0] * len(inputDictionary['unwrapped_position'])
-    for atomID in range(len(inputDictionary['unwrapped_position'])):
-        position = copy.deepcopy(inputDictionary['unwrapped_position'][atomID])
-        imageCoords = [0, 0, 0]
+    simulation_dimensions = [input_dictionary['lx'], input_dictionary['ly'], input_dictionary['lz']]
+    input_dictionary['position'] = [0] * len(input_dictionary['unwrapped_position'])
+    input_dictionary['image'] = [0] * len(input_dictionary['unwrapped_position'])
+    for atom_ID in range(len(input_dictionary['unwrapped_position'])):
+        position = copy.deepcopy(input_dictionary['unwrapped_position'][atom_ID])
+        image_coords = [0, 0, 0]
         for axis in range(len(position)):
-            if position[axis] > (simulationDimensions[axis] / 2.0):
-                while position[axis] > (simulationDimensions[axis] / 2.0):
-                    imageCoords[axis] += 1
-                    position[axis] -= simulationDimensions[axis]
-            elif position[axis] < -(simulationDimensions[axis] / 2.0):
-                while position[axis] < -(simulationDimensions[axis] / 2.0):
-                    imageCoords[axis] -= 1
-                    position[axis] += simulationDimensions[axis]
-        inputDictionary['position'][atomID] = position
-        inputDictionary['image'][atomID] = imageCoords
-    return inputDictionary
+            if position[axis] > (simulation_dimensions[axis] / 2.0):
+                while position[axis] > (simulation_dimensions[axis] / 2.0):
+                    image_coords[axis] += 1
+                    position[axis] -= simulation_dimensions[axis]
+            elif position[axis] < -(simulation_dimensions[axis] / 2.0):
+                while position[axis] < -(simulation_dimensions[axis] / 2.0):
+                    image_coords[axis] -= 1
+                    position[axis] += simulation_dimensions[axis]
+        input_dictionary['position'][atom_ID] = position
+        input_dictionary['image'][atom_ID] = image_coords
+    return input_dictionary
 
 
-def add_masses(inputDictionary):
+def add_masses(input_dictionary):
     '''This function takes a runHoomd.py input dictionary and updates the 'mass' key based on the values of the 'type' key. Note that more hardcoding is required to add aditional atom types'''
-    inputDictionary['mass'] = [1.0] * len(inputDictionary['type'])
-    for atomID in range(len(inputDictionary['type'])):
-        if 'H' in inputDictionary['type'][atomID]:
-            inputDictionary['mass'][atomID] = 1.00794
-        elif 'C' in inputDictionary['type'][atomID]:
-            inputDictionary['mass'][atomID] = 12.0107
-        elif 'S' in inputDictionary['type'][atomID]:
-            inputDictionary['mass'][atomID] = 32.0660
-    return inputDictionary
+    input_dictionary['mass'] = [1.0] * len(input_dictionary['type'])
+    for atom_ID in range(len(input_dictionary['type'])):
+        if 'H' in input_dictionary['type'][atom_ID]:
+            input_dictionary['mass'][atom_ID] = 1.007825
+        elif 'C' in input_dictionary['type'][atom_ID]:
+            input_dictionary['mass'][atom_ID] = 12.00000
+        elif 'S' in input_dictionary['type'][atom_ID]:
+            input_dictionary['mass'][atom_ID] = 31.972071
+        elif 'O' in input_dictionary['type'][atom_ID]:
+            input_dictionary['mass'][atom_ID] = 15.994914
+        elif 'N' in input_dictionary['type'][atom_ID]:
+            input_dictionary['mass'][atom_ID] = 14.003074
+    return input_dictionary
 
 
-def add_diameters(inputDictionary):
-    '''This function takes a runHoomd.py input dictionary and updates the 'diameter' key based on the values of the 'type' key. Note that more hardcoding is required to add aditional atom types'''
-    inputDictionary['diameter'] = [1.0] * len(inputDictionary['type'])
-    for atomID in range(len(inputDictionary['type'])):
-        if 'H' in inputDictionary['type'][atomID]:
-            inputDictionary['diameter'][atomID] = 0.53
-        elif 'C' in inputDictionary['type'][atomID]:
-            inputDictionary['diameter'][atomID] = 0.67
-        elif 'S' in inputDictionary['type'][atomID]:
-            inputDictionary['diameter'][atomID] = 0.88
-    return inputDictionary
+def add_diameters(input_dictionary):
+    '''This function takes a runHoomd.py input dictionary and updates the 'diameter' key based on the values of the 'type' key. Values are given in A. Note that more hardcoding is required to add aditional atom types'''
+    input_dictionary['diameter'] = [1.0] * len(input_dictionary['type'])
+    for atom_ID in range(len(input_dictionary['type'])):
+        if 'H' in input_dictionary['type'][atom_ID]:
+            input_dictionary['diameter'][atom_ID] = 1.200
+        elif 'C' in input_dictionary['type'][atom_ID]:
+            input_dictionary['diameter'][atom_ID] = 1.700
+        elif 'S' in input_dictionary['type'][atom_ID]:
+            input_dictionary['diameter'][atom_ID] = 1.800
+        elif 'O' in input_dictionary['type'][atom_ID]:
+            input_dictionary['diameter'][atom_ID] = 1.520
+        elif 'N' in input_dictionary['type'][atom_ID]:
+            input_dictionary['diameter'][atom_ID] = 1.550
+    return input_dictionary
 
 
-def get_terminating_positions(currentAtomPosn, bondedAtomPositions, numberOfUnitsToAdd):
+def get_terminating_positions(current_atom_posn, bonded_atom_positions, number_of_units_to_add):
     # Given a currentAtomPosn and several bondedAtomPositions we can add numberOfUnitsToAdd different terminating units to the currentAtom through a series of geometric checks.
     # First get the vector to the average position of the bonded neighbours
-    hydrogenPositions = []
-    averagePositionOfBondedAtoms = np.array([0.0, 0.0, 0.0])
-    for bondedAtomPosn in bondedAtomPositions:
-        bondVector = np.array(bondedAtomPosn) - currentAtomPosn
-        bondVector /= np.linalg.norm(bondVector)
-        averagePositionOfBondedAtoms += bondVector
-    [x, y, z] = currentAtomPosn + (-1.06 * (averagePositionOfBondedAtoms / np.linalg.norm(averagePositionOfBondedAtoms)))
-    if numberOfUnitsToAdd == 1:
+    hydrogen_positions = []
+    average_position_of_bonded_atoms = np.array([0.0, 0.0, 0.0])
+    for bonded_atom_posn in bonded_atom_positions:
+        bond_vector = np.array(bonded_atom_posn) - current_atom_posn
+        bond_vector /= np.linalg.norm(bond_vector)
+        average_position_of_bonded_atoms += bond_vector
+    [x, y, z] = current_atom_posn + (-1.06 * (average_position_of_bonded_atoms / np.linalg.norm(average_position_of_bonded_atoms)))
+    if number_of_units_to_add == 1:
         # Easy, this is the perylene code
         # Simply reverse the bonded vector and make it the hydrogen position at a distance of 1.06 angstroems
-        hydrogenPositions.append(np.array([x, y, z]))
+        hydrogen_positions.append(np.array([x, y, z]))
     # Initial position for all hydrogens
-    elif numberOfUnitsToAdd == 2:
+    elif number_of_units_to_add == 2:
         # As above (to get the right plane), but then rotated +(109.5/2) degrees and -(109.5/2) degrees around the bonding axis
-        rotationAxis = np.array(bondedAtomPositions[0]) - np.array(bondedAtomPositions[-1])
-        rotationAxis /= np.linalg.norm(rotationAxis)
+        rotation_axis = np.array(bonded_atom_positions[0]) - np.array(bonded_atom_positions[-1])
+        rotation_axis /= np.linalg.norm(rotation_axis)
         # Rotation matrix calculations from: http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
         # The array that describes the 3D rotation of (x, y, z) around the point (a, b, c) through
         # the unit axis <u, v, w> by the angle theta is given by:
         # [ (a(v^2 + w^2) - u(bv + cw - ux - vy - wz))(1 - cos(theta)) + x*cos(theta) + (-cv + bw - wy + vz)sin(theta),
         #   (b(u^2 + w^2) - v(au + cw - ux - vy - wz))(1 - cos(theta)) + y*cos(theta) + (cu - aw + wx - uz)sin(theta),
         #   (c(u^2 + v^2) - w(au + bv - ux - vy - wz))(1 - cos(theta)) + z*cos(theta) + (-bu + av - vx + uy)sin(theta) ]
-        [a, b, c] = currentAtomPosn
-        [u, v, w] = rotationAxis
+        [a, b, c] = current_atom_posn
+        [u, v, w] = rotation_axis
         for theta in [(109.5 / 2.0) * (np.pi / 180.0), -(109.5 / 2.0) * (np.pi / 180.0)]:
-            newPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
+            new_position = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
                            (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (y * np.cos(theta)) + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
                            (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
-            hydrogenPositions.append(newPosition)
-    elif numberOfUnitsToAdd == 3:
+            hydrogen_positions.append(new_position)
+    elif number_of_units_to_add == 3:
         # As for one (to get the right side of the bonded atom), rotate the first one up by 70.5 (180 - 109.5) and then rotate around by 109.5 degrees for the other two
         # The first hydrogen can be rotated around any axis perpendicular to the only bond present
-        axisToBond = currentAtomPosn - np.array(bondedAtomPositions[0])
+        axis_to_bond = current_atom_posn - np.array(bonded_atom_positions[0])
         # Now find one of the set of vectors [i, j, k] perpendicular to this one so we can place the first hydrogen.
         # Do this by setting i = j = 1 and solve for k (given that currentAtomPosn[0]*i + currentAtomPosn[1]*j + currentAtomPosn[2]*k = 0)
-        firstHydrogenRotationAxis = np.array([1, 1, -(axisToBond[0] + axisToBond[1])/axisToBond[2]])
-        firstHydrogenRotationAxis /= np.linalg.norm(firstHydrogenRotationAxis)
+        first_hydrogen_rotation_axis = np.array([1, 1, -(axis_to_bond[0] + axis_to_bond[1])/axis_to_bond[2]])
+        first_hydrogen_rotation_axis /= np.linalg.norm(first_hydrogen_rotation_axis)
 
-        [a, b, c] = currentAtomPosn
-        [u, v, w] = firstHydrogenRotationAxis
+        [a, b, c] = current_atom_posn
+        [u, v, w] = first_hydrogen_rotation_axis
         # First hydrogen
         theta = 70.5 * np.pi/180.0
-        newPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
+        new_position = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
                            (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (y * np.cos(theta)) + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
                            (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
-        hydrogenPositions.append(newPosition)
+        hydrogen_positions.append(new_position)
         # Second and third hydrogens
         # Rotate these from the newPosition +/-120 degrees around the vector axisToBond from the position currentAtomPosn - axisToBond
-        [x, y, z] = newPosition
-        [a, b, c] = currentAtomPosn + (np.cos(theta) * axisToBond)
-        [u, v, w] = ((np.cos(theta) * axisToBond) / np.linalg.norm(np.cos(theta) * axisToBond))
+        [x, y, z] = new_position
+        [a, b, c] = current_atom_posn + (np.cos(theta) * axis_to_bond)
+        [u, v, w] = ((np.cos(theta) * axis_to_bond) / np.linalg.norm(np.cos(theta) * axis_to_bond))
         for theta in [120 * (np.pi / 180.0), -120 * (np.pi / 180.0)]:
-            newHydrogenPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
+            new_hydrogen_position = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
                                (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (y * np.cos(theta)) + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
                                (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
-            hydrogenPositions.append(newHydrogenPosition)
-    return hydrogenPositions
+            hydrogen_positions.append(new_hydrogen_position)
+    return hydrogen_positions
 
 
-def load_morphology_XML_etree(xmlPath, sigma=1.0):
+def load_morphology_XML_etree(xml_path, sigma=1.0):
     print("THIS DOES NOT SUPPORT TILT!!!!!!!!")
-    atomProps3DFloat = ['position']
-    atomProps3DInt = ['image']
-    atomPropsInt = ['body']
-    atomPropsFloat = ['mass', 'diameter', 'charge']
-    atomPropsStr = ['type']
-    constraintProps = ['bond', 'angle', 'dihedral', 'improper']
-    atomDictionary = {}
-    with open(xmlPath, 'r') as xmlFileName:
-        xmlFile = ET.parse(xmlFileName)
-    morphologyConfig = xmlFile.getroot()[-1]
-    for axis, systemDim in morphologyConfig.find('box').attrib.items():
-        atomDictionary[axis] = float(systemDim)
-    for key in atomPropsInt:
-        atomDictionary[key] = list(map(int, morphologyConfig.find(key).text.split('\n')[1:-1]))
-    for key in atomPropsFloat:
-        atomDictionary[key] = list(map(float, morphologyConfig.find(key).text.split('\n')[1:-1]))
-    for key in atomPropsStr:
-        atomDictionary[key] = morphologyConfig.find(key).text.split('\n')[1:-1]
-    for key in atomProps3DInt:
-        atomDictionary[key] = [list(map(int, x.split(' '))) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
-    for key in atomProps3DFloat:
-        atomDictionary[key] = [list(np.array(list(map(float, x.split(' ')))) * sigma) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
-    for key in constraintProps:
-        atomDictionary[key] = [[x.split(' ')[0]] + list(map(int, x.split(' ')[1:])) for x in morphologyConfig.find(key).text.split('\n')[1:-1]]
-    return atomDictionary
+    atom_Props3D_float = ['position']
+    atom_Props3D_int = ['image']
+    atom_props_int = ['body']
+    atom_props_float = ['mass', 'diameter', 'charge']
+    atom_props_str = ['type']
+    constraint_props = ['bond', 'angle', 'dihedral', 'improper']
+    atom_dictionary = {}
+    with open(xml_path, 'r') as xml_file_name:
+        xml_file = ET.parse(xml_file_name)
+    morphology_config = xml_file.getroot()[-1]
+    for axis, system_dim in morphology_config.find('box').attrib.items():
+        atom_dictionary[axis] = float(system_dim)
+    for key in atom_props_int:
+        atom_dictionary[key] = list(map(int, morphology_config.find(key).text.split('\n')[1:-1]))
+    for key in atom_props_float:
+        atom_dictionary[key] = list(map(float, morphology_config.find(key).text.split('\n')[1:-1]))
+    for key in atom_props_str:
+        atom_dictionary[key] = morphology_config.find(key).text.split('\n')[1:-1]
+    for key in atom_Props3D_int:
+        atom_dictionary[key] = [list(map(int, x.split(' '))) for x in morphology_config.find(key).text.split('\n')[1:-1]]
+    for key in atom_Props3D_float:
+        atom_dictionary[key] = [list(np.array(list(map(float, x.split(' ')))) * sigma) for x in morphology_config.find(key).text.split('\n')[1:-1]]
+    for key in constraint_props:
+        atom_dictionary[key] = [[x.split(' ')[0]] + list(map(int, x.split(' ')[1:])) for x in morphology_config.find(key).text.split('\n')[1:-1]]
+    return atom_dictionary
 
 
-def load_morphology_XML(xmlPath, sigma=1.0):
+def load_morphology_XML(xml_path, sigma=1.0):
     # XML has SimDims as <box
     # Positions as <position and <image
     # Velocities as <velocity
@@ -302,370 +300,370 @@ def load_morphology_XML(xmlPath, sigma=1.0):
     # Improper as <improper (usually none in xml)
     # Charge as <charge
     # Set default tilts so when we use simdims later they exisit always
-    AtomDictionary = {'position': [], 'image': [], 'mass': [], 'diameter': [],
+    atom_dictionary = {'position': [], 'image': [], 'mass': [], 'diameter': [],
                       'type': [], 'body': [], 'bond': [], 'angle': [],
                       'dihedral': [], 'improper': [], 'charge': [], 'xy': 0.0,
                       'xz': 0.0, 'yz':0.0}
     record = False
-    with open(xmlPath, 'r') as xmlFile:
-        xmlData = xmlFile.readlines()
-        for line in xmlData:
+    with open(xml_path, 'r') as xml_file:
+        xml_data = xml_file.readlines()
+        for line in xml_data:
             if ('</' in line) or ('<!--' in line):
                 record = False
             elif ('<configuration' in line) or ('<box' in line):
                 # Get configuration data from this line (timestep, natoms etc)
-                splitLine = line.split(' ')
-                for i in range(1, len(splitLine)):
-                    equalsLoc = findIndex(splitLine[i], '=')
-                    if (equalsLoc is None) or ('units' in splitLine[i]):
+                split_line = line.split(' ')
+                for i in range(1, len(split_line)):
+                    equals_loc = find_index(split_line[i], '=')
+                    if (equals_loc is None) or ('units' in split_line[i]):
                         # Skip any elements without equals or to do with the distance units
                         continue
-                    quotationLoc = findIndex(splitLine[i], '"')
-                    if ('.' in splitLine[i][quotationLoc[0] + 1:quotationLoc[1]]):
+                    quotation_loc = find_index(split_line[i], '"')
+                    if ('.' in split_line[i][quotation_loc[0] + 1:quotation_loc[1]]):
                         # Catch float in the value (excludes the = and quotation marks)
-                        AtomDictionary[splitLine[i][:equalsLoc[0]].lower()] = float(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
+                        atom_dictionary[split_line[i][:equals_loc[0]].lower()] = float(split_line[i][quotation_loc[0] + 1:quotation_loc[1]])
                     else:
-                        AtomDictionary[splitLine[i][:equalsLoc[0]].lower()] = int(splitLine[i][quotationLoc[0] + 1:quotationLoc[1]])
+                        atom_dictionary[split_line[i][:equals_loc[0]].lower()] = int(split_line[i][quotation_loc[0] + 1:quotation_loc[1]])
             elif ('<position' in line):
                 record = True
-                recordType = 'position'
+                record_type = 'position'
                 continue
             elif ('<image' in line):
                 record = True
-                recordType = 'image'
+                record_type = 'image'
                 continue
             elif ('<mass' in line):
                 record = True
-                recordType = 'mass'
+                record_type = 'mass'
                 continue
             elif ('<diameter' in line):
                 record = True
-                recordType = 'diameter'
+                record_type = 'diameter'
                 continue
             elif ('<type' in line):
                 record = True
-                recordType = 'type'
+                record_type = 'type'
                 continue
             elif ('<body' in line):
                 record = True
-                recordType = 'body'
+                record_type = 'body'
                 continue
             elif ('<bond' in line) and ('_coeff' not in line):
                 record = True
-                recordType = 'bond'
+                record_type = 'bond'
                 continue
             elif ('<angle' in line) and ('_coeff' not in line):
                 record = True
-                recordType = 'angle'
+                record_type = 'angle'
                 continue
             elif ('<dihedral' in line) and ('_coeff' not in line):
                 record = True
-                recordType = 'dihedral'
+                record_type = 'dihedral'
                 continue
             elif ('<improper' in line) and ('_coeff' not in line):
                 record = True
-                recordType = 'improper'
+                record_type = 'improper'
                 continue
             elif ('<charge' in line):
                 record = True
-                recordType = 'charge'
+                record_type = 'charge'
                 continue
             # Now we know what the variable is, append it to the dictionary data
             if (record is True):
                 # Mbuild outputs properties that are split by \t, so do a bit of jiggery pokery to allow us to interpret both
-                splitLine = ' '.join(line.split('\t')).split(' ')
+                split_line = ' '.join(line.split('\t')).split(' ')
                 # Remove the "\n"
-                splitLine[-1] = splitLine[-1][:-1]
-                if (recordType == 'position'):
+                split_line[-1] = split_line[-1][:-1]
+                if (record_type == 'position'):
                     # NOTE: VELOCITIES ARE NOT NORMALISED IN THE MORPHOLOGY FILE...DO THEY NEED TO BE SCALED BY SIGMA OR NOT? CURRENTLY THEY ARE.
                     # Write to dictionary as floats scaled by sigma
-                    if (len(splitLine) == 1):
-                        AtomDictionary[recordType].append(float(splitLine[0]))
+                    if (len(split_line) == 1):
+                        atom_dictionary[record_type].append(float(split_line[0]))
                         continue
-                    for i in range(len(splitLine)):
-                        splitLine[i] = float(splitLine[i])
-                    AtomDictionary[recordType].append(splitLine)
-                elif (recordType == 'mass') or (recordType == 'diameter') or (recordType == 'charge'):
+                    for i in range(len(split_line)):
+                        split_line[i] = float(split_line[i])
+                    atom_dictionary[record_type].append(split_line)
+                elif (record_type == 'mass') or (record_type == 'diameter') or (record_type == 'charge'):
                     # Write to dictionary as floats
-                    if (len(splitLine) == 1):
-                        AtomDictionary[recordType].append(float(splitLine[0]))
+                    if (len(split_line) == 1):
+                        atom_dictionary[record_type].append(float(split_line[0]))
                         continue
-                    for i in range(len(splitLine)):
-                        splitLine[i] = float(splitLine[i])
-                    AtomDictionary[recordType].append(splitLine)
-                elif (recordType == 'image') or (recordType == 'body'):
+                    for i in range(len(split_line)):
+                        split_line[i] = float(split_line[i])
+                    atom_dictionary[record_type].append(split_line)
+                elif (record_type == 'image') or (record_type == 'body'):
                     # Write to dictionary as int
-                    if (len(splitLine) == 1):
-                        AtomDictionary[recordType].append(int(splitLine[0]))
+                    if (len(split_line) == 1):
+                        atom_dictionary[record_type].append(int(split_line[0]))
                         continue
-                    for i in range(len(splitLine)):
-                        splitLine[i] = int(splitLine[i])
-                    AtomDictionary[recordType].append(splitLine)
-                elif (recordType == 'type'):
+                    for i in range(len(split_line)):
+                        split_line[i] = int(split_line[i])
+                    atom_dictionary[record_type].append(split_line)
+                elif (record_type == 'type'):
                     # Write to dictionary as str
-                    AtomDictionary[recordType].append(str(splitLine[0]))
+                    atom_dictionary[record_type].append(str(split_line[0]))
                 else:
                     #  (recordType == 'bond') or (recordType == 'angle') or (recordType == 'dihedral') or (recordType == 'improper')
                     # Write to dictionary as combination
-                    splitLine[0] = str(splitLine[0])
-                    for i in range(1, len(splitLine)):
-                        splitLine[i] = int(splitLine[i])
-                    AtomDictionary[recordType].append(splitLine)
+                    split_line[0] = str(split_line[0])
+                    for i in range(1, len(split_line)):
+                        split_line[i] = int(split_line[i])
+                    atom_dictionary[record_type].append(split_line)
     if sigma != 1.0:
-        AtomDictionary = scale(AtomDictionary, sigma)
-    return AtomDictionary
+        atom_dictionary = scale(atom_dictionary, sigma)
+    return atom_dictionary
 
 
-def load_FF_XML(xmlPath, mapping = False):
-    FFDict = {'lj':[], 'dpd':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[]}
-    with open(xmlPath, 'r') as xmlFile:
-        xmlData = xmlFile.readlines()
-        for line in xmlData:
+def load_FF_XML(xml_path, mapping = False):
+    FF_dict = {'lj':[], 'dpd':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[]}
+    with open(xml_path, 'r') as xml_file:
+        xml_data = xml_file.readlines()
+        for line in xml_data:
             if ('</' in line):
                 record = False
             elif ('<lj' in line):
                 record = True
-                recordType = 'lj'
+                record_type = 'lj'
                 continue
             elif ('<dpd' in line):
                 record = True
-                recordType = 'dpd'
+                record_type = 'dpd'
                 continue
             elif ('<bond' in line):
                 record = True
-                recordType = 'bond'
+                record_type = 'bond'
                 continue
             elif ('<angle' in line):
                 record = True
-                recordType = 'angle'
+                record_type = 'angle'
                 continue
             elif ('<dihedral' in line):
                 record = True
-                recordType = 'dihedral'
+                record_type = 'dihedral'
                 continue
             elif ('<improper' in line):
                 record = True
-                recordType = 'improper'
+                record_type = 'improper'
                 continue
             # Now we know what the variable is, append it to the dictionary data
             if (record is True):
                 # Write to dictionary as combination
-                splitLine = line.split(' ')
+                split_line = line.split(' ')
                 # Remove the "\n"
-                splitLine[-1] = splitLine[-1][:-1]
-                splitLine[0] = str(splitLine[0])
-                for i in range(1, len(splitLine)):
-                    splitLine[i] = float(splitLine[i])
-                FFDict[recordType].append(splitLine)
+                split_line[-1] = split_line[-1][:-1]
+                split_line[0] = str(split_line[0])
+                for i in range(1, len(split_line)):
+                    split_line[i] = float(split_line[i])
+                FF_dict[record_type].append(split_line)
     # Now remap the names of the constraints if any mappings have been specified
     if mapping is not False:
-        for constraintType in list(FFDict.keys()):
-            for index, constraint in enumerate(FFDict[constraintType]):
+        for constraint_type in list(FF_dict.keys()):
+            for index, constraint in enumerate(FF_dict[constraint_type]):
                 # Split the constraint name up based on each atom type
-                constraintName = copy.deepcopy(constraint[0].split('-'))
+                constraint_name = copy.deepcopy(constraint[0].split('-'))
                 # Remap each atom
-                for atomLoc, atomType in enumerate(constraintName):
-                    constraintName[atomLoc] = mapping[atomType]
+                for atom_loc, atom_type in enumerate(constraint_name):
+                    constraint_name[atom_loc] = mapping[atom_type]
                 # Apply the mapping to the FFDict
-                FFDict[constraintType][index][0] = '-'.join(constraintName)
-    return FFDict
+                FF_dict[constraint_type][index][0] = '-'.join(constraint_name)
+    return FF_dict
 
 
-def check_constraint_names(AAMorphologyDict):
+def check_constraint_names(AA_morphology_dict):
     # A function that renames the constraints based on the atom types given in the dictionary
-    constraintTypes = ['bond', 'angle', 'dihedral', 'improper']
-    for constraintType in constraintTypes:
-        for constraintID, constraint in enumerate(AAMorphologyDict[constraintType]):
-            newConstraintName = ""
+    constraint_types = ['bond', 'angle', 'dihedral', 'improper']
+    for constraint_type in constraint_types:
+        for constraint_ID, constraint in enumerate(AA_morphology_dict[constraint_type]):
+            new_constraint_name = ""
             # Iterate through the atomIDs and update the constraint name based on the types
-            for atomID in constraint[1:]:
-                newConstraintName += AAMorphologyDict['type'][atomID]
-                newConstraintName += "-"
+            for atom_ID in constraint[1:]:
+                new_constraint_name += AA_morphology_dict['type'][atom_ID]
+                new_constraint_name += "-"
             # Update the dict if the name has changed
-            if (constraint[0] != newConstraintName[:-1]):
-                AAMorphologyDict[constraintType][constraintID][0] = newConstraintName[:-1]
-    return AAMorphologyDict
+            if (constraint[0] != new_constraint_name[:-1]):
+                AA_morphology_dict[constraint_type][constraint_ID][0] = new_constraint_name[:-1]
+    return AA_morphology_dict
 
 
-def write_morphology_XML_etree(inputDictionary, outputFile):
+def write_morphology_XML_etree(input_dictionary, output_file):
     print("\n \n THIS DOES NOT SUPPORT TILT FACTORS AT ALL!!!!!!!!!!! \n \n")
     print("Checking wrapped positions before writing XML...")
-    inputDictionary = checkWrappedPositions(inputDictionary)
-    systemProps = ['box']
-    atomProps3D = ['position', 'image']
-    atomProps = ['mass', 'diameter', 'type', 'body', 'charge']
-    constraintProps = ['bond', 'angle', 'dihedral', 'improper']
-    root = ET.Element('hoomd_xml', version="1.5")
+    input_dictionary = check_wrapped_positions(input_dictionary)
+    system_props = ['box']
+    atom_Props3D = ['position', 'image']
+    atom_props = ['mass', 'diameter', 'type', 'body', 'charge']
+    constraint_props = ['bond', 'angle', 'dihedral', 'improper']
+    root = ET.element('hoomd_xml', version="1.5")
     root.text = '\n'
-    config = ET.Element('configuration', time_step=str(inputDictionary['time_step']), dimensions="3", natoms=str(inputDictionary['natoms']))
+    config = ET.element('configuration', time_step=str(input_dictionary['time_step']), dimensions="3", natoms=str(input_dictionary['natoms']))
     config.text = '\n'
     config.tail = '\n'
-    for element in systemProps + atomProps3D + atomProps + constraintProps:
-        ET.SubElement(config, element)
+    for element in system_props + atom_props3D + atom_props + constraint_props:
+        ET.sub_element(config, element)
         config[-1].text = '\n'
         config[-1].tail = '\n'
     for axis in ['lx', 'ly', 'lz']:
-        config.find('box').attrib[axis] = str(inputDictionary[axis])
+        config.find('box').attrib[axis] = str(input_dictionary[axis])
     for axis in ['xy', 'xz', 'yz']:
         config.find('box').attrib[axis] = str(0)
     config.find('box').text = ""
-    config.attrib['natoms'] = str(inputDictionary['natoms'])
-    for atomID, atomType in enumerate(inputDictionary['type']):
-        for atomProp3D in atomProps3D:
-            config.find(atomProp3D).text += ' '.join([str(x) for x in inputDictionary[atomProp3D][atomID]]) + '\n'
-            config.find(atomProp3D).attrib['num'] = str(len(inputDictionary[atomProp3D]))
-        for atomProp in atomProps:
-            config.find(atomProp).text += str(inputDictionary[atomProp][atomID]) + '\n'
-            config.find(atomProp).attrib['num'] = str(len(inputDictionary[atomProp]))
-    for constraintType in constraintProps:
-        for constraintID, constraint in enumerate(inputDictionary[constraintType]):
-            config.find(constraintType).text += ' '.join([str(x) for x in inputDictionary[constraintType][constraintID]]) + '\n'
-        config.find(constraintType).attrib['num'] = str(len(inputDictionary[constraintType]))
+    config.attrib['natoms'] = str(input_dictionary['natoms'])
+    for atom_ID, atom_type in enumerate(input_dictionary['type']):
+        for atom_Prop3D in atom_Props3D:
+            config.find(atom_Prop3D).text += ' '.join([str(x) for x in input_dictionary[atom_Prop3D][atom_ID]]) + '\n'
+            config.find(atom_Prop3D).attrib['num'] = str(len(input_dictionary[atom_Prop3D]))
+        for atom_prop in atom_props:
+            config.find(atom_prop).text += str(input_dictionary[atom_prop][atom_ID]) + '\n'
+            config.find(atom_prop).attrib['num'] = str(len(input_dictionary[atom_prop]))
+    for constraint_type in constraint_props:
+        for constraint_ID, constraint in enumerate(input_dictionary[constraint_type]):
+            config.find(constraint_type).text += ' '.join([str(x) for x in input_dictionary[constraint_type][constraint_ID]]) + '\n'
+        config.find(constraint_type).attrib['num'] = str(len(input_dictionary[constraint_type]))
     root.insert(0, config)
-    tree = ET.ElementTree(root)
-    tree.write(outputFile, xml_declaration=True, encoding='UTF-8')
+    tree = ET.element_tree(root)
+    tree.write(output_file, xml_declaration=True, encoding='UTF-8')
     print("XML file written to", str(outputFile) + "!")
 
 
-def write_morphology_XML(inputDictionary, outputFile, sigma = 1.0, checkWrappedPosns = True):
+def write_morphology_XML(input_dictionary, output_file, sigma = 1.0, check_wrapped_posns = True):
     # Firstly, scale everything by the inverse of the provided sigma value
     tilt_factors = ["xy", "yz", "xz"]
     if sigma != 1.0:
-        inputDictionary = scale(inputDictionary, 1.0 / sigma)
+        input_dictionary = scale(input_dictionary, 1.0 / sigma)
     # Now need to check the positions of the atoms to ensure that everything is correctly contained inside the box
-    if checkWrappedPosns is True:
-        if any([tilt_factor in inputDictionary.keys() for tilt_factor in tilt_factors]) and\
-                any([inputDictionary[tilt_factor] != 0 for tilt_factor in tilt_factors]):
+    if check_wrapped_posns is True:
+        if any([tilt_factor in input_dictionary.keys() for tilt_factor in tilt_factors]) and\
+                any([input_dictionary[tilt_factor] != 0 for tilt_factor in tilt_factors]):
             print("Can't check atom wrapping for cells with a non-zero tilt factor")
         else:
             print("Checking wrapped positions before writing XML...")
-            inputDictionary = checkWrappedPositions(inputDictionary)
+            input_dictionary = check_wrapped_positions(input_dictionary)
     # inputDictionary['position'], inputDictionary['image'] = pbc.shift_pbc(inputDictionary['position'], [inputDictionary['lx'], inputDictionary['ly'], inputDictionary['lz']])
     # print inputDictionary['image'][:20]
     # raw_input('HALT')
     # Add Boiler Plate first
-    linesToWrite = ['<?xml version="1.0" encoding="UTF-8"?>\n', '<hoomd_xml version="1.4">\n', '<configuration time_step="0" dimensions="3" natoms="' + str(inputDictionary['natoms']) + '" >\n', '<box lx="' + str(inputDictionary['lx']) + '" ly="' + str(inputDictionary['ly']) + '" lz="' + str(inputDictionary['lz'])]
-    if all([tilt_factor in inputDictionary.keys() for tilt_factor in tilt_factors]):
-        linesToWrite[-1] += '" xy="' + str(inputDictionary['xy']) + '" xz="' + str(inputDictionary['xz']) + '" yz="' + str(inputDictionary['yz']) + '" />\n'
+    lines_to_write = ['<?xml version="1.0" encoding="UTF-8"?>\n', '<hoomd_xml version="1.4">\n', '<configuration time_step="0" dimensions="3" natoms="' + str(input_dictionary['natoms']) + '" >\n', '<box lx="' + str(input_dictionary['lx']) + '" ly="' + str(input_dictionary['ly']) + '" lz="' + str(input_dictionary['lz'])]
+    if all([tilt_factor in input_dictionary.keys() for tilt_factor in tilt_factors]):
+        lines_to_write[-1] += '" xy="' + str(input_dictionary['xy']) + '" xz="' + str(input_dictionary['xz']) + '" yz="' + str(input_dictionary['yz']) + '" />\n'
     else:
-        linesToWrite[-1] += '" />\n'
+        lines_to_write[-1] += '" />\n'
     # Position
-    linesToWrite.append('<position num="' + str(inputDictionary['natoms']) + '">\n')
-    for positionData in inputDictionary['position']:
-        linesToWrite.append(" ".join(str(coord) for coord in positionData) + '\n')
-    linesToWrite.append('</position>\n')
+    lines_to_write.append('<position num="' + str(input_dictionary['natoms']) + '">\n')
+    for position_data in input_dictionary['position']:
+        lines_to_write.append(" ".join(str(coord) for coord in position_data) + '\n')
+    lines_to_write.append('</position>\n')
     # Image
-    linesToWrite.append('<image num="' + str(inputDictionary['natoms']) + '">\n')
-    for imageData in inputDictionary['image']:
-        linesToWrite.append(" ".join(str(coord) for coord in imageData) + '\n')
-    linesToWrite.append('</image>\n')
+    lines_to_write.append('<image num="' + str(input_dictionary['natoms']) + '">\n')
+    for image_data in input_dictionary['image']:
+        lines_to_write.append(" ".join(str(coord) for coord in image_data) + '\n')
+    lines_to_write.append('</image>\n')
     # Mass
-    linesToWrite.append('<mass num="' + str(inputDictionary['natoms']) + '">\n')
-    for massData in inputDictionary['mass']:
-        linesToWrite.append(str(massData) + '\n')
-    linesToWrite.append('</mass>\n')
+    lines_to_write.append('<mass num="' + str(input_dictionary['natoms']) + '">\n')
+    for mass_data in input_dictionary['mass']:
+        lines_to_write.append(str(mass_data) + '\n')
+    lines_to_write.append('</mass>\n')
     # Diameter
-    linesToWrite.append('<diameter num="' + str(inputDictionary['natoms']) + '">\n')
-    for diameterData in inputDictionary['diameter']:
-        linesToWrite.append(str(diameterData) + '\n')
-    linesToWrite.append('</diameter>\n')
+    lines_to_write.append('<diameter num="' + str(input_dictionary['natoms']) + '">\n')
+    for diameter_data in input_dictionary['diameter']:
+        lines_to_write.append(str(diameter_data) + '\n')
+    lines_to_write.append('</diameter>\n')
     # Type
-    linesToWrite.append('<type num="' + str(inputDictionary['natoms']) + '">\n')
-    for typeData in inputDictionary['type']:
-        linesToWrite.append(str(typeData) + '\n')
-    linesToWrite.append('</type>\n')
+    lines_to_write.append('<type num="' + str(input_dictionary['natoms']) + '">\n')
+    for type_data in input_dictionary['type']:
+        lines_to_write.append(str(type_data) + '\n')
+    lines_to_write.append('</type>\n')
     # Body
-    linesToWrite.append('<body num="' + str(inputDictionary['natoms']) + '">\n')
-    for bodyData in inputDictionary['body']:
-        linesToWrite.append(str(bodyData) + '\n')
-    linesToWrite.append('</body>\n')
+    lines_to_write.append('<body num="' + str(input_dictionary['natoms']) + '">\n')
+    for body_data in input_dictionary['body']:
+        lines_to_write.append(str(body_data) + '\n')
+    lines_to_write.append('</body>\n')
     # Bond
-    linesToWrite.append('<bond num="' + str(len(inputDictionary['bond'])) + '">\n')
-    for bondData in inputDictionary['bond']:
-        linesToWrite.append(" ".join(str(coord) for coord in bondData) + '\n')
-    linesToWrite.append('</bond>\n')
+    lines_to_write.append('<bond num="' + str(len(input_dictionary['bond'])) + '">\n')
+    for bond_data in input_dictionary['bond']:
+        lines_to_write.append(" ".join(str(coord) for coord in bond_data) + '\n')
+    lines_to_write.append('</bond>\n')
     # Angle
-    linesToWrite.append('<angle num="' + str(len(inputDictionary['angle'])) + '">\n')
-    for angleData in inputDictionary['angle']:
-        linesToWrite.append(" ".join(str(coord) for coord in angleData) + '\n')
-    linesToWrite.append('</angle>\n')
+    lines_to_write.append('<angle num="' + str(len(input_dictionary['angle'])) + '">\n')
+    for angle_data in input_dictionary['angle']:
+        lines_to_write.append(" ".join(str(coord) for coord in angle_data) + '\n')
+    lines_to_write.append('</angle>\n')
     # Dihedral
-    linesToWrite.append('<dihedral num="' + str(len(inputDictionary['dihedral'])) + '">\n')
-    for dihedralData in inputDictionary['dihedral']:
-        linesToWrite.append(" ".join(str(coord) for coord in dihedralData) + '\n')
-    linesToWrite.append('</dihedral>\n')
+    lines_to_write.append('<dihedral num="' + str(len(input_dictionary['dihedral'])) + '">\n')
+    for dihedral_data in input_dictionary['dihedral']:
+        lines_to_write.append(" ".join(str(coord) for coord in dihedral_data) + '\n')
+    lines_to_write.append('</dihedral>\n')
     # Improper
-    linesToWrite.append('<improper num="' + str(len(inputDictionary['improper'])) + '">\n')
-    for improperData in inputDictionary['improper']:
-        linesToWrite.append(" ".join(str(coord) for coord in improperData) + '\n')
-    linesToWrite.append('</improper>\n')
+    lines_to_write.append('<improper num="' + str(len(input_dictionary['improper'])) + '">\n')
+    for improper_data in input_dictionary['improper']:
+        lines_to_write.append(" ".join(str(coord) for coord in improper_data) + '\n')
+    lines_to_write.append('</improper>\n')
     # Charge
-    linesToWrite.append('<charge num="' + str(inputDictionary['natoms']) + '">\n')
-    for chargeData in inputDictionary['charge']:
-        linesToWrite.append(str(chargeData) + '\n')
-    linesToWrite.append('</charge>\n')
-    linesToWrite.append('</configuration>\n')
-    linesToWrite.append('</hoomd_xml>\n')
-    with open(outputFile, 'w+') as xmlFile:
-        xmlFile.writelines(linesToWrite)
+    lines_to_write.append('<charge num="' + str(input_dictionary['natoms']) + '">\n')
+    for charge_data in input_dictionary['charge']:
+        lines_to_write.append(str(charge_data) + '\n')
+    lines_to_write.append('</charge>\n')
+    lines_to_write.append('</configuration>\n')
+    lines_to_write.append('</hoomd_xml>\n')
+    with open(output_file, 'w+') as xml_file:
+        xml_file.writelines(lines_to_write)
     print("XML file written to", str(outputFile) + "!")
 
 
-def write_XYZ_file(inputDict, outputFile):
+def write_XYZ_file(input_dict, output_file):
     '''This function takes an input dictionary and converts it to an XYZ for use in DFT calculations'''
     # First line is atom numbers, second line is boiler plate
-    rowsToWrite = [str(inputDict['natoms']) + '\n', 'XYZ file generated from XML using helperFunctions.XMLToXYZ\n']
+    rows_to_write = [str(input_dict['natoms']) + '\n', 'XYZ file generated from XML using helper_functions.XML_to_XYZ\n']
     # Format of xyz is Type, X Pos, Y Pos, Z Pos
-    for atomID in range(len(inputDict['type'])):
+    for atom_ID in range(len(input_dict['type'])):
         # Note, this will break for atoms that have two-letter symbols (e.g. Al, Ca etc.)
-        atomType = inputDict['type'][atomID][0]
-        while len(atomType) < 10:
-            atomType += ' '
-        atomX = str(inputDict['position'][atomID][0])
-        while len(atomX) < 20:
-            atomX += ' '
-        atomY = str(inputDict['position'][atomID][1])
-        while len(atomY) < 20:
-            atomY += ' '
-        atomZ = str(inputDict['position'][atomID][2])
-        lineToWrite = atomType + atomX + atomY + atomZ + '\n'
-        rowsToWrite.append(lineToWrite)
-    with open(outputFile, 'w+') as xyzFile:
-        xyzFile.writelines(rowsToWrite)
+        atom_type = input_dict['type'][atom_ID][0]
+        while len(atom_type) < 10:
+            atom_type += ' '
+        atom_X = str(input_dict['position'][atom_ID][0])
+        while len(atom_X) < 20:
+            atom_X += ' '
+        atom_Y = str(input_dict['position'][atom_ID][1])
+        while len(atom_Y) < 20:
+            atom_Y += ' '
+        atom_Z = str(input_dict['position'][atom_ID][2])
+        line_to_write = atom_type + atom_X + atom_Y + atom_Z + '\n'
+        rows_to_write.append(line_to_write)
+    with open(output_file, 'w+') as xyz_file:
+        xyz_file.writelines(rows_to_write)
     print("XYZ data written to", str(outputFile) + ".")
 
 
-def increment_atom_IDs(originalInputDictionary, ghostDictionary, increment, modifyGhostDictionary=False):
-    inputDictionary = copy.deepcopy(originalInputDictionary)
-    constraintTypes = ['bond', 'angle', 'dihedral', 'improper']
-    for constraintType in constraintTypes:
-        for constraintNo, constraint in enumerate(inputDictionary[constraintType]):
-            inputDictionary[constraintType][constraintNo][1:] = [x + increment for x in inputDictionary[constraintType][constraintNo][1:]]
-    if modifyGhostDictionary is True:
-        for bondNo, bond in enumerate(ghostDictionary['bond']):
+def increment_atom_IDs(original_input_dictionary, ghost_dictionary, increment, modify_ghost_dictionary=False):
+    input_dictionary = copy.deepcopy(original_input_dictionary)
+    constraint_types = ['bond', 'angle', 'dihedral', 'improper']
+    for constraint_type in constraint_types:
+        for constraint_no, constraint in enumerate(input_dictionary[constraint_type]):
+            input_dictionary[constraint_type][constraint_no][1:] = [x + increment for x in input_dictionary[constraint_type][constraint_no][1:]]
+    if modify_ghost_dictionary is True:
+        for bond_no, bond in enumerate(ghost_dictionary['bond']):
             if str(bond[1])[0] == '_':
-                ghostDictionary['bond'][bondNo][1] = int(bond[1][1:]) + increment
+                ghost_dictionary['bond'][bond_no][1] = int(bond[1][1:]) + increment
             if str(bond[2])[0] == '_':
-                ghostDictionary['bond'][bondNo][2] = int(bond[2][1:]) + increment
-    return inputDictionary, ghostDictionary
+                ghost_dictionary['bond'][bond_no][2] = int(bond[2][1:]) + increment
+    return input_dictionary, ghost_dictionary
 
 
-def scale(inputDictionary, scaleFactor):
-    for ID, position in enumerate(inputDictionary['position']):
+def scale(input_dictionary, scale_factor):
+    for ID, position in enumerate(input_dictionary['position']):
         # if ID == 24104:
         #     print "Initial Position =", inputDictionary['position'][ID], inputDictionary['image'][ID]
-        inputDictionary['position'][ID] = list(scaleFactor * np.array(position))
+        input_dictionary['position'][ID] = list(scale_factor * np.array(position))
         # if ID == 24104:
         #     print "Scaled Position =", inputDictionary['position'][ID], inputDictionary['image'][ID]
     for element in ['lx', 'ly', 'lz']:
-        if element in inputDictionary:
-            inputDictionary[element] *= scaleFactor
-    return inputDictionary
+        if element in input_dictionary:
+            input_dictionary[element] *= scale_factor
+    return input_dictionary
 
 
-def rotate(inputDictionary, theta, rotateAroundPoint = [0, 0, 0], rotateAroundAxis = [0, 0, 1]):
-    inputDictionary = addUnwrappedPositions(inputDictionary)
-    rotateAroundAxis = list(np.array(rotateAroundAxis) / np.linalg.norm(rotateAroundAxis))
+def rotate(input_dictionary, theta, rotate_around_point = [0, 0, 0], rotate_around_axis = [0, 0, 1]):
+    input_dictionary = add_unwrapped_positions(input_dictionary)
+    rotate_around_axis = list(np.array(rotate_around_axis) / np.linalg.norm(rotate_around_axis))
     # Rotation matrix calculations from: http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
     # The array that describes the 3D rotation of (x, y, z) around the point (a, b, c) through
     # the unit axis <u, v, w> by the angle theta is given by:
@@ -673,34 +671,34 @@ def rotate(inputDictionary, theta, rotateAroundPoint = [0, 0, 0], rotateAroundAx
     #   (b(u^2 + w^2) - v(au + cw - ux - vy - wz))(1 - cos(theta)) + y*cos(theta) + (cu - aw + wx - uz)sin(theta),
     #   (c(u^2 + v^2) - w(au + bv - ux - vy - wz))(1 - cos(theta)) + z*cos(theta) + (-bu + av - vx + uy)sin(theta) ]
     # DEFAULT BEHAVIOUR: Rotate the entire dictionary by theta around the z-axis centred at the origin
-    for AAID, [x, y, z] in enumerate(inputDictionary['unwrapped_position']):
-        [a, b, c] = rotateAroundPoint
-        [u, v, w] = rotateAroundAxis
-        newPosition = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
+    for AAID, [x, y, z] in enumerate(input_dictionary['unwrapped_position']):
+        [a, b, c] = rotate_around_point
+        [u, v, w] = rotate_around_axis
+        new_position = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (x * np.cos(theta)) + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
                        (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (y * np.cos(theta)) + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
                        (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x) - (v * y) - (w * z))) * (1 - np.cos(theta)) + (z * np.cos(theta)) + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
-        inputDictionary['unwrapped_position'][AAID] = list(newPosition)
+        input_dictionary['unwrapped_position'][AAID] = list(new_position)
     # All the images are probably messed up now, so fix that
-    inputDictionary = replaceWrappedPositions(inputDictionary)
-    return inputDictionary
+    input_dictionary = replace_wrapped_positions(input_dictionary)
+    return input_dictionary
 
 
-def centre(inputDictionary, centreOfMass):
-    COM = np.array(centreOfMass)
-    for index, position in enumerate(inputDictionary['position']):
-        inputDictionary['position'][index] = list(position - COM)
-    return inputDictionary
+def centre(input_dictionary, centre_of_mass):
+    com = np.array(centre_of_mass)
+    for index, position in enumerate(input_dictionary['position']):
+        input_dictionary['position'][index] = list(position - com)
+    return input_dictionary
 
 
-def check_wrapped_positions(inputDictionary):
-    atomPositions = np.array(inputDictionary['position'])
-    atomImages = np.array(inputDictionary['image'])
-    xhi = inputDictionary['lx'] / 2.0
-    xlo = -inputDictionary['lx'] / 2.0
-    yhi = inputDictionary['ly'] / 2.0
-    ylo = -inputDictionary['ly'] / 2.0
-    zhi = inputDictionary['lz'] / 2.0
-    zlo = -inputDictionary['lz'] / 2.0
+def check_wrapped_positions(input_dictionary):
+    atom_positions = np.array(input_dictionary['position'])
+    atom_images = np.array(input_dictionary['image'])
+    xhi = input_dictionary['lx'] / 2.0
+    xlo = -input_dictionary['lx'] / 2.0
+    yhi = input_dictionary['ly'] / 2.0
+    ylo = -input_dictionary['ly'] / 2.0
+    zhi = input_dictionary['lz'] / 2.0
+    zlo = -input_dictionary['lz'] / 2.0
     # tp=pbc.plain_pbc(atomPositions,(inputDictionary['lx'],inputDictionary['ly'],inputDictionary['lz']) )
     # tp=pbc.plain_pbc(tp,(inputDictionary['lx'],inputDictionary['ly'],inputDictionary['lz']) )
     # tp=pbc.plain_pbc(tp,(inputDictionary['lx'],inputDictionary['ly'],inputDictionary['lz']) )
@@ -709,88 +707,88 @@ def check_wrapped_positions(inputDictionary):
     # tp=pbc.plain_pbc(tp,(inputDictionary['lx'],inputDictionary['ly'],inputDictionary['lz']) )
     # tp=pbc.plain_pbc(tp,(inputDictionary['lx'],inputDictionary['ly'],inputDictionary['lz']) )
     # tp=pbc.plain_pbc(tp,(inputDictionary['lx'],inputDictionary['ly'],inputDictionary['lz']) )
-    for atomID in range(len(atomPositions)):
-        while atomPositions[atomID][0] > xhi:
-            atomPositions[atomID][0] -= inputDictionary['lx']
-            atomImages[atomID][0] += 1
-        while atomPositions[atomID][0] < xlo:
-            atomPositions[atomID][0] += inputDictionary['lx']
-            atomImages[atomID][0] -= 1
-        while atomPositions[atomID][1] > yhi:
-            atomPositions[atomID][1] -= inputDictionary['ly']
-            atomImages[atomID][1] += 1
-        while atomPositions[atomID][1] < ylo:
-            atomPositions[atomID][1] += inputDictionary['ly']
-            atomImages[atomID][1] -= 1
-        while atomPositions[atomID][2] > zhi:
-            atomPositions[atomID][2] -= inputDictionary['lz']
-            atomImages[atomID][2] += 1
-        while atomPositions[atomID][2] < zlo:
-            atomPositions[atomID][2] += inputDictionary['lz']
-            atomImages[atomID][2] -= 1
-    inputDictionary['position'] = list(atomPositions)
-    inputDictionary['image'] = list(atomImages)
+    for atom_ID in range(len(atom_positions)):
+        while atom_positions[atom_ID][0] > xhi:
+            atom_positions[atom_ID][0] -= input_dictionary['lx']
+            atom_images[atom_ID][0] += 1
+        while atom_positions[atom_ID][0] < xlo:
+            atom_positions[atom_ID][0] += input_dictionary['lx']
+            atom_images[atom_ID][0] -= 1
+        while atom_positions[atom_ID][1] > yhi:
+            atom_positions[atom_ID][1] -= input_dictionary['ly']
+            atom_images[atom_ID][1] += 1
+        while atom_positions[atom_ID][1] < ylo:
+            atom_positions[atom_ID][1] += input_dictionary['ly']
+            atom_images[atom_ID][1] -= 1
+        while atom_positions[atom_ID][2] > zhi:
+            atom_positions[atom_ID][2] -= input_dictionary['lz']
+            atom_images[atom_ID][2] += 1
+        while atom_positions[atom_ID][2] < zlo:
+            atom_positions[atom_ID][2] += input_dictionary['lz']
+            atom_images[atom_ID][2] -= 1
+    input_dictionary['position'] = list(atom_positions)
+    input_dictionary['image'] = list(atom_images)
     # print np.sum(np.absolute(atomPositions-tp) > 0.)
-    return inputDictionary
+    return input_dictionary
 
 
 def get_CPU_cores():
     # Determine the number of available processors, either by querying the SLURM_NPROCS environment variable, or by using multiprocessing to count the number of visible CPUs.
     try:
-        procIDs = list(np.arange(int(os.environ.get('SLURM_NPROCS'))))
+        proc_IDs = list(np.arange(int(os.environ.get('slurm_nprocs'))))
     except (AttributeError, TypeError):
         # Was not loaded using SLURM, so use all physical processors
-        procIDs = list(np.arange(mp.cpu_count()))
-    return procIDs
+        proc_IDs = list(np.arange(mp.cpu_count()))
+    return proc_IDs
 
 
-def write_to_file(logFile, stringList, mode='logFile'):
-    if mode == 'outputFile':
-        openAs = 'w+'
+def write_to_file(log_file, string_list, mode='log_file'):
+    if mode == 'output_file':
+        open_as = 'w+'
     else:
-        openAs = 'a+'
-    if logFile == 'stdout':
-        for line in stringList:
+        open_as = 'a+'
+    if log_file == 'stdout':
+        for line in string_list:
             sys.stdout.writelines(line + '\n')
     else:
-        with open(logFile, openAs) as logWrite:
-            for line in stringList:
-                logWrite.writelines(line + '\n')
+        with open(log_file, open_as) as log_write:
+            for line in string_list:
+                log_write.writelines(line + '\n')
 
 
-def load_pickle(pickleLocation):
+def load_pickle(pickle_location):
     print("Loading Pickle from", str(pickleLocation) + "...")
     try:
-        with open(pickleLocation, 'rb') as pickleFile:
-                objects = pickle.load(pickleFile)
+        with open(pickle_location, 'rb') as pickle_file:
+                objects = pickle.load(pickle_file)
     except UnicodeDecodeError:  # Python 2/3 fix
         print("Old pickle! Loading it using Python 2...")
-        with open(pickleLocation, 'rb') as pickleFile:
-            objects = pickle.load(pickleFile, encoding='latin1')
+        with open(pickle_location, 'rb') as pickle_file:
+            objects = pickle.load(pickle_file, encoding='latin1')
     print("Pickle loaded successfully!")
     return objects[0], objects[1], objects[2], objects[3], objects[4]
 
 
-def write_pickle(toPickle, pickleFileName):
+def write_pickle(to_pickle, pickle_file_name):
     print("Writing pickle file...")
-    with open(pickleFileName, 'wb+') as pickleFile:
-        pickle.dump(toPickle, pickleFile)
+    with open(pickle_file_name, 'wb+') as pickle_file:
+        pickle.dump(to_pickle, pickle_file)
     print("Pickle file written to", pickleFileName)
 
 
-def obtain_bonded_list(bondList):
+def obtain_bonded_list(bond_list):
     # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
-    bondedAtoms = {}
-    for bond in bondList:
-        if bond[1] not in bondedAtoms:
-            bondedAtoms[bond[1]] = [bond[2]]
+    bonded_atoms = {}
+    for bond in bond_list:
+        if bond[1] not in bonded_atoms:
+            bonded_atoms[bond[1]] = [bond[2]]
         else:
-            bondedAtoms[bond[1]].append(bond[2])
-        if bond[2] not in bondedAtoms:
-            bondedAtoms[bond[2]] = [bond[1]]
+            bonded_atoms[bond[1]].append(bond[2])
+        if bond[2] not in bonded_atoms:
+            bonded_atoms[bond[2]] = [bond[1]]
         else:
-            bondedAtoms[bond[2]].append(bond[1])
-    return bondedAtoms
+            bonded_atoms[bond[2]].append(bond[1])
+    return bonded_atoms
 
 
 def convert_string_to_int(x):
@@ -802,131 +800,131 @@ def convert_string_to_int(x):
     return 99999
 
 
-def fix_images(originalMorphology):
-    def check_bonds(morphology, bondDict):
-        periodicBonds = []
+def fix_images(original_morphology):
+    def check_bonds(morphology, bond_dict):
+        periodic_bonds = []
         for bond in morphology['bond']:
             posn1 = np.array(morphology['position'][bond[1]]) + (np.array(morphology['image'][bond[1]]) * np.array([morphology['lx'], morphology['ly'], morphology['lz']]))
             posn2 = np.array(morphology['position'][bond[2]]) + (np.array(morphology['image'][bond[2]]) * np.array([morphology['lx'], morphology['ly'], morphology['lz']]))
-            separation = calculateSeparation(posn1, posn2)
+            separation = calculate_separation(posn1, posn2)
             if separation >= morphology['lx'] / 2.0:
                 print("Periodic bond found:", bond, "because separation =", separation, ">=", morphology['lx'] / 2.0)
-                morphology = moveBondedAtoms(bond[1], morphology, bondDict)
+                morphology = move_bonded_atoms(bond[1], morphology, bond_dict)
         return morphology
 
     def zero_out_images(morphology):
-        for atomID, image in enumerate(morphology['image']):
+        for atom_ID, image in enumerate(morphology['image']):
             if image != [0, 0, 0]:
-                morphology['image'][atomID] = [0, 0, 0]
+                morphology['image'][atom_ID] = [0, 0, 0]
         return morphology
 
     def get_bond_dict(morphology):
-        bondDict = {atomID: [] for atomID, atomType in enumerate(morphology['type'])}
+        bond_dict = {atom_ID: [] for atom_ID, atom_type in enumerate(morphology['type'])}
         for bond in morphology['bond']:
             #if bond[1] < bond[2]:
-            bondDict[bond[1]].append(bond[2])
+            bond_dict[bond[1]].append(bond[2])
             #else:
-            bondDict[bond[2]].append(bond[1])
-        return bondDict
+            bond_dict[bond[2]].append(bond[1])
+        return bond_dict
 
-    def move_bonded_atoms(centralAtom, morphology, bondDict):
-        for bondedAtom in bondDict[centralAtom]:
-            atom1Posn = morphology['position'][centralAtom]
-            atom2Posn = morphology['position'][bondedAtom]
+    def move_bonded_atoms(central_atom, morphology, bond_dict):
+        for bonded_atom in bond_dict[central_atom]:
+            atom1posn = morphology['position'][central_atom]
+            atom2posn = morphology['position'][bonded_atom]
             #print("atom1:", centralAtom, "posn =", atom1Posn, "; atom2:", bondedAtom, "posn =", atom2Posn)
-            sepVec = np.array(atom1Posn) - np.array(atom2Posn)
+            sep_vec = np.array(atom1posn) - np.array(atom2posn)
             moved = False
-            for axis, value in enumerate(sepVec):
+            for axis, value in enumerate(sep_vec):
                 if value > morphology['lx'] / 2.0:
-                    morphology['position'][bondedAtom][axis] += morphology['lx']
+                    morphology['position'][bonded_atom][axis] += morphology['lx']
                     moved = True
                 if value < -morphology['lx'] / 2.0:
-                    morphology['position'][bondedAtom][axis] -= morphology['lx']
+                    morphology['position'][bonded_atom][axis] -= morphology['lx']
                     moved = True
             if moved:
                 #print("Moved", bondedAtom, "to same box as", centralAtom)
                 #print("New Positions: atom1 =", morphology['position'][centralAtom], "atom2 =", morphology['position'][bondedAtom])
-                morphology = moveBondedAtoms(bondedAtom, morphology, bondDict)
+                morphology = move_bonded_atoms(bonded_atom, morphology, bond_dict)
             else:
                 #print("Move was unnecessary")
                 pass
         return morphology
 
-    zeroedMorphology = zeroOutImages(originalMorphology)
-    bondDict = getBondDict(zeroedMorphology)
-    fixedMorphology = checkBonds(zeroedMorphology, bondDict)
-    return fixedMorphology
+    zeroed_morphology = zero_out_images(original_morphology)
+    bond_dict = get_bond_dict(zeroed_morphology)
+    fixed_morphology = check_bonds(zeroed_morphology, bond_dict)
+    return fixed_morphology
 
 
 # ---============================---
 # ---=== KMC HELPER FUNCTIONS ===---
 # ---============================---
-def calculate_carrier_hop_rate(lambdaij, Tij, deltaEij, prefactor, temp, useVRH=False, rij=0.0, VRHPrefactor=1.0,
+def calculate_carrier_hop_rate(lambdaij, Tij, delta_Eij, prefactor, temp, use_VRH=False, rij=0.0, VRH_prefactor=1.0,
                                boltz_pen=False):
     # Based on the input parameters, can make this the semiclassical Marcus Hopping Rate Equation, or a more generic Miller Abrahams-based hop
     # Firstly, to prevent divide-by-zero errors:
     if (Tij == 0.0):
         return 0
     # Regardless of hopping type, sort out the prefactor first:
-    kij = prefactor * ((2 * np.pi) / hbar) * (Tij ** 2) * np.sqrt(1.0 / (4 * lambdaij * np.pi * kB * temp))
+    kij = prefactor * ((2 * np.pi) / hbar) * (Tij ** 2) * np.sqrt(1.0 / (4 * lambdaij * np.pi * k_B * temp))
     # VRH?
-    if useVRH is True:
-        kij *= np.exp(-(VRHPrefactor * rij))
+    if use_VRH is True:
+        kij *= np.exp(-(VRH_prefactor * rij))
     # Simple Boltzmann energy penalty?
     if boltz_pen is True:
         # Only apply the penalty if deltaEij is positive
-        if deltaEij > 0.0:
-            kij *= np.exp(-(deltaEij / (kB * temp)))
+        if delta_Eij > 0.0:
+            kij *= np.exp(-(delta_Eij / (k_B * temp)))
         # Otherwise, kij *= 1
     else:
-        kij *= np.exp(-((deltaEij + lambdaij)**2) / (4 * lambdaij * kB * temp))
+        kij *= np.exp(-((delta_Eij + lambdaij)**2) / (4 * lambdaij * k_B * temp))
     return kij
 
 
-def calculate_FRET_hop_rate(prefactor, lifetimeParameter, rF, rij, deltaEij, T):
+def calculate_FRET_hop_rate(prefactor, lifetime_parameter, r_F, rij, delta_Eij, T):
     # Foerster Transport Hopping Rate Equation
     # The prefactor included here is a bit of a bodge to try and get the mean-free paths of the excitons more in line with the 5nm of experiment. Possible citation: 10.3390/ijms131217019 (they do not do the simulation they just point out some limitations of FRET which assumes point-dipoles which does not necessarily work in all cases)
-    if deltaEij <= 0:
-        boltzmannFactor = 1
+    if delta_Eij <= 0:
+        boltzmann_factor = 1
     else:
-        boltzmannFactor = np.exp(-(elementaryCharge * deltaEij)/(kB * T))
-    kFRET = prefactor * (1/lifetimeParameter) * (rF / rij)**6 * boltzmannFactor
-    return kFRET
+        boltzmann_factor = np.exp(-(elementary_charge * delta_Eij)/(k_B * T))
+    k_FRET = prefactor * (1/lifetime_parameter) * (r_F / rij)**6 * boltzmann_factor
+    return k_FRET
 
 
-def calculate_miller_abrahams_hop_rate(prefactor, separation, radius, deltaEij, T):
+def calculate_miller_abrahams_hop_rate(prefactor, separation, radius, delta_Eij, T):
     kij = prefactor * np.exp(-2 * separation/radius)
-    if deltaEij > 0:
-        kij *= np.exp(-deltaEij / (kB * T))
+    if delta_Eij > 0:
+        kij *= np.exp(-delta_Eij / (k_B * T))
     return kij
 
 
-def determine_event_tau(rate, eventType='None', slowestEvent=None, fastestEvent=None, maximumAttempts=None):
+def determine_event_tau(rate, event_type='None', slowest_event=None, fastest_event=None, maximum_attempts=None):
     # Use the KMC algorithm to determine the wait time to this hop
     if rate != 0:
         counter = 0
         while True:
-            if maximumAttempts is not None:
+            if maximum_attempts is not None:
                 # Write an error if we've hit the maximum number of attempts
-                if counter == maximumAttempts:
-                    if 'hop' in eventType:
+                if counter == maximum_attempts:
+                    if 'hop' in event_type:
                         return None
                     else:
-                        if 'injection' not in eventType:
-                            helperFunctions.writeToFile(logFile, ["Attempted " + str(maximumAttempts) + " times to obtain a '" +
-                                                                  str(eventType) + "'-type event timescale within the tolerances: " +
-                                                                  str(fastestEvent) + " <= tau < " +
-                                                                  str(slowestEvent) + " with the given rate " +
+                        if 'injection' not in event_type:
+                            helper_functions.write_to_file(log_file, ["attempted " + str(maximum_attempts) + " times to obtain a '" +
+                                                                  str(event_type) + "'-type event timescale within the tolerances: " +
+                                                                  str(fastest_event) + " <= tau < " +
+                                                                  str(slowest_event) + " with the given rate " +
                                                                   str(rate) + " all without success.",
-                                                                  "Permitting the event anyway with the next random number."])
+                                                                  "permitting the event anyway with the next random number."])
 
             x = np.random.random()
             # Ensure that we don't get exactly 0.0 or 1.0, which would break our logarithm
             if (x == 0.0) or (x == 1.0):
                 continue
             tau = - np.log(x) / rate
-            if (fastestEvent is not None) and (slowestEvent is not None) and (maximumAttempts is not None):
-                if ((tau > fastestEvent) and (tau < slowestEvent)) or (counter == maximumAttempts):
+            if (fastest_event is not None) and (slowest_event is not None) and (maximum_attempts is not None):
+                if ((tau > fastest_event) and (tau < slowest_event)) or (counter == maximum_attempts):
                     break
                 else:
                     counter += 1
