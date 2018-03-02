@@ -587,7 +587,7 @@ def scale(input_dictionary, scale_factor):
     return input_dictionary
 
 
-def rotate(input_dictionary, theta, rotate_around_point = [0, 0, 0], rotate_around_axis = [0, 0, 1]):
+def rotate(input_dictionary, theta, rotate_around_point=[0, 0, 0], rotate_around_axis=[0, 0, 1]):
     input_dictionary = add_unwrapped_positions(input_dictionary)
     rotate_around_axis = list(np.array(rotate_around_axis) / np.linalg.norm(rotate_around_axis))
     # Rotation matrix calculations from: http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
@@ -661,7 +661,7 @@ def check_wrapped_positions(input_dictionary):
 def get_CPU_cores():
     # Determine the number of available processors, either by querying the SLURM_NPROCS environment variable, or by using multiprocessing to count the number of visible CPUs.
     try:
-        proc_IDs = list(np.arange(int(os.environ.get('slurm_nprocs'))))
+        proc_IDs = list(np.arange(int(os.environ.get('SLURM_NPROCS'))))
     except (AttributeError, TypeError):
         # Was not loaded using SLURM, so use all physical processors
         proc_IDs = list(np.arange(mp.cpu_count()))
@@ -683,7 +683,7 @@ def write_to_file(log_file, string_list, mode='log_file'):
 
 
 def load_pickle(pickle_location):
-    print("Loading Pickle from", str(pickleLocation) + "...")
+    print("Loading Pickle from", str(pickle_location) + "...")
     try:
         with open(pickle_location, 'rb') as pickle_file:
                 objects = pickle.load(pickle_file)
