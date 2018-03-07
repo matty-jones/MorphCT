@@ -1,6 +1,8 @@
 ![alt-text](morphCTLogo.png "MorphCT Logo" =500x)
 
-# PLEASE NOTE, README IS A WORK IN PROGRESS. #
+# PLEASE NOTE, README IS A WORK IN PROGRESS. ADDITIONALLY, CODE IS BEING UNIFIED ACCORDING TO PEP8 AND WILL SOON BE ADDED TO PYPI/CONDA. #
+
+Progress on these tasks can be seen in the feat/utils branch.
 
 The intention of this code is to:
 
