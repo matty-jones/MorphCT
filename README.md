@@ -4,6 +4,9 @@
 
 Progress on these tasks can be seen in the feat/utils branch.
 
+MorphCT has been released under a GPL3 license (please see LICENSE.TXT for conditions). Please [read and cite our MorphCT paper](https://doi.org/10.1080/08927022.2017.1296958) if you use our code in your published work:
+
+
 The intention of this code is to:
 
 * Parse any coarse-grained morphology input in the HOOMD xml format. Atomistic morphologies should work too, but the infrastructure is currently set up to map single simulation elements to multiple atoms, so there will likely be plenty of redundant code.
