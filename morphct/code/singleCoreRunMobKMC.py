@@ -7,15 +7,15 @@ from morphct.code import helperFunctions
 import time as T
 import random as R
 from scipy.sparse import lil_matrix
-import subprocess as sp
 import pickle
 
 
-elementaryCharge = 1.60217657E-19 # C
-kB = 1.3806488E-23 # m^{2} kg s^{-2} K^{-1}
-hbar = 1.05457173E-34 # m^{2} kg s^{-1}
+elementaryCharge = 1.60217657E-19  # C
+kB = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}
+hbar = 1.05457173E-34  # m^{2} kg s^{-1}
 
 logFile = None
+
 
 class carrier:
     def __init__(self, chromophoreList, parameterDict, chromoID, lifetime, carrierNo, AAMorphologyDict, molIDDict):
@@ -32,16 +32,15 @@ class carrier:
         self.currentTime = 0.0
         self.holeHistoryMatrix = None
         self.electronHistoryMatrix = None
+        self.lambdaij = self.currentChromophore.reorganisation_energy
         if self.currentChromophore.species == 'Donor':
             self.carrierType = 'Hole'
-            self.lambdaij = parameterDict['reorganisationEnergyDonor']
             if parameterDict['recordCarrierHistory'] is True:
-                self.holeHistoryMatrix = lil_matrix((len(chromophoreList), len(chromophoreList)), dtype = int)
+                self.holeHistoryMatrix = lil_matrix((len(chromophoreList), len(chromophoreList)), dtype=int)
         elif self.currentChromophore.species == 'Acceptor':
             self.carrierType = 'Electron'
-            self.lambdaij = parameterDict['reorganisationEnergyAcceptor']
             if parameterDict['recordCarrierHistory'] is True:
-                self.electronHistoryMatrix = lil_matrix((len(chromophoreList), len(chromophoreList)), dtype = int)
+                self.electronHistoryMatrix = lil_matrix((len(chromophoreList), len(chromophoreList)), dtype=int)
         self.noHops = 0
         self.simDims = [[-AAMorphologyDict['lx'] / 2.0, AAMorphologyDict['lx'] / 2.0], [-AAMorphologyDict['ly'] / 2.0, AAMorphologyDict['ly'] / 2.0], [-AAMorphologyDict['lz'] / 2.0, AAMorphologyDict['lz'] / 2.0]]
         self.displacement = None
@@ -73,7 +72,7 @@ class carrier:
         except KeyError:
             self.useVRH = False
         if self.useVRH is True:
-            self.VRHScaling = 1.0 / parameterDict['VRHDelocalisation']
+            self.VRHScaling = 1.0 / self.currentChromophore.VRH_delocalisation
 
     def calculateHop(self, chromophoreList):
         # Terminate if the next hop would be more than the termination limit
@@ -119,7 +118,7 @@ class carrier:
                 # Keep track of the chromophoreID and the corresponding tau
                 hopTimes.append([self.currentChromophore.neighbours[neighbourIndex][0], hopTime, relativeImage])
         # Sort by ascending hop time
-        hopTimes.sort(key = lambda x:x[1])
+        hopTimes.sort(key=lambda x: x[1])
         # Take the quickest hop
         if len(hopTimes) > 0:
             destinationChromophore = chromophoreList[hopTimes[0][0]]
@@ -140,21 +139,6 @@ class carrier:
         initialID = self.currentChromophore.ID
         destinationID = destinationChromophore.ID
         self.image = list(np.array(self.image) + np.array(relativeImage))
-        ### OLD WAY TO CALCULATE SELF.IMAGE ###
-        #initialPosition = self.currentChromophore.posn
-        #destinationPosition = destinationChromophore.posn
-        #deltaPosition = destinationPosition - initialPosition
-        #for axis in range(3):
-        #    halfBoxLength = (self.simDims[axis][1] - self.simDims[axis][0]) / 2.0
-        #    while deltaPosition[axis] > halfBoxLength:
-        #        # Crossed over a negative boundary, decrement image by 1
-        #        deltaPosition[axis] -= halfBoxLength * 2.0
-        #        self.image[axis] -= 1
-        #    while deltaPosition[axis] < - halfBoxLength:
-        #        # Crossed over a positive boundary, increment image by 1
-        #        deltaPosition[axis] += halfBoxLength * 2.0
-        #        self.image[axis] += 1
-        #######################################
         # Carrier image now sorted, so update its current position
         self.currentChromophore = destinationChromophore
         # Increment the simulation time
@@ -170,6 +154,7 @@ class carrier:
 
 class terminationSignal:
     killSent = False
+
     def __init__(self):
         signal.signal(signal.SIGINT, self.catchKill)
         signal.signal(signal.SIGTERM, self.catchKill)
@@ -201,13 +186,14 @@ def calculateDisplacement(initialPosition, finalPosition, finalImage, simDims):
 
 
 def initialiseSaveData(nChromos, seed):
-    return {'seed': seed, 'ID': [], 'image': [], 'lifetime': [], 'currentTime': [], 'noHops': [], 'displacement': [], 'holeHistoryMatrix': lil_matrix((nChromos, nChromos), dtype = int), 'electronHistoryMatrix': lil_matrix((nChromos, nChromos), dtype = int), 'initialPosition': [], 'finalPosition': [], 'carrierType':[]}
+    return {'seed': seed, 'ID': [], 'image': [], 'lifetime': [], 'currentTime': [], 'noHops': [], 'displacement': [],
+            'holeHistoryMatrix': lil_matrix((nChromos, nChromos), dtype=int),
+            'electronHistoryMatrix': lil_matrix((nChromos, nChromos), dtype=int), 'initialPosition': [],
+            'finalPosition': [], 'carrierType': []}
 
 
 def splitMolecules(inputDictionary):
     # Split the full morphology into individual molecules
-    moleculeAAIDs = []
-    moleculeLengths = []
     # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
     bondedAtoms = helperFunctions.obtainBondedList(inputDictionary['bond'])
     moleculeList = [i for i in range(len(inputDictionary['type']))]
@@ -252,7 +238,7 @@ if __name__ == '__main__':
     overwrite = False
     try:
         overwrite = bool(sys.argv[3])
-    except:
+    except(IndexError):
         pass
     # Load `jobsToRun' which is a list, where each element contains the [carrier.ID, carrier.lifetime, carrier.carrierType]
     pickleFileName = KMCDirectory + '/KMCData_%02d.pickle' % (CPURank)
@@ -265,13 +251,6 @@ if __name__ == '__main__':
     helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
     # Set the affinities for this current process to make sure it's maximising available CPU usage
     currentPID = os.getpid()
-    #try:
-    #    affinityJob = sp.Popen(['taskset', '-pc', str(CPURank), str(currentPID)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE).communicate()
-    #    # helperFunctions.writeToFile(logFile, affinityJob[0].split('\n')) #stdOut for affinity set
-    #    # helperFunctions.writeToFile(logFile, affinityJob[1].split('\n')) #stdErr for affinity set
-    #except OSError:
-    #    helperFunctions.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinity..."])
-    # Now load the main morphology pickle (used as a workaround to obtain the chromophoreList without having to save it in each carrier [very memory inefficient!])
     pickleDir = KMCDirectory.replace('/KMC', '/code')
     for fileName in os.listdir(pickleDir):
         if 'pickle' in fileName:
