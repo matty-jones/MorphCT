@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 sys.path.append('../../code')
 import helperFunctions
 
+elementaryCharge = 1.60217657E-19 # C
 
 def calcHoppingRate(Tij, deltaEij):
-    elementaryCharge = 1.60217657E-19 # C
     lambdaij = 0.3063  # eV
     Tij *= elementaryCharge
     deltaEij *= elementaryCharge
@@ -78,16 +78,21 @@ if __name__ == "__main__":
         AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle('./inputPickles/'+pickleFile)
         CSVData = []
         print("Examining chromophores...")
+        simDims = [[-AAMorphologyDict['lx'] / 2.0, AAMorphologyDict['lx'] / 2.0], [-AAMorphologyDict['ly'] / 2.0, AAMorphologyDict['ly'] / 2.0], [-AAMorphologyDict['lz'] / 2.0, AAMorphologyDict['lz'] / 2.0]]
         for chromo1 in chromophoreList:
             for index, neighbour in enumerate(chromo1.neighbours):
                 # Only consider pairs X-Y where Y > X
                 chromo2ID = neighbour[0]
+                relativeImage = neighbour[1]
                 if chromo2ID < chromo1.ID:
                     continue
                 Tij = chromo1.neighboursTI[index]
                 deltaE = chromo1.neighboursDeltaE[index]
+                neighbourChromo = chromophoreList[chromo2ID]
+                neighbourChromoPosn = neighbourChromo.posn + (np.array(relativeImage) * np.array([axis[1] - axis[0] for axis in simDims]))
+                separation = helperFunctions.calculateSeparation(chromo1.posn, neighbourChromoPosn) * 1E-10 # Convert to m
                 if (Tij is not None) and (deltaE is not None):
-                    Kij = calcHoppingRate(Tij, deltaE)
+                    Kij = helperFunctions.calculateCarrierHopRate(0.3063*elementaryCharge, Tij*elementaryCharge, deltaE*elementaryCharge, 1.0, 290, useVRH=True, rij=separation)
                     try:
                         CGIDs1 = chromo1.CGIDs
                         CGIDs2 = chromophoreList[chromo2ID].CGIDs
