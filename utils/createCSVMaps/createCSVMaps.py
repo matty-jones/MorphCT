@@ -8,18 +8,6 @@ import helperFunctions
 
 elementaryCharge = 1.60217657E-19 # C
 
-def calcHoppingRate(Tij, deltaEij):
-    lambdaij = 0.3063  # eV
-    Tij *= elementaryCharge
-    deltaEij *= elementaryCharge
-    lambdaij *= elementaryCharge
-    kB = 1.3806488E-23 # m^{2} kg s^{-2} K^{-1}
-    hbar = 1.05457173E-34 # m^{2} kg s^{-1}
-    temperature = 290 # K
-    kij = ((2*np.pi)/hbar)*(Tij**2)*np.sqrt(1.0/(4*lambdaij*np.pi*kB*temperature))*np.exp(-((deltaEij+lambdaij)**2)/(4*lambdaij*kB*temperature))
-    return kij
-
-
 def createNewCSV(outputFile, data):
     with open(outputFile, 'w+') as csvFile:
         csvWriter = csv.writer(csvFile)
