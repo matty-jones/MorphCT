@@ -1,9 +1,11 @@
 import os
 import sys
 import numpy as np
-import helperFunctions
+from morphct.code import helperFunctions
+from morphct.definitions import PROJECT_ROOT, SINGLE_ORCA_RUN_FILE
 import subprocess as sp
 import multiprocessing as mp
+import random as R
 import pickle
 
 
@@ -99,12 +101,14 @@ def writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPosns, termina
     for index, position in enumerate(allPositions):
         linesToWrite.append(" %s  %.5f  %.5f  %.5f\n" % (allAtomTypes[index], position[0] - centralPosition[0], position[1] - centralPosition[1], position[2] - centralPosition[2]))
     # Load the ORCA input template
+    orca_temp_dir = os.path.join(PROJECT_ROOT, "templates")
+    orca_temp_test_dir = os.path.join(PROJECT_ROOT, "code/testAssets")
     try:
-        with open(os.getcwd() + '/templates/template.inp', 'r') as templateFile:
+        with open(os.path.join(orca_temp_dir, "template.inp"), 'r') as templateFile:
             inpFileLines = templateFile.readlines()
     # In case running testbed:
     except FileNotFoundError:
-        with open(os.getcwd() + '/testAssets/template.inp', 'r') as templateFile:
+        with open(os.path.join(orca_temp_test_dir, "template.inp"), 'r') as templateFile:
             inpFileLines = templateFile.readlines()
     # Insert the linesToWrite
     inpFileLines[-1:-1] = linesToWrite
@@ -169,6 +173,8 @@ def getORCAJobs(inputDir, parameterDict, procIDs):
             ORCAFilesToRun.pop(popIndex)
     if len(ORCAFilesToRun) == 0:
         return []
+    # Shuffle the ORCAFilesToRun to spread it out over the cores
+    R.shuffle(ORCAFilesToRun)
     # Create a jobslist for each procID
     jobsList = [ORCAFilesToRun[i:i + (int(np.ceil(len(ORCAFilesToRun) / len(procIDs))))] for i in range(0, len(ORCAFilesToRun), int(np.ceil(len(ORCAFilesToRun) / float(len(procIDs)))))]
     return jobsList
@@ -192,8 +198,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         runningJobs = []
         # Open the required processes to execute the ORCA jobs
         for CPURank, jobs in enumerate(jobsList):
-            print('python ' + os.getcwd() + '/code/singleCoreRunORCA.py ' + parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + ' ' + str(CPURank) + ' ' + str(int(parameterDict['overwriteCurrentData'])) + ' &')
-            runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunORCA.py', parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4], str(CPURank), str(int(parameterDict['overwriteCurrentData']))]))
+            runningJobs.append(sp.Popen(['python', SINGLE_ORCA_RUN_FILE, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4], str(CPURank), str(int(parameterDict['overwriteCurrentData']))]))
         # Wait for all jobs to complete
         [p.wait() for p in runningJobs]
         # Delete the job pickle

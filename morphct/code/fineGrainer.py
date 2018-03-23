@@ -1,6 +1,6 @@
 import copy
 import numpy as np
-import helperFunctions
+from morphct.code import helperFunctions
 import sys
 
 
@@ -27,7 +27,7 @@ class morphology:
         CGMorphologyDict = {}
         AAMorphologyDict = {}
         # Set the AAMorphology and CGMorphology system sizes to the same as the input file system size
-        for boxDimension in ['lx', 'ly', 'lz']:
+        for boxDimension in ['lx', 'ly', 'lz', 'xy', 'xz', 'yz']:
             CGMorphologyDict[boxDimension] = self.CGDictionary[boxDimension]
             AAMorphologyDict[boxDimension] = self.CGDictionary[boxDimension]
         CGToAAIDMaster = []  # This is a list of dictionaries. Elements in the list correspond to molecules
@@ -95,7 +95,7 @@ class morphology:
             CGToAAIDMaster.append(CGtoAAIDs)
             # Update the morphology dictionaries with this new molecule
             for key in list(self.CGDictionary.keys()):
-                if key not in ['lx', 'ly', 'lz', 'time_step', 'dimensions']:
+                if key not in ['lx', 'ly', 'lz', 'xy', 'xz', 'yz', 'time_step', 'dimensions']:
                     #if key not in CGMorphologyDict.keys():
                     #    CGMorphologyDict[key] = CGMoleculeDict[key]
                     #else:
@@ -108,10 +108,10 @@ class morphology:
         # Now add the ghost dictionary to the end of the morphology file
         totalNumberOfAtoms = len(AAMorphologyDict['type'])  # Should be == rollingAAIndex, but don't want to take any chances
         # Add in the wrapped positions of the ghosts. Need to know sim dims for this
-        for key in ['lx', 'ly', 'lz']:
+        for key in ['lx', 'ly', 'lz', 'xy', 'xz', 'yz']:
             ghostDictionary[key] = AAMorphologyDict[key]
         ghostDictionary = helperFunctions.addWrappedPositions(ghostDictionary)
-        for key in ['lx', 'ly', 'lz']:
+        for key in ['lx', 'ly', 'lz', 'xy', 'xz', 'yz']:
             ghostDictionary.pop(key)
         # The real atoms that the ghost particles are bonded to are already correct and no longer need to be changed.
         # However, the ghost particles themselves will have the wrong indices if we were to add them to the system directly.
@@ -247,7 +247,7 @@ class atomistic:
         return self.AADictionary, self.atomIDLookupTable, self.ghostDictionary
 
     def getCGMonomerDict(self):
-        CGMonomerDictionary = {'position': [], 'image': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': [], 'lx': 0, 'ly': 0, 'lz': 0}
+        CGMonomerDictionary = {'position': [], 'image': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': [], 'lx': 0, 'ly': 0, 'lz': 0, 'xy' : 0, 'xz': 0, 'yz': 0}
         # First, do just the positions and find the newsiteIDs for each CG site
         for siteID in self.siteIDs:
             CGMonomerDictionary['position'].append(self.CGDictionary['position'][siteID])
@@ -286,7 +286,7 @@ class atomistic:
         return templateDict
 
     def runFineGrainer(self, ghostDictionary):
-        AADictionary = {'position': [], 'image': [], 'unwrapped_position': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': [], 'lx': 0, 'ly': 0, 'lz': 0}
+        AADictionary = {'position': [], 'image': [], 'unwrapped_position': [], 'mass': [], 'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': [], 'lx': 0, 'ly': 0, 'lz': 0, 'xy' : 0, 'xz': 0, 'yz': 0}
         # Find the COMs of each CG site in the system, so that we know where to move the template to
         CGCoMs, self.CGToTemplateAAIDs = self.getAATemplatePosition(self.CGToTemplateAAIDs)
         # Need to keep track of the atom ID numbers globally - runFineGrainer sees individual monomers, atomistic sees molecules and the XML needs to contain the entire morphology.
@@ -317,7 +317,7 @@ class atomistic:
                 raise SystemError('NOT ALL MONOMER SITES ARE THE SAME TEMPLATE')
             # Copy the template dictionary for editing for this monomer
             thisMonomerDictionary = copy.deepcopy(self.AATemplatesDictionary[self.CGDictionary['type'][monomer[0]]])
-            for key in ['lx', 'ly', 'lz']:
+            for key in ['lx', 'ly', 'lz']: #TODO tilts
                 thisMonomerDictionary[key] = self.CGDictionary[key]
             # Include the image tag in case it's not present in the template
             if len(thisMonomerDictionary['image']) == 0:
@@ -524,6 +524,9 @@ class atomistic:
         keyList.remove('lx')
         keyList.remove('ly')
         keyList.remove('lz')
+        keyList.remove('xy')
+        keyList.remove('xz')
+        keyList.remove('yz')
         for key in keyList:
             for value in currentMonomerDictionary[key]:
                 AADictionary[key].append(value)

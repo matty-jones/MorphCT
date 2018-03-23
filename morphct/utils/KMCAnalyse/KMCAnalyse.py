@@ -6,10 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 import scipy.stats
-from scipy.sparse import lil_matrix
-sys.path.append('../../code/')
-sys.path.append('../code')
-import helperFunctions
+from morphct.code import helperFunctions
 try:
     import mpl_toolkits.mplot3d as p3
 except ImportError:
@@ -23,7 +20,7 @@ import copy
 
 elementaryCharge = 1.60217657E-19  # C
 kB = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}
-hbar = 1.05457173E-34 # m^{2} kg s^{-1}
+hbar = 1.05457173E-34  # m^{2} kg s^{-1}
 temperature = 290  # K
 
 
@@ -44,10 +41,12 @@ def loadKMCResultsPickle(directory):
 
 def splitCarriersByType(carrierData):
     # If only one carrier type has been given, call the carriers holes and skip the electron calculations
-    listVariables = ['currentTime', 'ID', 'noHops', 'displacement', 'lifetime', 'finalPosition', 'image', 'initialPosition']
+    listVariables = ['currentTime', 'ID', 'noHops', 'displacement', 'lifetime', 'finalPosition', 'image',
+                     'initialPosition']
     try:
         carrierDataHoles = {'carrierHistoryMatrix': carrierData['holeHistoryMatrix'], 'seed': carrierData['seed']}
-        carrierDataElectrons = {'carrierHistoryMatrix': carrierData['electronHistoryMatrix'], 'seed': carrierData['seed']}
+        carrierDataElectrons = {'carrierHistoryMatrix': carrierData['electronHistoryMatrix'],
+                                'seed': carrierData['seed']}
         for listVar in listVariables:
             carrierDataHoles[listVar] = []
             carrierDataElectrons[listVar] = []
@@ -59,7 +58,8 @@ def splitCarriersByType(carrierData):
     except:
         print("Multiple charge carriers not found, assuming donor material and holes only")
         try:
-            carrierDataHoles = {'carrierHistoryMatrix': carrierData['carrierHistoryMatrix'], 'seed': carrierData['seed']}
+            carrierDataHoles = {'carrierHistoryMatrix': carrierData['carrierHistoryMatrix'],
+                                'seed': carrierData['seed']}
         except KeyError:
             carrierDataHoles = {'carrierHistoryMatrix': carrierData['carrierHistoryMatrix'], 'seed': 0}
         carrierDataElectrons = None
@@ -79,7 +79,6 @@ def getCarrierData(carrierData):
     totalDataPointsAveragedOver = 0
     squaredDisps = {}
     actualTimes = {}
-    carrierTypes = {}
     for carrierIndex, displacement in enumerate(carrierData['displacement']):
         if (carrierData['currentTime'][carrierIndex] > carrierData['lifetime'][carrierIndex] * 2) or (carrierData['currentTime'][carrierIndex] < carrierData['lifetime'][carrierIndex] / 2.0) or (carrierData['noHops'][carrierIndex] == 1):
             totalDataPoints += 1
@@ -118,7 +117,7 @@ def plotConnections(chromophoreList, simDims, carrierHistory, directory, carrier
     maximum = np.max(carrierHistory[np.nonzero(carrierHistory)])
     plt.gcf()
     levels = np.linspace(np.log10(minimum), np.log10(maximum), 100)
-    coloursForMap = plt.contourf([[0, 0], [0, 0]], levels, cmap = colormap)
+    coloursForMap = plt.contourf([[0, 0], [0, 0]], levels, cmap=colormap)
     plt.clf()
     # Now for the actual plot
     fig = plt.gcf()
@@ -140,27 +139,26 @@ def plotConnections(chromophoreList, simDims, carrierHistory, directory, carrier
                 if plotConnection is True:
                     #ax.scatter(coords1[0], coords1[1], coords1[2], c = 'k', s = '5')
                     #ax.scatter(coords2[0], coords2[1], coords2[2], c = 'k', s = '5')
-                    line = [coords2[0] - coords1[0], coords2[1] - coords1[1], coords2[2] - coords2[1]]
                     if (np.abs(coords2[0] - coords1[0]) < simDims[0][1]) and (np.abs(coords2[1] - coords1[1]) < simDims[1][1]) and (np.abs(coords2[2] - coords1[2]) < simDims[2][1]):
                         #colourIntensity = value / normalizeTo
                         colourIntensity = np.log10(value) / np.log10(normalizeTo)
-                        ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c = colormap(colourIntensity), linewidth = 0.5, alpha = colourIntensity)
+                        ax.plot([coords1[0], coords2[0]], [coords1[1], coords2[1]], [coords1[2], coords2[2]], c=colormap(colourIntensity), linewidth=0.5, alpha=colourIntensity)
     # Draw boxlines
     # Varying X
-    ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][0]], c = 'k', linewidth = 1.0)
-    ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][1], simDims[1][1]], [simDims[2][0], simDims[2][0]], c = 'k', linewidth = 1.0)
-    ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][1], simDims[2][1]], c = 'k', linewidth = 1.0)
-    ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][1], simDims[1][1]], [simDims[2][1], simDims[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][0]], c='k', linewidth=1.0)
+    ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][1], simDims[1][1]], [simDims[2][0], simDims[2][0]], c='k', linewidth=1.0)
+    ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][1], simDims[2][1]], c='k', linewidth=1.0)
+    ax.plot([simDims[0][0], simDims[0][1]], [simDims[1][1], simDims[1][1]], [simDims[2][1], simDims[2][1]], c='k', linewidth=1.0)
     # Varying Y
-    ax.plot([simDims[0][0], simDims[0][0]], [simDims[1][0], simDims[1][1]], [simDims[2][0], simDims[2][0]], c = 'k', linewidth = 1.0)
-    ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][0], simDims[1][1]], [simDims[2][0], simDims[2][0]], c = 'k', linewidth = 1.0)
-    ax.plot([simDims[0][0], simDims[0][0]], [simDims[1][0], simDims[1][1]], [simDims[2][1], simDims[2][1]], c = 'k', linewidth = 1.0)
-    ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][0], simDims[1][1]], [simDims[2][1], simDims[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][0], simDims[0][0]], [simDims[1][0], simDims[1][1]], [simDims[2][0], simDims[2][0]], c='k', linewidth=1.0)
+    ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][0], simDims[1][1]], [simDims[2][0], simDims[2][0]], c='k', linewidth=1.0)
+    ax.plot([simDims[0][0], simDims[0][0]], [simDims[1][0], simDims[1][1]], [simDims[2][1], simDims[2][1]], c='k', linewidth=1.0)
+    ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][0], simDims[1][1]], [simDims[2][1], simDims[2][1]], c='k', linewidth=1.0)
     # Varying Z
-    ax.plot([simDims[0][0], simDims[0][0]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][1]], c = 'k', linewidth = 1.0)
-    ax.plot([simDims[0][0], simDims[0][0]], [simDims[1][1], simDims[1][1]], [simDims[2][0], simDims[2][1]], c = 'k', linewidth = 1.0)
-    ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][1]], c = 'k', linewidth = 1.0)
-    ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][1], simDims[1][1]], [simDims[2][0], simDims[2][1]], c = 'k', linewidth = 1.0)
+    ax.plot([simDims[0][0], simDims[0][0]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][1]], c='k', linewidth=1.0)
+    ax.plot([simDims[0][0], simDims[0][0]], [simDims[1][1], simDims[1][1]], [simDims[2][0], simDims[2][1]], c='k', linewidth=1.0)
+    ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][0], simDims[1][0]], [simDims[2][0], simDims[2][1]], c='k', linewidth=1.0)
+    ax.plot([simDims[0][1], simDims[0][1]], [simDims[1][1], simDims[1][1]], [simDims[2][0], simDims[2][1]], c='k', linewidth=1.0)
 
     tickLocation = range(0, int(np.log10(maximum)) + 1, 1)
     cbar = plt.colorbar(coloursForMap, ticks=tickLocation)#np.linspace(np.log10(minimum), np.log10(maximum), 6))
@@ -204,7 +202,7 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     fitY = (fitX * gradient) + intercept
     mobility, mobError = calcMobility(fitX, fitY, np.average(timeStandardErrors), np.average(MSDStandardErrors))
     plt.plot(times, MSDs)
-    plt.errorbar(times, MSDs, xerr = timeStandardErrors, yerr = MSDStandardErrors)
+    plt.errorbar(times, MSDs, xerr=timeStandardErrors, yerr=MSDStandardErrors)
     plt.plot(fitX, fitY, 'r')
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
@@ -216,7 +214,7 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     plt.clf()
     print("Figure saved as", directory + "/figures/" + fileName)
     plt.semilogx(times, MSDs)
-    plt.errorbar(times, MSDs, xerr = timeStandardErrors, yerr = MSDStandardErrors)
+    plt.errorbar(times, MSDs, xerr=timeStandardErrors, yerr=MSDStandardErrors)
     plt.semilogx(fitX, fitY, 'r')
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
@@ -227,7 +225,7 @@ def plotMSD(times, MSDs, timeStandardErrors, MSDStandardErrors, directory, carri
     plt.clf()
     print("Figure saved as", directory + "/figures/" + fileName)
     plt.plot(times, MSDs)
-    plt.errorbar(times, MSDs, xerr = timeStandardErrors, yerr = MSDStandardErrors)
+    plt.errorbar(times, MSDs, xerr=timeStandardErrors, yerr=MSDStandardErrors)
     plt.plot(fitX, fitY, 'r')
     plt.xlabel('Time (s)')
     plt.ylabel('MSD (m'+r'$^{2}$)')
@@ -310,8 +308,8 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType, plot3DGraphs):
         xvals = xvals[0:len(xvals):len(xvals)//1000]
         yvals = yvals[0:len(yvals):len(yvals)//1000]
         zvals = zvals[0:len(zvals):len(zvals)//1000]
-    plt.scatter(xvals, yvals, zs = zvals, c = colours, s = 20)
-    plt.scatter(0, 0, zs = 0, c = 'r', s = 50)
+    plt.scatter(xvals, yvals, zs=zvals, c=colours, s=20)
+    plt.scatter(0, 0, zs=0, c='r', s=50)
     # Draw boxlines
     # Varying X
     ax.plot([simDimsnm[0][0], simDimsnm[0][1]], [simDimsnm[1][0], simDimsnm[1][0]], [simDimsnm[2][0], simDimsnm[2][0]], c = 'k', linewidth = 1.0)
@@ -374,10 +372,11 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierTy
     yvals = list(np.array(mobilityData)[:,0])
     yerrs = list(np.array(mobilityData)[:,1])
     plt.xlabel(xLabel)
-    plt.ylabel('Mobility, cm'+r'$^{2}$ '+'V'+r'$^{-1}$'+r's$^{-1}$')
-    plt.title('p1-L15-f0.0-P0.1-TX.X-e0.1', fontsize = 24)
+    plt.ylabel('Mobility (cm'+r'$^{2}$ '+'V'+r'$^{-1}$'+r's$^{-1}$)')
+    #plt.title('p1-L15-f0.0-P0.1-TX.X-e0.1', fontsize = 24)
     #plt.xlim([1.4, 2.6])
-    plt.semilogy(xvals, yvals, c = 'b')
+    #plt.xlim([0.01, 1.0])
+    plt.semilogy(xvals, yvals, c='k')
     #plt.gca().set_xscale('log')
     plt.errorbar(xvals, yvals, xerr = 0, yerr = yerrs)
     fileName = './mobility' + carrierType + '.pdf'
@@ -388,7 +387,7 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierTy
     plt.plot(tempData, anisotropyData, c = 'r')
     fileName = './anisotropy' + carrierType + '.pdf'
     plt.xlabel(xLabel)
-    plt.ylabel(r'$\kappa$'+', Arb. U')
+    plt.ylabel(r'$\kappa$'+' (Arb. U)')
     plt.savefig(fileName)
     plt.clf()
     print("Figure saved as " + fileName)
@@ -397,7 +396,7 @@ def plotTemperatureProgression(tempData, mobilityData, anisotropyData, carrierTy
 def calculateLambdaij(chromoLength):
     # The equation for the internal reorganisation energy was obtained from the data given in
     # Johansson, E and Larsson, S; 2004, Synthetic Metals 144: 183-191.
-    # External reorganisation energy obtained from 
+    # External reorganisation energy obtained from
     # Liu, T and Cheung, D. L. and Troisi, A; 2011, Phys. Chem. Chem. Phys. 13: 21461-21470
     lambdaExternal = 0.11 # eV
     if chromoLength < 12:
@@ -413,7 +412,6 @@ def gaussian(x, a, x0, sigma):
 
 
 def gaussFit(data):
-    n = len(data)
     mean = np.mean(data)
     std = np.std(data)
     hist, binEdges = np.histogram(data, bins=100)
@@ -652,7 +650,7 @@ def determineMoleculeIDs(CGToAAIDMaster, AAMorphologyDict, parameterDict, chromo
                 CGIDToMolID[CGID] = molID
     elif (len(parameterDict['CGSiteSpecies']) == 1) and (('AARigidBodySpecies' not in parameterDict) or (len(parameterDict['AARigidBodySpecies']) == 0)):   # The not in is a catch for the old PAH systems
         print("Small-molecule system detected, assuming each chromophore is its own molecule...")
-        # When CGMorphology doesn't exist, and no rigid body species have been specified, then 
+        # When CGMorphology doesn't exist, and no rigid body species have been specified, then
         # every chromophore is its own molecule)
         for index, chromo in enumerate(chromophoreList):
             for CGID in chromo.CGIDs:
@@ -768,7 +766,7 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
     for chromo in chromophoreList:
         mol1ID = CGToMolID[chromo.CGIDs[0]]
         for index, Tij in enumerate(chromo.neighboursTI):
-            if (Tij == None) or (Tij == 0):
+            if (Tij is None) or (Tij == 0):
                 continue
             chromo2 = chromophoreList[chromo.neighbours[index][0]]
             mol2ID = CGToMolID[chromo2.CGIDs[0]]
@@ -884,11 +882,14 @@ def writeCSV(dataDict, directory):
 
 def createResultsPickle(directory):
     coresList = []
-    for core in glob.glob(directory + '/KMC/KMClog_*.log'):
-        coresList.append(re.findall(directory + '/KMC/KMClog_(.*).log', core)[0])
+    for fileName in glob.glob(directory + '/KMC/*'):
+        try:
+            coresList.append(re.findall("([_])(..)([\.])", fileName)[0][1])
+        except IndexError:
+            pass
+    coresList = list(set(coresList))
     keepList = []
     for core in coresList:
-        selectList = []
         slot1 = directory + '/KMC/KMCslot1Results_%02d.pickle' % (int(core))
         slot2 = directory + '/KMC/KMCslot2Results_%02d.pickle' % (int(core))
         if os.path.getsize(slot1) >= os.path.getsize(slot2):
@@ -929,7 +930,8 @@ def combineResultsPickles(directory, pickleFiles):
     print("Complete data written to", directory + "/KMCResults.pickle.")
 
 
-def calculateMobility(directory, currentCarrierType, carrierData, simDims, plot3DGraphs):
+def calculateMobility(directory, currentCarrierType, carrierData, simDims,
+                      plot3DGraphs, chromophoreList):
     print("Considering the transport of", currentCarrierType + "...")
     print("Obtaining mean squared displacements...")
     carrierHistory, times, MSDs, timeStandardErrors, MSDStandardErrors = getCarrierData(carrierData)
@@ -949,7 +951,7 @@ def calculateMobility(directory, currentCarrierType, carrierData, simDims, plot3
     return mobility, mobError, rSquared, anisotropy
 
 
-if __name__ == "__main__":
+def KMCAnalyse():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--threeD", action="store_true", required=False, help="If present, use matplotlib to plot the 3D graphs (3D network, anisotropy and stack positions. This takes a while (usually a couple of minutes) to plot. Defaults to False.")
     parser.add_argument("-p", "--periodicStacks", action="store_true", required=False, help="If present, allow periodic connections to add chromophores to stacks, as well as non-periodic connections (this usually reduces the number of stacks in the system). Defaults to False.")
@@ -977,7 +979,7 @@ if __name__ == "__main__":
         # Now need to split up the carrierData into both electrons and holes
         carrierDataHoles, carrierDataElectrons = splitCarriersByType(carrierData)
         print("Loading chromophoreList...")
-        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle('./' + directory + '/code/' + directory + '.pickle')
+        AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(directory + '/code/' + directory + '.pickle')
         print("ChromophoreList obtained")
         morphologyShape = np.array([AAMorphologyDict[axis] for axis in ['lx', 'ly', 'lz']])
         simDims = [[-AAMorphologyDict[axis] / 2.0, AAMorphologyDict[axis] / 2.0] for axis in ['lx', 'ly', 'lz']]
@@ -992,7 +994,8 @@ if __name__ == "__main__":
             completeCarrierData.append(carrierDataElectrons)
         for carrierTypeIndex, carrierData in enumerate(completeCarrierData):
             currentCarrierType = completeCarrierTypes[carrierTypeIndex]
-            mobility, mobError, rSquared, anisotropy = calculateMobility(directory, currentCarrierType, carrierData, simDims, args.threeD)
+            mobility, mobError, rSquared, anisotropy = calculateMobility(directory, currentCarrierType, carrierData,
+                                                                         simDims, args.threeD, chromophoreList)
             if currentCarrierType == 'Hole':
                 holeAnisotropyData.append(anisotropy)
                 holeMobilityData.append([mobility, mobError])

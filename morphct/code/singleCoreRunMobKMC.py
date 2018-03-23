@@ -3,7 +3,7 @@ import signal
 import traceback
 import os
 import numpy as np
-import helperFunctions
+from morphct.code import helperFunctions
 import time as T
 import random as R
 from scipy.sparse import lil_matrix
@@ -15,9 +15,10 @@ elementaryCharge = 1.60217657E-19 # C
 kB = 1.3806488E-23 # m^{2} kg s^{-2} K^{-1}
 hbar = 1.05457173E-34 # m^{2} kg s^{-1}
 
+logFile = None
 
 class carrier:
-    def __init__(self, chromophoreList, parameterDict, chromoID, lifetime, carrierNo, AAMorphologyDict):
+    def __init__(self, chromophoreList, parameterDict, chromoID, lifetime, carrierNo, AAMorphologyDict, molIDDict):
         self.ID = carrierNo
         self.image = [0, 0, 0]
         self.initialChromophore = chromophoreList[chromoID]
@@ -44,25 +45,35 @@ class carrier:
         self.noHops = 0
         self.simDims = [[-AAMorphologyDict['lx'] / 2.0, AAMorphologyDict['lx'] / 2.0], [-AAMorphologyDict['ly'] / 2.0, AAMorphologyDict['ly'] / 2.0], [-AAMorphologyDict['lz'] / 2.0, AAMorphologyDict['lz'] / 2.0]]
         self.displacement = None
-
-    def calculateHopRate(self, lambdaij, Tij, deltaEij):
-        # Semiclassical Marcus Hopping Rate Equation
-        kij = ((2 * np.pi) / hbar) * (Tij ** 2) * np.sqrt(1.0 / (4 * lambdaij * np.pi * kB * self.T)) * np.exp(-((deltaEij + lambdaij)**2) / (4 * lambdaij * kB * self.T))
-        return kij
-
-    def determineHopTime(self, rate):
-        # Use the KMC algorithm to determine the wait time to this hop
-        if rate != 0:
-            while True:
-                x = R.random()
-                # Ensure that we don't get exactly 0.0 or 1.0, which would break our logarithm
-                if (x != 0.0) and (x != 1.0):
-                    break
-            tau = - np.log(x) / rate
-        else:
-            # If rate == 0, then make the hopping time extremely long
-            tau = 1E99
-        return tau
+        self.molIDDict = molIDDict
+        # Set the use of average hop rates to false if the key does not exist in the parameter dict
+        try:
+            self.useAverageHopRates = parameterDict['useAverageHopRates']
+            self.averageIntraHopRate = parameterDict['averageIntraHopRate']
+            self.averageInterHopRate = parameterDict['averageInterHopRate']
+        except KeyError:
+            self.useAverageHopRates = False
+        # Set the use of Koopmans' approximation to false if the key does not exist in the parameter dict
+        try:
+            self.useKoopmansApproximation = parameterDict['useKoopmansApproximation']
+            if self.useKoopmansApproximation:
+                self.koopmansHoppingPrefactor = parameterDict['koopmansHoppingPrefactor']
+            else:
+                self.koopmansHoppingPrefactor = 1.0
+        except KeyError:
+            self.useKoopmansApproximation = False
+        # Are we using a simple Boltzmann penalty?
+        try:
+            self.useSimpleEnergeticPenalty = parameterDict['useSimpleEnergeticPenalty']
+        except KeyError:
+            self.useSimpleEnergeticPenalty = False
+        # Are we applying a distance penalty beyond the transfer integral?
+        try:
+            self.useVRH = parameterDict['useVRH']
+        except KeyError:
+            self.useVRH = False
+        if self.useVRH is True:
+            self.VRHScaling = 1.0 / parameterDict['VRHDelocalisation']
 
     def calculateHop(self, chromophoreList):
         # Terminate if the next hop would be more than the termination limit
@@ -71,17 +82,42 @@ class carrier:
                 return 1
         # Determine the hop times to all possible neighbours
         hopTimes = []
-        # Obtain the reorganisation energy in J (from eV in the parameter file)
-        for neighbourIndex, transferIntegral in enumerate(self.currentChromophore.neighboursTI):
-            # Ignore any hops with a NoneType transfer integral (usually due to an ORCA error)
-            if transferIntegral is None:
-                continue
-            deltaEij = self.currentChromophore.neighboursDeltaE[neighbourIndex]
-            # All of the energies are in eV currently, so convert them to J
-            hopRate = self.calculateHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge)
-            hopTime = self.determineHopTime(hopRate)
-            # Keep track of the chromophoreID and the corresponding tau
-            hopTimes.append([self.currentChromophore.neighbours[neighbourIndex][0], hopTime])
+        if self.useAverageHopRates is True:
+            # Use the average hop values given in the parameter dict to pick a hop
+            for neighbourDetails in self.currentChromophore.neighbours:
+                neighbour = chromophoreList[neighbourDetails[0]]
+                assert(neighbour.ID == neighbourDetails[0])
+                if self.molIDDict[self.currentChromophore.ID] == self.molIDDict[neighbour.ID]:
+                    hopRate = self.averageIntraHopRate
+                else:
+                    hopRate = self.averageInterHopRate
+                hopTime = helperFunctions.determineEventTau(hopRate)
+                # Keep track of the chromophoreID and the corresponding tau
+                hopTimes.append([neighbour.ID, hopTime])
+        else:
+            # Obtain the reorganisation energy in J (from eV in the parameter file)
+            for neighbourIndex, transferIntegral in enumerate(self.currentChromophore.neighboursTI):
+                # Ignore any hops with a NoneType transfer integral (usually due to an ORCA error)
+                if transferIntegral is None:
+                    continue
+                deltaEij = self.currentChromophore.neighboursDeltaE[neighbourIndex]
+                # Create a hopping prefactor that can be modified if we're using Koopmans' approximation
+                prefactor = 1.0
+                if self.useKoopmansApproximation:
+                    prefactor *= self.koopmansHoppingPrefactor
+                # Get the relative image so we can update the carrier image after the hop
+                relativeImage = self.currentChromophore.neighbours[neighbourIndex][1]
+                # All of the energies are in eV currently, so convert them to J
+                if self.useVRH is True:
+                    neighbourChromo = chromophoreList[self.currentChromophore.neighbours[neighbourIndex][0]]
+                    neighbourChromoPosn = neighbourChromo.posn + (np.array(relativeImage) * np.array([axis[1] - axis[0] for axis in self.simDims]))
+                    chromophoreSeparation = helperFunctions.calculateSeparation(self.currentChromophore.posn, neighbourChromoPosn) * 1E-10 # Convert to m
+                    hopRate = helperFunctions.calculateCarrierHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge, prefactor, self.T, useVRH=True, rij=chromophoreSeparation, VRHPrefactor=self.VRHScaling, boltzPen=self.useSimpleEnergeticPenalty)
+                else:
+                    hopRate = helperFunctions.calculateCarrierHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge, prefactor, self.T, boltzPen=self.useSimpleEnergeticPenalty)
+                hopTime = helperFunctions.determineEventTau(hopRate)
+                # Keep track of the chromophoreID and the corresponding tau
+                hopTimes.append([self.currentChromophore.neighbours[neighbourIndex][0], hopTime, relativeImage])
         # Sort by ascending hop time
         hopTimes.sort(key = lambda x:x[1])
         # Take the quickest hop
@@ -89,7 +125,7 @@ class carrier:
             destinationChromophore = chromophoreList[hopTimes[0][0]]
         else:
             # We are trapped here, so create a dummy hop with time 1E99
-            hopTimes = [[self.currentChromophore.ID, 1E99]]
+            hopTimes = [[self.currentChromophore.ID, 1E99, [0, 0, 0]]]
         # As long as we're not limiting by the number of hops:
         if self.hopLimit is None:
             # Ensure that the next hop does not put the carrier over its lifetime
@@ -97,25 +133,28 @@ class carrier:
                 # Send the termination signal to singleCoreRunKMC.py
                 return 1
         # Move the carrier and send the contiuation signal to singleCoreRunKMC.py
-        self.performHop(destinationChromophore, hopTimes[0][1])
+        self.performHop(destinationChromophore, hopTimes[0][1], hopTimes[0][2])
         return 0
 
-    def performHop(self, destinationChromophore, hopTime):
+    def performHop(self, destinationChromophore, hopTime, relativeImage):
         initialID = self.currentChromophore.ID
         destinationID = destinationChromophore.ID
-        initialPosition = self.currentChromophore.posn
-        destinationPosition = destinationChromophore.posn
-        deltaPosition = destinationPosition - initialPosition
-        for axis in range(3):
-            halfBoxLength = (self.simDims[axis][1] - self.simDims[axis][0]) / 2.0
-            while deltaPosition[axis] > halfBoxLength:
-                # Crossed over a negative boundary, decrement image by 1
-                deltaPosition[axis] -= halfBoxLength * 2.0
-                self.image[axis] -= 1
-            while deltaPosition[axis] < - halfBoxLength:
-                # Crossed over a positive boundary, increment image by 1
-                deltaPosition[axis] += halfBoxLength * 2.0
-                self.image[axis] += 1
+        self.image = list(np.array(self.image) + np.array(relativeImage))
+        ### OLD WAY TO CALCULATE SELF.IMAGE ###
+        #initialPosition = self.currentChromophore.posn
+        #destinationPosition = destinationChromophore.posn
+        #deltaPosition = destinationPosition - initialPosition
+        #for axis in range(3):
+        #    halfBoxLength = (self.simDims[axis][1] - self.simDims[axis][0]) / 2.0
+        #    while deltaPosition[axis] > halfBoxLength:
+        #        # Crossed over a negative boundary, decrement image by 1
+        #        deltaPosition[axis] -= halfBoxLength * 2.0
+        #        self.image[axis] -= 1
+        #    while deltaPosition[axis] < - halfBoxLength:
+        #        # Crossed over a positive boundary, increment image by 1
+        #        deltaPosition[axis] += halfBoxLength * 2.0
+        #        self.image[axis] += 1
+        #######################################
         # Carrier image now sorted, so update its current position
         self.currentChromophore = destinationChromophore
         # Increment the simulation time
@@ -165,6 +204,48 @@ def initialiseSaveData(nChromos, seed):
     return {'seed': seed, 'ID': [], 'image': [], 'lifetime': [], 'currentTime': [], 'noHops': [], 'displacement': [], 'holeHistoryMatrix': lil_matrix((nChromos, nChromos), dtype = int), 'electronHistoryMatrix': lil_matrix((nChromos, nChromos), dtype = int), 'initialPosition': [], 'finalPosition': [], 'carrierType':[]}
 
 
+def splitMolecules(inputDictionary):
+    # Split the full morphology into individual molecules
+    moleculeAAIDs = []
+    moleculeLengths = []
+    # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
+    bondedAtoms = helperFunctions.obtainBondedList(inputDictionary['bond'])
+    moleculeList = [i for i in range(len(inputDictionary['type']))]
+    # Recursively add all atoms in the neighbour list to this molecule
+    for molID in range(len(moleculeList)):
+        moleculeList = updateMolecule(molID, moleculeList, bondedAtoms)
+    # Here we have a list of len(atoms) where each index gives the molID
+    molIDDict = {}
+    for chromo in chromophoreList:
+        AAIDToCheck = chromo.AAIDs[0]
+        molIDDict[chromo.ID] = moleculeList[AAIDToCheck]
+    return molIDDict
+
+
+def updateMolecule(atomID, moleculeList, bondedAtoms):
+    # Recursively add all neighbours of atom number atomID to this molecule
+    try:
+        for bondedAtom in bondedAtoms[atomID]:
+            # If the moleculeID of the bonded atom is larger than that of the current one,
+            # update the bonded atom's ID to the current one's to put it in this molecule,
+            # then iterate through all of the bonded atom's neighbours
+            if moleculeList[bondedAtom] > moleculeList[atomID]:
+                moleculeList[bondedAtom] = moleculeList[atomID]
+                moleculeList = updateMolecule(bondedAtom, moleculeList, bondedAtoms)
+            # If the moleculeID of the current atom is larger than that of the bonded one,
+            # update the current atom's ID to the bonded one's to put it in this molecule,
+            # then iterate through all of the current atom's neighbours
+            elif moleculeList[bondedAtom] < moleculeList[atomID]:
+                moleculeList[atomID] = moleculeList[bondedAtom]
+                moleculeList = updateMolecule(atomID, moleculeList, bondedAtoms)
+            # Else: both the current and the bonded atom are already known to be in this
+            # molecule, so we don't have to do anything else.
+    except KeyError:
+        # This means that there are no bonded CG sites (i.e. it's a single molecule)
+        pass
+    return moleculeList
+
+
 if __name__ == '__main__':
     KMCDirectory = sys.argv[1]
     CPURank = int(sys.argv[2])
@@ -177,7 +258,7 @@ if __name__ == '__main__':
     pickleFileName = KMCDirectory + '/KMCData_%02d.pickle' % (CPURank)
     with open(pickleFileName, 'rb') as pickleFile:
         jobsToRun = pickle.load(pickleFile)
-    logFile = KMCDirectory + '/KMClog_' + str(CPURank) + '.log'
+    logFile = KMCDirectory + '/KMClog_%02d.log' % (CPURank)
     # Reset the log file
     with open(logFile, 'wb+') as logFileHandle:
         pass
@@ -198,6 +279,15 @@ if __name__ == '__main__':
     helperFunctions.writeToFile(logFile, ['Found main morphology pickle file at ' + mainMorphologyPickleName + '! Loading data...'])
     AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(mainMorphologyPickleName)
     helperFunctions.writeToFile(logFile, ['Main morphology pickle loaded!'])
+    try:
+        if parameterDict['useAverageHopRates'] is True:
+            # Chosen to split hopping by inter-intra molecular hops, so get molecule data
+            molIDDict = splitMolecules(AAMorphologyDict)
+            # molIDDict is a dictionary where the keys are the chromoIDs, and the vals are the molIDs
+        else:
+            raise KeyError
+    except KeyError:
+        molIDDict = None
     # Attempt to catch a kill signal to ensure that we save the pickle before termination
     killer = terminationSignal()
     seed = R.randint(0, sys.maxsize)
@@ -222,7 +312,7 @@ if __name__ == '__main__':
                     continue
                 break
             # Create the carrier instance
-            thisCarrier = carrier(chromophoreList, parameterDict, startChromoID, lifetime, carrierNo, AAMorphologyDict)
+            thisCarrier = carrier(chromophoreList, parameterDict, startChromoID, lifetime, carrierNo, AAMorphologyDict, molIDDict)
             terminateSimulation = False
             while terminateSimulation is False:
                 terminateSimulation = bool(thisCarrier.calculateHop(chromophoreList))
@@ -261,7 +351,7 @@ if __name__ == '__main__':
                 elapsedTime /= 86400.0
                 timeunits = 'days.'
             elapsedTime = '%.1f' % (float(elapsedTime))
-            helperFunctions.writeToFile(logFile, ['Carrier hopped ' + str(thisCarrier.noHops) + ' times, over ' + str(thisCarrier.currentTime) + ' seconds, into image ' + str(thisCarrier.image) + ', for a displacement of ' + str(thisCarrier.displacement) + ', in ' + str(elapsedTime) + ' wall-clock ' + str(timeunits)])
+            helperFunctions.writeToFile(logFile, [str(thisCarrier.carrierType).capitalize() + ' hopped ' + str(thisCarrier.noHops) + ' times, over ' + str(thisCarrier.currentTime) + ' seconds, into image ' + str(thisCarrier.image) + ', for a displacement of ' + str(thisCarrier.displacement) + ', in ' + str(elapsedTime) + ' wall-clock ' + str(timeunits)])
             # Save the pickle file every hour
             if (t2 - saveTime) > 3600:
                 print("Completed", jobNumber, "of", len(jobsToRun), "jobs. Making checkpoint at %3d%%" % (np.round((jobNumber + 1) / float(len(jobsToRun)) * 100)))
