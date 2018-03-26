@@ -123,7 +123,7 @@ def write_CSV(file_name, data):
 
 
 def add_unwrapped_positions(input_dictionary):
-    '''This function takes a runHoomd.py input dictionary and updates the 'unwrapped_position'
+    '''This function takes a run_HOOMD.py input dictionary and updates the 'unwrapped_position'
     key based on the values of the 'position' and 'image' keys'''
     simulation_dimensions = [input_dictionary['lx'], input_dictionary['ly'], input_dictionary['lz']]
     input_dictionary['unwrapped_position'] = [0] * len(input_dictionary['position'])
@@ -150,7 +150,7 @@ def replace_wrapped_positions(input_dictionary):
 
 
 def add_wrapped_positions(input_dictionary):
-    '''This function takes a runHoomd.py input dictionary and updates the 'position' and
+    '''This function takes a run_HOOMD.py input dictionary and updates the 'position' and
     'image' keys based on the values of the 'unwrapped_position' key'''
     simulation_dimensions = [input_dictionary['lx'], input_dictionary['ly'], input_dictionary['lz']]
     input_dictionary['position'] = [0] * len(input_dictionary['unwrapped_position'])
@@ -173,7 +173,7 @@ def add_wrapped_positions(input_dictionary):
 
 
 def add_masses(input_dictionary):
-    '''This function takes a runHoomd.py input dictionary and updates the 'mass' key based
+    '''This function takes a run_HOOMD.py input dictionary and updates the 'mass' key based
     on the values of the 'type' key. Note that more hardcoding is required to add aditional
     atom types'''
     input_dictionary['mass'] = [1.0] * len(input_dictionary['type'])
@@ -192,7 +192,7 @@ def add_masses(input_dictionary):
 
 
 def add_diameters(input_dictionary):
-    '''This function takes a runHoomd.py input dictionary and updates the 'diameter' key based
+    '''This function takes a run_HOOMD.py input dictionary and updates the 'diameter' key based
     on the values of the 'type' key. Values are given in A. Note that more hardcoding is
     required to add aditional atom types'''
     input_dictionary['diameter'] = [1.0] * len(input_dictionary['type'])

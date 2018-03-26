@@ -60,7 +60,7 @@ def obtainMoleculeDict(AAMorphologyDict, moleculeAAIDs):
 
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
-    # Main execution loop for the extractMol routine
+    # Main execution loop for the extract_mol routine
     moleculeMaster = []
     # Create the moleculeMaster, where each entry is a list of all the AAIDs
     # for the atoms in each molecule

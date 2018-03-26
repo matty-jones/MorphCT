@@ -6,6 +6,7 @@ import random as R
 from scipy.sparse import lil_matrix
 import pickle
 import subprocess as sp
+from morphct.definitions import SINGLE_RUN_DEVICE_KMC_FILE
 from morphct.code import helper_functions as hf
 
 
@@ -171,11 +172,11 @@ def execute(parameterDict):
         childSeed = R.randint(0, 2**32)
         # NOTE DEBUG USING cProfile
         #print('RUNNING CPROFILE...')
-        #print('python -m cProfile -o deviceSim.cprof ' + os.getcwd() + '/code/singleCoreRunDeviceKMC.py', outputDir + ' ' + str(procID) + ' ' + str(childSeed) + ' &')
-        #runningJobs.append(sp.Popen(['python -m cProfile -o deviceSim.cprof ' + str(os.getcwd()) + '/code/singleCoreRunDeviceKMC.py', outputDir, str(procID), str(childSeed)]))
+        #print('python -m cProfile -o deviceSim.cprof ' + SINGLE_RUN_DEVICE_KMC_FILE, outputDir + ' ' + str(procID) + ' ' + str(childSeed) + ' &')
+        #runningJobs.append(sp.Popen(['python -m cProfile -o deviceSim.cprof ' + SINGLE_RUN_DEVICE_KMC_FILE, outputDir, str(procID), str(childSeed)]))
         # Previous run command:
-        print('python ' + os.getcwd() + '/code/singleCoreRunDeviceKMC.py' + outputDir + ' ' + str(procID) + ' ' + str(childSeed) + ' &')
-        runningJobs.append(sp.Popen(['python', str(os.getcwd()) + '/code/singleCoreRunDeviceKMC.py', outputDir, str(procID), str(childSeed)]))
+        print('python ' + SINGLE_RUN_DEVICE_KMC_FILE + outputDir + ' ' + str(procID) + ' ' + str(childSeed) + ' &')
+        runningJobs.append(sp.Popen(['python', SINGLE_RUN_DEVICE_KMC_FILE, outputDir, str(procID), str(childSeed)]))
     # Wait for all jobs to complete
     [p.wait() for p in runningJobs]
     print("All KMC jobs completed!")

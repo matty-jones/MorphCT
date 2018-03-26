@@ -6,7 +6,7 @@ import random as R
 from scipy.sparse import lil_matrix
 import pickle
 import subprocess as sp
-from morphct.definitions import SINGLE_RUN_MOBKMC_FILE
+from morphct.definitions import SINGLE_RUN_MOB_KMC_FILE
 from morphct.code import helper_functions as hf
 
 
@@ -53,8 +53,8 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
             pickle.dump(jobs, pickleFile)
         print("KMC jobs for procID", procID, "written to KMC_data_%02d.pickle" % (procID))
         # Open the required processes to execute the KMC jobs
-        #print('python ' + os.getcwd() + '/code/singleCoreRunMobKMC.py ' + outputDir + ' ' + str(procID) + ' &')
-        runningJobs.append(sp.Popen(['python', SINGLE_RUN_MOBKMC_FILE, outputDir, str(procID)]))
+        #print('python ' + SINGLE_RUN_MOB_KMC_FILE + outputDir + ' ' + str(procID) + ' &')
+        runningJobs.append(sp.Popen(['python', SINGLE_RUN_MOB_KMC_FILE, outputDir, str(procID)]))
     # Wait for all jobs to complete
     [p.wait() for p in runningJobs]
     # Now combine all of the pickle files into one:

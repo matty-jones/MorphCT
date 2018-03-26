@@ -18,8 +18,8 @@ def testFindNeighbours(pickleFile):
     simDims = [[-axis/2.0, axis/2.0] for axis in [AAMorphologyDict[boxLength] for boxLength in ['lx', 'ly', 'lz']]]
     parameterDict['maximumHoleHopDistance'] = 10.0
     parameterDict['maximumElectronHopDistance'] = 10.0
-    oldChromophoreList = obtainChromophores.determineNeighboursCutOff(emptyCutOffChromophoreList, parameterDict, simDims)
-    newChromophoreList = obtainChromophores.determineNeighboursVoronoi(emptyVoronoiChromophoreList, parameterDict, simDims)
+    oldChromophoreList = obtain_chromophores.determineNeighboursCutOff(emptyCutOffChromophoreList, parameterDict, simDims)
+    newChromophoreList = obtain_chromophores.determineNeighboursVoronoi(emptyVoronoiChromophoreList, parameterDict, simDims)
     for listName in [oldChromophoreList, newChromophoreList]:
         chromoID = 653
         print(chromoID)
@@ -35,12 +35,12 @@ def testWriteORCAOutput(pickleFile):
         chromo.neighbours = []
         chromo.dissociationNeighbours = []
     simDims = [[-axis/2.0, axis/2.0] for axis in [AAMorphologyDict[boxLength] for boxLength in ['lx', 'ly', 'lz']]]
-    chromophoreList = obtainChromophores.determineNeighboursCutOff(chromophoreList, parameterDict, simDims)
-    #chromophoreList = obtainChromophores.determineNeighboursVoronoi(chromophoreList, parameterDict, simDims)
+    chromophoreList = obtain_chromophores.determineNeighboursCutOff(chromophoreList, parameterDict, simDims)
+    #chromophoreList = obtain_chromophores.determineNeighboursVoronoi(chromophoreList, parameterDict, simDims)
     #for runNumber in range(20):
     parameterDict['outputMorphDir'] = './testAssets/outputFiles'
     parameterDict['morphology'] = ''
-    executeZINDO.createInputFiles(chromophoreList, AAMorphologyDict, parameterDict)
+    execute_ZINDO.createInputFiles(chromophoreList, AAMorphologyDict, parameterDict)
     #chromoID = 2487#R.randint(0, len(chromophoreList))
     #chromophore1 = chromophoreList[chromoID]
     #print("\n\n", chromoID, chromophore1.neighbours)
@@ -50,7 +50,7 @@ def testWriteORCAOutput(pickleFile):
     #    chromophore2 = chromophoreList[neighbourChromo[0]]
     #    AAIDs += chromophore2.AAIDs
     #    images += [neighbourChromo[1] for i in range(len(chromophore2.AAIDs))]
-    #    executeZINDO.writeOrcaInp(AAMorphologyDict, AAIDs, images, None, None, './testAssets/outputFiles/testORCAInput_%03d.inp' % (index))
+    #    execute_ZINDO.writeOrcaInp(AAMorphologyDict, AAIDs, images, None, None, './testAssets/outputFiles/testORCAInput_%03d.inp' % (index))
 
 
 def testCheckPeriodicNeighbours(pickleFile):
@@ -59,7 +59,7 @@ def testCheckPeriodicNeighbours(pickleFile):
         chromo.neighbours = []
         chromo.dissociationNeighbours = []
     simDims = [[-axis/2.0, axis/2.0] for axis in [AAMorphologyDict[boxLength] for boxLength in ['lx', 'ly', 'lz']]]
-    chromophoreList = obtainChromophores.determineNeighboursVoronoi(chromophoreList, parameterDict, simDims)
+    chromophoreList = obtain_chromophores.determineNeighboursVoronoi(chromophoreList, parameterDict, simDims)
     chromoID = R.randint(0, len(chromophoreList))
     print(chromophoreList[chromoID].neighbours)
     print("\nOriginal =", ' '.join(map(str, chromophoreList[chromoID].AAIDs)))

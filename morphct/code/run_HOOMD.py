@@ -335,7 +335,7 @@ def scaleMorphology(initialMorphology, parameterDict, sScale, eScale):
 
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
-    # Main execution function for runHoomd that performs the required MD phases
+    # Main execution function for run_HOOMD that performs the required MD phases
     # First, scale the input morphology based on the pair potentials such that
     # the distances and energies are normalised to the strongest pair interaction
     # and the diameter of the largest atom (makes it easier on HOOMDs calculations
