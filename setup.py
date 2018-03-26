@@ -103,7 +103,7 @@ setup(
             "fixImages=morphct.utils.fix_images.fix_images:main",
             "orca2xyz=morphct.utils.orca_to_XYZ.convert_to_XYZ:main",
             "KMCAnalyse=morphct.utils.KMC_analyse.KMC_analyse:main",
-            "KMCMontage=morphct.utils.imagemagickStitch.imagemagickStitch:KMCMontage"
+            "createMontage=morphct.utils.imagemagick_stitch.create_montage:main"
         ],
     },
 )
