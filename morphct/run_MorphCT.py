@@ -6,15 +6,15 @@ import time as T
 import subprocess as sp
 
 #sys.path.append(os.getcwd()+'/code')
-from morphct.code import fineGrainer
-from morphct.code import helperFunctions
-from morphct.code import runHoomd
-from morphct.code import extractMol
-from morphct.code import obtainChromophores
-from morphct.code import executeZINDO
-from morphct.code import transferIntegrals
-from morphct.code import mobilityKMC
-from morphct.code import deviceKMC
+from morphct.code import helper_functions as hf
+from morphct.code import fine_grainer
+from morphct.code import run_HOOMD
+from morphct.code import extract_mol
+from morphct.code import obtain_chromophores
+from morphct.code import execute_ZINDO
+from morphct.code import transfer_integrals
+from morphct.code import mobility_KMC
+from morphct.code import device_KMC
 
 
 class simulation:
@@ -45,7 +45,7 @@ class simulation:
             if self.executeFinegraining is False:
             # Load any previous data to allow us to run individual phases
                 try:
-                    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict, chromophoreList = helperFunctions.loadPickle(self.outputMorphologyDirectory+'/code/'+self.morphology[:-4]+'.pickle')
+                    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, previousParameterDict, chromophoreList = hf.loadPickle(self.outputMorphologyDirectory+'/code/'+self.morphology[:-4]+'.pickle')
                     # Load in any parameters from the previousParameterDict that have not been already defined in the new parameterDict (e.g. CGTypeMappings):
                     for key, previousValue in previousParameterDict.items():
                         if key not in list(parameterDict.keys()):
@@ -53,41 +53,41 @@ class simulation:
                 except:
                     print("PICKLE NOT FOUND, EXECUTING FINEGRAINING TO OBTAIN REQUIRED PARAMETERS...")
                     self.executeFinegraining = False
-                    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, []).analyseMorphology()
+                    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = fine_grainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, []).analyseMorphology()
             # Now begin running the code based on user's flags
             else:
                 print("---=== BACKMAPPING COARSE-GRAINED SITES... ===---")
-                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = fineGrainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, []).analyseMorphology()
+                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = fine_grainer.morphology(self.inputMorphologyFile, self.morphology[:-4], parameterDict, []).analyseMorphology()
                 print("---=== BACKMAPPING COMPLETED ===---")
             if self.executeMolecularDynamics is True:
                 print("---=== EQUILIBRATING FINE-GRAINED MORPHOLOGY... ===---")
-                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = runHoomd.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
+                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = run_HOOMD.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
                 print("---=== EQUILIBRATION COMPLETED ===---")
-            if self.executeExtractMolecules is True:
+            if self.executeextract_molecules is True:
                 print("---=== EXTRACTING SINGLE MOLECULES FROM SYSTEM... ===---")
-                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = extractMol.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
+                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = extract_mol.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
                 print("---=== EXTRACTION COMPLETED ===---")
-            if self.executeObtainChromophores is True:
+            if self.executeobtain_chromophores is True:
                 print("---=== IDENTIFYING CHROMOPHORES OF CHARGE CARRIER DELOCALISATION... ===---")
-                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = obtainChromophores.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
+                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = obtain_chromophores.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
                 print("---=== IDENTIFICATION COMPLETED ===---")
-            if self.executeZINDO is True:
+            if self.execute_ZINDO is True:
                 print("---=== PERFORMING SEMI-EMPIRICAL ZINDO/S CALCULATIONS... ===---")
-                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = executeZINDO.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
+                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = execute_ZINDO.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
                 print("---=== CALCULATIONS COMPLETED ===---")
-            if self.executeCalculateTransferIntegrals is True:
+            if self.executeCalculatetransfer_integrals is True:
                 print("---=== DETERMINING ELECTRONIC TRANSFER INTEGRALS... ===---")
-                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = transferIntegrals.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
+                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = transfer_integrals.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
                 print("---=== DETERMINATION COMPLETED ===---")
             if self.executeCalculateMobility is True:
                 print("---=== EXECUTING KINETIC MONTE CARLO MOBILITY SIMULATIONS... ===---")
-                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = mobilityKMC.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
+                AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = mobility_KMC.execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
                 print("---=== EXECUTION COMPLETED ===---")
         else:
             # NEED TO PUT A CHECK IN HERE TO ENSURE THAT WE LOAD THE CORRECT MOLECULAR DATA IN
             if self.executeDeviceSimulation is True:
                 print("---=== EXECUTING KINETIC MONTE CARLO DEVICE SIMULATIONS... ===---")
-                deviceKMC.execute(parameterDict)
+                device_KMC.execute(parameterDict)
                 print("---=== EXECUTION COMPLETED ===---")
         exit()
 
@@ -117,7 +117,7 @@ class simulation:
         #    # Make sure that the rm command has finished before moving on
         #    sp.Popen('rm -rf '+self.outputDirectory+'/*', shell=True).communicate()
         # Then, make sure that all the required directories are in place
-        # TODO: Remove the helperFunctions that mess around with the directory structure, do it all here instead.
+        # TODO: Remove the hf that mess around with the directory structure, do it all here instead.
         if self.morphology is not None:
             for directoryToMake in ['chromophores/inputORCA/single', 'chromophores/inputORCA/pair','chromophores/outputORCA/single', 'chromophores/outputORCA/pair', 'KMC', 'molecules', 'morphology', 'code']:
                 print('mkdir -p ' + self.outputMorphologyDirectory + '/' + directoryToMake)
