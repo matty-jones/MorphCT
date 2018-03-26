@@ -1,6 +1,6 @@
 from hoomd_script import *
 import numpy as np
-from morphct.code import helperFunctions
+from morphct.code import helper_functions as hf
 import sys
 
 class ExitHoomd(Exception):
@@ -150,7 +150,7 @@ class MDPhase:
         FFList = []
         # Then load in all of the FFs with the appropriate mappings
         for CGSite in list(allFFNames.keys()):
-            FFList.append(helperFunctions.loadFFXML(allFFNames[CGSite], mapping = self.newTypeMappings[CGSite]))
+            FFList.append(hf.loadFFXML(allFFNames[CGSite], mapping = self.newTypeMappings[CGSite]))
         # Combine all of the individual, mapped FFs into one master field
         masterFF = {}
         for FF in FFList:
@@ -172,7 +172,7 @@ class MDPhase:
             # Log the correct pairType energy
             self.logQuantities.append('pair_' + self.pairType + '_energy')
             # HOOMD crashes if you don't specify all pair combinations, so need to make sure we do this.
-            atomTypes = sorted(list(set(self.AAMorphologyDict['type'])), key=lambda x: helperFunctions.convertStringToInt(x))
+            atomTypes = sorted(list(set(self.AAMorphologyDict['type'])), key=lambda x: hf.convertStringToInt(x))
             allPairTypes = []
             # Create a list of all of the pairTypes to ensure that the required coefficients are set
             for atomType1 in atomTypes:
@@ -319,7 +319,7 @@ def obtainScaleFactors(parameterDict):
     LJFFs = []
     for CGSite, directory in parameterDict['CGToTemplateDirs'].items():
         FFLoc = directory + '/' + parameterDict['CGToTemplateForceFields'][CGSite]
-        FF = helperFunctions.loadFFXML(FFLoc)
+        FF = hf.loadFFXML(FFLoc)
         LJFFs += FF['lj']
     largestSigma = max(list(map(float, np.array(LJFFs)[:, 2])))
     largestEpsilon = max(list(map(float, np.array(LJFFs)[:, 1])))
@@ -330,8 +330,8 @@ def scaleMorphology(initialMorphology, parameterDict, sScale, eScale):
     # If sScale != 1.0, then scale the morphology and rewrite the phase0 xml
     print("Scaling morphology by sigma =", str(1 / sScale) + "...")
     if sScale != 1.0:
-        helperFunctions.scale(initialMorphology, sScale)
-    helperFunctions.writeMorphologyXML(initialMorphology, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/phase0_' + parameterDict['morphology'])
+        hf.scale(initialMorphology, sScale)
+    hf.writeMorphologyXML(initialMorphology, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/phase0_' + parameterDict['morphology'])
 
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
@@ -371,20 +371,20 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         removeGhostParticles(parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/morphology/' + outputFile, finalXMLName, sigma = sScale)
     # Finally, update the pickle file with the most recent and realistic
     # AAMorphologyDict so that we can load it again further along the pipeline
-    AAMorphologyDict = helperFunctions.loadMorphologyXML(finalXMLName)
+    AAMorphologyDict = hf.loadMorphologyXML(finalXMLName)
     # Now that we've obtained the final fine-grained morphology, we need to fix the images to prevent
     # issues with obtaining the chromophores and running them through the ZINDO/S calculations later...
-    AAMorphologyDict = helperFunctions.fixImages(AAMorphologyDict)
+    AAMorphologyDict = hf.fixImages(AAMorphologyDict)
     # ...add in the unwrapped positions...
-    AAMorphologyDict = helperFunctions.addUnwrappedPositions(AAMorphologyDict)
+    AAMorphologyDict = hf.addUnwrappedPositions(AAMorphologyDict)
     # ...and write the pickle file.
-    helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle')
+    hf.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle')
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
 
 
 def removeGhostParticles(lastPhaseXML, outputFileName, sigma = 1.0):
     # Remove all the ghost particles from the morphology for the final output
-    finalMorphology = helperFunctions.loadMorphologyXML(lastPhaseXML)
+    finalMorphology = hf.loadMorphologyXML(lastPhaseXML)
     # Determine the atomIDs for each particle beginning with the letters 'X'
     # or 'R' - these are the ghost particles
     atomIDsToRemove = []
@@ -413,7 +413,7 @@ def removeGhostParticles(lastPhaseXML, outputFileName, sigma = 1.0):
         for constraintNo in constraintsToRemove:
             finalMorphology[key].pop(constraintNo)
     # Output the final morphology
-    helperFunctions.writeMorphologyXML(finalMorphology, outputFileName, sigma)
+    hf.writeMorphologyXML(finalMorphology, outputFileName, sigma)
 
 
 if __name__ == "__main__":
@@ -421,5 +421,5 @@ if __name__ == "__main__":
         pickleFile = sys.argv[1]
     except:
         print("Please specify the pickle file to load to continue the pipeline from this point.")
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hf.loadPickle(pickleFile)
     execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)

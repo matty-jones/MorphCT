@@ -1,7 +1,7 @@
 import os
 import sys
 import numpy as np
-from morphct.code import helperFunctions
+from morphct.code import helper_functions as hf
 from morphct.definitions import PROJECT_ROOT, SINGLE_ORCA_RUN_FILE
 import subprocess as sp
 import multiprocessing as mp
@@ -115,7 +115,7 @@ def writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPosns, termina
     # Write the ORCA input file
     with open(inputName, 'w+') as orcaFile:
         orcaFile.writelines(inpFileLines)
-    print("\rOrca Input File written as", inputName[helperFunctions.findIndex(inputName, '/')[-1] + 1:], end=' ')
+    print("\rOrca Input File written as", inputName[hf.findIndex(inputName, '/')[-1] + 1:], end=' ')
 
 
 def terminateMonomers(chromophore, parameterDict, AAMorphologyDict):
@@ -137,7 +137,7 @@ def terminateMonomers(chromophore, parameterDict, AAMorphologyDict):
                         bondedAAIDs.append(AAID1)
             if len(bondedAAIDs) != connectionInfo[0]:
                 continue
-            newHydrogenPositions += helperFunctions.getTerminatingPositions(AAMorphologyDict['unwrapped_position'][atomIndexMorph], [AAMorphologyDict['unwrapped_position'][bondedAAID] for bondedAAID in bondedAAIDs], 1)
+            newHydrogenPositions += hf.getTerminatingPositions(AAMorphologyDict['unwrapped_position'][atomIndexMorph], [AAMorphologyDict['unwrapped_position'][bondedAAID] for bondedAAID in bondedAAIDs], 1)
     # Return terminatingGroups (positions of those hydrogens to be added to the ORCA input)
     return newHydrogenPositions
 
@@ -211,5 +211,5 @@ if __name__ == "__main__":
         pickleFile = sys.argv[1]
     except:
         print("Please specify the pickle file to load to continue the pipeline from this point.")
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hf.loadPickle(pickleFile)
     execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)

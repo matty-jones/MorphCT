@@ -3,7 +3,7 @@ import signal
 import traceback
 import os
 import numpy as np
-from morphct.code import helperFunctions
+from morphct.code import helper_functions as hf
 import time as T
 import random as R
 from scipy.sparse import lil_matrix
@@ -73,7 +73,7 @@ class carrier:
         except KeyError:
             self.useVRH = False
         if self.useVRH is True:
-            self.VRHScaling = 1.0 / parameterDict['VRHDelocalisation']
+            self.VRHDelocalisation = parameterDict['VRHDelocalisation']
 
     def calculateHop(self, chromophoreList):
         # Terminate if the next hop would be more than the termination limit
@@ -91,7 +91,7 @@ class carrier:
                     hopRate = self.averageIntraHopRate
                 else:
                     hopRate = self.averageInterHopRate
-                hopTime = helperFunctions.determineEventTau(hopRate)
+                hopTime = hf.determineEventTau(hopRate)
                 # Keep track of the chromophoreID and the corresponding tau
                 hopTimes.append([neighbour.ID, hopTime])
         else:
@@ -111,11 +111,11 @@ class carrier:
                 if self.useVRH is True:
                     neighbourChromo = chromophoreList[self.currentChromophore.neighbours[neighbourIndex][0]]
                     neighbourChromoPosn = neighbourChromo.posn + (np.array(relativeImage) * np.array([axis[1] - axis[0] for axis in self.simDims]))
-                    chromophoreSeparation = helperFunctions.calculateSeparation(self.currentChromophore.posn, neighbourChromoPosn) * 1E-10 # Convert to m
-                    hopRate = helperFunctions.calculateCarrierHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge, prefactor, self.T, useVRH=True, rij=chromophoreSeparation, VRHPrefactor=self.VRHScaling, boltzPen=self.useSimpleEnergeticPenalty)
+                    chromophoreSeparation = hf.calculateSeparation(self.currentChromophore.posn, neighbourChromoPosn) * 1E-10 # Convert to m
+                    hopRate = hf.calculateCarrierHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge, prefactor, self.T, useVRH=True, rij=chromophoreSeparation, VRHDelocalisation=self.VRHDelocalisation, boltzPen=self.useSimpleEnergeticPenalty)
                 else:
-                    hopRate = helperFunctions.calculateCarrierHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge, prefactor, self.T, boltzPen=self.useSimpleEnergeticPenalty)
-                hopTime = helperFunctions.determineEventTau(hopRate)
+                    hopRate = hf.calculateCarrierHopRate(self.lambdaij * elementaryCharge, transferIntegral * elementaryCharge, deltaEij * elementaryCharge, prefactor, self.T, boltzPen=self.useSimpleEnergeticPenalty)
+                hopTime = hf.determineEventTau(hopRate)
                 # Keep track of the chromophoreID and the corresponding tau
                 hopTimes.append([self.currentChromophore.neighbours[neighbourIndex][0], hopTime, relativeImage])
         # Sort by ascending hop time
@@ -190,7 +190,7 @@ class Terminate(Exception):
 def savePickle(saveData, savePickleName):
     with open(savePickleName, 'wb+') as pickleFile:
         pickle.dump(saveData, pickleFile)
-    helperFunctions.writeToFile(logFile, ['Pickle file saved successfully as ' + savePickleName + '!'])
+    hf.writeToFile(logFile, ['Pickle file saved successfully as ' + savePickleName + '!'])
 
 
 def calculateDisplacement(initialPosition, finalPosition, finalImage, simDims):
@@ -209,7 +209,7 @@ def splitMolecules(inputDictionary):
     moleculeAAIDs = []
     moleculeLengths = []
     # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
-    bondedAtoms = helperFunctions.obtainBondedList(inputDictionary['bond'])
+    bondedAtoms = hf.obtainBondedList(inputDictionary['bond'])
     moleculeList = [i for i in range(len(inputDictionary['type']))]
     # Recursively add all atoms in the neighbour list to this molecule
     for molID in range(len(moleculeList)):
@@ -262,23 +262,23 @@ if __name__ == '__main__':
     # Reset the log file
     with open(logFile, 'wb+') as logFileHandle:
         pass
-    helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
+    hf.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
     # Set the affinities for this current process to make sure it's maximising available CPU usage
     currentPID = os.getpid()
     #try:
     #    affinityJob = sp.Popen(['taskset', '-pc', str(CPURank), str(currentPID)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE).communicate()
-    #    # helperFunctions.writeToFile(logFile, affinityJob[0].split('\n')) #stdOut for affinity set
-    #    # helperFunctions.writeToFile(logFile, affinityJob[1].split('\n')) #stdErr for affinity set
+    #    # hf.writeToFile(logFile, affinityJob[0].split('\n')) #stdOut for affinity set
+    #    # hf.writeToFile(logFile, affinityJob[1].split('\n')) #stdErr for affinity set
     #except OSError:
-    #    helperFunctions.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinity..."])
+    #    hf.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinity..."])
     # Now load the main morphology pickle (used as a workaround to obtain the chromophoreList without having to save it in each carrier [very memory inefficient!])
     pickleDir = KMCDirectory.replace('/KMC', '/code')
     for fileName in os.listdir(pickleDir):
         if 'pickle' in fileName:
             mainMorphologyPickleName = pickleDir + '/' + fileName
-    helperFunctions.writeToFile(logFile, ['Found main morphology pickle file at ' + mainMorphologyPickleName + '! Loading data...'])
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(mainMorphologyPickleName)
-    helperFunctions.writeToFile(logFile, ['Main morphology pickle loaded!'])
+    hf.writeToFile(logFile, ['Found main morphology pickle file at ' + mainMorphologyPickleName + '! Loading data...'])
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hf.loadPickle(mainMorphologyPickleName)
+    hf.writeToFile(logFile, ['Main morphology pickle loaded!'])
     try:
         if parameterDict['useAverageHopRates'] is True:
             # Chosen to split hopping by inter-intra molecular hops, so get molecule data
@@ -351,11 +351,11 @@ if __name__ == '__main__':
                 elapsedTime /= 86400.0
                 timeunits = 'days.'
             elapsedTime = '%.1f' % (float(elapsedTime))
-            helperFunctions.writeToFile(logFile, [str(thisCarrier.carrierType).capitalize() + ' hopped ' + str(thisCarrier.noHops) + ' times, over ' + str(thisCarrier.currentTime) + ' seconds, into image ' + str(thisCarrier.image) + ', for a displacement of ' + str(thisCarrier.displacement) + ', in ' + str(elapsedTime) + ' wall-clock ' + str(timeunits)])
+            hf.writeToFile(logFile, [str(thisCarrier.carrierType).capitalize() + ' hopped ' + str(thisCarrier.noHops) + ' times, over ' + str(thisCarrier.currentTime) + ' seconds, into image ' + str(thisCarrier.image) + ', for a displacement of ' + str(thisCarrier.displacement) + ', in ' + str(elapsedTime) + ' wall-clock ' + str(timeunits)])
             # Save the pickle file every hour
             if (t2 - saveTime) > 3600:
                 print("Completed", jobNumber, "of", len(jobsToRun), "jobs. Making checkpoint at %3d%%" % (np.round((jobNumber + 1) / float(len(jobsToRun)) * 100)))
-                helperFunctions.writeToFile(logFile, ['Completed ' + str(jobNumber) + ' jobs. Making checkpoint at %3d%%' % (np.round(jobNumber / float(len(jobsToRun)) * 100))])
+                hf.writeToFile(logFile, ['Completed ' + str(jobNumber) + ' jobs. Making checkpoint at %3d%%' % (np.round(jobNumber / float(len(jobsToRun)) * 100))])
                 savePickle(saveData, pickleFileName.replace('Data', saveSlot + 'Results'))
                 if saveSlot == 'slot1':
                     saveSlot = 'slot2'
@@ -365,8 +365,8 @@ if __name__ == '__main__':
     except Exception as errorMessage:
         print(traceback.format_exc())
         print("Saving the pickle file cleanly before termination...")
-        helperFunctions.writeToFile(logFile, [str(errorMessage)])
-        helperFunctions.writeToFile(logFile, ['Saving the pickle file cleanly before termination...'])
+        hf.writeToFile(logFile, [str(errorMessage)])
+        hf.writeToFile(logFile, ['Saving the pickle file cleanly before termination...'])
         savePickle(saveData, pickleFileName.replace('Data', 'TerminatedResults'))
         print("Pickle saved! Exitting Python...")
         exit()
@@ -384,7 +384,7 @@ if __name__ == '__main__':
         elapsedTime /= 86400.0
         timeunits = 'days.'
     elapsedTime = '%.1f' % (float(elapsedTime))
-    helperFunctions.writeToFile(logFile, ['All jobs completed in ' + elapsedTime + ' ' + timeunits])
-    helperFunctions.writeToFile(logFile, ['Saving the pickle file cleanly before termination...'])
+    hf.writeToFile(logFile, ['All jobs completed in ' + elapsedTime + ' ' + timeunits])
+    hf.writeToFile(logFile, ['Saving the pickle file cleanly before termination...'])
     savePickle(saveData, pickleFileName.replace('Data', 'Results'))
-    helperFunctions.writeToFile(logFile, ['Exiting normally...'])
+    hf.writeToFile(logFile, ['Exiting normally...'])

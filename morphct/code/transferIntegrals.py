@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 import os
-from morphct.code import helperFunctions
+from morphct.code import helper_functions as hf
 from morphct.definitions import SINGLE_ORCA_RUN_FILE
 import csv
 import copy
@@ -533,7 +533,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         print("Scaling energies...")
         chromophoreList = scaleEnergies(chromophoreList, parameterDict)
         print("Single chromophore calculations completed. Saving...")
-        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleName)
+        hf.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleName)
     else:
         print("All single chromophore calculations already performed. Skipping...")
     # Then, check the pairs
@@ -557,7 +557,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
             raise SystemError("Assertions failed, please address in code.")
         # END OF DEBUG Testing
         print("Pair chromophore calculations completed. Saving...")
-        helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleName)
+        hf.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleName)
     else:
         print("All pair chromophore calculations already performed. Skipping...")
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
@@ -648,5 +648,5 @@ if __name__ == "__main__":
         pickleFile = sys.argv[1]
     except NameError:
         print("Please specify the pickle file to load to continue the pipeline from this point.")
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hf.loadPickle(pickleFile)
     execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)

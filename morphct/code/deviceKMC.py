@@ -6,13 +6,13 @@ import random as R
 from scipy.sparse import lil_matrix
 import pickle
 import subprocess as sp
-from morphct.code import helperFunctions
+from morphct.code import helper_functions as hf
 
 
 class morphologyMoiety:
     def __init__(self, molMorphName, parameterDict):
         chromophoreListLocation = parameterDict['outputMorphDir'] + '/' + molMorphName + '/code/' + molMorphName + '.pickle'
-        self.AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict, self.chromophoreList = helperFunctions.loadPickle(chromophoreListLocation)
+        self.AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, self.parameterDict, self.chromophoreList = hf.loadPickle(chromophoreListLocation)
         self.carrierType = self.getCarrierType()
         # Now add the occupation data to the chromophoreLists so that we can prevent double occupation in the simulations
         # The occupied property is a list that contains the device moiety coordinates where the chromophore is occupied.
@@ -186,5 +186,5 @@ if __name__ == "__main__":
         pickleFile = sys.argv[1]
     except:
         print("Please specify the pickle file to load to continue the pipeline from this point.")
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hf.loadPickle(pickleFile)
     execute(parameterDict)

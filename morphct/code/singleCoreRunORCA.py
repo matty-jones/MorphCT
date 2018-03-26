@@ -1,6 +1,6 @@
 import sys
 import os
-from morphct.code import helperFunctions
+from morphct.code import helper_functions as hf
 import time as T
 import subprocess as sp
 import pickle
@@ -14,7 +14,7 @@ if __name__ == '__main__':
         overwrite = bool(sys.argv[3])
     except:
         pass
-    morphologyName = morphologyFile[helperFunctions.findIndex(morphologyFile, '/')[-1] + 1:]
+    morphologyName = morphologyFile[hf.findIndex(morphologyFile, '/')[-1] + 1:]
     orcaPath = os.getenv('ORCA_BIN')
     inputDir = morphologyFile + '/chromophores/inputORCA'
     logFile = inputDir.replace('/inputORCA', '/ORCAlog_' + str(CPURank) + '.log')
@@ -23,18 +23,18 @@ if __name__ == '__main__':
     with open(pickleFileName, 'rb') as pickleFile:
         jobsList = pickle.load(pickleFile)
     jobsToRun = jobsList[CPURank]
-    helperFunctions.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
+    hf.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
     t0 = T.time()
     for job in jobsToRun:
         t1 = T.time()
-        helperFunctions.writeToFile(logFile, ['Running job ' + str(job) + '...'])
+        hf.writeToFile(logFile, ['Running job ' + str(job) + '...'])
         outputFileName = job.replace('.inp', '.out').replace('inputORCA', 'outputORCA')
         # Check if file exists already
         if overwrite is False:
             try:
                 with open(outputFileName, 'r') as testFile:
                     pass
-                helperFunctions.writeToFile(logFile, [outputFileName + ' already exists, and overwriteCurrentData is ' + repr(overwrite) + '! Skipping...'])
+                hf.writeToFile(logFile, [outputFileName + ' already exists, and overwriteCurrentData is ' + repr(overwrite) + '! Skipping...'])
                 continue
             except IOError:
                 pass
@@ -42,14 +42,14 @@ if __name__ == '__main__':
         jobPID = orcaJob.pid
         #try:
         #    affinityJob = sp.Popen(['taskset', '-pc', str(CPURank), str(jobPID)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE).communicate()
-        #    # helperFunctions.writeToFile(logFile, affinityJob[0].split('\n')) #stdOut for affinity set
-        #    # helperFunctions.writeToFile(logFile, affinityJob[1].split('\n')) #stdErr for affinity set
+        #    # hf.writeToFile(logFile, affinityJob[0].split('\n')) #stdOut for affinity set
+        #    # hf.writeToFile(logFile, affinityJob[1].split('\n')) #stdErr for affinity set
         #except OSError:
-        #    helperFunctions.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinities..."])
+        #    hf.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinities..."])
         orcaShellOutput = orcaJob.communicate()
         # Write the outputFile:
-        helperFunctions.writeToFile(outputFileName, orcaShellOutput[0].decode().split('\n'), mode='outputFile')
-        helperFunctions.writeToFile(logFile, orcaShellOutput[1].decode().split('\n'))  # stdErr
+        hf.writeToFile(outputFileName, orcaShellOutput[0].decode().split('\n'), mode='outputFile')
+        hf.writeToFile(logFile, orcaShellOutput[1].decode().split('\n'))  # stdErr
         t2 = T.time()
         elapsedTime = float(t2) - float(t1)
         if elapsedTime < 60:
@@ -64,7 +64,7 @@ if __name__ == '__main__':
             elapsedTime /= 86400.0
             timeunits = 'days.'
         elapsedTime = '%.1f' % (float(elapsedTime))
-        helperFunctions.writeToFile(logFile, ['Job ' + str(job) + ' completed in ' + elapsedTime + ' ' + timeunits])
+        hf.writeToFile(logFile, ['Job ' + str(job) + ' completed in ' + elapsedTime + ' ' + timeunits])
     t3 = T.time()
     elapsedTime = float(t3) - float(t0)
     if elapsedTime < 60:
@@ -79,5 +79,5 @@ if __name__ == '__main__':
         elapsedTime /= 86400.0
         timeunits = 'days.'
     elapsedTime = '%.1f' % (float(elapsedTime))
-    helperFunctions.writeToFile(logFile, ['All jobs completed in ' + elapsedTime + ' ' + timeunits])
-    helperFunctions.writeToFile(logFile, ['Exiting normally...'])
+    hf.writeToFile(logFile, ['All jobs completed in ' + elapsedTime + ' ' + timeunits])
+    hf.writeToFile(logFile, ['Exiting normally...'])

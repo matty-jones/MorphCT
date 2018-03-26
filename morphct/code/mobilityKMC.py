@@ -7,7 +7,7 @@ from scipy.sparse import lil_matrix
 import pickle
 import subprocess as sp
 from morphct.definitions import SINGLE_RUN_MOBKMC_FILE
-from morphct.code import helperFunctions
+from morphct.code import helper_functions as hf
 
 
 def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
@@ -92,5 +92,5 @@ if __name__ == "__main__":
         pickleFile = sys.argv[1]
     except:
         print("Please specify the pickle file to load to continue the pipeline from this point.")
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hf.loadPickle(pickleFile)
     execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)

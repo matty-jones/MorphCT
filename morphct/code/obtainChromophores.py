@@ -1,6 +1,6 @@
 import numpy as np
 import sys
-from morphct.code import helperFunctions
+from morphct.code import helper_functions as hf
 import copy
 from scipy.spatial import Delaunay
 from collections import defaultdict
@@ -106,7 +106,7 @@ class chromophore:
 
     def obtainChromophoreCoM(self, electronicallyActiveUnwrappedPosns, electronicallyActiveTypes, simDims):
         # Calculate the chromophore's position in the morphology (CoM of all atoms in self.AAIDs from AAMorphologyDict)
-        chromoUnwrappedPosn = helperFunctions.calcCOM(electronicallyActiveUnwrappedPosns, listOfAtomTypes=electronicallyActiveTypes)
+        chromoUnwrappedPosn = hf.calcCOM(electronicallyActiveUnwrappedPosns, listOfAtomTypes=electronicallyActiveTypes)
         chromoWrappedPosn = copy.deepcopy(chromoUnwrappedPosn)
         chromoWrappedImage = [0, 0, 0]
         # Now calculate the wrapped position of the chromophore and its image
@@ -145,7 +145,7 @@ def calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, pa
     # Therefore, we need to assign each CG site in the morphology to a particular chromophore,
     # so first, it's important to generate a `neighbourlist' of all bonded atoms
     print("Determining chromophores in the system...")
-    bondedAtoms = helperFunctions.obtainBondedList(CGMorphologyDict['bond'])
+    bondedAtoms = hf.obtainBondedList(CGMorphologyDict['bond'])
     chromophoreList = [i for i in range(len(CGMorphologyDict['type']))]
     for CGSiteID, chromophoreID in enumerate(chromophoreList):
         CGSiteType = CGMorphologyDict['type'][CGSiteID]
@@ -194,7 +194,7 @@ def calculateChromophoresAA(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, 
     # that belong to this chromophore, however - there might be a bunch of aliphatic/flexible
     # atoms that are connected, so we need to make sure that we add those too.
     print("Determining chromophores in the system...")
-    bondedAtoms = helperFunctions.obtainBondedList(AAMorphologyDict['bond'])
+    bondedAtoms = hf.obtainBondedList(AAMorphologyDict['bond'])
     chromophoreList = [i for i in range(len(AAMorphologyDict['type']))]
     for AASiteID, chromophoreID in enumerate(chromophoreList):
         AASiteType = AAMorphologyDict['type'][AASiteID]
@@ -532,7 +532,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         chromophoreList = determineNeighboursCutOff(chromophoreList, parameterDict, simDims)
     # Now we have updated the chromophoreList, rewrite the pickle with this new information.
     pickleName = parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/code/' + parameterDict['morphology'][:-4] + '.pickle'
-    helperFunctions.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleName)
+    hf.writePickle((AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList), pickleName)
     return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
 
 
@@ -541,5 +541,5 @@ if __name__ == "__main__":
         pickleFile = sys.argv[1]
     except:
         print("Please specify the pickle file to load to continue the pipeline from this point.")
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hf.loadPickle(pickleFile)
     execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)

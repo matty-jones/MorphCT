@@ -2,7 +2,7 @@ from hoomd_script import *
 import numpy as np
 import copy
 import sys
-from morphct.code import helperFunctions
+from morphct.code import helper_functions as hf
 
 
 def obtainMoleculeDict(AAMorphologyDict, moleculeAAIDs):
@@ -38,7 +38,7 @@ def obtainMoleculeDict(AAMorphologyDict, moleculeAAIDs):
                 # Now add them to the molecule dict
                 thisMoleculeDict[constraintType].append(newConstraint)
     # Now need to make sure that everything is unwrapped
-    thisMoleculeDict = helperFunctions.addUnwrappedPositions(thisMoleculeDict)
+    thisMoleculeDict = hf.addUnwrappedPositions(thisMoleculeDict)
     # Find the (geometric, in case masses aren't specified) centre of the molecule
     positionArray = np.array(thisMoleculeDict['unwrapped_position'])
     centre = [np.average(positionArray[0, :]), np.average(positionArray[1, :]), np.average(positionArray[2, :])]
@@ -53,7 +53,7 @@ def obtainMoleculeDict(AAMorphologyDict, moleculeAAIDs):
         thisMoleculeDict['image'][atomID] = [0, 0, 0]
     thisMoleculeDict.pop('unwrapped_position')
     # Now centre the molecule based on the average position of its constituent atoms
-    thisMoleculeDict = helperFunctions.centre(thisMoleculeDict, centre)
+    thisMoleculeDict = hf.centre(thisMoleculeDict, centre)
     # Finally, update the number of atoms we have in this molecule
     thisMoleculeDict['natoms'] = len(thisMoleculeDict['type'])
     return thisMoleculeDict
@@ -75,7 +75,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
         # Use the moleculeAAIDs for each molecule to create a writeable molecule dictionary
         moleculeDict = obtainMoleculeDict(AAMorphologyDict, moleculeAAIDs)
         # Write the molecule dictionary
-        helperFunctions.writeMorphologyXML(moleculeDict, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/molecules/mol_%04d.xml' % (moleculeNo))
+        hf.writeMorphologyXML(moleculeDict, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/molecules/mol_%04d.xml' % (moleculeNo))
 
 
 if __name__ == "__main__":
@@ -83,5 +83,5 @@ if __name__ == "__main__":
         pickleFile = sys.argv[1]
     except:
         print("Please specify the pickle file to load to continue the pipeline from this point.")
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hf.loadPickle(pickleFile)
     execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)

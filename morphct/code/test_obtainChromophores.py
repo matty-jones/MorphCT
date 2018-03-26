@@ -1,13 +1,13 @@
 import pytest
-import obtainChromophores
-import executeZINDO
-import helperFunctions
+from morphct.code import obtain_chromophores
+from morphct.code import execute_ZINDO
+from morphct.code import helper_functions as hf
 import copy
 import random as R
 import numpy as np
 
 def testFindNeighbours(pickleFile):
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, oldChromophoreList = helperFunctions.loadPickle(pickleFile)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, oldChromophoreList = hf.loadPickle(pickleFile)
     emptyCutOffChromophoreList = copy.deepcopy(oldChromophoreList)
     emptyVoronoiChromophoreList = copy.deepcopy(oldChromophoreList)
     for chromoIndex, chromo in enumerate(oldChromophoreList):
@@ -30,7 +30,7 @@ def testFindNeighbours(pickleFile):
 def testWriteORCAOutput(pickleFile):
     # One of the chromophores in the corner is #1198
     R.seed(8585)
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hf.loadPickle(pickleFile)
     for chromo in chromophoreList:
         chromo.neighbours = []
         chromo.dissociationNeighbours = []
@@ -54,7 +54,7 @@ def testWriteORCAOutput(pickleFile):
 
 
 def testCheckPeriodicNeighbours(pickleFile):
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = helperFunctions.loadPickle(pickleFile)
+    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hf.loadPickle(pickleFile)
     for chromo in chromophoreList:
         chromo.neighbours = []
         chromo.dissociationNeighbours = []

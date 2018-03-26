@@ -1,6 +1,6 @@
 import copy
 import numpy as np
-from morphct.code import helperFunctions
+from morphct.code import helper_functions as hf
 import sys
 
 
