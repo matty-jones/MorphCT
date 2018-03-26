@@ -53,7 +53,7 @@ def move_bonded_atoms(central_atom, morphology, bond_dict):
     return morphology
 
 
-def execute():
+def main():
     list_of_files = sys.argv[1:]
     if len(list_of_files) < 1:
         print("No files requested to convert!")
@@ -72,4 +72,4 @@ def execute():
 
 
 if __name__ == "__main__":
-    execute()
+    main()

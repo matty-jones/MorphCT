@@ -1111,7 +1111,7 @@ def calculate_mobility(directory, current_carrier_type, carrier_data, sim_dims, 
     return mobility, mob_error, r_squared, anisotropy
 
 
-def KMCAnalyse():
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--three_D", action="store_true", required=False,
                         help=('If present, use matplotlib to plot the 3D graphs (3D network, anisotropy and stack'
@@ -1232,3 +1232,6 @@ def KMCAnalyse():
                                          args.xlabel)
     else:
         print("Skipping plotting mobility evolution.")
+
+if __name__ == "__main__":
+    main()

@@ -100,9 +100,9 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
         'console_scripts': [
-            "fixImages=morphct.utils.fix_images.fix_images:execute",
-            "orca2xyz=morphct.utils.orcaToXYZ.convertToXYZ:execute",
-            "KMCAnalyse=morphct.utils.KMCAnalyse.KMCAnalyse:KMCAnalyse",
+            "fixImages=morphct.utils.fix_images.fix_images:main",
+            "orca2xyz=morphct.utils.orca_to_XYZ.convert_to_XYZ:main",
+            "KMCAnalyse=morphct.utils.KMC_analyse.KMC_analyse:main",
             "KMCMontage=morphct.utils.imagemagickStitch.imagemagickStitch:KMCMontage"
         ],
     },
