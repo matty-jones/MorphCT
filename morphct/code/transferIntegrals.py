@@ -229,7 +229,7 @@ def updateSingleChromophoreList(chromophoreList, parameterDict):
     # Firstly, set the energy levels for each single chromophore, rerunning them if they fail.
     failedSingleChromos = {}  # Has the form {'FileName': [failCount, locationInChromophoreList]}
     for chromoLocation, chromophore in enumerate(chromophoreList):
-        fileName = 'single/%04d.out' % (chromophore.ID)
+        fileName = 'single/%05d.out' % (chromophore.ID)
         print("\rDetermining energy levels for", fileName, end=' ')
         sys.stdout.flush()
         # Update the chromophores in the chromophoreList with their energyLevels
@@ -286,7 +286,7 @@ def updatePairChromophoreList(chromophoreList, parameterDict):
         for neighbourLoc, neighbourID in enumerate(neighbourIDs):
             if chromophore.ID > neighbourID:
                 continue
-            fileName = 'pair/%04d-%04d.out' % (chromophore.ID, neighbourID)
+            fileName = 'pair/%05d-%05d.out' % (chromophore.ID, neighbourID)
             print("\rDetermining energy levels for", fileName, end=' ')
             sys.stdout.flush()
             try:

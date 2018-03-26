@@ -534,7 +534,7 @@ def plotZProfile(carrier, zDimSize, outputDir):
             colour = 'b'
         else:
             colour = 'r'
-    fileName = outputDir + 'Carrier_%04d_ZProfile.pdf' % (carrier.ID)
+    fileName = outputDir + 'Carrier_%05d_ZProfile.pdf' % (carrier.ID)
     plt.figure()
     plt.plot(xVals, yVals, color=colour)
     plt.ylim([0, zDimSize])
@@ -886,7 +886,7 @@ def plot3DTrajectory(injectSource, carriersToPlot, parameterDict, deviceArray, o
         carrierString = injectSource
     else:
         # Exciton
-        carrierString = 'Exciton_%04d' % (carriersToPlot[0].ID)
+        carrierString = 'Exciton_%05d' % (carriersToPlot[0].ID)
     for carrier in carriersToPlot:
         if 'rF' in carrier.__dict__:
             color = 'g'

@@ -39,7 +39,7 @@ def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
             if (chromophore2.ID not in neighboursID) or (chromophore2.ID < chromophore1.ID):
                 continue
             # Update the ORCA input name
-            inputName = chromophore1.orcaInput.replace('.inp', '-%04d.inp' % (chromophore2.ID)).replace('single', 'pair')
+            inputName = chromophore1.orcaInput.replace('.inp', '-%05d.inp' % (chromophore2.ID)).replace('single', 'pair')
             # Find the correct relative image for the neighbour chromophore
             chromophore2RelativeImage = neighboursImage[neighboursID.index(chromophore2.ID)]
             chromophore2Transformation = list(np.array(chromophore1.image) - np.array(chromophore2.image) + np.array(chromophore2RelativeImage))

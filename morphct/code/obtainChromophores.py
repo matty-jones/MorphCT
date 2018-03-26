@@ -10,8 +10,8 @@ import itertools
 class chromophore:
     def __init__(self, chromoID, chromophoreCGSites, CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims):
         self.ID = chromoID
-        self.orcaInput = '/chromophores/inputORCA/single/%04d.inp' % (self.ID)
-        self.orcaOutput = '/chromophores/outputORCA/single/%04d.out' % (self.ID)
+        self.orcaInput = '/chromophores/inputORCA/single/%05d.inp' % (self.ID)
+        self.orcaOutput = '/chromophores/outputORCA/single/%05d.out' % (self.ID)
         self.CGIDs = chromophoreCGSites
         # Determine whether this chromophore is a donor or an acceptor, as well as the site types that have been
         # defined as the electronically active in the chromophore
@@ -167,7 +167,7 @@ def calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, pa
     # information we could ever want about them.
     chromophoreInstances = []
     for chromoID, chromophoreCGSites in chromophoreData.items():
-        print("\rCalculating properties of chromophore %04d of %04d..." % (chromoID, len(list(chromophoreData.keys())) - 1), end=' ')
+        print("\rCalculating properties of chromophore %05d of %05d..." % (chromoID, len(list(chromophoreData.keys())) - 1), end=' ')
         sys.stdout.flush()
         chromophoreInstances.append(chromophore(chromoID, chromophoreCGSites, CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims))
     print("")
@@ -215,7 +215,7 @@ def calculateChromophoresAA(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, 
     # information we could ever want about them.
     chromophoreInstances = []
     for chromoID, chromophoreCGSites in chromophoreData.items():
-        print("\rCalculating properties of chromophore %04d of %04d..." % (chromoID, len(list(chromophoreData.keys())) - 1), end=' ')
+        print("\rCalculating properties of chromophore %05d of %05d..." % (chromoID, len(list(chromophoreData.keys())) - 1), end=' ')
         sys.stdout.flush()
         chromophoreInstances.append(chromophore(chromoID, chromophoreCGSites, CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims))
     print("")
@@ -445,7 +445,7 @@ def determineNeighboursVoronoi(chromophoreList, parameterDict, simDims):
 
 def determineNeighboursCutOff(chromophoreList, parameterDict, simDims):
     for chromophore1 in chromophoreList:
-        print("\rIdentifying neighbours of chromophore %04d of %04d..." % (chromophore1.ID, len(chromophoreList) - 1), end=' ')
+        print("\rIdentifying neighbours of chromophore %05d of %05d..." % (chromophore1.ID, len(chromophoreList) - 1), end=' ')
         sys.stdout.flush()
         for chromophore2 in chromophoreList:
             # Skip if chromo2 is chromo1
