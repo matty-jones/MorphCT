@@ -60,7 +60,7 @@ def execute():
         exit()
     for file_name in list_of_files:
         print("Fixing the images for", file_name + "...")
-        morphology = hf.load_morphology_xml(file_name)
+        morphology = hf.load_morphology_XML(file_name)
         morphology = zero_out_images(morphology)
         bond_dict = get_bond_dict(morphology)
         morphology = check_bonds(morphology, bond_dict)
