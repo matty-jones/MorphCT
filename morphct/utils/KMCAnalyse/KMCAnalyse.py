@@ -280,7 +280,7 @@ def plotAnisotropy(carrierData, directory, simDims, carrierType, plot3DGraphs):
     simDimsnm = list(map(list, np.array(simDims) / 10.))
     # Get the indices of the carriers that travelled the furthest
     if len(carrierData['finalPosition']) <= 1000:
-        carrierIndicesToUse = range(carrierData['finalPosition'])
+        carrierIndicesToUse = range(len(carrierData['finalPosition']))
     else:
         displacements = copy.deepcopy(np.array(carrierData['displacement']))
         carrierIndicesToUse = displacements.argsort()[-1000:][::-1]
