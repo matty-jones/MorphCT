@@ -784,23 +784,6 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
     return data_dict
 
 
-def generate_data_dict():
-        materials = ['donor', 'acceptor']
-        material_inspecific_properties = ['name', 'density']
-        hop_types = ['intra', 'inter']
-        hop_targets = ['mol', 'stack']
-        hop_dependent_properties = ['hops', 'proportion']
-        error_properties = ['frontier_MO', 'delta_Eij']
-        dictionary_elements = [(prop, '---') for prop in material_inspecific_properties]
-        dictionary_elements += [(material + '_' + hop_type + '_' + hop_target + '_' + hop_property, '---')
-                                for material in materials for hop_type in hop_types for hop_target in hop_targets
-                                for hop_property in hop_dependent_properties]
-        dictionary_elements += [(material + '_' + error_property + '_' + stat, '---') for material in materials
-                                for error_property in error_properties for stat in ['mean', 'std', 'err']]
-        data_dict = OrderedDict(dictionary_elements)
-        return data_dict
-
-
 def plot_delta_Eij(delta_Eij, gauss_bins, fit_args, data_type, file_name):
     plt.figure()
     n, bins, patches = plt.hist(delta_Eij, np.linspace(-0.5, 0.5, 20), color=['b'])
@@ -1022,8 +1005,8 @@ def write_CSV(data_dict, directory):
     CSV_file_name = directory + '/results.csv'
     with open(CSV_file_name, 'w+') as CSV_file:
         CSV_writer = csv.writer(CSV_file)
-        for key, val in data_dict.items():
-            CSV_writer.writerow([key, val])
+        for key in sorted(data_dict.keys()):
+            CSV_writer.writerow([key, data_dict[key]])
     print("CSV file written to " + CSV_file_name)
 
 
@@ -1149,7 +1132,7 @@ def main():
         # Create the figures directory if it doesn't already exist
         os.makedirs(directory + '/figures', exist_ok=True)
         # Now create the data dictionary
-        data_dict = generate_data_dict()
+        data_dict = {}
         print("\n")
         print("Getting carrier data...")
         carrier_data = load_KMC_results_pickle(directory)
