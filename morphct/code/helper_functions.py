@@ -530,7 +530,8 @@ def write_morphology_XML(input_dictionary, output_file, sigma = 1.0, check_wrapp
             input_dictionary = check_wrapped_positions(input_dictionary)
     # Add Boiler Plate first
     lines_to_write = ['<?xml version="1.0" encoding="UTF-8"?>\n', '<hoomd_xml version="1.4">\n',
-                      '<configuration time_step="0" dimensions="3" natoms="' + str(input_dictionary['natoms'])'" >\n',
+                      '<configuration time_step="0" dimensions="3" natoms="' + str(input_dictionary['natoms'])\
+                      + '" >\n',
                       '<box lx="' + str(input_dictionary['lx'])\
                       + '" ly="' + str(input_dictionary['ly'])\
                       + '" lz="' + str(input_dictionary['lz'])]
