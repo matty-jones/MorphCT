@@ -10,7 +10,7 @@ def stitchImages(montageDims, imagesToStitch, morphologyName, title):
         title = morphologyName
     try:
         os.remove("./" + title.replace(" ", "_") + ".png")
-    except:
+    except(FileNotFoundError):
         pass
     # Then load all the files
     print("Converting images and adding annotations...")
@@ -42,7 +42,7 @@ def stitchImages(montageDims, imagesToStitch, morphologyName, title):
 
 
 def KMCMontage():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="example usage: KMCMontage -d3 figures/*")
     parser.add_argument("-d", "--dimensions", default="x1", required=False, help="The dimensions flag is used to specify the montage dimensions. The format should be '2x3', which corresponds to a montage with 2 columns and 3 rows. Dimensions can be omitted such as '3x', which will create a montage with 3 columns and as many rows as required based on the number of input figures. Default is a single row of all input images.")
     parser.add_argument("-t", "--title", default=None, required=False, help="Set a custom title for the montage. If not set, will be assigned based on the enclosing directory.")
     args, imagesToStitch = parser.parse_known_args()

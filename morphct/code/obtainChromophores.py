@@ -44,9 +44,12 @@ class chromophore:
                         electronicallyActiveAAIDs.append(AAID)
                 electronicallyActiveCGSites = copy.deepcopy(electronicallyActiveAAIDs)
                 # Now work out what the species is:
-                for species, rigidBodies in parameterDict['AARigidBodySpecies'].items():
+                for sub_species, rigidBodies in parameterDict['AARigidBodySpecies'].items():
                     if AAMorphologyDict['body'][electronicallyActiveCGSites[0]] in rigidBodies:
-                        self.species = species
+                        self.sub_species = sub_species
+                        self.species = parameterDict["chromophore_species"][self.sub_species]["species"]
+                        self.reorganisation_energy = parameterDict["chromophore_species"][self.sub_species]["reorganisationEnergy"]
+                        self.VRH_delocalisation = parameterDict["chromophore_species"][self.sub_species]["VRHDelocalisation"]
                         break
                 try:
                     self.species
@@ -134,6 +137,13 @@ class chromophore:
                     electronicallyActiveSites.append(CGSiteID)
         return electronicallyActiveSites, currentChromophoreSpecies
 
+    def get_mo_energy(self):
+        if self.species == "Acceptor":
+            return self.LUMO
+        elif self.species == "Donor":
+            return self.HOMO
+        else:
+            raise Exception("Chromo MUST be Donor OR Acceptor")
 
 def calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims):
     # We make the assumption that a chromophore consists of one of each of the CG site types
@@ -174,7 +184,7 @@ def calculateChromophores(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, pa
     return chromophoreInstances
 
 
-def calculateChromophoresAA(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims, rigidBodies = None):
+def calculateChromophoresAA(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims, rigidBodies=None):
     # If rigidBodies == None:
     # This function works in the same way as the coarse-grained version above, except
     # this one iterates through the AA bonds instead. This is FAR SLOWER and so shouldn't
@@ -197,7 +207,6 @@ def calculateChromophoresAA(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, 
     bondedAtoms = helperFunctions.obtainBondedList(AAMorphologyDict['bond'])
     chromophoreList = [i for i in range(len(AAMorphologyDict['type']))]
     for AASiteID, chromophoreID in enumerate(chromophoreList):
-        AASiteType = AAMorphologyDict['type'][AASiteID]
         chromophoreList = updateChromophoresAA(AASiteID, chromophoreList, bondedAtoms, parameterDict, rigidBodies)
     chromophoreData = {}
     for atomID, chromoID in enumerate(chromophoreList):
@@ -252,7 +261,7 @@ def updateChromophores(atomID, chromophoreList, bondedAtoms, CGTypeList, typesIn
     return chromophoreList, typesInThisChromophore
 
 
-def updateChromophoresAA(atomID, chromophoreList, bondedAtoms, parameterDict, rigidBodies = None):
+def updateChromophoresAA(atomID, chromophoreList, bondedAtoms, parameterDict, rigidBodies=None):
     # This version of the update chromophores function does not check for CG site types, instead
     # just adding all bonded atoms. Therefore it should only be used in the case of already-atomistic
     # morphologies (no CG morph specified) containing ONLY small molecules
@@ -498,6 +507,7 @@ def determineNeighboursCutOff(chromophoreList, parameterDict, simDims):
     print("")
     return chromophoreList
 
+
 def chromoSort(chromophoreList):
     for index, chromo in enumerate(chromophoreList):
         if index != chromo.ID:
@@ -523,10 +533,10 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
     else:
         # Other system, with electronically active species specified as rigid bodies using AARigidBodySpecies in parameter file
         chromophoreList = calculateChromophoresAA(CGMorphologyDict, AAMorphologyDict, CGToAAIDMaster, parameterDict, simDims, rigidBodies=AAMorphologyDict['body'])
-    #### SANITY CHECK  ####
+    # SANITY CHECK  ####
     chromophoreList = chromoSort(chromophoreList)
-    #### END OF SANITY CHECK ####
-    if parameterDict['useVoronoiNeighbours'] == True:
+    # END OF SANITY CHECK
+    if parameterDict['useVoronoiNeighbours'] is True:
         chromophoreList = determineNeighboursVoronoi(chromophoreList, parameterDict, simDims)
     else:
         chromophoreList = determineNeighboursCutOff(chromophoreList, parameterDict, simDims)
@@ -537,6 +547,7 @@ def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, c
 
 
 if __name__ == "__main__":
+    # TODO: make this expect more useful
     try:
         pickleFile = sys.argv[1]
     except:
