@@ -763,12 +763,21 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
             chromo2 = chromophoreList[chromo.neighbours[index][0]]
             mol2ID = CGToMolID[chromo2.CGIDs[0]]
             deltaE = chromo.neighboursDeltaE[index]
-            if chromo.sub_species == chromo2.sub_species:
-                rate = calculateHopRate(chromo.reorganisation_energy * elementaryCharge, Tij * elementaryCharge, deltaE
-                                        * elementaryCharge, T)
-            else:
-                rate = calculateHopRate((chromo.reorganisation_energy + chromo2.reorganisation_energy)/2
-                                        * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+            try:
+                if chromo.sub_species == chromo2.sub_species:
+                    rate = calculateHopRate(chromo.reorganisation_energy * elementaryCharge, Tij * elementaryCharge,
+                                            deltaE * elementaryCharge, T)
+                else:
+                    rate = calculateHopRate((chromo.reorganisation_energy + chromo2.reorganisation_energy)/2
+                                            * elementaryCharge, Tij * elementaryCharge, deltaE * elementaryCharge, T)
+            except AttributeError:
+                # Catch in case of old package-based chromophore stuff before the sub-species PR
+                if chromo.species == 'Donor':
+                    lambdaij = parameterDict['reorganisationEnergyDonor']
+                else:
+                    lambdaij = parameterDict['reorganisationEnergyAcceptor']
+                rate = calculateHopRate(lambdaij * elementaryCharge, Tij * elementaryCharge,
+                                        deltaE * elementaryCharge, T)
             #try:
             if chromo2.ID < chromo.ID:
                 continue
@@ -812,7 +821,7 @@ def plotMixedHoppingRates(outputDir, chromophoreList, parameterDict, stackDicts,
         plotStackedHistRates(propertyLists['intraStackRatesDonor'], propertyLists['interStackRatesDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/16_DonorHoppingRate_Stacks.pdf')
         plotStackedHistTIs(propertyLists['intraStackTIsDonor'], propertyLists['interStackTIsDonor'], ['Intra-Stack', 'Inter-Stack'], 'Donor', outputDir + '/12_DonorTransferIntegral_Stacks.pdf')
     # Acceptor Stack Plots:
-    if (len(propertyLists['intraStackRatesAcceptor']) > 0) or (len(properyLists['interStackRatesAcceptor']) > 0):
+    if (len(propertyLists['intraStackRatesAcceptor']) > 0) or (len(propertyLists['interStackRatesAcceptor']) > 0):
         plotStackedHistRates(propertyLists['intraStackRatesAcceptor'], propertyLists['interStackRatesAcceptor'], ['Intra-Stack', 'Inter-Stack'], 'Acceptor', outputDir + '/18_AcceptorHoppingRate_Stacks.pdf')
         plotStackedHistTIs(propertyLists['intraStackTIsAcceptor'], propertyLists['interStackTIsAcceptor'], ['Intra-Stack', 'Inter-Stack'], 'Acceptor', outputDir + '/14_AcceptorTransferIntegral_Stacks.pdf')
     # Donor Mol Plots:
@@ -955,7 +964,7 @@ def KMCAnalyse():
     parser.add_argument("-x", "--xlabel", default="Temperature (Arb. U.)", required=False, help='Specify an x-label for the combined plot (only used if -s is specified). Default = "Temperature (Arb. U.)"')
     args, directoryList = parser.parse_known_args()
 
-    sys.setrecursionlimit(5000)
+    sys.setrecursionlimit(10000)
     holeMobilityData = []
     holeAnisotropyData = []
     electronMobilityData = []
