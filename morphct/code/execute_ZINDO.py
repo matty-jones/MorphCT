@@ -9,207 +9,259 @@ import random as R
 import pickle
 
 
-def createInputFiles(chromophoreList, AAMorphologyDict, parameterDict):
+def create_input_files(chromophore_list, AA_morphology_dict, parameter_dict):
     # Singles first
-    for chromophore in chromophoreList:
+    for chromophore in chromophore_list:
         # Include the molecule terminating units on the required atoms of the chromophore
         if chromophore.terminate is True:
-            terminatingGroupPositions = terminateMonomers(chromophore, parameterDict, AAMorphologyDict)
-            terminatingGroupImages = [chromophore.image] * len(terminatingGroupPositions)
+            terminating_group_positions = terminate_monomers(chromophore, parameter_dict,
+                                                             AA_morphology_dict)
+            terminating_group_images = [chromophore.image] * len(terminating_group_positions)
         else:
-            terminatingGroupPositions = None
-            terminatingGroupImages = None
-        writeOrcaInp(AAMorphologyDict, chromophore.AAIDs, [chromophore.image] * len(chromophore.AAIDs), terminatingGroupPositions, terminatingGroupImages, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + chromophore.orcaInput)
+            terminating_group_positions = None
+            terminating_group_images = None
+        write_orca_inp(AA_morphology_dict, chromophore.AAIDs, [chromophore.image] * len(chromophore.AAIDs),
+                       terminating_group_positions, terminating_group_images, parameter_dict['output_morph_dir']
+                       + '/' + parameter_dict['morphology'][:-4] + chromophore.orca_input)
     print("")
     # Determine how many pairs there are first:
-    numberOfPairs = 0
-    for chromo in chromophoreList:
+    number_of_pairs = 0
+    for chromo in chromophore_list:
         for neighbour in chromo.neighbours:
             if int(neighbour[0]) > chromo.ID:
-                numberOfPairs += 1
-    numberOfPairs = np.sum([len(chromo.neighbours) for chromo in chromophoreList])
-    print("There are", int(numberOfPairs/2), "total neighbour pairs to consider.")  # /2 because the forwards and backwards hops are identical
+                number_of_pairs += 1
+    number_of_pairs = np.sum([len(chromo.neighbours) for chromo in chromophore_list])
+    print("There are", int(number_of_pairs / 2), "total neighbour pairs to consider.")
+    # /2 because the forwards and backwards hops are identical
     # Then consider each chromophore against every other chromophore
-    for chromophore1 in chromophoreList:
-        neighboursID = [neighbour[0] for neighbour in chromophore1.neighbours]
-        neighboursImage = [neighbour[1] for neighbour in chromophore1.neighbours]
-        for chromophore2 in chromophoreList:
+    for chromophore1 in chromophore_list:
+        neighbours_ID = [neighbour[0] for neighbour in chromophore1.neighbours]
+        neighbours_image = [neighbour[1] for neighbour in chromophore1.neighbours]
+        for chromophore2 in chromophore_list:
             # Skip if chromophore2 is not one of chromophore1's neighbours
             # Also skip if chromophore2's ID is < chromophore1's ID to prevent duplicates
-            if (chromophore2.ID not in neighboursID) or (chromophore2.ID < chromophore1.ID):
+            if (chromophore2.ID not in neighbours_ID) or (chromophore2.ID < chromophore1.ID):
                 continue
             # Update the ORCA input name
-            inputName = chromophore1.orcaInput.replace('.inp', '-%04d.inp' % (chromophore2.ID)).replace('single', 'pair')
+            input_name = chromophore1.orca_input.replace('.inp', '-%04d.inp'
+                                                         % (chromophore2.ID)).replace('single', 'pair')
             # Find the correct relative image for the neighbour chromophore
-            chromophore2RelativeImage = neighboursImage[neighboursID.index(chromophore2.ID)]
-            chromophore2Transformation = list(np.array(chromophore1.image) - np.array(chromophore2.image) + np.array(chromophore2RelativeImage))
+            chromophore2relative_image = neighbours_image[neighbours_ID.index(chromophore2.ID)]
+            chromophore2transformation = list(np.array(chromophore1.image) - np.array(chromophore2.image)
+                                              + np.array(chromophore2relative_image))
             # Find the dimer AAIDs and relative images for each atom
             AAIDs = chromophore1.AAIDs + chromophore2.AAIDs
-            images = [[0, 0, 0] for i in range(len(chromophore1.AAIDs))] + [chromophore2Transformation for i in range(len(chromophore2.AAIDs))]
+            images = [[0, 0, 0] for i in range(len(chromophore1.AAIDs))] + [
+                chromophore2transformation for i in range(len(chromophore2.AAIDs))]
             # Now add the terminating groups to both chromophores
             # Note that we would only ever expect both chromophores to require termination or neither
             if chromophore1.terminate is True:
-                terminatingGroupPositions1 = terminateMonomers(chromophore1, parameterDict, AAMorphologyDict)
-                terminatingGroupPositions2 = terminateMonomers(chromophore2, parameterDict, AAMorphologyDict)
-                # We don't want to add the terminating hydrogens for adjacent monomers, so remove the ones that are within a particular distance
-                terminatingGroupPositions1, terminatingGroupPositions2 = removeAdjacentTerminators(terminatingGroupPositions1, terminatingGroupPositions2)
-                terminatingGroupImages1 = [[0, 0, 0] for i in range(len(terminatingGroupPositions1))]
-                terminatingGroupImages2 = [chromophore2Transformation for i in range(len(terminatingGroupPositions2))]
+                terminating_group_positions1 = terminate_monomers(chromophore1, parameter_dict,
+                                                                  AA_morphology_dict)
+                terminating_group_positions2 = terminate_monomers(chromophore2, parameter_dict,
+                                                                  AA_morphology_dict)
+                # We don't want to add the terminating hydrogens for adjacent monomers, so remove the
+                # ones that are within a particular distance
+                terminating_group_positions1, terminating_group_positions2 = remove_adjacent_terminators(
+                    terminating_group_positions1, terminating_group_positions2)
+                terminating_group_images1 = [[0, 0, 0] for i in range(len(terminating_group_positions1))]
+                terminating_group_images2 = [chromophore2transformation for i in range(
+                    len(terminating_group_positions2))]
                 # Write the dimer input file
-                writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPositions1 + terminatingGroupPositions2, terminatingGroupImages1 + terminatingGroupImages2, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + inputName)
+                write_orca_inp(AA_morphology_dict, AAIDs, images,
+                               terminating_group_positions1 + terminating_group_positions2,
+                               terminating_group_images1 + terminating_group_images2,
+                               parameter_dict['output_morph_dir'] + '/'
+                               + parameter_dict['morphology'][:-4] + input_name)
             else:
                 # Write the dimer input file
-                writeOrcaInp(AAMorphologyDict, AAIDs, images, None, None, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + inputName)
+                write_orca_inp(AA_morphology_dict, AAIDs, images, None, None,
+                               parameter_dict['output_morph_dir'] + '/'
+                               + parameter_dict['morphology'][:-4] + input_name)
     print("")
 
 
-def removeAdjacentTerminators(group1, group2):
-    popList = [[], []]
-    for index1, terminatingHydrogen1 in enumerate(group1):
-        for index2, terminatingHydrogen2 in enumerate(group2):
-            separation = np.linalg.norm(terminatingHydrogen2 - terminatingHydrogen1)
+def remove_adjacent_terminators(group1, group2):
+    pop_list = [[], []]
+    for index1, terminating_hydrogen1 in enumerate(group1):
+        for index2, terminating_hydrogen2 in enumerate(group2):
+            separation = np.linalg.norm(terminating_hydrogen2 - terminating_hydrogen1)
             if separation < 1.2:
-                popList[0].append(index1)
-                popList[1].append(index2)
-    for groupNo, group in enumerate(popList):
+                pop_list[0].append(index1)
+                pop_list[1].append(index2)
+    for group_no, group in enumerate(pop_list):
         for index in sorted(group, reverse=True):
-            [group1, group2][groupNo].pop(index)
+            [group1, group2][group_no].pop(index)
     return group1, group2
 
 
-def writeOrcaInp(AAMorphologyDict, AAIDs, images, terminatingGroupPosns, terminatingGroupImages, inputName):
-    linesToWrite = []
-    allAtomTypes = []
-    allPositions = []
+def write_orca_inp(AA_morphology_dict, AAIDs, images, terminating_group_posns, terminating_group_images,
+                   input_name):
+    lines_to_write = []
+    all_atom_types = []
+    all_positions = []
     # Format the atom positions ready for ORCA
-    for index, atomID in enumerate(AAIDs):
-        # Cut the integer bit off the atomType. To allow atom types like Ca and Br, where the atom is defined by one upper- and one lower-case letter, use iter to return the first element of the list of upper case letters and the first element of the list of lower case letters in the atom type (if any) and .join them together.
-        atomType = AAMorphologyDict['type'][atomID]
-        allAtomTypes.append(next(iter([char for char in atomType if char.isupper()]), '') + next(iter([char for char in atomType if char.islower()]), ''))
+    for index, atom_ID in enumerate(AAIDs):
+        # Cut the integer bit off the atomType. To allow atom types like Ca and Br, where the atom is
+        # defined by one upper- and one lower-case letter, use iter to return the first element of the
+        # list of upper case letters and the first element of the list of lower case letters in the atom
+        # type (if any) and .join them together.
+        atom_type = AA_morphology_dict['type'][atom_ID]
+        all_atom_types.append(next(iter([char for char in atom_type if char.isupper()]), '') + next(
+            iter([char for char in atom_type if char.islower()]), ''))
         # Add in the correct periodic images to the position
-        allPositions.append(AAMorphologyDict['unwrapped_position'][atomID] + np.array([(images[index][i] * [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']][i]) for i in range(3)]))
+        all_positions.append(AA_morphology_dict['unwrapped_position'][atom_ID]
+                             + np.array([(images[index][i] * [AA_morphology_dict['lx'],
+                                                              AA_morphology_dict['ly'],
+                                                              AA_morphology_dict['lz']][i])
+                                         for i in range(3)]))
     # Now add in the terminating Hydrogens if necessary
-    if terminatingGroupPosns is not None:
-        for index, position in enumerate(terminatingGroupPosns):
+    if terminating_group_posns is not None:
+        for index, position in enumerate(terminating_group_posns):
             # Cut the integer bit off the atomType
-            allAtomTypes.append('H')
+            all_atom_types.append('H')
             # Add in the correct periodic images to the position
-            allPositions.append(position + np.array([(terminatingGroupImages[index][i] * [AAMorphologyDict['lx'], AAMorphologyDict['ly'], AAMorphologyDict['lz']][i]) for i in range(3)]))
-    # Now geometrically centralize all of the atoms that are to be included in this input file to make it easier on ORCA
-    centralPosition = np.array([np.average(np.array(allPositions)[:, 0]), np.average(np.array(allPositions)[:, 1]), np.average(np.array(allPositions)[:, 2])])
+            all_positions.append(position + np.array([(terminating_group_images[index][i]
+                                                       * [AA_morphology_dict['lx'], AA_morphology_dict['ly'],
+                                                          AA_morphology_dict['lz']][i]) for i in range(3)]))
+    # Now geometrically centralize all of the atoms that are to be included in this input file to make
+    # it easier on ORCA
+    central_position = np.array([np.average(np.array(all_positions)[:, 0]),
+                                 np.average(np.array(all_positions)[:, 1]),
+                                 np.average(np.array(all_positions)[:, 2])])
     # Create the lines to be written in the input file
-    for index, position in enumerate(allPositions):
-        linesToWrite.append(" %s  %.5f  %.5f  %.5f\n" % (allAtomTypes[index], position[0] - centralPosition[0], position[1] - centralPosition[1], position[2] - centralPosition[2]))
+    for index, position in enumerate(all_positions):
+        lines_to_write.append(" %s  %.5f  %.5f  %.5f\n" % (all_atom_types[index],
+                                                           position[0] - central_position[0],
+                                                           position[1] - central_position[1],
+                                                           position[2] - central_position[2]))
     # Load the ORCA input template
-    orca_temp_dir = os.path.join(PROJECT_ROOT, "templates")
-    orca_temp_test_dir = os.path.join(PROJECT_ROOT, "code/testAssets")
+    orca_temp_dir = os.path.join(PROJECT_root, "templates")
+    orca_temp_test_dir = os.path.join(PROJECT_root, "code/test_assets")
     try:
-        with open(os.path.join(orca_temp_dir, "template.inp"), 'r') as templateFile:
-            inpFileLines = templateFile.readlines()
+        with open(os.path.join(orca_temp_dir, "template.inp"), 'r') as template_file:
+            inp_file_lines = template_file.readlines()
     # In case running testbed:
     except FileNotFoundError:
-        with open(os.path.join(orca_temp_test_dir, "template.inp"), 'r') as templateFile:
-            inpFileLines = templateFile.readlines()
+        with open(os.path.join(orca_temp_test_dir, "template.inp"), 'r') as template_file:
+            inp_file_lines = template_file.readlines()
     # Insert the linesToWrite
-    inpFileLines[-1:-1] = linesToWrite
+    inp_file_lines[-1:-1] = lines_to_write
     # Write the ORCA input file
-    with open(inputName, 'w+') as orcaFile:
-        orcaFile.writelines(inpFileLines)
+    with open(input_name, 'w+') as orca_file:
+        orca_file.writelines(inp_file_lines)
     print("\rOrca Input File written as", inputName[hf.findIndex(inputName, '/')[-1] + 1:], end=' ')
 
 
-def terminateMonomers(chromophore, parameterDict, AAMorphologyDict):
-    # No CG morphology, so we will use the UA -> AA code definition of which atoms need to have hydrogens added to them.
-    newHydrogenPositions = []
-    for atomIndexChromo, atomIndexMorph in enumerate(chromophore.AAIDs):
-        atomType = AAMorphologyDict['type'][atomIndexMorph]
-        if atomType not in parameterDict['moleculeTerminatingConnections'].keys():
+def terminate_monomers(chromophore, parameter_dict, AA_morphology_dict):
+    # No CG morphology, so we will use the UA -> AA code definition of which atoms need to have
+    # hydrogens added to them.
+    new_hydrogen_positions = []
+    for atom_index_chromo, atom_index_morph in enumerate(chromophore.AAIDs):
+        atom_type = AA_morphology_dict['type'][atom_index_morph]
+        if atom_type not in parameter_dict['molecule_terminating_connections'].keys():
             continue
-        bondedAAIDs = []
-        # Iterate over all termination connections defined for this atomType (in case we are trying to do something mega complicated)
-        for connectionInfo in parameterDict['moleculeTerminatingConnections'][atomType]:
-            for [bondName, AAID1, AAID2] in chromophore.bonds:
-                if AAID1 == atomIndexMorph:
-                    if AAID2 not in bondedAAIDs:
-                        bondedAAIDs.append(AAID2)
-                elif AAID2 == atomIndexMorph:
-                    if AAID1 not in bondedAAIDs:
-                        bondedAAIDs.append(AAID1)
-            if len(bondedAAIDs) != connectionInfo[0]:
+        bonded_AAIDs = []
+        # Iterate over all termination connections defined for this atomType (in case we are
+        # trying to do something mega complicated)
+        for connection_info in parameter_dict['molecule_terminating_connections'][atom_type]:
+            for [bond_name, AAID1, AAID2] in chromophore.bonds:
+                if AAID1 == atom_index_morph:
+                    if AAID2 not in bonded_AAIDs:
+                        bonded_AAIDs.append(AAID2)
+                elif AAID2 == atom_index_morph:
+                    if AAID1 not in bonded_AAIDs:
+                        bonded_AAIDs.append(AAID1)
+            if len(bonded_AAIDs) != connection_info[0]:
                 continue
-            newHydrogenPositions += hf.getTerminatingPositions(AAMorphologyDict['unwrapped_position'][atomIndexMorph], [AAMorphologyDict['unwrapped_position'][bondedAAID] for bondedAAID in bondedAAIDs], 1)
+            new_hydrogen_positions += hf.get_terminating_positions(
+                AA_morphology_dict['unwrapped_position'][atom_index_morph],
+                [AA_morphology_dict['unwrapped_position'][bonded_AAID] for bonded_AAID in bonded_AAIDs],
+                1)
     # Return terminatingGroups (positions of those hydrogens to be added to the ORCA input)
-    return newHydrogenPositions
+    return new_hydrogen_positions
 
 
-def getORCAJobs(inputDir, parameterDict, procIDs):
+def get_orca_jobs(input_dir, parameter_dict, proc_IDs):
     # First delete any previous log files as we're about to start again with the ZINDO/S calculations
     try:
-        os.unlink(inputDir.replace('/inputORCA', '/*.log'))
+        os.unlink(input_dir.replace('/input_orca', '/*.log'))
     except OSError:
         pass
     # Obtain a list of files to run
-    singleORCAFileList = os.listdir(inputDir + '/single')
-    pairORCAFileList = os.listdir(inputDir + '/pair')
-    ORCAFilesToRun = []
-    for fileName in singleORCAFileList:
-        if fileName[-4:] == '.inp':
-            ORCAFilesToRun.append(inputDir + '/single/' + fileName)
-    for fileName in pairORCAFileList:
-        if fileName[-4:] == '.inp':
-            ORCAFilesToRun.append(inputDir + '/pair/' + fileName)
-    ORCAFilesToRun.sort()
-    if parameterDict['overwriteCurrentData'] is False:
-        # Do not run any jobs that have already have an output file (and so have at least started to run if not finished)
-        popList = []
-        for jobNo, job in enumerate(ORCAFilesToRun):
+    single_orca_file_list = os.listdir(input_dir + '/single')
+    pair_orca_file_list = os.listdir(input_dir + '/pair')
+    orca_files_to_run = []
+    for file_name in single_orca_file_list:
+        if file_name[-4:] == '.inp':
+            orca_files_to_run.append(input_dir + '/single/' + file_name)
+    for file_name in pair_orca_file_list:
+        if file_name[-4:] == '.inp':
+            orca_files_to_run.append(input_dir + '/pair/' + file_name)
+    orca_files_to_run.sort()
+    if parameter_dict['overwrite_current_data'] is False:
+        # Do not run any jobs that have already have an output file (and so have at least started to
+        # run if not finished)
+        pop_list = []
+        for job_no, job in enumerate(orca_files_to_run):
             try:
-                with open(job.replace('inputORCA', 'outputORCA').replace('.inp', '.out'), 'r'):
-                    popList.append(jobNo)
+                with open(job.replace('input_orca', 'output_orca').replace('.inp', '.out'), 'r'):
+                    pop_list.append(job_no)
             except IOError:
                 pass
-        popList.sort(reverse=True)
-        for popIndex in popList:
-            ORCAFilesToRun.pop(popIndex)
-    if len(ORCAFilesToRun) == 0:
+        pop_list.sort(reverse=True)
+        for pop_index in pop_list:
+            orca_files_to_run.pop(pop_index)
+    if len(orca_files_to_run) == 0:
         return []
     # Create a jobslist for each procID
-    jobsList = [ORCAFilesToRun[i:i + (int(np.ceil(len(ORCAFilesToRun) / len(procIDs))))] for i in range(0, len(ORCAFilesToRun), int(np.ceil(len(ORCAFilesToRun) / float(len(procIDs)))))]
-    return jobsList
+    jobs_list = [orca_files_to_run[i:i + (int(np.ceil(len(orca_files_to_run) / len(proc_IDs))))]
+                 for i in range(0, len(orca_files_to_run), int(np.ceil(len(orca_files_to_run)
+                                                                       / float(len(proc_IDs)))))]
+    return jobs_list
 
 
-def execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList):
-    createInputFiles(chromophoreList, AAMorphologyDict, parameterDict)
-    inputDir = parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4] + '/chromophores/inputORCA'
-    procIDs = parameterDict['procIDs']
-    jobsList = getORCAJobs(inputDir, parameterDict, procIDs)
+def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
+    create_input_files(chromophore_list, AA_morphology_dict, parameter_dict)
+    input_dir = parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]\
+        + '/chromophores/input_orca'
+    proc_IDs = parameter_dict['proc_IDs']
+    jobs_list = get_orca_jobs(input_dir, parameter_dict, proc_IDs)
     # Shuffle the jobsList to spread it out over the cores
-    R.shuffle(jobsList)
-    numberOfInputs = sum([len(ORCAFilesToRun) for ORCAFilesToRun in jobsList])
+    R.shuffle(jobs_list)
+    number_of_inputs = sum([len(orca_files_to_run) for orca_files_to_run in jobs_list])
     print("Found", numberOfInputs, "ORCA files to run.")
-    if (numberOfInputs > 0):
-        # Create pickle file containing the jobs sorted by ProcID to be picked up by single_core_run_ORCA.py
-        pickleName = inputDir.replace('inputORCA', 'ORCAJobs.pickle')
-        with open(pickleName, 'wb+') as pickleFile:
-            pickle.dump(jobsList, pickleFile)
+    if (number_of_inputs > 0):
+        # Create pickle file containing the jobs sorted by ProcID to be picked up by
+        # single_core_run_ORCA.py
+        pickle_name = input_dir.replace('input_orca', 'orca_jobs.pickle')
+        with open(pickle_name, 'wb+') as pickle_file:
+            pickle.dump(jobs_list, pickle_file)
         print("ORCA jobs list written to", pickleName)
-        if len(jobsList) <= len(procIDs):
-            procIDs = procIDs[:len(jobsList)]
-        runningJobs = []
+        if len(jobs_list) <= len(proc_IDs):
+            proc_IDs = proc_IDs[:len(jobs_list)]
+        running_jobs = []
         # Open the required processes to execute the ORCA jobs
-        for CPURank, jobs in enumerate(jobsList):
-            runningJobs.append(sp.Popen(['python', SINGLE_ORCA_RUN_FILE, parameterDict['outputMorphDir'] + '/' + parameterDict['morphology'][:-4], str(CPURank), str(int(parameterDict['overwriteCurrentData']))]))
+        for CPU_rank, jobs in enumerate(jobs_list):
+            running_jobs.append(sp.popen(['python', single_orca_run_file, parameter_dict['output_morph_dir']
+                                          + '/' + parameter_dict['morphology'][:-4], str(CPU_rank),
+                                          str(int(parameter_dict['overwrite_current_data']))]))
         # Wait for all jobs to complete
-        [p.wait() for p in runningJobs]
+        [p.wait() for p in running_jobs]
         # Delete the job pickle
-        os.system('rm ' + pickleName)
-    return AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList
+        os.system('rm ' + pickle_name)
+    return AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list
 
 
 if __name__ == "__main__":
     try:
-        pickleFile = sys.argv[1]
+        pickle_file = sys.argv[1]
     except:
         print("Please specify the pickle file to load to continue the pipeline from this point.")
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hf.loadPickle(pickleFile)
-    execute(AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList)
+    pickle_data = hf.load_pickle(pickle_file)
+    AA_morphology_dict = pickle_data[0]
+    CG_morphology_dict = pickle_data[1]
+    CG_to_AAID_master = pickle_data[2]
+    parameter_dict = pickle_data[3]
+    chromophore_list = pickle_data[4]
+    execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list)
