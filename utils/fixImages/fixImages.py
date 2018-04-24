@@ -17,6 +17,9 @@ def checkBonds(morphology, bondDict):
 
 
 def zeroOutImages(morphology):
+    if len(morphology['image']) == 0:
+        for _ in morphology['position']:
+            morphology['image'].append([0, 0, 0])
     for atomID, image in enumerate(morphology['image']):
         if image != [0, 0, 0]:
             morphology['image'][atomID] = [0, 0, 0]
