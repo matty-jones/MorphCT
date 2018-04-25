@@ -760,7 +760,7 @@ def load_pickle(pickle_location):
         with open(pickle_location, 'rb') as pickle_file:
             objects = pickle.load(pickle_file, encoding='latin1')
     print("Pickle loaded successfully!")
-    return objects[0], objects[1], objects[2], objects[3], objects[4]
+    return [objects[0], objects[1], objects[2], objects[3], objects[4]]
 
 
 def write_pickle(to_pickle, pickle_file_name):
