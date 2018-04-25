@@ -5,14 +5,12 @@ import sys
 import pickle
 import multiprocessing as mp
 import csv
-import xml.etree.cElementTree as ET
-import time as T
 
 
 # UNIVERSAL CONSTANTS, DO NOT CHANGE!
-elementary_charge = 1.60217657E-19 # C
-k_B = 1.3806488E-23 # m^{2} kg s^{-2} K^{-1}
-hbar = 1.05457173E-34 # m^{2} kg s^{-1}
+elementary_charge = 1.60217657E-19  # C
+k_B = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}
+hbar = 1.05457173E-34  # m^{2} kg s^{-1}
 
 
 def find_index(string, character):
@@ -64,8 +62,8 @@ def calc_com(list_of_positions, list_of_atom_types=None, list_of_atom_masses=Non
             elif (atom_type.lower() == 'd') or (atom_type.lower() == 'a'):
                 list_of_atom_masses.append(1.0)
             else:
-                raise system_error("Unknown atomic mass", atom_type, "please hardcode"
-                                   " into helper_functions.calc_com.")
+                raise SystemError("Unknown atomic mass", atom_type, "please hardcode"
+                                  " into helper_functions.calc_com.")
     total_mass = np.sum(list_of_atom_masses)
     for atom_ID, position in enumerate(list_of_positions):
         for axis in range(3):
@@ -101,7 +99,7 @@ def get_rotation_matrix(vector1, vector2):
                              [-cross_product[1], cross_product[0], 0]])
     skew_matrix_squared = skew_matrix * skew_matrix
     rot_matrix = np.matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]]) + skew_matrix\
-            + skew_matrix_squared * ((1 - cos_angle) / (sin_angle**2))
+        + skew_matrix_squared * ((1 - cos_angle) / (sin_angle**2))
     return rot_matrix
 
 
@@ -220,7 +218,7 @@ def get_terminating_positions(current_atom_posn, bonded_atom_positions, number_o
         bond_vector = np.array(bonded_atom_posn) - current_atom_posn
         bond_vector /= np.linalg.norm(bond_vector)
         average_position_of_bonded_atoms += bond_vector
-    [x, y, z] = current_atom_posn + (-1.06 * (average_position_of_bonded_atoms \
+    [x, y, z] = current_atom_posn + (-1.06 * (average_position_of_bonded_atoms
                                               / np.linalg.norm(average_position_of_bonded_atoms)))
     if number_of_units_to_add == 1:
         # Easy, this is the perylene code
@@ -245,21 +243,21 @@ def get_terminating_positions(current_atom_posn, bonded_atom_positions, number_o
         [a, b, c] = current_atom_posn
         [u, v, w] = rotation_axis
         for theta in [(109.5 / 2.0) * (np.pi / 180.0), -(109.5 / 2.0) * (np.pi / 180.0)]:
-            new_position = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x)\
-                                                               - (v * y) - (w * z))) * (1 - np.cos(theta))\
-                                     + (x * np.cos(theta))\
+            new_position = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x)
+                                                               - (v * y) - (w * z))) * (1 - np.cos(theta))
+                                     + (x * np.cos(theta))
                                      + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
-                                     (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x)\
-                                                               - (v * y) - (w * z))) * (1 - np.cos(theta))\
-                                     + (y * np.cos(theta))\
-                                     + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
-                                     (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x)\
-                                                               - (v * y) - (w * z))) * (1 - np.cos(theta))\
-                                     + (z * np.cos(theta))\
+                                     (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x)
+                                                               - (v * y) - (w * z))) * (1 - np.cos(theta))
+                                     + (y * np.cos(theta))
+                                     + (((c * u) - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
+                                     (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x)
+                                                               - (v * y) - (w * z))) * (1 - np.cos(theta))
+                                     + (z * np.cos(theta))
                                      + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
             hydrogen_positions.append(new_position)
     elif number_of_units_to_add == 3:
-        # As for one (to get the right side of the bonded atom), rotate the first one up by 70.5 
+        # As for one (to get the right side of the bonded atom), rotate the first one up by 70.5
         # (180 - 109.5) and then rotate around by 109.5 degrees for the other two.
         # The first hydrogen can be rotated around any axis perpendicular to the only bond present
         axis_to_bond = current_atom_posn - np.array(bonded_atom_positions[0])
@@ -267,24 +265,25 @@ def get_terminating_positions(current_atom_posn, bonded_atom_positions, number_o
         # the first hydrogen.
         # Do this by setting i = j = 1 and solve for k (given that currentAtomPosn[0]*i
         # + currentAtomPosn[1]*j + currentAtomPosn[2]*k = 0)
-        first_hydrogen_rotation_axis = np.array([1, 1, -(axis_to_bond[0] + axis_to_bond[1])/axis_to_bond[2]])
+        first_hydrogen_rotation_axis = np.array([1, 1, -(axis_to_bond[0] + axis_to_bond[1])
+                                                 / axis_to_bond[2]])
         first_hydrogen_rotation_axis /= np.linalg.norm(first_hydrogen_rotation_axis)
 
         [a, b, c] = current_atom_posn
         [u, v, w] = first_hydrogen_rotation_axis
         # First hydrogen
-        theta = 70.5 * np.pi/180.0
-        new_position = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x)\
-                                                           - (v * y) - (w * z))) * (1 - np.cos(theta))\
-                                 + (x * np.cos(theta))\
+        theta = 70.5 * np.pi / 180.0
+        new_position = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x)
+                                                           - (v * y) - (w * z))) * (1 - np.cos(theta))
+                                 + (x * np.cos(theta))
                                  + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
-                                 (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x)\
-                                                           - (v * y) - (w * z))) * (1 - np.cos(theta))\
-                                 + (y * np.cos(theta))\
-                                 + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
-                                 (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x)\
-                                                           - (v * y) - (w * z))) * (1 - np.cos(theta))\
-                                 + (z * np.cos(theta))\
+                                 (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x)
+                                                           - (v * y) - (w * z))) * (1 - np.cos(theta))
+                                 + (y * np.cos(theta))
+                                 + (((c * u) - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
+                                 (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x)
+                                                           - (v * y) - (w * z))) * (1 - np.cos(theta))
+                                 + (z * np.cos(theta))
                                  + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
         hydrogen_positions.append(new_position)
         # Second and third hydrogens
@@ -294,17 +293,17 @@ def get_terminating_positions(current_atom_posn, bonded_atom_positions, number_o
         [a, b, c] = current_atom_posn + (np.cos(theta) * axis_to_bond)
         [u, v, w] = ((np.cos(theta) * axis_to_bond) / np.linalg.norm(np.cos(theta) * axis_to_bond))
         for theta in [120 * (np.pi / 180.0), -120 * (np.pi / 180.0)]:
-            new_hydrogen_position = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x)\
-                                                                        - (v * y) - (w * z))) * (1 - np.cos(theta))\
-                                              + (x * np.cos(theta))\
+            new_hydrogen_position = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x)
+                                                                        - (v * y) - (w * z))) * (1 - np.cos(theta))
+                                              + (x * np.cos(theta))
                                               + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
-                                              (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x)\
-                                                                        - (v * y) - (w * z))) * (1 - np.cos(theta))\
-                                              + (y * np.cos(theta))\
-                                              + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
-                                              (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x)\
-                                                                        - (v * y) - (w * z))) * (1 - np.cos(theta))\
-                                              + (z * np.cos(theta))\
+                                              (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x)
+                                                                        - (v * y) - (w * z))) * (1 - np.cos(theta))
+                                              + (y * np.cos(theta))
+                                              + (((c * u) - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
+                                              (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x)
+                                                                        - (v * y) - (w * z))) * (1 - np.cos(theta))
+                                              + (z * np.cos(theta))
                                               + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
             hydrogen_positions.append(new_hydrogen_position)
     return hydrogen_positions
@@ -325,9 +324,9 @@ def load_morphology_XML(xml_path, sigma=1.0):
     # Charge as <charge
     # Set default tilts so when we use simdims later they exisit always
     atom_dictionary = {'position': [], 'image': [], 'mass': [], 'diameter': [],
-                      'type': [], 'body': [], 'bond': [], 'angle': [],
-                      'dihedral': [], 'improper': [], 'charge': [], 'xy': 0.0,
-                      'xz': 0.0, 'yz':0.0}
+                       'type': [], 'body': [], 'bond': [], 'angle': [],
+                       'dihedral': [], 'improper': [], 'charge': [], 'xy': 0.0,
+                       'xz': 0.0, 'yz': 0.0}
     record = False
     with open(xml_path, 'r') as xml_file:
         xml_data = xml_file.readlines()
@@ -345,11 +344,11 @@ def load_morphology_XML(xml_path, sigma=1.0):
                     quot_loc = find_index(split_line[i], '"')
                     if ('.' in split_line[i][quot_loc[0] + 1:quot_loc[1]]):
                         # Catch float in the value (excludes the = and quotation marks)
-                        atom_dictionary[split_line[i][:equals_loc[0]].lower()] = float(split_line[i][quot_loc[0]\
-                                                                                                     + 1:quot_loc[1]])
+                        atom_dictionary[split_line[i][:equals_loc[0]].lower()] = float(
+                            split_line[i][quot_loc[0] + 1:quot_loc[1]])
                     else:
-                        atom_dictionary[split_line[i][:equals_loc[0]].lower()] = int(split_line[i][quot_loc[0]\
-                                                                                                   + 1:quot_loc[1]])
+                        atom_dictionary[split_line[i][:equals_loc[0]].lower()] = int(
+                            split_line[i][quot_loc[0] + 1:quot_loc[1]])
             elif ('<position' in line):
                 record = True
                 record_type = 'position'
@@ -443,8 +442,8 @@ def load_morphology_XML(xml_path, sigma=1.0):
     return atom_dictionary
 
 
-def load_FF_XML(xml_path, mapping = False):
-    FF_dict = {'lj':[], 'dpd':[], 'bond':[], 'angle':[], 'dihedral':[], 'improper':[]}
+def load_FF_XML(xml_path, mapping=False):
+    FF_dict = {'lj': [], 'dpd': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': []}
     with open(xml_path, 'r') as xml_file:
         xml_data = xml_file.readlines()
         for line in xml_data:
@@ -514,7 +513,7 @@ def check_constraint_names(AA_morphology_dict):
     return AA_morphology_dict
 
 
-def write_morphology_XML(input_dictionary, output_file, sigma = 1.0, check_wrapped_posns = True):
+def write_morphology_XML(input_dictionary, output_file, sigma=1.0, check_wrapped_posns=True):
     # Firstly, scale everything by the inverse of the provided sigma value
     tilt_factors = ["xy", "yz", "xz"]
     if sigma != 1.0:
@@ -530,15 +529,15 @@ def write_morphology_XML(input_dictionary, output_file, sigma = 1.0, check_wrapp
             input_dictionary = check_wrapped_positions(input_dictionary)
     # Add Boiler Plate first
     lines_to_write = ['<?xml version="1.0" encoding="UTF-8"?>\n', '<hoomd_xml version="1.4">\n',
-                      '<configuration time_step="0" dimensions="3" natoms="' + str(input_dictionary['natoms'])\
+                      '<configuration time_step="0" dimensions="3" natoms="' + str(input_dictionary['natoms'])
                       + '" >\n',
-                      '<box lx="' + str(input_dictionary['lx'])\
-                      + '" ly="' + str(input_dictionary['ly'])\
+                      '<box lx="' + str(input_dictionary['lx'])
+                      + '" ly="' + str(input_dictionary['ly'])
                       + '" lz="' + str(input_dictionary['lz'])]
     if all([tilt_factor in input_dictionary.keys() for tilt_factor in tilt_factors]):
         lines_to_write[-1] += '" xy="' + str(input_dictionary['xy'])\
-                + '" xz="' + str(input_dictionary['xz'])\
-                + '" yz="' + str(input_dictionary['yz']) + '" />\n'
+            + '" xz="' + str(input_dictionary['xz'])\
+            + '" yz="' + str(input_dictionary['yz']) + '" />\n'
     else:
         lines_to_write[-1] += '" />\n'
     # Position
@@ -634,7 +633,7 @@ def increment_atom_IDs(original_input_dictionary, ghost_dictionary, increment, m
     con_types = ['bond', 'angle', 'dihedral', 'improper']
     for con_type in con_types:
         for constraint_no, constraint in enumerate(input_dictionary[con_type]):
-            input_dictionary[con_type][constraint_no][1:] = [x + increment for x in\
+            input_dictionary[con_type][constraint_no][1:] = [x + increment for x in
                                                              input_dictionary[con_type][constraint_no][1:]]
     if modify_ghost_dictionary is True:
         for bond_no, bond in enumerate(ghost_dictionary['bond']):
@@ -667,17 +666,17 @@ def rotate(input_dictionary, theta, rotate_around_point=[0, 0, 0], rotate_around
     for AAID, [x, y, z] in enumerate(input_dictionary['unwrapped_position']):
         [a, b, c] = rotate_around_point
         [u, v, w] = rotate_around_axis
-        new_position = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x)\
-                                                           - (v * y) - (w * z))) * (1 - np.cos(theta))\
-                                 + (x * np.cos(theta))\
+        new_position = np.array([(a * (v**2 + w**2) - u * ((b * v) + (c * w) - (u * x)
+                                                           - (v * y) - (w * z))) * (1 - np.cos(theta))
+                                 + (x * np.cos(theta))
                                  + ((-(c * v) + (b * w) - (w * y) + (v * z)) * np.sin(theta)),
-                                 (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x)\
-                                                           - (v * y) - (w * z))) * (1 - np.cos(theta))\
-                                 + (y * np.cos(theta))\
-                                 + (((c * u)  - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
-                                 (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x)\
-                                                           - (v * y) - (w * z))) * (1 - np.cos(theta))\
-                                 + (z * np.cos(theta))\
+                                 (b * (u**2 + w**2) - v * ((a * u) + (c * w) - (u * x)
+                                                           - (v * y) - (w * z))) * (1 - np.cos(theta))
+                                 + (y * np.cos(theta))
+                                 + (((c * u) - (a * w) + (w * x) - (u * z)) * np.sin(theta)),
+                                 (c * (u**2 + v**2) - w * ((a * u) + (b * v) - (u * x)
+                                                           - (v * y) - (w * z))) * (1 - np.cos(theta))
+                                 + (z * np.cos(theta))
                                  + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
         input_dictionary['unwrapped_position'][AAID] = list(new_position)
     # All the images are probably messed up now, so fix that
@@ -797,14 +796,13 @@ def convert_string_to_int(x):
 
 def fix_images(original_morphology):
     def check_bonds(morphology, bond_dict):
-        periodic_bonds = []
         for bond in morphology['bond']:
             posn1 = np.array(morphology['position'][bond[1]])\
-                    + (np.array(morphology['image'][bond[1]])\
-                       * np.array([morphology['lx'], morphology['ly'], morphology['lz']]))
+                + (np.array(morphology['image'][bond[1]])
+                   * np.array([morphology['lx'], morphology['ly'], morphology['lz']]))
             posn2 = np.array(morphology['position'][bond[2]])\
-                    + (np.array(morphology['image'][bond[2]])\
-                       * np.array([morphology['lx'], morphology['ly'], morphology['lz']]))
+                + (np.array(morphology['image'][bond[2]])
+                   * np.array([morphology['lx'], morphology['ly'], morphology['lz']]))
             separation = calculate_separation(posn1, posn2)
             if separation >= morphology['lx'] / 2.0:
                 print("Periodic bond found:", bond, "because separation =", separation,
@@ -821,9 +819,7 @@ def fix_images(original_morphology):
     def get_bond_dict(morphology):
         bond_dict = {atom_ID: [] for atom_ID, atom_type in enumerate(morphology['type'])}
         for bond in morphology['bond']:
-            #if bond[1] < bond[2]:
             bond_dict[bond[1]].append(bond[2])
-            #else:
             bond_dict[bond[2]].append(bond[1])
         return bond_dict
 
@@ -887,20 +883,20 @@ def calculate_FRET_hop_rate(prefactor, lifetime_parameter, r_F, rij, delta_Eij, 
     if delta_Eij <= 0:
         boltzmann_factor = 1
     else:
-        boltzmann_factor = np.exp(-(elementary_charge * delta_Eij)/(k_B * T))
-    k_FRET = prefactor * (1/lifetime_parameter) * (r_F / rij)**6 * boltzmann_factor
+        boltzmann_factor = np.exp(-(elementary_charge * delta_Eij) / (k_B * T))
+    k_FRET = prefactor * (1 / lifetime_parameter) * (r_F / rij)**6 * boltzmann_factor
     return k_FRET
 
 
 def calculate_miller_abrahams_hop_rate(prefactor, separation, radius, delta_Eij, T):
-    kij = prefactor * np.exp(-2 * separation/radius)
+    kij = prefactor * np.exp(-2 * separation / radius)
     if delta_Eij > 0:
         kij *= np.exp(-delta_Eij / (k_B * T))
     return kij
 
 
 def determine_event_tau(rate, event_type='None', slowest_event=None, fastest_event=None,
-                        maximum_attempts=None):
+                        maximum_attempts=None, log_file=None):
     # Use the KMC algorithm to determine the wait time to this hop
     if rate != 0:
         counter = 0
@@ -911,12 +907,12 @@ def determine_event_tau(rate, event_type='None', slowest_event=None, fastest_eve
                     if 'hop' in event_type:
                         return None
                     else:
-                        if 'injection' not in event_type:
-                            write_to_file(log_file, ["attempted " + str(maximum_attempts) + " times to obtain a '"\
-                                                     + str(event_type)\
-                                                     + "'-type event timescale within the tolerances: "\
-                                                     + str(fastest_event) + " <= tau < " + str(slowest_event)\
-                                                     + " with the given rate " + str(rate)\
+                        if ('injection' not in event_type) and (log_file is not None):
+                            write_to_file(log_file, ["Attempted " + str(maximum_attempts) + " times to obtain a '"
+                                                     + str(event_type)
+                                                     + "'-type event timescale within the tolerances: "
+                                                     + str(fastest_event) + " <= tau < " + str(slowest_event)
+                                                     + " with the given rate " + str(rate)
                                                      + " all without success. Permitting the event anyway"
                                                      " with the next random number."])
 
