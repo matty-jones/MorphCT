@@ -276,7 +276,7 @@ class atomistic:
     def get_CG_monomer_dict(self):
         CG_monomer_dictionary = {'position': [], 'image': [], 'mass': [], 'diameter': [], 'type': [], 'body': [],
                                  'bond': [], 'angle': [], 'dihedral': [], 'improper': [], 'charge': [], 'lx': 0,
-                                 'ly': 0, 'lz': 0, 'xy' : 0, 'xz': 0, 'yz': 0}
+                                 'ly': 0, 'lz': 0, 'xy': 0, 'xz': 0, 'yz': 0}
         # First, do just the positions and find the newsiteIDs for each CG site
         for site_ID in self.site_IDs:
             CG_monomer_dictionary['position'].append(self.CG_dictionary['position'][site_ID])
@@ -482,7 +482,8 @@ class atomistic:
             if atom_type not in self.molecule_terminating_connections.keys():
                 continue
             bonded_AAIDs = []
-            # Iterate over all termination connections defined for this atomType (in case we are trying to do something mega complicated)
+            # Iterate over all termination connections defined for this atomType (in case we are
+            # trying to do something mega complicated)
             for connection_info in self.molecule_terminating_connections[atom_type]:
                 for [bond_name, AAID1, AAID2] in AA_dictionary['bond']:
                     if AAID1 == atom_index:
@@ -493,17 +494,22 @@ class atomistic:
                             bonded_AAIDs.append(AAID1)
                 if len(bonded_AAIDs) != connection_info[0]:
                     continue
-                new_hydrogen_positions = helper_functions.get_terminating_positions(AA_dictionary['unwrapped_position'][atom_index], [AA_dictionary['unwrapped_position'][bonded_AAID] for bonded_AAID in bonded_AAIDs], 1)
+                new_hydrogen_positions = helper_functions.get_terminating_positions(
+                    AA_dictionary['unwrapped_position'][atom_index],
+                    [AA_dictionary['unwrapped_position'][bonded_AAID] for bonded_AAID in bonded_AAIDs], 1)
                 for hydrogen_position in new_hydrogen_positions:
                     new_hydrogen_data.append([atom_index, list(hydrogen_position)])
         AA_dictionary = self.add_terminating_to_molecule(AA_dictionary, new_hydrogen_data)
         AA_dictionary = helper_functions.add_wrapped_positions(AA_dictionary)
         AA_dictionary = helper_functions.add_masses(AA_dictionary)
         AA_dictionary = helper_functions.add_diameters(AA_dictionary)
-        # Now the molecule is done, we need to add on the correct identifying numbers for all the bonds, angles and dihedrals
-        # (just as we did between monomers) for the other molecules in the system, so that they all connect to the right atoms
-        # Note that here we need to increment the '_'+ATOMIDs in the ghost dictionary to take into account the number of molecules.
-        AA_dictionary, ghost_dictionary = helper_functions.increment_atom_IDs(AA_dictionary, ghost_dictionary, self.no_atoms_in_morphology, modify_ghost_dictionary=True)
+        # Now the molecule is done, we need to add on the correct identifying numbers for all the bonds,
+        # angles and dihedrals (just as we did between monomers) for the other molecules in the system,
+        # so that they all connect to the right atoms.
+        # Note that here we need to increment the '_'+ATOMIDs in the ghost dictionary to take into
+        # account the number of molecules.
+        AA_dictionary, ghost_dictionary = helper_functions.increment_atom_IDs(
+            AA_dictionary, ghost_dictionary, self.no_atoms_in_morphology, modify_ghost_dictionary=True)
         return AA_dictionary, atom_ID_lookup_table, ghost_dictionary
 
     def add_terminating_to_molecule(self, AA_dictionary, new_hydrogen_data):
@@ -546,11 +552,13 @@ class atomistic:
                 bond_pop_list = []
                 # Find bonded atoms that are not of the same type
                 for bond_no, bond in enumerate(bond_list):
-                    if (bond[1] in this_monomer) and (bond[2] not in this_monomer) and (type_list_sequence[bond[2]] not in monomer_types_added):
+                    if (bond[1] in this_monomer) and (bond[2] not in this_monomer)\
+                       and (type_list_sequence[bond[2]] not in monomer_types_added):
                         this_monomer.append(bond[2])
                         monomer_types_added.append(type_list_sequence[bond[2]])
                         added_new_site = True
-                    elif (bond[2] in this_monomer) and (bond[1] not in this_monomer) and (type_list_sequence[bond[1]] not in monomer_types_added):
+                    elif (bond[2] in this_monomer) and (bond[1] not in this_monomer)\
+                            and (type_list_sequence[bond[1]] not in monomer_types_added):
                         this_monomer.append(bond[1])
                         monomer_types_added.append(type_list_sequence[bond[1]])
                         added_new_site = True
