@@ -9,7 +9,6 @@ import subprocess as sp
 from morphct.code import helper_functions as hf
 from morphct.code import fine_grainer
 from morphct.code import run_HOOMD
-from morphct.code import extract_mol
 from morphct.code import obtain_chromophores
 from morphct.code import execute_ZINDO
 from morphct.code import transfer_integrals
@@ -63,10 +62,6 @@ class simulation:
                 print("---=== EQUILIBRATING FINE-GRAINED MORPHOLOGY... ===---")
                 AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list = run_hoomd.main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list)
                 print("---=== EQUILIBRATION COMPLETED ===---")
-            if self.execute_extract_molecules is True:
-                print("---=== EXTRACTING SINGLE MOLECULES FROM SYSTEM... ===---")
-                AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list = extract_mol.main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list)
-                print("---=== EXTRACTION COMPLETED ===---")
             if self.execute_obtain_chromophores is True:
                 print("---=== IDENTIFYING CHROMOPHORES OF CHARGE CARRIER DELOCALISATION... ===---")
                 AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list = obtain_chromophores.main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list)
