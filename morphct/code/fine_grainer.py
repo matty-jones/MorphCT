@@ -6,18 +6,19 @@ import sys
 
 class morphology:
     def __init__(self, morphology_XML, morphology_name, parameter_dict, chromophore_list):
-        # Need to save the parameter_dict in full as well as its component values because
-        # we're going to update the parameterDict with the new type mappings by the end of
-        # this code module.
+        # Need to save the parameter_dict in full as well as its component
+        # values because we're going to update the parameterDict with the new
+        # type mappings by the end of this code module.
         self.parameter_dict = parameter_dict
         # Import parameters from the parXX.py
         for key, value in parameter_dict.items():
             self.__dict__[key] = value
         self.xml_path = morphology_XML
         self.morphology_name = morphology_name
-        # self.inputSigma is the `compression value' in Angstroms that has been used to
-        # scale the morphology
-        # E.G. the P3HT template uses sigma = 1, but the Marsh morphologies use sigma = 3.
+        # self.inputSigma is the `compression value' in Angstroms that has been
+        # used to scale the morphology
+        # E.G. the P3HT template uses sigma = 1, but the Marsh morphologies use
+        # sigma = 3.
         self.CG_dictionary = helper_functions.load_morphology_XML(self.xml_path, sigma=self.input_sigma)
         self.CG_dictionary = helper_functions.add_unwrapped_positions(self.CG_dictionary)
         self.chromophore_list = chromophore_list
@@ -29,20 +30,21 @@ class morphology:
         rolling_AA_index = 0
         CG_morphology_dict = {}
         AA_morphology_dict = {}
-        # Set the AAMorphology and CGMorphology system sizes to the same as the input
-        # file system size
+        # Set the AAMorphology and CGMorphology system sizes to the same as the
+        # input file system size
         for box_dimension in ['lx', 'ly', 'lz', 'xy', 'xz', 'yz']:
             CG_morphology_dict[box_dimension] = self.CG_dictionary[box_dimension]
             AA_morphology_dict[box_dimension] = self.CG_dictionary[box_dimension]
-        CG_to_AAID_master = []  # This is a list of dictionaries. Elements in the list
-        # correspond to molecules (useful for splitting out individual molecules for the
-        # xyz conversion) within the element, the dictionary key is the CG site, the value
-        # is a list containing the CG type (e.g. 'thio') as the first element and then another
-        # list of all the AAIDs corresponding to that CG site as the second element.
+        CG_to_AAID_master = []  # This is a list of dictionaries. Elements in
+        # the list correspond to molecules (useful for splitting out individual
+        # molecules for the xyz conversion) within the element, the dictionary
+        # key is the CG site, the value is a list containing the CG type (e.g.
+        # 'thio') as the first element and then another list of all the AAIDs
+        # corresponding to that CG site as the second element.
 
-        # If no CG_to_template info is present in the parameter dict, then we can assume that
-        # the morphology is already fine-grained and so we can just return the important
-        # information and skip this module
+        # If no CG_to_template info is present in the parameter dict, then we
+        # can assume that the morphology is already fine-grained and so we can
+        # just return the important information and skip this module
         if len(self.CG_to_template_dirs) == 0:
             print("No CG to AA data found in parameter file - the morphology is already"
                   " fine-grained! Skipping this module...")
@@ -53,28 +55,30 @@ class morphology:
             atomistic_morphology = helper_functions.add_unwrapped_positions(self.CG_dictionary)
             # Now write the morphology XML
             helper_functions.write_morphology_XML(atomistic_morphology, AA_file_name)
-            # And finally write the pickle with the CGDictionary as None (to indicate to MorphCT that no
-            # fine-graining has taken place), but the other parameters assigned as required.
+            # And finally write the pickle with the CGDictionary as None (to
+            # indicate to MorphCT that no fine-graining has taken place), but
+            # the other parameters assigned as required.
             pickle_location = self.output_morph_dir + '/' + self.morphology_name + '/code/' +\
                 self.morphology_name + '.pickle'
             helper_functions.write_pickle((atomistic_morphology, None, None, self.parameter_dict,
                                            self.chromophore_list), pickle_location)
             return atomistic_morphology, None, None, self.parameter_dict, self.chromophore_list
 
-        # Create a ghost particle dictionary to be added at the end of the morphology.
-        # This way, we don't mess up the order of atoms later on when trying to split
-        # back up into individual molecules and monomers.
-        # The ghost dictionary contains all of the type T and type X particles that will
-        # anchor the thiophene rings to the CG COM positions.
+        # Create a ghost particle dictionary to be added at the end of the
+        # morphology. This way, we don't mess up the order of atoms later on
+        # when trying to split back up into individual molecules and monomers.
+        # The ghost dictionary contains all of the type T and type X particles
+        # that will anchor the thiophene rings to the CG COM positions.
         ghost_dictionary = {'position': [], 'image': [], 'unwrapped_position': [], 'mass': [],
                             'diameter': [], 'type': [], 'body': [], 'bond': [], 'angle': [],
                             'dihedral': [], 'improper': [], 'charge': []}
 
-        # Need to check for atom-type conflicts and suitably increment the type indices if more than
-        # one molecule type is being fine-grained
+        # Need to check for atom-type conflicts and suitably increment the
+        # type indices if more than one molecule type is being fine-grained
         new_type_mappings = self.get_new_type_mappings(self.CG_to_template_dirs,
                                                        self.CG_to_template_force_fields)
-        # Need to update the self.parameterDict, which will be rewritten at the end of this module
+        # Need to update the self.parameterDict, which will be rewritten at the
+        # end of this module
         self.parameter_dict['new_type_mappings'] = new_type_mappings
         molecule = []
         unique_mappings = []
@@ -105,7 +109,8 @@ class morphology:
         for molecule_number in range(len(molecule_IDs)):
             print("Adding molecule number", moleculeNumber, "\r", end=' ')
             sys.stdout.flush()
-            # Obtain the AA dictionary for each molecule using the fine-grainining procedure
+            # Obtain the AA dictionary for each molecule using the
+            # fine-graining procedure
             AA_molecule_dict, C_gto_AAIDs, ghost_dictionary = atomistic(
                 molecule_number, molecule_IDs[molecule_number], self.CG_dictionary,
                 molecule_lengths, rolling_AA_index, ghost_dictionary,
@@ -120,20 +125,23 @@ class morphology:
                         AA_morphology_dict[key] += AA_molecule_dict[key]
             rolling_AA_index += len(AA_molecule_dict['type'])
         # Now add the ghost dictionary to the end of the morphology file
-        total_number_of_atoms = len(AA_morphology_dict['type'])  # Should be == rolling_AA_index,
-        # but don't want to take any chances.
-        # Add in the wrapped positions of the ghosts. Need to know sim dims for this
+        # total_number_of_atoms should be == rolling_AA_index, but don't want
+        # to take any chances.
+        total_number_of_atoms = len(AA_morphology_dict['type'])
+        # Add in the wrapped positions of the ghosts. Need to know sim dims for
+        # this
         for key in ['lx', 'ly', 'lz', 'xy', 'xz', 'yz']:
             ghost_dictionary[key] = AA_morphology_dict[key]
         ghost_dictionary = helper_functions.add_wrapped_positions(ghost_dictionary)
         for key in ['lx', 'ly', 'lz', 'xy', 'xz', 'yz']:
             ghost_dictionary.pop(key)
-        # The real atoms that the ghost particles are bonded to are already correct and no
-        # longer need to be changed.
-        # However, the ghost particles themselves will have the wrong indices if we were to
-        # add them to the system directly.
-        # Therefore, increment all of the ghost bond indices that begin with a * (ghost particle)
-        # by the total number of atoms already in the system.
+        # The real atoms that the ghost particles are bonded to are already
+        # correct and no longer need to be changed.
+        # However, the ghost particles themselves will have the wrong indices
+        # if we were to add them to the system directly.
+        # Therefore, increment all of the ghost bond indices that begin with a
+        # * (ghost particle) by the total number of atoms already in the
+        # system.
         for bond_no, bond in enumerate(ghost_dictionary['bond']):
             if str(bond[1])[0] == '*':
                 ghost_dictionary['bond'][bond_no][1] = int(bond[1][1:]) + total_number_of_atoms
@@ -149,10 +157,11 @@ class morphology:
         print("Writing XML file...")
         AA_file_name = self.output_morph_dir + '/' + self.morphology_name + '/morphology/'\
             + self.morphology_name + '.xml'
-        # Replace the `positions' with the `unwrapped_positions' ready for writing
+        # Replace the `positions' with the `unwrapped_positions' ready for
+        # writing
         AA_morphology_dict = helper_functions.replace_wrapped_positions(AA_morphology_dict)
-        # Update the additionalConstraints that we put in by checking all of the constraints have
-        # the correct names before writing
+        # Update the additional_constraints that we put in by checking all of
+        # the constraints have the correct names before writing
         AA_morphology_dict = helper_functions.check_constraint_names(AA_morphology_dict)
         # Now write the morphology XML
         helper_functions.write_morphology_XML(AA_morphology_dict, AA_file_name)
@@ -168,7 +177,8 @@ class morphology:
         # Split the full morphology into individual molecules
         molecule_AAIDs = []
         molecule_lengths = []
-        # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
+        # Create a lookup table `neighbour list' for all connected atoms called
+        # {bonded_atoms}
         bonded_atoms = helper_functions.obtain_bonded_list(self.CG_dictionary['bond'])
         molecule_list = [i for i in range(len(self.CG_dictionary['type']))]
         # Recursively add all atoms in the neighbour list to this molecule
@@ -191,22 +201,25 @@ class morphology:
         # Recursively add all neighbours of atom number atomID to this molecule
         try:
             for bonded_atom in bonded_atoms[atom_ID]:
-                # If the moleculeID of the bonded atom is larger than that of the current one,
-                # update the bonded atom's ID to the current one's to put it in this molecule,
-                # then iterate through all of the bonded atom's neighbours
+                # If the moleculeID of the bonded atom is larger than that of
+                # the current one, update the bonded atom's ID to the current
+                # one's to put it in this molecule, then iterate through all of
+                # the bonded atom's neighbours
                 if molecule_list[bonded_atom] > molecule_list[atom_ID]:
                     molecule_list[bonded_atom] = molecule_list[atom_ID]
                     molecule_list = self.update_molecule(bonded_atom, molecule_list, bonded_atoms)
-                # If the moleculeID of the current atom is larger than that of the bonded one,
-                # update the current atom's ID to the bonded one's to put it in this molecule,
-                # then iterate through all of the current atom's neighbours
+                # If the moleculeID of the current atom is larger than that of
+                # the bonded one, update the current atom's ID to the bonded
+                # one's to put it in this molecule, then iterate through all of
+                # the current atom's neighbours
                 elif molecule_list[bonded_atom] < molecule_list[atom_ID]:
                     molecule_list[atom_ID] = molecule_list[bonded_atom]
                     molecule_list = self.update_molecule(atom_ID, molecule_list, bonded_atoms)
-                # Else: both the current and the bonded atom are already known to be in this
-                # molecule, so we don't have to do anything else.
+                # Else: both the current and the bonded atom are already known
+                # to be in this molecule, so we don't have to do anything else.
         except KeyError:
-            # This means that there are no bonded CG sites (i.e. it's a single molecule)
+            # This means that there are no bonded CG sites (i.e. it's a single
+            # molecule)
             pass
         return molecule_list
 
@@ -225,10 +238,11 @@ class morphology:
             for lj_interaction in force_field['lj']:
                 atom_type = lj_interaction[0]
                 while atom_type in morphology_atom_types:
-                    # Atom type already exists in morphology, so increment the atomType number by one
+                    # Atom type already exists in morphology, so increment the
+                    # atom_type number by one
                     for i in range(1, len(atom_type)):
-                        # Work out where the integer start so we can increment it (should be i = 1
-                        # for one-character element names)
+                        # Work out where the integer start so we can increment
+                        # it (should be i = 1 for one-character element names)
                         try:
                             integer = int(atom_type[i:])
                             break
@@ -318,28 +332,31 @@ class atomistic:
         AA_dictionary = {'position': [], 'image': [], 'unwrapped_position': [], 'mass': [], 'diameter': [],
                          'type': [], 'body': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': [],
                          'charge': [], 'lx': 0, 'ly': 0, 'lz': 0, 'xy': 0, 'xz': 0, 'yz': 0}
-        # Find the COMs of each CG site in the system, so that we know where to move the template to
+        # Find the COMs of each CG site in the system, so that we know where to
+        # move the template to
         CG_co_ms, self.CG_to_template_AAIDs = self.get_AA_template_position(self.CG_to_template_AAIDs)
-        # Need to keep track of the atom ID numbers globally - runFineGrainer sees individual monomers,
-        # atomistic sees molecules and the XML needs to contain the entire morphology.
+        # Need to keep track of the atom ID numbers globally - run_fine_grainer
+        # sees individual monomers, atomistic sees molecules and the XML needs
+        # to contain the entire morphology.
         no_atoms_in_molecule = 0
         CG_type_list = {}
         for site_ID in self.site_IDs:
             CG_type_list[site_ID] = self.CG_dictionary['type'][site_ID]
-        # Sort the CG sites into monomers so we can iterate over each monomer in order to perform the
-        # fine-graining
+        # Sort the CG sites into monomers so we can iterate over each monomer
+        # in order to perform the fine-graining
         monomer_list = self.sort_into_monomers(CG_type_list)
         current_monomer_index = sum(self.molecule_lengths[:self.molecule_index])
         atom_ID_lookup_table = {}
         # Calculate the total number of permitted atoms
         total_permitted_atoms = self.total_permitted_atoms(monomer_list)
-        # Set the initial and final atom indices to None initially, so that we don't add terminating
-        # units for small molecules
+        # Set the initial and final atom indices to None initially, so that we
+        # don't add terminating units for small molecules
         start_atom_index = None
         end_atom_index = None
         for monomer_no, monomer in enumerate(monomer_list):
-            # This monomer should have the same template file for all CG sites in the monomer, if not
-            # we've made a mistake in splitting the monomers. So check this:
+            # This monomer should have the same template file for all CG sites
+            # in the monomer, if not we've made a mistake in splitting the
+            # monomers. So check this:
             template_files = []
             monomer_CG_types = []
             for CG_site in monomer:
@@ -370,11 +387,12 @@ class atomistic:
                         this_monomer_dictionary['unwrapped_position'][AAID]) + site_translation)
                 # Next sort out the rigid bodies
                 if CG_type_list[site_ID] in self.rigid_body_sites:
-                    # Every rigid body needs a ghost particle that describes its CoM
+                    # Every rigid body needs a ghost particle that describes
+                    # its CoM
                     AAID_positions = []
                     AAID_atom_types = []
-                    # If the key is specified with no values, assume that all the AAIDs in the
-                    # template constitute the rigid body
+                    # If the key is specified with no values, assume that all
+                    # the AAIDs in the template constitute the rigid body
                     if len(self.rigid_body_sites[CG_type_list[site_ID]]) == 0:
                         self.rigid_body_sites[CG_type_list[site_ID]] = list(np.arange(len(
                             self.CG_to_template_AAIDs[CG_type_list[site_ID]])))
@@ -398,21 +416,24 @@ class atomistic:
                     ghost_dictionary['body'].append(-1)
                     ghost_dictionary['charge'].append(0.0)
                     # Now create a bond between them
-                    # We want to bond together the previous two ghost particles, so this should work as
-                    # it requires no knowledge of the number of ghost particles already in the system.
+                    # We want to bond together the previous two ghost particles,
+                    # so this should work as it requires no knowledge of the
+                    # number of ghost particles already in the system.
                     ghost_dictionary['bond'].append([str(ghost_dictionary['type'][-2]) + '-'
                                                      + str(ghost_dictionary['type'][-1]),
                                                      '*' + str(len(ghost_dictionary['type']) - 2),
                                                      '*' + str(len(ghost_dictionary['type']) - 1)])
                 else:
-                    # Create a ghost particle that describe the CG anchorpoint for the non-rigid body
+                    # Create a ghost particle that describe the CG anchorpoint
+                    # for the non-rigid body
                     ghost_dictionary['unwrapped_position'].append(self.CG_dictionary['unwrapped_position'][site_ID])
                     ghost_dictionary['mass'].append(1.0)
                     ghost_dictionary['diameter'].append(1.0)
                     ghost_dictionary['type'].append('X' + str(CG_type_list[site_ID]))
                     ghost_dictionary['body'].append(-1)
                     ghost_dictionary['charge'].append(0.0)
-                    # Add in bonds between the CG anchorpoints and the atom closest to the CG site
+                    # Add in bonds between the CG anchorpoints and the atom
+                    # closest to the CG site.
                     # Find the atom closest to the CG site
                     closest_atom_ID = None
                     closest_atom_posn = 1E99
@@ -423,30 +444,35 @@ class atomistic:
                             closest_atom_posn = separation
                             closest_atom_ID = AAID
                     # Add in the bond:
-                    # Note that, in order to distinguish between the ghostAtomIDs and the realAtomIDs, I've
-                    # put an underscore in front of the closestAtomID, and a * in front of the ghostAtomID.
-                    # When incrementing the atomIDs for this monomer or this molecule, the readlAtomIDs will
-                    # be incremented correctly.
-                    # Later, when the ghost atoms are added to the main system, the ghostAtomIDs will be
-                    # incremented according to the number of atoms in the whole system (i.e. the ghosts
+                    # Note that, in order to distinguish between the
+                    # ghost_atom_IDs and the real_atomIDs, I've put an
+                    # underscore in front of the closest_atom_ID, and a * in
+                    # front of the ghost_atom_ID. When incrementing the
+                    # atom_IDs for this monomer or this molecule, the 
+                    # real_atom_IDs will be incremented correctly.
+                    # Later, when the ghost atoms are added to the main system,
+                    # the ghost_atom_IDs will be incremented according to the
+                    # number of atoms in the whole system (i.e. the ghosts
                     # appear at the end of the real atoms).
-                    # At this time, the realAtomIDs will be left unchanged because they are already correct
-                    # for the whole system.
+                    # At this time, the real_atom_IDs will be left unchanged
+                    # because they are already correct for the whole system.
                     ghost_dictionary['bond'].append([str(ghost_dictionary['type'][-1]) + '-'
                                                      + str(this_monomer_dictionary['type'][closest_atom_ID]),
                                                      '*' + str(len(ghost_dictionary['type']) - 1), '_'
                                                      + str(closest_atom_ID + no_atoms_in_molecule)])
-            # Now add in the bonds between CGSites in this monomer
+            # Now add in the bonds between CG_sites in this monomer
             for bond in self.CG_dictionary['bond']:
                 if (bond[1] in monomer) and (bond[2] in monomer):
                     CG_bond_type = bond[0]
                     this_monomer_dictionary['bond'].append(self.CG_to_template_bonds[CG_bond_type])
-            # Now need to add in the additionalConstraints for this monomer (which include the bond,
-            # angle and dihedral for the inter-monomer connections).
-            # However, we need a check to make sure that we don't add stuff for the final monomer
-            # (because those atoms +25 don't exist in this molecule!)
+            # Now need to add in the additional_constraints for this monomer
+            # (which include the bond, angle and dihedral for the inter-monomer
+            # connections). However, we need a check to make sure that we don't
+            # add stuff for the final monomer (because those atoms +25 don't
+            # exist in this molecule!)
             for constraint in self.additional_constraints:
-                # Firstly, skip this constraint if the current monomer doesn't have the relevant atom types
+                # Firstly, skip this constraint if the current monomer doesn't
+                # have the relevant atom types
                 if all([atom_type in set(this_monomer_dictionary['type'])
                         for atom_type in constraint[0].split('-')]) is False:
                     continue
@@ -458,14 +484,16 @@ class atomistic:
                         break
                 if at_final_monomer is True:
                     break
-                # Work out which key to write the constraint to based on its length:
+                # Work out which key to write the constraint to based on its
+                # length:
                 # 3 = Bond, 4 = Angle, 5 = Dihedral, 6 = Improper
                 constraint_type = ['bond', 'angle', 'dihedral', 'improper']
                 this_monomer_dictionary[constraint_type[len(constraint) - 3]].append(constraint)
-            # Finally, increment the atom IDs to take into account previous monomers in this molecule and
-            # then update the AADictionary.
-            # Note that the ghost dictionary bond was already updated to have the correct realAtom AAID
-            # for this molecule when the bond was created. Therefore, leave the ghost dictionary unchanged.
+            # Finally, increment the atom IDs to take into account previous
+            # monomers in this molecule and then update the AADictionary.
+            # Note that the ghost dictionary bond was already updated to have
+            # the correct realAtom AAID for this molecule when the bond was
+            # created. Therefore, leave the ghost dictionary unchanged.
             this_monomer_dictionary, ghost_dictionary = helper_functions.increment_atom_IDs(
                 this_monomer_dictionary, ghost_dictionary, no_atoms_in_molecule, modify_ghost_dictionary=False)
             no_atoms_in_molecule += len(this_monomer_dictionary['type'])
@@ -476,14 +504,16 @@ class atomistic:
         AA_dictionary['natoms'] = no_atoms_in_molecule
         for key in ['lx', 'ly', 'lz']:
             AA_dictionary[key] = this_monomer_dictionary[key]
-        # Now we terminate the molecules using the technique in the addHydrogensToUA analysis script
+        # Now we terminate the molecules using the technique in the
+        # add_hydrogens_to_UA analysis script
         new_hydrogen_data = []
         for atom_index, atom_type in enumerate(AA_dictionary['type']):
             if atom_type not in self.molecule_terminating_connections.keys():
                 continue
             bonded_AAIDs = []
-            # Iterate over all termination connections defined for this atomType (in case we are
-            # trying to do something mega complicated)
+            # Iterate over all termination connections defined for this
+            # atom_type (in case we are trying to do something mega
+            # complicated)
             for connection_info in self.molecule_terminating_connections[atom_type]:
                 for [bond_name, AAID1, AAID2] in AA_dictionary['bond']:
                     if AAID1 == atom_index:
@@ -503,11 +533,12 @@ class atomistic:
         AA_dictionary = helper_functions.add_wrapped_positions(AA_dictionary)
         AA_dictionary = helper_functions.add_masses(AA_dictionary)
         AA_dictionary = helper_functions.add_diameters(AA_dictionary)
-        # Now the molecule is done, we need to add on the correct identifying numbers for all the bonds,
-        # angles and dihedrals (just as we did between monomers) for the other molecules in the system,
-        # so that they all connect to the right atoms.
-        # Note that here we need to increment the '_'+ATOMIDs in the ghost dictionary to take into
-        # account the number of molecules.
+        # Now the molecule is done, we need to add on the correct identifying
+        # numbers for all the bonds, angles and dihedrals (just as we did
+        # between monomers) for the other molecules in the system, so that they
+        # all connect to the right atoms.
+        # Note that here we need to increment the '_'+ATOMIDs in the ghost
+        # dictionary to take into account the number of molecules.
         AA_dictionary, ghost_dictionary = helper_functions.increment_atom_IDs(
             AA_dictionary, ghost_dictionary, self.no_atoms_in_morphology, modify_ghost_dictionary=True)
         return AA_dictionary, atom_ID_lookup_table, ghost_dictionary
@@ -526,8 +557,8 @@ class atomistic:
         return AA_dictionary
 
     def total_permitted_atoms(self, monomer_list):
-        # Work out how many atoms we have in the molecule so that we don't create
-        # any constraints including atoms outside this molecule
+        # Work out how many atoms we have in the molecule so that we don't
+        # create any constraints including atoms outside this molecule
         total_permitted_atoms = 0
         for monomer in monomer_list:
             for CG_site_ID in monomer:
@@ -582,8 +613,9 @@ class atomistic:
         return monomer_list
 
     def update_molecule_dictionary(self, current_monomer_dictionary, AA_dictionary):
-        # Update AADictionary with all of the values in currentMonomerDictionary,
-        # except ths system dimensions which will be sorted later
+        # Update AA_dictionary with all of the values in
+        # current_monomer_dictionary, except ths system dimensions which will
+        # be sorted later
         key_list = list(AA_dictionary.keys())
         key_list.remove('lx')
         key_list.remove('ly')
@@ -598,11 +630,13 @@ class atomistic:
 
     def get_AA_template_position(self, CG_to_template_AAIDs):
         CG_co_ms = {}
-        # For each CG site, determine the types and positions so we can calculate the COM
+        # For each CG site, determine the types and positions so we can
+        # calculate the COM
         for site_name in list(CG_to_template_AAIDs.keys()):
             atom_IDs = CG_to_template_AAIDs[site_name]
             AA_template = self.AA_templates_dictionary[site_name]
-            # If the key's length is zero, then add all the atoms from the template
+            # If the key's length is zero, then add all the atoms from the
+            # template
             if len(atom_IDs) == 0:
                 atom_IDs = list(np.arange(len(AA_template['type'])))
                 # Update self.CGToTemplateAAIDs with these for later on
@@ -613,5 +647,5 @@ class atomistic:
                 site_types.append(AA_template['type'][atom_ID])
                 site_positions.append(AA_template['unwrapped_position'][atom_ID])
             # These output as numpy arrays because we can't do maths with lists
-            CG_co_ms[site_name] = helper_functions.calc_com(site_positions, list_of_atom_types=site_types)
-        return CG_co_ms, CG_to_template_AAIDs
+            CG_COMs[site_name] = helper_functions.calc_COM(site_positions, list_of_atom_types=site_types)
+        return CG_COMs, CG_to_template_AAIDs

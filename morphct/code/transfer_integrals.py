@@ -193,7 +193,8 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
         proc_IDs = proc_IDs[:len(jobs_list)]
     running_jobs = []
     for CPU_rank in proc_IDs:
-        # The final argument here tells orca to ignore the presence of the output file and recalculate
+        # The final argument here tells orca to ignore the presence of the
+        # output file and recalculate
         running_jobs.append(sp.popen(['python', single_orca_run_file, output_dir, str(CPU_rank), '1']))
     # Wait for running jobs to finish
     [p.wait() for p in running_jobs]
@@ -227,7 +228,8 @@ def calculate_delta_E(chromophore_list, chromo1_ID, chromo2_ID):
 
 
 def calculate_TI(orbital_splitting, delta_E):
-    # Use the energy splitting in dimer method to calculate the electronic transfer integral in eV
+    # Use the energy splitting in dimer method to calculate the electronic
+    # transfer integral in eV
     if delta_E**2 > orbital_splitting**2:
         # Avoid an imaginary TI by returning zero.
         # (Could use KOOPMAN'S APPROXIMATION here if desired)
@@ -246,7 +248,9 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
     # chromophore twice.
     # Firstly, set the energy levels for each single chromophore, rerunning
     # them if they fail.
-    failed_single_chromos = {}  # has the form {'file_name': [fail_count, location_in_chromophore_list]}
+    # failed_single_chromos has the form {'file_name': [fail_count,
+    # location_in_chromophore_list]}
+    failed_single_chromos = {}
     for chromo_location, chromophore in enumerate(chromophore_list):
         file_name = 'single/%05d.out' % (chromophore.ID)
         print("\rDetermining energy levels for", file_name, end=' ')
@@ -523,9 +527,11 @@ def scale_energies(chromophore_list, parameter_dict):
         # if target_DoSSTD > std_MO:
         #     # Determine how many sigmas away from the mean this datapoint is
         #     sigma = (chromo.get_mo_energy() - av_MO) / std_MO
-        #     # Calculate the new deviation from the mean based on the target STD and sigma
+        #     # Calculate the new deviation from the mean based on the target
+        #     # STD and sigma
         #     newDeviation = target_DoSSTD * sigma
-        #     # Work out the change in energy to be applied to meet this target energy level
+        #     # Work out the change in energy to be applied to meet this target
+        #     # energy level
         #     deltaE = (av_MO + newDeviation) - chromo.get_mo_energy()
         #     # Apply the energy level displacement
         #     chromo.HOMO_1 += deltaE

@@ -33,18 +33,22 @@ class md_phase:
         for key in ['temperatures', 'taus', 'pair_types', 'bond_types', 'angle_types', 'dihedral_types',
                     'integration_targets', 'timesteps', 'durations', 'termination_conditions',
                     'group_anchorings', 'dcd_file_dumpsteps']:
-            # If the phase-specific parameter is not defined for this phase number then use the first one.
+            # If the phase-specific parameter is not defined for this phase
+            # number then use the first one.
             if self.phase_number + 1 > len(parameter_dict[key]):
                 self.__dict__[key[:-1]] = parameter_dict[key][0]
-            # If the phase-specific parameter is specified for this phase then use this parameter
+            # If the phase-specific parameter is specified for this phase then
+            # use this parameter
             else:
                 self.__dict__[key[:-1]] = parameter_dict[key][phase_number]
         self.system = self.load_system(input_file)
-        # Determine the required groups so we can use the correct integrator each time
+        # Determine the required groups so we can use the correct integrator
+        # each time
         self.rigid_group, self.non_rigid_group, self.integration_types = self.get_integration_groups()
         self.output_log_file_name = self.output_morph_dir + '/' + self.morphology[:-4]\
             + '/morphology/energies_' + self.morphology[:-4] + '.log'
-        # Determine which quantities should be logged during the simulation phase
+        # Determine which quantities should be logged during the simulation
+        # phase
         self.log_quantities = ['temperature', 'pressure', 'volume', 'potential_energy', 'kinetic_energy',
                                'bond_' + self.bond_type + '_energy', 'angle_' + self.angle_type + '_energy',
                                'dihedral_' + self.dihedral_type + '_energy']
@@ -92,7 +96,8 @@ class md_phase:
         self.step = integrate.mode_standard(dt=self.timestep)
         self.rigid_int = integrate.nvt_rigid(group=self.rigid_group, T=self.temperature, tau=self.tau)
         self.non_rigid_int = integrate.nvt(group=self.non_rigid_group, T=self.temperature, tau=self.tau)
-        # Overwrite the log file if this is the first phase, otherwise append to the previous log
+        # Overwrite the log file if this is the first phase, otherwise append to
+        # the previous log
         if self.phase_number == 0:
             log_overwrite = True
         else:
@@ -100,7 +105,7 @@ class md_phase:
         self.energy_log = analyze.log(filename=self.output_log_file_name, quantities=self.log_quantities,
                                       period=self.duration / 1000.0, overwrite=log_overwrite)
         callback = None
-        # Set up the callback function if the termination condition is not maxt
+        # Set up the callback function if the termination condition is not max_t
         if self.termination_condition == 'KE_min':
             self.load_from_snapshot = False
             self.lowest_ke = 9e999
@@ -142,7 +147,8 @@ class md_phase:
                     # Found the lowest KE point for at least 5 dumpsteps
                     del self.first_ke_value, self.lowest_ke, self.ke_increased
                     raise ExitHOOMD("lowest energy condition met")
-                # Increment a counter that indicates how many times the KE has increased since the minimum
+                # Increment a counter that indicates how many times the KE has
+                # increased since the minimum
                 self.ke_increased += 1
             else:
                 # At at least local KE minimum, so store snapshot
@@ -151,7 +157,8 @@ class md_phase:
                 self.snapshot_to_load = self.system.take_snapshot(all=True)
                 self.lowest_ke = current_ke
         else:
-            # Skip the first check because the KE fluctuates wildly within the first dump step
+            # Skip the first check because the KE fluctuates wildly within the
+            # first dump step
             self.first_ke_value = False
         return 0
 
@@ -186,21 +193,25 @@ class md_phase:
         if self.pair_type != 'none':
             # Log the correct pairType energy
             self.log_quantities.append('pair_' + self.pair_type + '_energy')
-            # HOOMD crashes if you don't specify all pair combinations, so need to make sure we do this.
+            # HOOMD crashes if you don't specify all pair combinations, so need
+            # to make sure we do this.
             atom_types = sorted(list(set(self.AA_morphology_dict['type'])),
                                 key=lambda x: hf.convert_string_to_int(x))
             all_pair_types = []
-            # Create a list of all of the pairTypes to ensure that the required coefficients are set
+            # Create a list of all of the pairTypes to ensure that the required
+            # coefficients are set
             for atom_type1 in atom_types:
                 for atom_type2 in atom_types:
                     pair_type = str(atom_type1) + '-' + str(atom_type2)
                     reverse_pair_type = str(atom_type2) + '-' + str(atom_type1)
                     if (pair_type not in all_pair_types) and (reverse_pair_type not in all_pair_types):
                         all_pair_types.append(pair_type)
-            # Read in the pairTypes, parameters and coefficients and set them for HOOMD
+            # Read in the pairTypes, parameters and coefficients and set them
+            # for HOOMD
             if self.pair_type == 'dpd':
                 self.pair_class = pair.dpd(r_cut=self.pair_R_cut * self.s_scale, T=self.temperature)
-                # Use the geometric mixing rule for all possible combinations of the specified forcefield coefficients
+                # Use the geometric mixing rule for all possible combinations of
+                # the specified forcefield coefficients
                 for atom_index1, atom_type1 in enumerate([coeff[0] for coeff in self.dpd_coeffs]):
                     for atom_index2, atom_type2 in enumerate([coeff[0] for coeff in self.dpd_coeffs]):
                         self.pair_class.pair_coeff.set(
@@ -214,9 +225,10 @@ class md_phase:
                             all_pair_types.remove(atom_type1 + '-' + atom_type2)
                         except:
                             pass
-                # Because we've been removing each pair from allPairTypes, all that are left
-                # are the pair potentials that are unspecified in the parXX.py (e.g. ghost
-                # particle interactions), so set these interactions to zero
+                # Because we've been removing each pair from allPairTypes, all
+                # that are left are the pair potentials that are unspecified in
+                # the parXX.py (e.g. ghost particle interactions), so set these
+                # interactions to zero
                 for pair_type in all_pair_types:
                     self.pair_class.pair_coeff.set(pair_type.split('-')[0], pair_type.split('-')[1],
                                                    A=0.0, r_cut=0.0, gamma=0.0)
@@ -235,9 +247,10 @@ class md_phase:
                             all_pair_types.remove(atom_type1 + '-' + atom_type2)
                         except:
                             pass
-                # Because we've been removing each pair from allPairTypes, all that are left
-                # are the pair potentials that are unspecified in the parXX.py (e.g. ghost
-                # particle interactions), so set these interactions to zero
+                # Because we've been removing each pair from allPairTypes, all
+                # that are left are the pair potentials that are unspecified in
+                # the parXX.py (e.g. ghost particle interactions), so set these
+                # interactions to zero
                 for pair_type in all_pair_types:
                     self.pair_class.pair_coeff.set(pair_type.split('-')[0], pair_type.split('-')[1],
                                                    epsilon=0.0, sigma=0.0)
@@ -249,13 +262,15 @@ class md_phase:
         if self.bond_type == 'harmonic':
             self.bond_class = bond.harmonic()
             for bond_coeff in self.bond_coeffs:
-                # [k] = kcal mol^{-1} \AA^{-2} * episilon/sigma^{2}, [r0] = \AA * sigma^{2}
+                # [k] = kcal mol^{-1} \AA^{-2} * episilon/sigma^{2}, [r0] =
+                # \AA * sigma^{2}
                 self.bond_class.bond_coeff.set(
                     bond_coeff[0],
                     k=bond_coeff[1] * (self.e_scale / (self.s_scale**2)),
                     r0=bond_coeff[2] * self.s_scale)
         # Ghost bonds
-        # If there is no anchoring, rather than change the XML, just set the bond k values to 0.
+        # If there is no anchoring, rather than change the XML, just set the
+        # bond k values to 0.
             if self.group_anchoring == 'all':
                 group_anchoring_types = ['X' + CG_type for CG_type in list(self.CG_to_template_AAIDs.keys())]
             elif self.group_anchoring == 'none':
@@ -330,7 +345,8 @@ class md_phase:
                     improper_coeff[0], k=improper_coeff[1] * self.e_scale, chi=improper_coeff[2])
 
     def get_integration_groups(self):
-        # Based on input parameter, return all non-rigid and rigid atoms to be integrated over
+        # Based on input parameter, return all non-rigid and rigid atoms to be
+        # integrated over
         if self.integration_target == 'all':
             integration_types = list(self.CG_to_template_AAIDs.keys())
         else:
@@ -345,8 +361,10 @@ class md_phase:
         for atom_ID, atom_type in enumerate(self.AA_morphology_dict['type']):
             if atom_type in ghost_integration_types:
                 atom_IDs_to_integrate.append(atom_ID)
-        # Create the integrateGroup which contains all of the atoms to be integrated.
-        # The rigidGroup constains the intersection of integrateGroup and group.rigid()
+        # Create the integrateGroup which contains all of the atoms to be
+        # integrated.
+        # The rigidGroup constains the intersection of integrateGroup and
+        # group.rigid()
         # The nonRigidGroup contains the remainder of atoms in integrateGroup
         integrate_group = group.tag_list(name="integrate_group", tags=atom_IDs_to_integrate)
         rigid_group = group.intersection(name="rigid_group", a=group.rigid(), b=integrate_group)
@@ -355,7 +373,8 @@ class md_phase:
 
 
 def multi_harmonic_torsion(theta, v0, v1, v2, v3, v4):
-    # Definition of multiharmonic dihedral equation based on 5 input parameters to be used by HOOMD
+    # Definition of multiharmonic dihedral equation based on 5 input parameters
+    # to be used by HOOMD
     V = v0 + v1 * np.cos(theta) + v2 * ((np.cos(theta))**2) + v3 * ((np.cos(theta))**3) + v4 * ((np.cos(theta))**4)
     F = v1 * np.sin(theta) + 2 * v2 * np.cos(theta) * np.sin(theta)\
         + 3 * v3 * ((np.cos(theta))**2) * np.sin(theta) + 4 * v4 * ((np.cos(theta))**3) * np.sin(theta)
@@ -364,7 +383,8 @@ def multi_harmonic_torsion(theta, v0, v1, v2, v3, v4):
 
 def obtain_scale_factors(parameter_dict):
     print("Obtaining correct scaling for epsilon and sigma...")
-    # The scaling factors are 1/largestSigma in the LJ coeffs, and 1/largestEpsilon
+    # The scaling factors are 1/largestSigma in the LJ coeffs, and 1
+    # / largestEpsilon
     LJFFs = []
     for CG_site, directory in parameter_dict['CG_to_template_dirs'].items():
         FF_loc = directory + '/' + parameter_dict['CG_to_template_force_fields'][CG_site]
@@ -387,9 +407,10 @@ def scale_morphology(initial_morphology, parameter_dict, s_scale, e_scale):
 def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
     # Main execution function for run_HOOMD that performs the required MD phases
     # First, scale the input morphology based on the pair potentials such that
-    # the distances and energies are normalised to the strongest pair interaction
-    # and the diameter of the largest atom (makes it easier on HOOMDs calculations
-    # and ensures that T = 1.0 is an interesting temperature threshold)
+    # the distances and energies are normalised to the strongest pair
+    # interaction and the diameter of the largest atom (makes it easier on
+    # HOOMDs calculations and ensures that T = 1.0 is an interesting temperature
+    # threshold)
     current_files = os.listdir(parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]
                                + '/morphology')
     # sScale, eScale = obtainScaleFactors(parameterDict)
@@ -425,15 +446,17 @@ def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter
     final_XML_name = parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]\
         + '/morphology/final_' + parameter_dict['morphology']
     if 'final_' + parameter_dict['morphology'] not in current_files:
-        # Now all phases are complete, remove the ghost particles from the system
+        # Now all phases are complete, remove the ghost particles from the
+        # system
         print("Removing ghost particles to create final output...")
         remove_ghost_particles(parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]
                                + '/morphology/' + output_file, final_XML_name, sigma=s_scale)
     # Finally, update the pickle file with the most recent and realistic
     # AAMorphologyDict so that we can load it again further along the pipeline
     AA_morphology_dict = hf.load_morphology_XML(final_XML_name)
-    # Now that we've obtained the final fine-grained morphology, we need to fix the images to prevent
-    # issues with obtaining the chromophores and running them through the ZINDO/S calculations later...
+    # Now that we've obtained the final fine-grained morphology, we need to fix
+    # the images to prevent issues with obtaining the chromophores and running
+    # them through the ZINDO/S calculations later...
     AA_morphology_dict = hf.fix_images(AA_morphology_dict)
     # ...add in the unwrapped positions...
     AA_morphology_dict = hf.add_unwrapped_positions(AA_morphology_dict)

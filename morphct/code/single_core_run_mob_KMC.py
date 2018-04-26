@@ -302,7 +302,8 @@ if __name__ == '__main__':
     # except OSError:
     #     hf.write_to_file(log_file, ["Taskset command not found, skipping setting of processor affinity..."])
     # Now load the main morphology pickle (used as a workaround to obtain the
-    # chromophoreList without having to save it in each carrier [very memory inefficient!])
+    # chromophore_list without having to save it in each carrier [very memory
+    # inefficient!])
     pickle_dir = KMC_directory.replace('/KMC', '/code')
     for file_name in os.listdir(pickle_dir):
         if 'pickle' in file_name:

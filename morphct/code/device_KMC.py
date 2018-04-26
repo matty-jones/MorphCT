@@ -43,7 +43,8 @@ class morphology_moiety:
 
 
 class chromophore_data_container:
-    # A helper class that contains all of the chromophore data for ease of access from anywhere
+    # A helper class that contains all of the chromophore data for ease of
+    # access from anywhere
     def __init__(self, device_array, moiety_dictionary, wrapxy):
         self.device_array = device_array
         self.moiety_dictionary = moiety_dictionary
@@ -63,8 +64,8 @@ class chromophore_data_container:
 
     def return_closest_chromophore_to_position(self, device_position, desired_position):
         closest_chromo_ID = None
-        # Check that there is an eligible device position that exists at these coordinates
-        # (i.e. there is a hop taking place within the active layer)
+        # Check that there is an eligible device position that exists at these
+        # coordinates (i.e. there is a hop taking place within the active layer)
         # Find out which axis is out of index
         for axis_no, val in enumerate(device_position):
             if val >= self.device_array.shape[axis_no]:
@@ -94,7 +95,8 @@ class chromophore_data_container:
 
 
 class morphology_data_container:
-    # A helper class that contains all of the chromophore data for ease of access from anywhere
+    # A helper class that contains all of the chromophore data for ease of
+    # access from anywhere
     def __init__(self, device_array, moiety_dictionary):
         self.device_array = device_array
         self.moiety_dictionary = moiety_dictionary
@@ -116,16 +118,16 @@ def load_device_morphology(parameter_dict):
         # Load the ySlice as-presented in the input files
         y_slice = np.loadtxt(device_dir + '/' + file_name, dtype=int)
         if len(y_slice.shape) > 0:
-            # The z-origin is at the top, and we need it at the bottom, so turn the array
-            # upside down
+            # The z-origin is at the top, and we need it at the bottom, so turn
+            # the array upside down
             y_slice = np.flipud(y_slice)
             # Now populate the array
             for z_val, z_row in enumerate(y_slice):
                 for x_val, datum in enumerate(z_row):
                     device_array[x_val, y_val, z_val] = datum
         else:
-            # Can't flipud and iterate over a zero-length array (one number), so assign it
-            # this way instead.
+            # Can't flipud and iterate over a zero-length array (one number), so
+            # assign it this way instead.
             device_array[0, y_val, 0] = int(y_slice)
     moiety_dictionary = {}
     for moiety_ID in np.unique(device_array):
@@ -138,18 +140,18 @@ def main(parameter_dict):
     # Set the random seed now for all the child processes
     R.seed(3232)
 
-    # First job will be to load in the device morphology, when I work out what format I
-    # want it to be.
+    # First job will be to load in the device morphology, when I work out what
+    # format I want it to be.
     device_array, moiety_dictionary = load_device_morphology(parameter_dict)
 
-    # Initialise the helperClass to obtain all of the chromophoreData required, allowing
-    # it be accessed globally
+    # Initialise the helperClass to obtain all of the chromophoreData required,
+    # allowing it be accessed globally
     chromophore_data = chromophore_data_container(device_array, moiety_dictionary,
                                                   parameter_dict['wrap_device_xy'])
     morphology_data = morphology_data_container(device_array, moiety_dictionary)
 
-    # Write these classes out to a pickle file so that they can be loaded by the child
-    # processes later
+    # Write these classes out to a pickle file so that they can be loaded by the
+    # child processes later
     to_pickle = [device_array, chromophore_data, morphology_data, parameter_dict]
     save_directory = parameter_dict['output_device_dir'] + '/'\
         + parameter_dict['device_morphology'] + '/code'
@@ -174,12 +176,13 @@ def main(parameter_dict):
         print("KMC jobs for proc_ID", proc_ID, "written to KMC_data_%02d.pickle"
               % (proc_ID))
         # Open the required processes to execute the KMC jobs
-        # Random seeding is a little weird here. If we don't generate a random seed in
-        # the child process, it will just use the system time. So, we generate a seed
-        # here to get the same random number stream each time, and then feed the child
-        # process a new seed from the random number stream. This way, we ensure that
-        # each child process has a different random number stream to the other processes,
-        # but it's the same stream every time we run the program.
+        # Random seeding is a little weird here. If we don't generate a random
+        # seed in the child process, it will just use the system time. So, we
+        # generate a seed here to get the same random number stream each time,
+        # and then feed the child process a new seed from the random number
+        # stream. This way, we ensure that each child process has a different
+        # random number stream to the other processes, but it's the same stream
+        # every time we run the program.
         child_seed = R.randint(0, 2**32)
         # Previous run command:
         run_command = ['python ', SINGLE_RUN_DEVICE_KMC_FILE, output_dir, str(proc_ID),

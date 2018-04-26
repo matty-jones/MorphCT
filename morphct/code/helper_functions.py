@@ -33,7 +33,7 @@ def calculate_separation(atom1, atom2):
     return np.sqrt(np.sum((atom1 - atom2)**2))
 
 
-def calc_com(list_of_positions, list_of_atom_types=None, list_of_atom_masses=None):
+def calc_COM(list_of_positions, list_of_atom_types=None, list_of_atom_masses=None):
     '''This function calculates the centre of mass of a collection of sites/atoms (listOfPositions)
     with corresponding type (listOfAtomTypes) or mass (listOfMasses)
     if list_of_atom_masses is not specified, then list_of_atom_types must be.'''
@@ -41,11 +41,12 @@ def calc_com(list_of_positions, list_of_atom_types=None, list_of_atom_masses=Non
     if list_of_atom_masses is None:
         list_of_atom_masses = []
         for atom_type in list_of_atom_types:
-            # Masses obtained from nist.gov, for the atoms we are likely to simulate the most.
+            # Masses obtained from nist.gov, for the atoms we are likely to
+            # simulate the most.
             # Add in new atoms here if your molecule requires it!
             if atom_type.lower == 'br':
                 print("Br 79 being used as the preferred isotope, change in"
-                      " helper_functions.calc_com if not!")
+                      " helper_functions.calc_COM if not!")
                 list_of_atom_masses.append(78.918338)
             elif atom_type.lower() == 'si':
                 list_of_atom_masses.append(27.976926)
@@ -63,7 +64,7 @@ def calc_com(list_of_positions, list_of_atom_types=None, list_of_atom_masses=Non
                 list_of_atom_masses.append(1.0)
             else:
                 raise SystemError("Unknown atomic mass", atom_type, "please hardcode"
-                                  " into helper_functions.calc_com.")
+                                  " into helper_functions.calc_COM.")
     total_mass = np.sum(list_of_atom_masses)
     for atom_ID, position in enumerate(list_of_positions):
         for axis in range(3):
@@ -209,9 +210,10 @@ def add_diameters(input_dictionary):
 
 
 def get_terminating_positions(current_atom_posn, bonded_atom_positions, number_of_units_to_add):
-    # Given a current_atom_posn and several bonded_atom_positions we can add number_of_units_to_add
-    # different terminating units to the current_atom through a series of geometric checks.
-    # First get the vector to the average position of the bonded neighbours
+    # Given a current_atom_posn and several bonded_atom_positions we can add
+    # number_of_units_to_add different terminating units to the current_atom
+    # through a series of geometric checks. First get the vector to the average
+    # position of the bonded neighbours
     hydrogen_positions = []
     average_position_of_bonded_atoms = np.array([0.0, 0.0, 0.0])
     for bonded_atom_posn in bonded_atom_positions:
@@ -222,17 +224,19 @@ def get_terminating_positions(current_atom_posn, bonded_atom_positions, number_o
                                               / np.linalg.norm(average_position_of_bonded_atoms)))
     if number_of_units_to_add == 1:
         # Easy, this is the perylene code
-        # Simply reverse the bonded vector and make it the hydrogen position at a distance of 1.06
-        # angstroems
+        # Simply reverse the bonded vector and make it the hydrogen position at
+        # a distance of 1.06 angstroems
         hydrogen_positions.append(np.array([x, y, z]))
     # Initial position for all hydrogens
     elif number_of_units_to_add == 2:
-        # As above (to get the right plane), but then rotated +(109.5/2) degrees and -(109.5/2)
-        # degrees around the bonding axis
+        # As above (to get the right plane), but then rotated +(109.5/2) degrees
+        # and -(109.5/2) degrees around the bonding axis
         rotation_axis = np.array(bonded_atom_positions[0]) - np.array(bonded_atom_positions[-1])
         rotation_axis /= np.linalg.norm(rotation_axis)
-        # Rotation matrix calculations from: http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
-        # The array that describes the 3D rotation of (x, y, z) around the point (a, b, c) through
+        # Rotation matrix calculations from: 
+        # http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
+        # The array that describes the 3D rotation of (x, y, z) around the point
+        # (a, b, c) through
         # the unit axis <u, v, w> by the angle theta is given by:
         # [ (a(v^2 + w^2) - u(bv + cw - ux - vy - wz))(1 - cos(theta))
         #       + x*cos(theta) + (-cv + bw - wy + vz)sin(theta),
@@ -257,14 +261,16 @@ def get_terminating_positions(current_atom_posn, bonded_atom_positions, number_o
                                      + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
             hydrogen_positions.append(new_position)
     elif number_of_units_to_add == 3:
-        # As for one (to get the right side of the bonded atom), rotate the first one up by 70.5
-        # (180 - 109.5) and then rotate around by 109.5 degrees for the other two.
-        # The first hydrogen can be rotated around any axis perpendicular to the only bond present
+        # As for one (to get the right side of the bonded atom), rotate the
+        # first one up by 70.5 (180 - 109.5) and then rotate around by 109.5
+        # degrees for the other two. The first hydrogen can be rotated around
+        # any axis perpendicular to the only bond present
         axis_to_bond = current_atom_posn - np.array(bonded_atom_positions[0])
-        # Now find one of the set of vectors [i, j, k] perpendicular to this one so we can place
-        # the first hydrogen.
-        # Do this by setting i = j = 1 and solve for k (given that currentAtomPosn[0]*i
-        # + currentAtomPosn[1]*j + currentAtomPosn[2]*k = 0)
+        # Now find one of the set of vectors [i, j, k] perpendicular to this one
+        # so we can place the first hydrogen.
+        # Do this by setting i = j = 1 and solve for k (given that
+        # current_atom_posn[0]*i + current_atom_posn[1]*j
+        # + current_atom_posn[2]*k = 0)
         first_hydrogen_rotation_axis = np.array([1, 1, -(axis_to_bond[0] + axis_to_bond[1])
                                                  / axis_to_bond[2]])
         first_hydrogen_rotation_axis /= np.linalg.norm(first_hydrogen_rotation_axis)
@@ -287,8 +293,8 @@ def get_terminating_positions(current_atom_posn, bonded_atom_positions, number_o
                                  + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
         hydrogen_positions.append(new_position)
         # Second and third hydrogens
-        # Rotate these from the newPosition +/-120 degrees around the vector axisToBond from the
-        # position currentAtomPosn - axisToBond
+        # Rotate these from the new_position +/-120 degrees around the vector
+        # axis_to_bond from the position current_atom_posn - axis_to_bond
         [x, y, z] = new_position
         [a, b, c] = current_atom_posn + (np.cos(theta) * axis_to_bond)
         [u, v, w] = ((np.cos(theta) * axis_to_bond) / np.linalg.norm(np.cos(theta) * axis_to_bond))
@@ -339,11 +345,13 @@ def load_morphology_XML(xml_path, sigma=1.0):
                 for i in range(1, len(split_line)):
                     equals_loc = find_index(split_line[i], '=')
                     if (equals_loc is None) or ('units' in split_line[i]):
-                        # Skip any elements without equals or to do with the distance units
+                        # Skip any elements without equals or to do with the
+                        # distance units
                         continue
                     quot_loc = find_index(split_line[i], '"')
                     if ('.' in split_line[i][quot_loc[0] + 1:quot_loc[1]]):
-                        # Catch float in the value (excludes the = and quotation marks)
+                        # Catch float in the value (excludes the = and quotation
+                        # marks)
                         atom_dictionary[split_line[i][:equals_loc[0]].lower()] = float(
                             split_line[i][quot_loc[0] + 1:quot_loc[1]])
                     else:
@@ -395,14 +403,15 @@ def load_morphology_XML(xml_path, sigma=1.0):
                 continue
             # Now we know what the variable is, append it to the dictionary data
             if (record is True):
-                # Mbuild outputs properties that are split by \t, so do a bit of jiggery pokery to
-                # allow us to interpret both
+                # Mbuild outputs properties that are split by \t, so do a bit of
+                # jiggery pokery to allow us to interpret both
                 split_line = ' '.join(line.split('\t')).split(' ')
                 # Remove the "\n"
                 split_line[-1] = split_line[-1][:-1]
                 if (record_type == 'position'):
-                    # NOTE: VELOCITIES ARE NOT NORMALISED IN THE MORPHOLOGY FILE...DO THEY NEED TO
-                    # BE SCALED BY SIGMA OR NOT? CURRENTLY THEY ARE.
+                    # NOTE: VELOCITIES ARE NOT NORMALISED IN THE MORPHOLOGY
+                    # FILE...DO THEY NEED TO BE SCALED BY SIGMA OR NOT?
+                    # CURRENTLY THEY ARE.
                     # Write to dictionary as floats scaled by sigma
                     if (len(split_line) == 1):
                         atom_dictionary[record_type].append(float(split_line[0]))
@@ -430,8 +439,8 @@ def load_morphology_XML(xml_path, sigma=1.0):
                     # Write to dictionary as str
                     atom_dictionary[record_type].append(str(split_line[0]))
                 else:
-                    # (recordType == 'bond') or (recordType == 'angle') or (recordType == 'dihedral')
-                    # or (recordType == 'improper')
+                    # (recordType == 'bond') or (recordType == 'angle') or
+                    # (recordType == 'dihedral') or (recordType == 'improper')
                     # Write to dictionary as combination
                     split_line[0] = str(split_line[0])
                     for i in range(1, len(split_line)):
@@ -498,12 +507,14 @@ def load_FF_XML(xml_path, mapping=False):
 
 
 def check_constraint_names(AA_morphology_dict):
-    # A function that renames the constraints based on the atom types given in the dictionary
+    # A function that renames the constraints based on the atom types given in
+    # the dictionary
     constraint_types = ['bond', 'angle', 'dihedral', 'improper']
     for constraint_type in constraint_types:
         for constraint_ID, constraint in enumerate(AA_morphology_dict[constraint_type]):
             new_constraint_name = ""
-            # Iterate through the atomIDs and update the constraint name based on the types
+            # Iterate through the atomIDs and update the constraint name based
+            # on the types
             for atom_ID in constraint[1:]:
                 new_constraint_name += AA_morphology_dict['type'][atom_ID]
                 new_constraint_name += "-"
@@ -518,8 +529,8 @@ def write_morphology_XML(input_dictionary, output_file, sigma=1.0, check_wrapped
     tilt_factors = ["xy", "yz", "xz"]
     if sigma != 1.0:
         input_dictionary = scale(input_dictionary, 1.0 / sigma)
-    # Now need to check the positions of the atoms to ensure that everything is correctly contained
-    # inside the box
+    # Now need to check the positions of the atoms to ensure that everything is
+    # correctly contained inside the box
     if check_wrapped_posns is True:
         if any([tilt_factor in input_dictionary.keys() for tilt_factor in tilt_factors]) and\
                 any([input_dictionary[tilt_factor] != 0 for tilt_factor in tilt_factors]):
@@ -610,7 +621,8 @@ def write_XYZ_file(input_dict, output_file):
                      'helper_functions.XML_to_XYZ\n']
     # Format of xyz is Type, X Pos, Y Pos, Z Pos
     for atom_ID in range(len(input_dict['type'])):
-        # Note, this will break for atoms that have two-letter symbols (e.g. Al, Ca etc.)
+        # Note, this will break for atoms that have two-letter symbols (e.g. Al,
+        # Ca etc.)
         atom_type = input_dict['type'][atom_ID][0]
         while len(atom_type) < 10:
             atom_type += ' '
@@ -656,13 +668,18 @@ def scale(input_dictionary, scale_factor):
 def rotate(input_dictionary, theta, rotate_around_point=[0, 0, 0], rotate_around_axis=[0, 0, 1]):
     input_dictionary = add_unwrapped_positions(input_dictionary)
     rotate_around_axis = list(np.array(rotate_around_axis) / np.linalg.norm(rotate_around_axis))
-    # Rotation matrix calculations from: http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
-    # The array that describes the 3D rotation of (x, y, z) around the point (a, b, c) through
-    # the unit axis <u, v, w> by the angle theta is given by:
-    # [ (a(v^2 + w^2) - u(bv + cw - ux - vy - wz))(1 - cos(theta)) + x*cos(theta) + (-cv + bw - wy + vz)sin(theta),
-    #   (b(u^2 + w^2) - v(au + cw - ux - vy - wz))(1 - cos(theta)) + y*cos(theta) + (cu - aw + wx - uz)sin(theta),
-    #   (c(u^2 + v^2) - w(au + bv - ux - vy - wz))(1 - cos(theta)) + z*cos(theta) + (-bu + av - vx + uy)sin(theta) ]
-    # DEFAULT BEHAVIOUR: Rotate the entire dictionary by theta around the z-axis centred at the origin
+    # Rotation matrix calculations from:
+    # http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
+    # The array that describes the 3D rotation of (x, y, z) around the point
+    # (a, b, c) through the unit axis <u, v, w> by the angle theta is given by:
+    # [ (a(v^2 + w^2) - u(bv + cw - ux - vy - wz))(1 - cos(theta)) 
+    #    + x*cos(theta) + (-cv + bw - wy + vz)sin(theta),
+    #   (b(u^2 + w^2) - v(au + cw - ux - vy - wz))(1 - cos(theta))
+    #    + y*cos(theta) + (cu - aw + wx - uz)sin(theta),
+    #   (c(u^2 + v^2) - w(au + bv - ux - vy - wz))(1 - cos(theta))
+    #    + z*cos(theta) + (-bu + av - vx + uy)sin(theta) ]
+    # DEFAULT BEHAVIOUR: Rotate the entire dictionary by theta around the z-axis
+    # centred at the origin
     for AAID, [x, y, z] in enumerate(input_dictionary['unwrapped_position']):
         [a, b, c] = rotate_around_point
         [u, v, w] = rotate_around_axis
@@ -685,9 +702,9 @@ def rotate(input_dictionary, theta, rotate_around_point=[0, 0, 0], rotate_around
 
 
 def centre(input_dictionary, centre_of_mass):
-    com = np.array(centre_of_mass)
+    COM = np.array(centre_of_mass)
     for index, position in enumerate(input_dictionary['position']):
-        input_dictionary['position'][index] = list(position - com)
+        input_dictionary['position'][index] = list(position - COM)
     return input_dictionary
 
 
@@ -726,8 +743,9 @@ def check_wrapped_positions(input_dictionary):
 
 
 def get_CPU_cores():
-    # Determine the number of available processors, either by querying the SLURM_NPROCS
-    # environment variable, or by using multiprocessing to count the number of visible CPUs.
+    # Determine the number of available processors, either by querying the
+    # SLURM_NPROCS environment variable, or by using multiprocessing to count
+    # the number of visible CPUs.
     try:
         proc_IDs = list(np.arange(int(os.environ.get('SLURM_NPROCS'))))
     except (AttributeError, TypeError):
@@ -771,7 +789,8 @@ def write_pickle(to_pickle, pickle_file_name):
 
 
 def obtain_bonded_list(bond_list):
-    # Create a lookup table `neighbour list' for all connected atoms called {bondedAtoms}
+    # Create a lookup table `neighbour list' for all connected atoms called
+    # {bondedAtoms}
     bonded_atoms = {}
     for bond in bond_list:
         if bond[1] not in bonded_atoms:
@@ -853,8 +872,8 @@ def fix_images(original_morphology):
 # ---============================---
 def calculate_carrier_hop_rate(lambdaij, Tij, delta_Eij, prefactor, temp, use_VRH=False, rij=0.0,
                                VRH_delocalisation=1.0, boltz_pen=False):
-    # Based on the input parameters, can make this the semiclassical Marcus Hopping Rate Equation,
-    # or a more generic Miller Abrahams-based hop
+    # Based on the input parameters, can make this the semiclassical Marcus
+    # Hopping Rate Equation, or a more generic Miller Abrahams-based hop
     # Firstly, to prevent divide-by-zero errors:
     if (Tij == 0.0):
         return 0
@@ -876,10 +895,11 @@ def calculate_carrier_hop_rate(lambdaij, Tij, delta_Eij, prefactor, temp, use_VR
 
 def calculate_FRET_hop_rate(prefactor, lifetime_parameter, r_F, rij, delta_Eij, T):
     # Foerster Transport Hopping Rate Equation
-    # The prefactor included here is a bit of a bodge to try and get the mean-free paths of the
-    # excitons more in line with the 5nm of experiment. Possible citation: 10.3390/ijms131217019
-    # (they do not do the simulation they just point out some limitations of FRET which assumes
-    # point-dipoles which does not necessarily work in all cases)
+    # The prefactor included here is a bit of a bodge to try and get the
+    # mean-free paths of the excitons more in line with the 5nm of experiment.
+    # Possible citation: 10.3390/ijms131217019 (they do not do the simulation
+    # they just point out some limitations of FRET which assumes point-dipoles
+    # which does not necessarily work in all cases)
     if delta_Eij <= 0:
         boltzmann_factor = 1
     else:
@@ -917,7 +937,8 @@ def determine_event_tau(rate, event_type='None', slowest_event=None, fastest_eve
                                                      " with the next random number."])
 
             x = np.random.random()
-            # Ensure that we don't get exactly 0.0 or 1.0, which would break our logarithm
+            # Ensure that we don't get exactly 0.0 or 1.0, which would break our
+            # logarithm
             if (x == 0.0) or (x == 1.0):
                 continue
             tau = - np.log(x) / rate

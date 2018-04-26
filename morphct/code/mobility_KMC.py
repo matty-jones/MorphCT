@@ -12,35 +12,27 @@ from morphct.code import helper_functions as hf
 def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
     try:
         if parameter_dict['use_average_hop_rates']:
-            print("Be advised: useAverageHopRates is set to", repr(parameter_dict['useAverageHopRates']) + ".")
-            print("ORCA-calculated energy levels will be ignored, and the following hop rates will be used:")
-            print("Average Intra-molecular hop rate:", parameter_dict['averageIntraHopRate'])
-            print("Average Inter-molecular hop rate:", parameter_dict['averageInterHopRate'])
+            print("Be advised: use_average_hop_rates is set to", repr(parameter_dict['use_average_hop_rates']) + ".")
+            print("Orca-calculated energy levels will be ignored, and the following hop rates will be used:")
+            print("Average Intra-molecular hop rate:", parameter_dict['average_intra_hop_rate'])
+            print("Average Inter-molecular hop rate:", parameter_dict['average_inter_hop_rate'])
     except KeyError:
         pass
     # Attempt 2. PROGRAM THIS SERIALLY FIRST SO THAT IT WORKS
     # Determine the maximum simulation times based on the parameter dictionary
     simulation_times = parameter_dict['simulation_times']
     carrier_list = []
-    # Modification: Rather than being clever here with the carriers, I'm just going to create the master
-    # list of jobs that need running and then randomly shuffle it.
-    # This will hopefully permit a similar number of holes and electrons and lifetimes to be run simultaneously
-    # providing adequate statistics more quickly
+    # Modification: Rather than being clever here with the carriers, I'm just
+    # going to create the master list of jobs that need running and then
+    # randomly shuffle it. This will hopefully permit a similar number of holes
+    # and electrons and lifetimes to be run simultaneously providing adequate
+    # statistics more quickly
     for lifetime in simulation_times:
         for carrier_no in range(parameter_dict['number_of_holes_per_simulation_time']):
             carrier_list.append([carrier_no, lifetime, 'hole'])
         for carrier_no in range(parameter_dict['number_of_electrons_per_simulation_time']):
             carrier_list.append([carrier_no, lifetime, 'electron'])
     R.shuffle(carrier_list)
-    # Old method:
-    # # Create the carrierList which contains the information that the singleCore program needs to run its jobs
-    # for carrierNo in range(parameterDict['numberOfHolesPerSimulationTime']):
-    #     for lifetime in simulationTimes:
-    #         carrierList.append([carrierNo, lifetime, 'Hole'])
-    # for carrierNo in range(parameterDict['numberOfElectronsPerSimulationTime']):
-    #     for lifetime in simulationTimes:
-    #         carrierList.append([carrierNo, lifetime, 'Electron'])
-    #  The carrierList is now like the ORCAJobsList, so split it over each procID
     proc_IDs = parameter_dict['proc_IDs']
     output_dir = parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4] + '/KMC'
     jobs_list = [carrier_list[i:i + (int(np.ceil(len(carrier_list) / len(proc_IDs))))]
@@ -53,7 +45,6 @@ def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter
             pickle.dump(jobs, pickle_file)
         print("KMC jobs for proc_ID", proc_ID, "written to KMC_data_%02d.pickle" % (proc_ID))
         # Open the required processes to execute the KMC jobs
-        # print('python ' + SINGLE_RUN_MOB_KMC_FILE + outputDir + ' ' + str(procID) + ' &')
         running_jobs.append(sp.popen(['python', SINGLE_RUN_MOB_KMC_FILE, output_dir, str(proc_ID)]))
     # Wait for all jobs to complete
     [p.wait() for p in running_jobs]
@@ -65,7 +56,8 @@ def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter
         for proc_ID, jobs in enumerate(jobs_list):
             file_name = output_dir + '/KMC_results_%02d.pickle' % (proc_ID)
             # The pickle was repeatedly dumped to, in order to save time.
-            # Each dump stream is self-contained, so iteratively unpickle to add the new data.
+            # Each dump stream is self-contained, so iteratively unpickle to
+            # add the new data.
             with open(file_name, 'rb') as pickle_file:
                 pickled_data = pickle.load(pickle_file)
                 for key, val in pickled_data.items():
@@ -85,7 +77,7 @@ def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter
             os.remove(file_name)
     for file_name in glob.glob(output_dir + '/KMC_data*'):
         os.remove(file_name)
-    return AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list
+    return [AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list]
 
 if __name__ == "__main__":
     try:
