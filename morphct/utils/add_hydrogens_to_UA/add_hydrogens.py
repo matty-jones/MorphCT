@@ -29,9 +29,11 @@ def calculate_hydrogen_positions(morphology_dict, hydrogens_to_add):
             # Skip if the current atom does not have the right number of bonds
             if number_of_bonds[atom_ID][0] != bond_definition[0]:
                 continue
-            # Otherwise, we need to add hydrogens_to_add[atom_type][1] hydrogens to this atom
+            # Otherwise, we need to add hydrogens_to_add[atom_type][1] hydrogens
+            # to this atom
             current_atom_posn = morphology_dict['unwrapped_position'][atom_ID]
-            # First get the vector to the average position of the bonded neighbours
+            # First get the vector to the average position of the bonded
+            # neighbours
             average_position_of_bonded_atoms = np.array([0.0, 0.0, 0.0])
             for bonded_atom in number_of_bonds[atom_ID][1]:
                 bond_vector = np.array(morphology_dict['unwrapped_position'][bonded_atom]) - current_atom_posn
@@ -41,24 +43,28 @@ def calculate_hydrogen_positions(morphology_dict, hydrogens_to_add):
                                                       np.linalg.norm(average_position_of_bonded_atoms)))
             if bond_definition[1] == 1:
                 # Easy, this is the perylene code
-                # Simply reverse the bonded vector and make it the hydrogen position at a distance of 1.06 angstroems
+                # Simply reverse the bonded vector and make it the hydrogen
+                # position at a distance of 1.06 angstroems
                 hydrogen_positions.append([int(atom_ID), np.array([x, y, z])])
             # Initial position for all hydrogens
             elif bond_definition[1] == 2:
-                # As above (to get the right plane), but then rotated +(109.5/2) degrees and -(109.5/2) degrees around
-                # the bonding axis
+                # As above (to get the right plane), but then rotated
+                # +(109.5/2) degrees and -(109.5/2) degrees around the bonding
+                # axis
                 rotation_axis = np.array(morphology_dict['unwrapped_position'][number_of_bonds[atom_ID][1][0]])\
                     - np.array(morphology_dict['unwrapped_position'][number_of_bonds[atom_ID][1][-1]])
                 rotation_axis /= np.linalg.norm(rotation_axis)
-                # Rotation matrix calculations from: http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
-                # The array that describes the 3D rotation of (x, y, z) around the point (a, b, c) through
+                # Rotation matrix calculations from:
+                # http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
+                # The array that describes the 3D rotation of (x, y, z) around
+                # the point (a, b, c) through
                 # the unit axis <u, v, w> by the angle theta is given by:
-                # [ (a(v^2 + w^2) - u(bv + cw - ux - vy - wz))(1 - cos(theta)) + x*cos(theta) +
-                #               (-cv + bw - wy + vz)sin(theta),
-                #   (b(u^2 + w^2) - v(au + cw - ux - vy - wz))(1 - cos(theta)) + y*cos(theta) +
-                #               (cu - aw + wx - uz)sin(theta),
-                #   (c(u^2 + v^2) - w(au + bv - ux - vy - wz))(1 - cos(theta)) + z*cos(theta) +
-                #               (-bu + av - vx + uy)sin(theta) ]
+                # [ (a(v^2 + w^2) - u(bv + cw - ux - vy - wz))(1 - cos(theta)) 
+                #       + x*cos(theta) + (-cv + bw - wy + vz)sin(theta),
+                #   (b(u^2 + w^2) - v(au + cw - ux - vy - wz))(1 - cos(theta))
+                #       + y*cos(theta) + (cu - aw + wx - uz)sin(theta),
+                #   (c(u^2 + v^2) - w(au + bv - ux - vy - wz))(1 - cos(theta))
+                #       + z*cos(theta) + (-bu + av - vx + uy)sin(theta) ]
                 [a, b, c] = current_atom_posn
                 [u, v, w] = rotation_axis
                 for theta in [(109.5 / 2.0) * (np.pi / 180.0), -(109.5 / 2.0) * (np.pi / 180.0)]:
@@ -76,15 +82,18 @@ def calculate_hydrogen_positions(morphology_dict, hydrogens_to_add):
                                              + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
                     hydrogen_positions.append([int(atom_ID), new_position])
             elif bond_definition[1] == 3:
-                # As for one (to get the right side of the bonded atom), rotate the first one up by 70.5 (180 - 109.5)
-                # and then rotate around by 109.5 degrees for the other two.
-                # The first hydrogen can be rotated around any axis perpendicular to the only bond present
+                # As for one (to get the right side of the bonded atom),
+                # rotate the first one up by 70.5 (180 - 109.5) and then rotate
+                # around by 109.5 degrees for the other two.
+                # The first hydrogen can be rotated around any axis
+                # perpendicular to the only bond present
                 axis_to_bond = current_atom_posn - np.array(morphology_dict['unwrapped_position']
                                                             [number_of_bonds[atom_ID][1][0]])
-                # Now find one of the set of vectors [i, j, k] perpendicular to this one so we can place the first
-                # hydrogen.
-                # Do this by setting i = j = 1 and solve for k (given that currentAtomPosn[0]*i + currentAtomPosn[1]*j
-                # + currentAtomPosn[2]*k = 0)
+                # Now find one of the set of vectors [i, j, k] perpendicular to
+                # this one so we can place the first hydrogen.
+                # Do this by setting i = j = 1 and solve for k (given that
+                # current_atom_posn[0]*i + current_atom_posn[1]*j 
+                # + current_atom_posn[2]*k = 0)
                 first_hydrogen_rotation_axis = np.array([1, 1, -(axis_to_bond[0] + axis_to_bond[1]) / axis_to_bond[2]])
                 first_hydrogen_rotation_axis /= np.linalg.norm(first_hydrogen_rotation_axis)
 
@@ -106,8 +115,9 @@ def calculate_hydrogen_positions(morphology_dict, hydrogens_to_add):
                                          + ((-(b * u) + (a * v) - (v * x) + (u * y)) * np.sin(theta))])
                 hydrogen_positions.append([int(atom_ID), new_position])
                 # Second and third hydrogens
-                # Rotate these from the newPosition +/-120 degrees around the vector axisToBond from the position
-                # currentAtomPosn - axisToBond
+                # Rotate these from the newPosition +/-120 degrees around the
+                # vector axisToBond from the position currentAtomPosn -
+                # axisToBond
                 [x, y, z] = new_position
                 [a, b, c] = current_atom_posn + (np.cos(theta) * axis_to_bond)
                 [u, v, w] = ((np.cos(theta) * axis_to_bond) / np.linalg.norm(np.cos(theta) * axis_to_bond))
@@ -212,9 +222,10 @@ def main():
     args, input_files = parser.parse_known_args()
     hydrogens_to_add, sigma_val = find_information(args)
     for input_file in input_files:
-        # This dictionary has keys of the atom type, and values where the first element is the
-        # number of bonds required for us to add a hydrogen to the atom and the second element of
-        # the value defines how many hydrogens to add to said atom.
+        # This dictionary has keys of the atom type, and values where the first
+        # element is the number of bonds required for us to add a hydrogen to
+        # the atom and the second element of the value defines how many
+        # hydrogens to add to said atom.
         print("THIS FUNCTION IS SET UP TO USE A DICTIONARY TO DEFINE HOW MANY HYDROGENS TO ADD"
               " TO BONDS OF A SPECIFIC TYPE WITH A CERTAIN NUMBER OF BONDS")
         print(hydrogens_to_add)
@@ -228,7 +239,7 @@ def main():
         morphology_dict = add_hydrogens_to_morph(morphology_dict, hydrogen_positions)
         morphology_dict = hf.add_wrapped_positions(morphology_dict)
         hf.write_morphology_XML(morphology_dict, input_file.replace('.xml', '_AA.xml'),
-                                check_wrapped_posns=False)  # , sigma = sigma_val)
+                                check_wrapped_posns=False)
 
 
 if __name__ == "__main__":
