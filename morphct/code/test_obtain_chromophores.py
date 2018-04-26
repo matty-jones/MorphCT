@@ -38,7 +38,7 @@ def testWriteORCAOutput(pickleFile):
     chromophoreList = obtain_chromophores.determineNeighboursCutOff(chromophoreList, parameterDict, simDims)
     #chromophoreList = obtain_chromophores.determineNeighboursVoronoi(chromophoreList, parameterDict, simDims)
     #for runNumber in range(20):
-    parameterDict['outputMorphDir'] = './testAssets/outputFiles'
+    parameterDict['outputMorphDir'] = './test_assets/outputFiles'
     parameterDict['morphology'] = ''
     execute_ZINDO.createInputFiles(chromophoreList, AAMorphologyDict, parameterDict)
     #chromoID = 2487#R.randint(0, len(chromophoreList))
@@ -50,7 +50,7 @@ def testWriteORCAOutput(pickleFile):
     #    chromophore2 = chromophoreList[neighbourChromo[0]]
     #    AAIDs += chromophore2.AAIDs
     #    images += [neighbourChromo[1] for i in range(len(chromophore2.AAIDs))]
-    #    execute_ZINDO.writeOrcaInp(AAMorphologyDict, AAIDs, images, None, None, './testAssets/outputFiles/testORCAInput_%03d.inp' % (index))
+    #    execute_ZINDO.writeOrcaInp(AAMorphologyDict, AAIDs, images, None, None, './test_assets/outputFiles/testORCAInput_%03d.inp' % (index))
 
 
 def testCheckPeriodicNeighbours(pickleFile):
@@ -79,8 +79,8 @@ def testCheckPeriodicNeighbours(pickleFile):
 
 
 if __name__ == "__main__":
-    #pickleFile = 'testAssets/bilayerBCC/code/bilayerBCC.pickle'
-    pickleFile = 'testAssets/p3ht/code/p1-L15-f0.0-P0.1-T1.5-e0.5.pickle'
+    #pickleFile = 'test_assets/bilayerBCC/code/bilayerBCC.pickle'
+    pickleFile = 'test_assets/p3ht/code/p1-L15-f0.0-P0.1-T1.5-e0.5.pickle'
     #testFindNeighbours(pickleFile)
     testWriteORCAOutput(pickleFile)
     #testPeriodicNeighbours(pickleFile)

@@ -290,39 +290,39 @@ class TestGeneralOperations(TestCommand):
 class TestFileManipHelperFunctions(TestCommand):
     def test_write_CSV(self):
         function = "write_CSV"
-        file_name = "./testAssets/test.csv"
+        file_name = "./test_assets/test.csv"
         self.confirm_file_exists(function, file_name,
                                  posn_args=[file_name, [['el1_1', 'el1_2'], ['row2_1', 'row2_2']]],
                                 )
 
     def test_load_morphology_xml(self):
         function = "load_morphology_XML"
-        input_xml = "./testAssets/test_input.xml"
+        input_xml = "./test_assets/test_input.xml"
         output_dictionary = copy.deepcopy(test_morphology_dict)
         self.compare_equal(function, output_dictionary, posn_args=[input_xml])
 
     def test_load_FF_xml(self):
         function = "load_FF_XML"
-        input_xml = "./testAssets/test_FF.xml"
+        input_xml = "./test_assets/test_FF.xml"
         output_dictionary = copy.deepcopy(test_FF_dict)
         self.compare_equal(function, output_dictionary, posn_args=[input_xml])
 
     def test_write_morphology_xml(self):
         function = "write_morphology_XML"
         input_dictionary = copy.deepcopy(test_morphology_dict)
-        output_xml = "./testAssets/test_output.xml"
+        output_xml = "./test_assets/test_output.xml"
         self.confirm_file_exists(function, output_xml, posn_args=[input_dictionary, output_xml])
 
     def test_write_XYZ_file(self):
         function = "write_XYZ_file"
         input_dictionary = copy.deepcopy(test_morphology_dict)
-        output_xml = "./testAssets/test_output.xyz"
+        output_xml = "./test_assets/test_output.xyz"
         self.confirm_file_exists(function, output_xml, posn_args=[input_dictionary, output_xml])
 
     def test_write_to_file(self):
         function = "write_to_file"
         input_data = ['This is', 'test data']
-        file_name = "./testAssets/test_output.log"
+        file_name = "./test_assets/test_output.log"
         # Check creating a new file
         self.confirm_file_exists(function, file_name, posn_args=[file_name, input_data],
                                  kw_args={'mode': 'output_file'})
@@ -335,7 +335,7 @@ class TestFileManipHelperFunctions(TestCommand):
 
     def test_pickles(self):
         # First load the test file
-        input_file = "./testAssets/test_lattice.pickle"
+        input_file = "./test_assets/test_lattice.pickle"
         data = hf.load_pickle(input_file)
         self.assertTrue(len(data) == 5, msg="Expected pickle file to contain 5 elements, instead it"
                        + " contained " + repr(len(data)) + ".")
@@ -350,7 +350,7 @@ class TestFileManipHelperFunctions(TestCommand):
         self.assertTrue(type(data[4]) == list, msg="Expected fifth element of the pickle file (chromophore_list)"
                        + " to be list, instead its type is " + repr(type(data[4])) + ".")
         # Then write it out somewhere else
-        output_file = "./testAssets/test_output.pickle"
+        output_file = "./test_assets/test_output.pickle"
         self.confirm_file_exists("write_pickle", output_file, posn_args=[data, output_file])
 
 
