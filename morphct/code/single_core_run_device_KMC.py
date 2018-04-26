@@ -510,7 +510,7 @@ class carrier:
             self.history.append([self.current_device_posn, self.current_chromophore.posn])
 
     def calculate_delta_E(self, destination_chromophore, neighbour_relative_image, chromo_Eij):
-        # DeltaEij has 3 main components: 1) the energetic disorder (difference
+        # Delta_Eij has 3 main components: 1) the energetic disorder (difference
         # in HOMO/LUMO levels), 2) the field within the device, and 3) the
         # Coulombic effect from nearby charges
         delta_Eij = 0.0  # report this in J
@@ -753,8 +753,8 @@ def calculate_dark_current_injections(device_array, parameter_dict):
             for chromophore in morphology_chromophores:
                 # Find all chromophores that are between 5 and 10 Ang from the
                 # bottom 10 Ang of the device cell
-                # if (chromophore.posn[2] <= -(AAMorphology['lz'] / 2.0) + 10)\
-                #    and (sum(1 for _ in filter(None.__ne__, chromophore.neighboursDeltaE)) > 0):
+                # if (chromophore.posn[2] <= -(AA_morphology['lz'] / 2.0) + 10)\
+                #    and (sum(1 for _ in filter(None.__ne__, chromophore.neighbours_delta_E)) > 0):
                 if (chromophore.posn[2] <= -(AA_morphology['lz'] / 2.0) + 10)\
                    and (chromophore.posn[2] >= -(AA_morphology['lz'] / 2.0) + 5)\
                    and (len([_ for _ in chromophore.neighbours_TI if (_ is not None)
@@ -793,8 +793,8 @@ def calculate_dark_current_injections(device_array, parameter_dict):
             for chromophore in morphology_chromophores:
                 # Find all chromophores that are between 5 and 10 Ang from the
                 # top of the device cell
-                # if (chromophore.posn[2] >= (AAMorphology['lz'] / 2.0) - 10)\
-                #    and (sum(1 for _ in filter(None.__ne__, chromophore.neighboursDeltaE)) > 0):
+                # if (chromophore.posn[2] >= (AA_morphology['lz'] / 2.0) - 10)\
+                #    and (sum(1 for _ in filter(None.__ne__, chromophore.neighbours_delta_E)) > 0):
                 if (chromophore.posn[2] >= (AA_morphology['lz'] / 2.0) - 10)\
                    and (chromophore.posn[2] <= (AA_morphology['lz'] / 2.0) - 5)\
                    and (len([_ for _ in chromophore.neighbours_TI if (_ is not None)
@@ -1239,7 +1239,7 @@ def execute(device_array, chromophore_data, morphology_data, parameter_dict, vol
                         # their behaviour (need to add them to the carrier list
                         # before we can calculate the energetics)
                         # Also add the carriers to the carrier dictionary for
-                        # when we need to calc deltaE in the device
+                        # when we need to calc delta_E in the device
                         injected_electron = carrier(carrier_index, global_time,
                                                     injected_exciton.current_device_posn,
                                                     injected_exciton.electron_chromophore,

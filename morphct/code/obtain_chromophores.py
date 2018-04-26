@@ -553,7 +553,7 @@ def determine_neighbours_cut_off(chromophore_list, parameter_dict, sim_dims):
                                                      in chromophore1.dissociation_neighbours]
                 chromo2dissociation_neighbour_IDs = [neighbour_data[0] for neighbour_data
                                                      in chromophore2.dissociation_neighbours]
-                # Also, make the deltaE and the Tij lists as long as the
+                # Also, make the delta_E and the Tij lists as long as the
                 # neighbour lists for easy access later
                 if chromophore1.species == chromophore2.species:
                     if ((chromophore1.species == 'donor') and (

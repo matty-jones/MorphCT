@@ -337,7 +337,7 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
             except orcaError:
                 failed_pair_chromos[file_name] = [1, chromo_location, neighbour_ID]
                 continue
-            # Calculate the deltaE between the two single chromophores
+            # Calculate the delta_E between the two single chromophores
             try:
                 if parameter_dict['use_koopmans_approximation']:
                     delta_E = 0.0
@@ -385,7 +385,7 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
             # chromophore instance
             assert(chromophore_list[chromophore.ID].neighbours_delta_E[neighbour_loc] ==
                    chromophore.neighbours_delta_E[neighbour_loc])
-            # Check the DeltaE of the forward and backward hops are *= -1
+            # Check the Delta_E of the forward and backward hops are *= -1
             assert(chromophore_list[chromophore.ID].neighbours_delta_E[neighbour_loc] ==
                    -chromophore_list[neighbour_ID].neighbours_delta_E[reverse_loc])
             # END DEBUG ASSERTIONS
@@ -430,12 +430,12 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 failed_pair_chromos[file_name][0] += 1
                 print(file_name, "still failed, incrementing counter")
                 continue
-            # Calculate the deltaE between the two single chromophores
+            # Calculate the delta_E between the two single chromophores
             try:
                 if parameter_dict['use_koopmans_approximation']:
                     delta_E = 0.0
                 else:
-                    # Calculate DeltaE normally
+                    # Calculate Delta_E normally
                     raise KeyError
             except KeyError:
                 delta_E = calculate_delta_E(chromophore_list, chromophore.ID, neighbour_ID)
@@ -473,7 +473,7 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
             # Check the TI of the forward and backward hops are the same
             assert(chromophore_list[chromo1_ID].neighbours_TI[neighbour_loc] ==
                    chromophore_list[chromo2_ID].neighbours_TI[reverse_loc])
-            # Check the DeltaE of the forward and backward hops are *= -1
+            # Check the Delta_E of the forward and backward hops are *= -1
             assert(chromophore_list[chromo1_ID].neighbours_delta_E[neighbour_loc] ==
                    -chromophore_list[chromo2_ID].neighbours_delta_E[reverse_loc])
             # END DEBUG ASSERTIONS
@@ -532,12 +532,12 @@ def scale_energies(chromophore_list, parameter_dict):
         #     newDeviation = target_DoSSTD * sigma
         #     # Work out the change in energy to be applied to meet this target
         #     # energy level
-        #     deltaE = (av_MO + newDeviation) - chromo.get_mo_energy()
+        #     delta_E = (av_MO + newDeviation) - chromo.get_mo_energy()
         #     # Apply the energy level displacement
-        #     chromo.HOMO_1 += deltaE
-        #     chromo.HOMO += deltaE
-        #     chromo.LUMO += deltaE
-        #     chromo.LUMO_1 += deltaE
+        #     chromo.HOMO_1 += delta_E
+        #     chromo.HOMO += delta_E
+        #     chromo.LUMO += delta_E
+        #     chromo.LUMO_1 += delta_E
     return chromophore_list
 
 
@@ -584,7 +584,7 @@ def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter
         # DEBUG Testing - you can remove these as the assertions in
         # update_pair_chromophore_list should already cover them, however they
         # are fast and will ensure that there are no errors in the
-        # chromophore_list after calculating the Tij and DeltaEijs
+        # chromophore_list after calculating the Tij and Delta_Eijs
         Tij_error = check_forward_backward_hop_Tij(chromophore_list)
         delta_E_error = check_forward_backward_hop_Eij(chromophore_list)
         if Tij_error or delta_E_error:

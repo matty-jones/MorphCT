@@ -884,7 +884,7 @@ def calculate_carrier_hop_rate(lambdaij, Tij, delta_Eij, prefactor, temp, use_VR
         kij *= np.exp(-(rij / VRH_delocalisation))
     # Simple Boltzmann energy penalty?
     if boltz_pen is True:
-        # Only apply the penalty if deltaEij is positive
+        # Only apply the penalty if delta_Eij is positive
         if delta_Eij > 0.0:
             kij *= np.exp(-(delta_Eij / (k_B * temp)))
         # Otherwise, kij *= 1
