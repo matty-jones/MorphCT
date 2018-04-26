@@ -454,7 +454,7 @@ def plot_temperature_progression(temp_data, mobility_data, anisotropy_data, carr
     print("Figure saved as " + file_name)
 
 
-def calculate_lambdaij(chromo_length):
+def calculate_lambda_ij(chromo_length):
     # The equation for the internal reorganisation energy was obtained from the data given in
     # Johansson, E and Larsson, S; 2004, Synthetic Metals 144: 183-191.
     # External reorganisation energy obtained from
@@ -815,12 +815,12 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
         property_lists[property_name] = []
     try:
         if parameter_dict['reorganisation_energy_donor'] is not None:
-            donor_lambdaij = parameter_dict['reorganisation_energy_donor']
+            donor_lambda_ij = parameter_dict['reorganisation_energy_donor']
         if parameter_dict['reorganisation_energy_acceptor'] is not None:
-            acceptor_lambdaij = parameter_dict['reorganisation_energy_acceptor']
+            acceptor_lambda_ij = parameter_dict['reorganisation_energy_acceptor']
     except KeyError:  # Old MorphCT fix
         print("Only one reorganisation energy found, assuming donor and continuing")
-        donor_lambdaij = parameter_dict['reorganisation_energy']
+        donor_lambda_ij = parameter_dict['reorganisation_energy']
     T = 290
     for chromo in chromophore_list:
         mol1ID = CG_to_mol_ID[chromo.CGIDs[0]]
@@ -831,9 +831,9 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
             mol2ID = CG_to_mol_ID[chromo2.CGIDs[0]]
             delta_E = chromo.neighbours_delta_E[index]
             if chromo.sub_species == chromo2.sub_species:
-                lambdaij = chromo.reorganisation_energy * elementaryCharge
+                lambda_ij = chromo.reorganisation_energy * elementaryCharge
             else:
-                lambdaij = (chromo.reorganisation_energy + chromo2.reorganisation_energy)/2
+                lambda_ij = (chromo.reorganisation_energy + chromo2.reorganisation_energy)/2
             # Now take into account the various behaviours we can have from the parameter file
             prefactor = 1.0
             # Apply the koopmans prefactor
@@ -861,12 +861,12 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
                                                         * np.array([AA_morphology_dict[axis]
                                                                     for axis in ['lx', 'ly', 'lz']]))
                 chromophore_separation = hf.calculate_separation(chromo.posn, neighbour_chromo_posn) * 1E-10
-                rate = hf.calculate_carrier_hop_rate(lambdaij * elementary_charge, Tij * elementary_charge,
+                rate = hf.calculate_carrier_hop_rate(lambda_ij * elementary_charge, Tij * elementary_charge,
                                                      delta_E * elementary_charge, prefactor, T, use_VRH=VRH,
                                                      rij=chromophore_separation, VRH_prefactor=VRH_prefactor,
                                                      boltz_pen=boltz_pen)
             else:
-                rate = hf.calculate_carrier_hop_rate(lambdaij * elementary_charge, Tij * elementary_charge,
+                rate = hf.calculate_carrier_hop_rate(lambda_ij * elementary_charge, Tij * elementary_charge,
                                                      delta_E * elementary_charge, prefactor, T, boltz_pen=boltz_pen)
             if chromo2.ID < chromo.ID:
                 continue
