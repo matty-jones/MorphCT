@@ -1,4 +1,3 @@
-import pytest
 from morphct.code import obtain_chromophores
 from morphct.code import execute_ZINDO
 from morphct.code import helper_functions as hf
@@ -6,81 +5,84 @@ import copy
 import random as R
 import numpy as np
 
-def testFindNeighbours(pickleFile):
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, oldChromophoreList = hf.loadPickle(pickleFile)
-    emptyCutOffChromophoreList = copy.deepcopy(oldChromophoreList)
-    emptyVoronoiChromophoreList = copy.deepcopy(oldChromophoreList)
-    for chromoIndex, chromo in enumerate(oldChromophoreList):
-        emptyCutOffChromophoreList[chromoIndex].neighbours = []
-        emptyCutOffChromophoreList[chromoIndex].dissociationNeighbours = []
-        emptyVoronoiChromophoreList[chromoIndex].neighbours = []
-        emptyVoronoiChromophoreList[chromoIndex].dissociationNeighbours = []
-    simDims = [[-axis/2.0, axis/2.0] for axis in [AAMorphologyDict[boxLength] for boxLength in ['lx', 'ly', 'lz']]]
-    parameterDict['maximumHoleHopDistance'] = 10.0
-    parameterDict['maximumElectronHopDistance'] = 10.0
-    oldChromophoreList = obtain_chromophores.determineNeighboursCutOff(emptyCutOffChromophoreList, parameterDict, simDims)
-    newChromophoreList = obtain_chromophores.determineNeighboursVoronoi(emptyVoronoiChromophoreList, parameterDict, simDims)
-    for listName in [oldChromophoreList, newChromophoreList]:
-        chromoID = 653
-        print(chromoID)
-        print(' '.join(list(map(str, listName[chromoID].AAIDs + [item for sublist in [listName[x[0]].AAIDs for x in listName[chromoID].neighbours] for item in sublist]))))
-        print(' '.join(list(map(str, listName[chromoID].AAIDs + [item for sublist in [listName[x[0]].AAIDs for x in listName[chromoID].dissociationNeighbours] for item in sublist]))) + '\n')
+
+def test_find_neighbours(pickle_file):
+    pickle_data = hf.load_pickle(pickle_file)
+    AA_morphology_dict = pickle_data[0]
+    parameter_dict = pickle_data[3]
+    old_chromophore_list = pickle_data[4]
+    empty_cut_off_chromophore_list = copy.deepcopy(old_chromophore_list)
+    empty_voronoi_chromophore_list = copy.deepcopy(old_chromophore_list)
+    for chromo_index, chromo in enumerate(old_chromophore_list):
+        empty_cut_off_chromophore_list[chromo_index].neighbours = []
+        empty_cut_off_chromophore_list[chromo_index].dissociation_neighbours = []
+        empty_voronoi_chromophore_list[chromo_index].neighbours = []
+        empty_voronoi_chromophore_list[chromo_index].dissociation_neighbours = []
+    sim_dims = [[-axis / 2.0, axis / 2.0] for axis in [AA_morphology_dict[box_length] for box_length
+                                                       in ['lx', 'ly', 'lz']]]
+    parameter_dict['maximum_hole_hop_distance'] = 10.0
+    parameter_dict['maximum_electron_hop_distance'] = 10.0
+    old_chromophore_list = obtain_chromophores.determine_neighbours_cut_off(empty_cut_off_chromophore_list,
+                                                                            parameter_dict, sim_dims)
+    new_chromophore_list = obtain_chromophores.determine_neighbours_voronoi(empty_voronoi_chromophore_list,
+                                                                            parameter_dict, sim_dims)
+    for list_name in [old_chromophore_list, new_chromophore_list]:
+        chromo_ID = 653
+        print(chromo_ID)
+        print(' '.join(list(map(str, list_name[chromo_ID].AAIDs + [item for sublist in [
+            list_name[x[0]].AAIDs for x in list_name[chromo_ID].neighbours] for item in sublist]))))
+        print(' '.join(list(map(str, list_name[chromo_ID].AAIDs + [item for sublist in [
+            list_name[x[0]].AAIDs for x in list_name[chromo_ID].dissociationNeighbours] for item in sublist]))) + '\n')
 
 
-def testWriteORCAOutput(pickleFile):
+def test_write_orca_output(pickle_file):
     # One of the chromophores in the corner is #1198
     R.seed(8585)
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hf.loadPickle(pickleFile)
-    for chromo in chromophoreList:
+    pickle_data = hf.load_pickle(pickle_file)
+    AA_morphology_dict = pickle_data[0]
+    parameter_dict = pickle_data[3]
+    chromophore_list = pickle_data[4]
+    for chromo in chromophore_list:
         chromo.neighbours = []
-        chromo.dissociationNeighbours = []
-    simDims = [[-axis/2.0, axis/2.0] for axis in [AAMorphologyDict[boxLength] for boxLength in ['lx', 'ly', 'lz']]]
-    chromophoreList = obtain_chromophores.determineNeighboursCutOff(chromophoreList, parameterDict, simDims)
-    #chromophoreList = obtain_chromophores.determineNeighboursVoronoi(chromophoreList, parameterDict, simDims)
-    #for runNumber in range(20):
-    parameterDict['outputMorphDir'] = './test_assets/outputFiles'
-    parameterDict['morphology'] = ''
-    execute_ZINDO.createInputFiles(chromophoreList, AAMorphologyDict, parameterDict)
-    #chromoID = 2487#R.randint(0, len(chromophoreList))
-    #chromophore1 = chromophoreList[chromoID]
-    #print("\n\n", chromoID, chromophore1.neighbours)
-    #for index, neighbourChromo in enumerate(chromophore1.neighbours):
-    #    AAIDs = chromophore1.AAIDs
-    #    images = [[0, 0, 0] for i in range(len(chromophore1.AAIDs))]
-    #    chromophore2 = chromophoreList[neighbourChromo[0]]
-    #    AAIDs += chromophore2.AAIDs
-    #    images += [neighbourChromo[1] for i in range(len(chromophore2.AAIDs))]
-    #    execute_ZINDO.writeOrcaInp(AAMorphologyDict, AAIDs, images, None, None, './test_assets/outputFiles/testORCAInput_%03d.inp' % (index))
+        chromo.dissociation_neighbours = []
+    sim_dims = [[-axis / 2.0, axis / 2.0] for axis in [AA_morphology_dict[box_length] for
+                                                       box_length in ['lx', 'ly', 'lz']]]
+    chromophore_list = obtain_chromophores.determine_neighbours_cut_off(chromophore_list, parameter_dict, sim_dims)
+    parameter_dict['output_morph_dir'] = './test_assets/output_files'
+    parameter_dict['morphology'] = ''
+    execute_ZINDO.create_input_files(chromophore_list, AA_morphology_dict, parameter_dict)
 
 
-def testCheckPeriodicNeighbours(pickleFile):
-    AAMorphologyDict, CGMorphologyDict, CGToAAIDMaster, parameterDict, chromophoreList = hf.loadPickle(pickleFile)
-    for chromo in chromophoreList:
+def test_check_periodic_neighbours(pickle_file):
+    pickle_data = hf.load_pickle(pickle_file)
+    AA_morphology_dict = pickle_data[0]
+    parameter_dict = pickle_data[3]
+    chromophore_list = pickle_data[4]
+    for chromo in chromophore_list:
         chromo.neighbours = []
-        chromo.dissociationNeighbours = []
-    simDims = [[-axis/2.0, axis/2.0] for axis in [AAMorphologyDict[boxLength] for boxLength in ['lx', 'ly', 'lz']]]
-    chromophoreList = obtain_chromophores.determineNeighboursVoronoi(chromophoreList, parameterDict, simDims)
-    chromoID = R.randint(0, len(chromophoreList))
-    print(chromophoreList[chromoID].neighbours)
-    print("\nOriginal =", ' '.join(map(str, chromophoreList[chromoID].AAIDs)))
-    neighbour1String = "In-image neighbours = "
-    neighbour2String = "Out-of-image neighbours = "
-    for [neighbourID, image] in chromophoreList[chromoID].neighbours:
+        chromo.dissociation_neighbours = []
+    sim_dims = [[-axis / 2.0, axis / 2.0] for axis in [AA_morphology_dict[box_length] for
+                                                       box_length in ['lx', 'ly', 'lz']]]
+    chromophore_list = obtain_chromophores.determine_neighbours_voronoi(chromophore_list, parameter_dict, sim_dims)
+    chromo_ID = R.randint(0, len(chromophore_list))
+    print(chromophore_list[chromo_ID].neighbours)
+    print("\nOriginal =", ' '.join(map(str, chromophore_list[chromo_ID].AAIDs)))
+    neighbour1_string = "In-image neighbours = "
+    neighbour2_string = "Out-of-image neighbours = "
+    for [neighbour_ID, image] in chromophore_list[chromo_ID].neighbours:
         if np.array_equal(image, [0, 0, 0]):
-            neighbour1String += ' '.join(map(str, chromophoreList[neighbourID].AAIDs)) + ' '
+            neighbour1_string += ' '.join(map(str, chromophore_list[neighbour_ID].AAIDs)) + ' '
         else:
-            neighbour2String += ' '.join(map(str, chromophoreList[neighbourID].AAIDs)) + ' '
+            neighbour2_string += ' '.join(map(str, chromophore_list[neighbour_ID].AAIDs)) + ' '
     print("\n")
-    print(neighbour1String)
+    print(neighbour1_string)
     print("\n")
-    print(neighbour2String)
-
-
+    print(neighbour2_string)
 
 
 if __name__ == "__main__":
-    #pickleFile = 'test_assets/bilayerBCC/code/bilayerBCC.pickle'
-    pickleFile = 'test_assets/p3ht/code/p1-L15-f0.0-P0.1-T1.5-e0.5.pickle'
-    #testFindNeighbours(pickleFile)
-    testWriteORCAOutput(pickleFile)
-    #testPeriodicNeighbours(pickleFile)
+    # pickleFile = 'test_assets/bilayerBCC/code/bilayerBCC.pickle'
+    pickle_file = 'test_assets/p3ht/code/p1-l15-f0.0-p0.1-t1.5-e0.5.pickle'
+    # testFindNeighbours(pickleFile)
+    test_write_orca_output(pickle_file)
+    # testPeriodicNeighbours(pickleFile)
