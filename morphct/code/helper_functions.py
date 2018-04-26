@@ -878,19 +878,19 @@ def calculate_carrier_hop_rate(lambda_ij, Tij, delta_Eij, prefactor, temp, use_V
     if (Tij == 0.0):
         return 0
     # Regardless of hopping type, sort out the prefactor first:
-    kij = prefactor * ((2 * np.pi) / hbar) * (Tij ** 2) * np.sqrt(1.0 / (4 * lambda_ij * np.pi * k_B * temp))
+    k_ij = prefactor * ((2 * np.pi) / hbar) * (Tij ** 2) * np.sqrt(1.0 / (4 * lambda_ij * np.pi * k_B * temp))
     # VRH?
     if use_VRH is True:
-        kij *= np.exp(-(rij / VRH_delocalisation))
+        k_ij *= np.exp(-(rij / VRH_delocalisation))
     # Simple Boltzmann energy penalty?
     if boltz_pen is True:
         # Only apply the penalty if delta_Eij is positive
         if delta_Eij > 0.0:
-            kij *= np.exp(-(delta_Eij / (k_B * temp)))
-        # Otherwise, kij *= 1
+            k_ij *= np.exp(-(delta_Eij / (k_B * temp)))
+        # Otherwise, k_ij *= 1
     else:
-        kij *= np.exp(-((delta_Eij + lambda_ij)**2) / (4 * lambda_ij * k_B * temp))
-    return kij
+        k_ij *= np.exp(-((delta_Eij + lambda_ij)**2) / (4 * lambda_ij * k_B * temp))
+    return k_ij
 
 
 def calculate_FRET_hop_rate(prefactor, lifetime_parameter, r_F, rij, delta_Eij, T):
@@ -909,10 +909,10 @@ def calculate_FRET_hop_rate(prefactor, lifetime_parameter, r_F, rij, delta_Eij, 
 
 
 def calculate_miller_abrahams_hop_rate(prefactor, separation, radius, delta_Eij, T):
-    kij = prefactor * np.exp(-2 * separation / radius)
+    k_ij = prefactor * np.exp(-2 * separation / radius)
     if delta_Eij > 0:
-        kij *= np.exp(-delta_Eij / (k_B * T))
-    return kij
+        k_ij *= np.exp(-delta_Eij / (k_B * T))
+    return k_ij
 
 
 def determine_event_tau(rate, event_type='None', slowest_event=None, fastest_event=None,
