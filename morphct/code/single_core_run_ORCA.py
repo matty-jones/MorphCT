@@ -7,77 +7,81 @@ import pickle
 
 
 if __name__ == '__main__':
-    morphologyFile = sys.argv[1]
-    CPURank = int(sys.argv[2])
+    morphology_file = sys.argv[1]
+    CPU_rank = int(sys.argv[2])
     overwrite = False
     try:
         overwrite = bool(sys.argv[3])
     except:
         pass
-    morphologyName = morphologyFile[hf.findIndex(morphologyFile, '/')[-1] + 1:]
-    orcaPath = os.getenv('ORCA_BIN')
-    inputDir = morphologyFile + '/chromophores/inputORCA'
-    logFile = inputDir.replace('/inputORCA', '/ORCAlog_' + str(CPURank) + '.log')
-    outputDir = morphologyFile + '/chromophores/outputORCA'
-    pickleFileName = inputDir.replace('inputORCA', 'ORCAJobs.pickle')
-    with open(pickleFileName, 'rb') as pickleFile:
-        jobsList = pickle.load(pickleFile)
-    jobsToRun = jobsList[CPURank]
-    hf.writeToFile(logFile, ['Found ' + str(len(jobsToRun)) + ' jobs to run.'])
+    morphology_name = morphology_file[hf.find_index(morphology_file, '/')[-1] + 1:]
+    orca_path = os.getenv('orca_bin')
+    input_dir = morphology_file + '/chromophores/input_orca'
+    log_file = input_dir.replace('/input_orca', '/orc_alog_' + str(CPU_rank) + '.log')
+    output_dir = morphology_file + '/chromophores/output_orca'
+    pickle_file_name = input_dir.replace('input_orca', 'orca_jobs.pickle')
+    with open(pickle_file_name, 'rb') as pickle_file:
+        jobs_list = pickle.load(pickle_file)
+    jobs_to_run = jobs_list[CPU_rank]
+    hf.write_to_file(log_file, ["Found " + str(len(jobs_to_run)) + " jobs to run."])
     t0 = T.time()
-    for job in jobsToRun:
+    for job in jobs_to_run:
         t1 = T.time()
-        hf.writeToFile(logFile, ['Running job ' + str(job) + '...'])
-        outputFileName = job.replace('.inp', '.out').replace('inputORCA', 'outputORCA')
+        hf.write_to_file(log_file, ["Running job " + str(job) + "..."])
+        output_file_name = job.replace('.inp', '.out').replace('input_orca', 'output_orca')
         # Check if file exists already
         if overwrite is False:
             try:
-                with open(outputFileName, 'r') as testFile:
+                with open(output_file_name, 'r') as test_file:
                     pass
-                hf.writeToFile(logFile, [outputFileName + ' already exists, and overwriteCurrentData is ' + repr(overwrite) + '! Skipping...'])
+                hf.write_to_file(log_file, [output_file_name + " already exists, and"
+                                            " overwrite_current_data is " + repr(overwrite)
+                                            + "! skipping..."])
                 continue
             except IOError:
                 pass
-        orcaJob = sp.Popen([str(orcaPath), str(job)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
-        jobPID = orcaJob.pid
-        #try:
-        #    affinityJob = sp.Popen(['taskset', '-pc', str(CPURank), str(jobPID)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE).communicate()
-        #    # hf.writeToFile(logFile, affinityJob[0].split('\n')) #stdOut for affinity set
-        #    # hf.writeToFile(logFile, affinityJob[1].split('\n')) #stdErr for affinity set
-        #except OSError:
-        #    hf.writeToFile(logFile, ["Taskset command not found, skipping setting of processor affinities..."])
-        orcaShellOutput = orcaJob.communicate()
+        orca_job = sp.popen([str(orca_path), str(job)], stdin=sp.pipe, stdout=sp.pipe, stderr=sp.pipe)
+        job_PID = orca_job.pid
+        # Taskset stuff
+        # try:
+        #     affinity_job = sp.Popen(['taskset', '-pc', str(CPU_rank), str(job_PID)],
+        #                             stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE).communicate()
+        #     # hf.write_to_file(log_file, affinity_job[0].split('\n'))  # stdOut for affinity set
+        #     # hf.write_to_file(log_file, affinity_job[1].split('\n'))  # stdErr for affinity set
+        # except OSError:
+        #     hf.write_to_file(log_file, ["Taskset command not found, skipping setting of processor affinities..."])
+        orca_shell_output = orca_job.communicate()
         # Write the outputFile:
-        hf.writeToFile(outputFileName, orcaShellOutput[0].decode().split('\n'), mode='outputFile')
-        hf.writeToFile(logFile, orcaShellOutput[1].decode().split('\n'))  # stdErr
+        hf.write_to_file(output_file_name, orca_shell_output[0].decode().split('\n'), mode='output_file')
+        hf.write_to_file(log_file, orca_shell_output[1].decode().split('\n'))  # std_err
         t2 = T.time()
-        elapsedTime = float(t2) - float(t1)
-        if elapsedTime < 60:
-            timeunits = 'seconds.'
-        elif elapsedTime < 3600:
-            elapsedTime /= 60.0
-            timeunits = 'minutes.'
-        elif elapsedTime < 86400:
-            elapsedTime /= 3600.0
-            timeunits = 'hours.'
+        elapsed_time = float(t2) - float(t1)
+        if elapsed_time < 60:
+            time_units = "seconds."
+        elif elapsed_time < 3600:
+            elapsed_time /= 60.0
+            time_units = "minutes."
+        elif elapsed_time < 86400:
+            elapsed_time /= 3600.0
+            time_units = "hours."
         else:
-            elapsedTime /= 86400.0
-            timeunits = 'days.'
-        elapsedTime = '%.1f' % (float(elapsedTime))
-        hf.writeToFile(logFile, ['Job ' + str(job) + ' completed in ' + elapsedTime + ' ' + timeunits])
+            elapsed_time /= 86400.0
+            time_units = "days."
+        elapsed_time = '%.1f' % (float(elapsed_time))
+        hf.write_to_file(log_file, ["Job " + str(job) + " completed in " + elapsed_time + " " + time_units])
     t3 = T.time()
-    elapsedTime = float(t3) - float(t0)
-    if elapsedTime < 60:
-        timeunits = 'seconds.'
-    elif elapsedTime < 3600:
-        elapsedTime /= 60.0
-        timeunits = 'minutes.'
-    elif elapsedTime < 86400:
-        elapsedTime /= 3600.0
-        timeunits = 'hours.'
+    elapsed_time = float(t3) - float(t0)
+    if elapsed_time < 60:
+        time_units = "seconds."
+    elif elapsed_time < 3600:
+        elapsed_time /= 60.0
+        time_units = "minutes."
+    elif elapsed_time < 86400:
+        elapsed_time /= 3600.0
+        time_units = "hours."
     else:
-        elapsedTime /= 86400.0
-        timeunits = 'days.'
-    elapsedTime = '%.1f' % (float(elapsedTime))
-    hf.writeToFile(logFile, ['All jobs completed in ' + elapsedTime + ' ' + timeunits])
-    hf.writeToFile(logFile, ['Exiting normally...'])
+        elapsed_time /= 86400.0
+        time_units = "days."
+    elapsed_time = '%.1f' % (float(elapsed_time))
+    hf.write_to_file(log_file, ["All jobs completed in " + elapsed_time + " " + time_units])
+    hf.write_to_file(log_file, ["Exiting normally..."])
