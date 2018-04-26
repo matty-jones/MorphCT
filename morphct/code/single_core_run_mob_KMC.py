@@ -104,7 +104,7 @@ class carrier:
             # file)
             for neighbour_index, transfer_integral in enumerate(self.current_chromophore.neighbours_TI):
                 # Ignore any hops with a NoneType transfer integral (usually
-                # due to an ORCA error)
+                # due to an orca error)
                 if transfer_integral is None:
                     continue
                 delta_Eij = self.current_chromophore.neighbours_delta_E[neighbour_index]

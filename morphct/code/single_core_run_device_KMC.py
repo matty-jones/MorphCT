@@ -166,7 +166,7 @@ class exciton:
         hop_times = []
         for neighbour_index, transfer_integral in enumerate(self.current_chromophore.neighbours_TI):
             # Ignore any hops with a NoneType transfer integral (usually due to
-            # an ORCA error)
+            # an orca error)
             if transfer_integral is None:
                 continue
             # For the hop, we need to know the change in Eij for the Boltzmann
@@ -348,7 +348,7 @@ class carrier:
         # Obtain the reorganisation energy in J (from eV in the parameter file)
         for neighbour_index, transfer_integral in enumerate(self.current_chromophore.neighbours_TI):
             # Ignore any hops with a NoneType transfer integral (usually due to
-            # an ORCA error), or zero
+            # an orca error), or zero
             if (transfer_integral is None) or (transfer_integral < 1E-10):
                 continue
             neighbour_chromophore = global_chromophore_data.return_specific_chromophore(

@@ -95,7 +95,7 @@ class chromophore:
         self.bonds = self.get_important_bonds(AA_morphology_dict['bond'])
         if CG_morphology_dict is not None:
             # Determine if this chromophore is a repeat unit and therefore will
-            # need terminating before ORCA
+            # need terminating before orca
             CG_types = set([CG_morphology_dict['type'][CGID] for CGID in chromophore_CG_sites])
             # self.terminate = True if any of the CGTypes in this chromophore
             # are defined as having termination conditions in the parameter file
@@ -214,7 +214,7 @@ def calculate_chromophores(CG_morphology_dict, AA_morphology_dict, CG_to_AAID_ma
         else:
             chromophore_data[chromo_ID].append(atom_ID)
     # Now rename the chromophore IDs so that they increment sensibly (they will
-    # be used later for the ORCA files)
+    # be used later for the orca files)
     old_keys = sorted(chromophore_data.keys())
     for new_key, old_key in enumerate(old_keys):
         chromophore_data[new_key] = chromophore_data.pop(old_key)
@@ -270,7 +270,7 @@ def calculate_chromophores_AA(CG_morphology_dict, AA_morphology_dict, CG_to_AAID
         else:
             chromophore_data[chromo_ID].append(atom_ID)
     # Now rename the chromophore IDs so that they increment sensibly (they will
-    # be used later for the ORCA files)
+    # be used later for the orca files)
     old_keys = sorted(chromophore_data.keys())
     for new_key, old_key in enumerate(old_keys):
         chromophore_data[new_key] = chromophore_data.pop(old_key)
