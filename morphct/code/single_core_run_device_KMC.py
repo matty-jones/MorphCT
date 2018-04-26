@@ -23,7 +23,7 @@ hbar = 1.05457173E-34              # m^{2} kg s^{-1}
 light_speed = 299792458             # ms^{-1}
 epsilon_nought = 8.85418782E-12     # m^{-3} kg^{-1} s^{4} A^{2}
 ELECTRON = 0
-hole = 1
+HOLE = 1
 
 # Global Variables
 global_chromophore_data = []    # Contains all of the chromophore_lists for each morphology
@@ -271,15 +271,18 @@ class carrier:
         self.T = parameter_dict['system_temperature']
         self.wrapxy = parameter_dict['wrap_device_xy']
         self.disable_coulombic = parameter_dict['disable_coulombic']
+        if self.current_chromophore.sub_species == self.initial_chromophore.sub_species:
+            self.lambda_ij = self.current_chromophore.reorganisation_energy
+        else:
+            self.lambda_ij = (self.current_chromophore.reorganisation_energy
+                              + self.initial_chromophore.reorganisation_energy) / 2
         # self.carrier_type: Set carrier type to be == 0 if Electron and == 1 if Hole. This
         # allows us to do quick arithmetic to get the signs correct in the potential
         # calculations without having to burn through a ton of conditionals.
         if self.current_chromophore.species == 'donor':
-            self.carrier_type = hole
-            self.lambdaij = parameter_dict['reorganisation_energy_donor']
+            self.carrier_type = HOLE
         elif self.current_chromophore.species == 'acceptor':
             self.carrier_type = ELECTRON
-            self.lambdaij = parameter_dict['reorganisation_energy_acceptor']
         self.relative_permittivity = parameter_dict['relative_permittivity']
         if parameter_dict['record_carrier_history'] is True:
             self.history = [[self.initial_device_posn, initial_chromophore.posn]]
@@ -306,7 +309,7 @@ class carrier:
         except KeyError:
             self.use_VRH = False
         if self.use_VRH is True:
-            self.VRH_scaling = 1.0 / parameter_dict['VRH_delocalisation']
+            self.VRH_scaling = 1.0 / self.current_chromophore.VRH_delocalisation
 
     def calculate_behaviour(self):
         try:
@@ -392,14 +395,14 @@ class carrier:
                 # Convert from ang to m
                 chromophore_separation = hf.calculate_separation(self.current_chromophore.posn,
                                                                  destination_chromo_posn) * 1E-10
-                hop_rate = hf.calculate_carrier_hop_rate(self.lambdaij * elementary_charge,
+                hop_rate = hf.calculate_carrier_hop_rate(self.lambda_ij * elementary_charge,
                                                          transfer_integral * elementary_charge,
                                                          delta_Eij, self.prefactor, self.T,
                                                          use_VRH=True, rij=chromophore_separation,
                                                          VRH_prefactor=self.VRH_scaling,
                                                          boltz_pen=self.use_simple_energetic_penalty)
             else:
-                hop_rate = hf.calculate_carrier_hop_rate(self.lambdaij * elementary_charge,
+                hop_rate = hf.calculate_carrier_hop_rate(self.lambda_ij * elementary_charge,
                                                          transfer_integral * elementary_charge,
                                                          delta_Eij, self.prefactor, self.T,
                                                          boltz_pen=self.use_simple_energetic_penalty)
@@ -410,7 +413,7 @@ class carrier:
             if hop_time is not None:
                 # Keep track of the chromophoreID and the corresponding tau
                 hop_times.append([destination_chromophore, hop_time, neighbour_relative_image,
-                                  destination_image, self.prefactor, self.lambdaij * elementary_charge,
+                                  destination_image, self.prefactor, self.lambda_ij * elementary_charge,
                                   transfer_integral * elementary_charge, delta_Eij])
         # Sort by ascending hop time
         hop_times.sort(key=lambda x: x[1])
@@ -449,7 +452,7 @@ class carrier:
                 if self.destination_chromophore == 'top':
                     # Leaving through top (anode)
                     if self.injected_from != 'anode':
-                        if self.carrier_type == hole:
+                        if self.carrier_type == HOLE:
                             number_of_extractions += 1
                         else:
                             number_of_extractions -= 1
@@ -954,7 +957,7 @@ def plot3D_trajectory(inject_source, carriers_to_plot, parameter_dict, device_ar
             color = 'g'
         elif carrier.carrier_type == ELECTRON:
             color = 'b'
-        elif carrier.carrier_type == hole:
+        elif carrier.carrier_type == HOLE:
             color = 'r'
         try:
             for hop_index, hop in enumerate(carrier.history[:-1]):
@@ -1480,14 +1483,14 @@ def execute(device_array, chromophore_data, morphology_data, parameter_dict, vol
                     # counter (this will be used to calculate the current density later)
                     # Note that optical recombinations do not contribute to photocurrent
                     for recombining_carrier in [carrier1, carrier2]:
-                        if ((recombining_carrier.carrier_type == hole)
+                        if ((recombining_carrier.carrier_type == HOLE)
                             and (recombining_carrier.injected_from == 'anode'))\
                            or ((recombining_carrier.carrier_type == ELECTRON)
                                and (recombining_carrier.injected_from == 'cathode')):
                             delta_electrical_recombinations += 1
                         elif ((recombining_carrier.carrier_type == ELECTRON)
                               and (recombining_carrier.injected_from == 'anode')) or\
-                                ((recombining_carrier.carrier_type == hole)
+                                ((recombining_carrier.carrier_type == HOLE)
                                  and (recombining_carrier.injected_from == 'cathode')):
                             delta_electrical_recombinations -= 1
                 except (ValueError, KeyError):

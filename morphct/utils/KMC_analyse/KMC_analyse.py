@@ -830,10 +830,10 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
             chromo2 = chromophore_list[chromo.neighbours[index][0]]
             mol2ID = CG_to_mol_ID[chromo2.CGIDs[0]]
             delta_E = chromo.neighbours_delta_E[index]
-            if chromo.species == 'acceptor':
-                lambdaij = acceptor_lambdaij
+            if chromo.sub_species == chromo2.sub_species:
+                lambdaij = chromo.reorganisation_energy * elementaryCharge
             else:
-                lambdaij = donor_lambdaij
+                lambdaij = (chromo.reorganisation_energy + chromo2.reorganisation_energy)/2
             # Now take into account the various behaviours we can have from the parameter file
             prefactor = 1.0
             # Apply the koopmans prefactor

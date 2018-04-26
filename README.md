@@ -1,6 +1,11 @@
 ![alt-text](morphCTLogo.png "MorphCT Logo" =500x)
 
-# PLEASE NOTE, README IS A WORK IN PROGRESS. #
+# PLEASE NOTE, README IS A WORK IN PROGRESS. ADDITIONALLY, CODE IS BEING UNIFIED ACCORDING TO PEP8 AND WILL SOON BE ADDED TO PYPI/CONDA. #
+
+Progress on these tasks can be seen in the feat/utils branch.
+
+MorphCT has been released under a GPL3 license (please see LICENSE.TXT for conditions). Please [read and cite our MorphCT paper](https://doi.org/10.1080/08927022.2017.1296958) if you use our code in your published work:
+
 
 The intention of this code is to:
 

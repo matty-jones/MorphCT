@@ -55,9 +55,14 @@ class chromophore:
                         electronically_active_AAIDs.append(AAID)
                 electronically_active_CG_sites = copy.deepcopy(electronically_active_AAIDs)
                 # Now work out what the species is:
-                for species, rigid_bodies in parameter_dict['AA_rigid_body_species'].items():
+                for sub_species, rigid_bodies in parameter_dict['AARigidBodySpecies'].items():
                     if AA_morphology_dict['body'][electronically_active_CG_sites[0]] in rigid_bodies:
-                        self.species = species
+                        self.sub_species = sub_species
+                        self.species = parameter_dict["chromophore_species"][self.sub_species]["species"]
+                        self.reorganisation_energy = parameterDict["chromophore_species"][self.sub_species][
+                            "reorganisation_energy"]
+                        self.VRH_delocalisation = parameterDict["chromophore_species"][self.sub_species][
+                            "VRH_delocalisation"]
                         break
                 try:
                     self.species
@@ -156,6 +161,14 @@ class chromophore:
                     current_chromophore_species = site_species
                     electronically_active_sites.append(CG_site_ID)
         return electronically_active_sites, current_chromophore_species
+
+    def get_mo_energy(self):
+        if self.species == "Acceptor":
+            return self.LUMO
+        elif self.species == "Donor":
+            return self.HOMO
+        else:
+            raise Exception("Chromo MUST be Donor OR Acceptor")
 
 
 def calculate_chromophores(CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict, sim_dims):

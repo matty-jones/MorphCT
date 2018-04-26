@@ -43,16 +43,16 @@ def create_input_files(chromophore_list, AA_morphology_dict, parameter_dict):
             if (chromophore2.ID not in neighbours_ID) or (chromophore2.ID < chromophore1.ID):
                 continue
             # Update the ORCA input name
-            input_name = chromophore1.orca_input.replace('.inp', '-%04d.inp'
+            input_name = chromophore1.orca_input.replace('.inp', '-%05d.inp'
                                                          % (chromophore2.ID)).replace('single', 'pair')
             # Find the correct relative image for the neighbour chromophore
-            chromophore2relative_image = neighbours_image[neighbours_ID.index(chromophore2.ID)]
-            chromophore2transformation = list(np.array(chromophore1.image) - np.array(chromophore2.image)
-                                              + np.array(chromophore2relative_image))
+            chromophore2_relative_image = neighbours_image[neighbours_ID.index(chromophore2.ID)]
+            chromophore2_transformation = list(np.array(chromophore1.image) - np.array(chromophore2.image)
+                                              + np.array(chromophore2_relative_image))
             # Find the dimer AAIDs and relative images for each atom
             AAIDs = chromophore1.AAIDs + chromophore2.AAIDs
             images = [[0, 0, 0] for i in range(len(chromophore1.AAIDs))] + [
-                chromophore2transformation for i in range(len(chromophore2.AAIDs))]
+                chromophore2_transformation for i in range(len(chromophore2.AAIDs))]
             # Now add the terminating groups to both chromophores
             # Note that we would only ever expect both chromophores to require termination or neither
             if chromophore1.terminate is True:
@@ -65,7 +65,7 @@ def create_input_files(chromophore_list, AA_morphology_dict, parameter_dict):
                 terminating_group_positions1, terminating_group_positions2 = remove_adjacent_terminators(
                     terminating_group_positions1, terminating_group_positions2)
                 terminating_group_images1 = [[0, 0, 0] for i in range(len(terminating_group_positions1))]
-                terminating_group_images2 = [chromophore2transformation for i in range(
+                terminating_group_images2 = [chromophore2_transformation for i in range(
                     len(terminating_group_positions2))]
                 # Write the dimer input file
                 write_orca_inp(AA_morphology_dict, AAIDs, images,

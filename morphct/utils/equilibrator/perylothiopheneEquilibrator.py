@@ -14,7 +14,7 @@ def setCoeffs(morphologyDict):
     morphologyBonds = sorted(list(set([x[0] for x in morphologyDict['bond']])))
     morphologyAngles = sorted(list(set([x[0] for x in morphologyDict['angle']])))
     morphologyDihedrals = sorted(list(set([x[0] for x in morphologyDict['dihedral']])))
-    morphologyImpropers = sorted(list(set([x[0] for x in morphologyDict['bond']])))
+    morphologyImpropers = sorted(list(set([x[0] for x in morphologyDict['improper']])))
 
     ljnl = hoomd.md.nlist.cell()
     lj = hoomd.md.pair.lj(r_cut=2.5, nlist=ljnl)
@@ -178,7 +178,7 @@ if __name__ == "__main__":
         masses['C' + str(DFTCIndex)] = 0.375
     chargeIncrements = 20
     chargeTimesteps = 10000
-    run_time = 1e7
+    run_time = 3e8
 
     for fileName in fileList:
         morphologyDict = helperFunctions.loadMorphologyXML(fileName)
