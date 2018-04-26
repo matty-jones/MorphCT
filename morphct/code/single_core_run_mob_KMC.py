@@ -34,12 +34,12 @@ class carrier:
         self.electron_history_matrix = None
         if self.current_chromophore.species == 'donor':
             self.carrier_type = 'hole'
-            self.lambdaij = parameter_dict['reorganisation_energy_donor']
+            self.lambda_ij = parameter_dict['reorganisation_energy_donor']
             if parameter_dict['record_carrier_history'] is True:
                 self.hole_history_matrix = lil_matrix((len(chromophore_list), len(chromophore_list)), dtype=int)
         elif self.current_chromophore.species == 'acceptor':
             self.carrier_type = 'electron'
-            self.lambdaij = parameter_dict['reorganisation_energy_acceptor']
+            self.lambda_ij = parameter_dict['reorganisation_energy_acceptor']
             if parameter_dict['record_carrier_history'] is True:
                 self.electron_history_matrix = lil_matrix((len(chromophore_list), len(chromophore_list)), dtype=int)
         self.no_hops = 0
@@ -124,14 +124,14 @@ class carrier:
                     # Chromophore separation needs converting to m
                     chromophore_separation = hf.calculate_separation(self.current_chromophore.posn,
                                                                      neighbour_chromo_posn) * 1E-10
-                    hop_rate = hf.calculate_carrier_hop_rate(self.lambdaij * elementary_charge,
+                    hop_rate = hf.calculate_carrier_hop_rate(self.lambda_ij * elementary_charge,
                                                              transfer_integral * elementary_charge,
                                                              delta_Eij * elementary_charge, prefactor,
                                                              self.T, use_VRH=True, rij=chromophore_separation,
                                                              VRH_delocalisation=self.VRH_delocalisation,
                                                              boltz_pen=self.use_simple_energetic_penalty)
                 else:
-                    hop_rate = hf.calculate_carrier_hop_rate(self.lambdaij * elementary_charge,
+                    hop_rate = hf.calculate_carrier_hop_rate(self.lambda_ij * elementary_charge,
                                                              transfer_integral * elementary_charge,
                                                              delta_Eij * elementary_charge, prefactor, self.T,
                                                              boltz_pen=self.use_simple_energetic_penalty)
