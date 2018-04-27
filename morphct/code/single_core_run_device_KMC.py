@@ -823,7 +823,7 @@ def calculate_dark_current_injections(device_array, parameter_dict):
     # plt.gca().set_xscale('log')
     # print("Valide Cathode Injection Sites =", validCathodeInjSites)
     # print("Valide Anode Injection Sites =", validAnodeInjSites)
-    # print("Mean =", np.mean(injectRates), "STD =", np.std(injectRates))
+    # print("Mean =", np.mean(injectRates), "std =", np.std(injectRates))
     # print("Max =", max(injectRates), "Min =", min(injectRates))
     # plt.show()
     # exit()

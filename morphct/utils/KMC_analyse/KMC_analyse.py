@@ -737,24 +737,24 @@ def determine_molecule_IDs(CG_to_AAID_master, AA_morphology_dict, parameter_dict
 def plot_energy_levels(output_dir, chromophore_list, data_dict):
     HOMO_levels = []
     LUMO_levels = []
-    donor_delta_Eij = []
-    acceptor_delta_Eij = []
+    donor_delta_E_ij = []
+    acceptor_delta_E_ij = []
     for chromo in chromophore_list:
         if chromo.species == 'Donor':
             HOMO_levels.append(chromo.HOMO)
-            for neighbour_index, delta_Eij in enumerate(chromo.neighbours_delta_E):
-                if (delta_Eij is not None) and (chromo.neighbours_TI[neighbour_index] is not None):
-                    donor_delta_Eij.append(delta_Eij)
+            for neighbour_index, delta_E_ij in enumerate(chromo.neighbours_delta_E):
+                if (delta_E_ij is not None) and (chromo.neighbours_TI[neighbour_index] is not None):
+                    donor_delta_E_ij.append(delta_E_ij)
         else:
             LUMO_levels.append(chromo.LUMO)
-            for neighbour_index, delta_Eij in enumerate(chromo.neighbours_delta_E):
-                if (delta_Eij is not None) and (chromo.neighbours_TI[neighbour_index] is not None):
-                    acceptor_delta_Eij.append(delta_Eij)
-    if len(donor_delta_Eij) > 0:
-        donor_bin_edges, donor_fit_args, donor_mean, donor_STD = gauss_fit(donor_delta_Eij)
-        data_dict['donor_delta_Eij_mean'] = donor_mean
-        data_dict['donor_delta_Eij_std'] = donor_STD
-        data_dict['donor_delta_Eij_err'] = donor_STD / np.sqrt(len(donor_delta_Eij))
+            for neighbour_index, delta_E_ij in enumerate(chromo.neighbours_delta_E):
+                if (delta_E_ij is not None) and (chromo.neighbours_TI[neighbour_index] is not None):
+                    acceptor_delta_E_ij.append(delta_E_ij)
+    if len(donor_delta_E_ij) > 0:
+        donor_bin_edges, donor_fit_args, donor_mean, donor_std = gauss_fit(donor_delta_E_ij)
+        data_dict['donor_delta_E_ij_mean'] = donor_mean
+        data_dict['donor_delta_E_ij_std'] = donor_std
+        data_dict['donor_delta_E_ij_err'] = donor_std / np.sqrt(len(donor_delta_E_ij))
         HOMO_av = np.average(HOMO_levels)
         HOMO_std = np.std(HOMO_levels)
         HOMO_err = HOMO_std / np.sqrt(len(HOMO_levels))
@@ -762,14 +762,14 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
         data_dict['donor_frontier_MO_std'] = HOMO_std
         data_dict['donor_frontier_MO_err'] = HOMO_err
         print("Donor HOMO Level =", HOMO_av, "+/-", HOMO_err)
-        print("Donor Delta Eij stats: mean =", donor_mean, "+/-", donor_STD / np.sqrt(len(donor_delta_Eij)))
-        plot_delta_Eij(donor_delta_Eij, donor_bin_edges, donor_fit_args, 'Donor',
-                       output_dir + '/05_donor_delta_Eij.pdf')
-    if len(acceptor_delta_Eij) > 0:
-        acceptor_bin_edges, acceptor_fit_args, acceptor_mean, acceptor_STD = gauss_fit(acceptor_delta_Eij)
-        data_dict['acceptor_delta_Eij_mean'] = acceptor_mean
-        data_dict['acceptor_delta_Eij_std'] = acceptor_STD
-        data_dict['acceptor_delta_Eij_err'] = acceptor_STD / np.sqrt(len(acceptor_delta_Eij))
+        print("Donor Delta E_ij stats: mean =", donor_mean, "+/-", donor_std / np.sqrt(len(donor_delta_E_ij)))
+        plot_delta_E_ij(donor_delta_E_ij, donor_bin_edges, donor_fit_args, 'Donor',
+                       output_dir + '/05_donor_delta_E_ij.pdf')
+    if len(acceptor_delta_E_ij) > 0:
+        acceptor_bin_edges, acceptor_fit_args, acceptor_mean, acceptor_std = gauss_fit(acceptor_delta_E_ij)
+        data_dict['acceptor_delta_E_ij_mean'] = acceptor_mean
+        data_dict['acceptor_delta_E_ij_std'] = acceptor_std
+        data_dict['acceptor_delta_E_ij_err'] = acceptor_std / np.sqrt(len(acceptor_delta_E_ij))
         LUMO_av = np.average(LUMO_levels)
         LUMO_std = np.std(LUMO_levels)
         LUMO_err = LUMO_std / np.sqrt(len(LUMO_levels))
@@ -777,16 +777,16 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
         data_dict['acceptor_frontier_MO_std'] = LUMO_std
         data_dict['acceptor_frontier_MO_err'] = LUMO_err
         print("Acceptor LUMO Level =", LUMO_av, "+/-", LUMO_err)
-        print("Acceptor Delta Eij stats: mean =", acceptor_mean, "+/-",
-              acceptor_STD / np.sqrt(len(acceptor_delta_Eij)))
-        plot_delta_Eij(acceptor_delta_Eij, acceptor_bin_edges, acceptor_fit_args, 'Acceptor',
-                       output_dir + '/06_acceptor_delta_Eij.pdf')
+        print("Acceptor Delta E_ij stats: mean =", acceptor_mean, "+/-",
+              acceptor_std / np.sqrt(len(acceptor_delta_E_ij)))
+        plot_delta_E_ij(acceptor_delta_E_ij, acceptor_bin_edges, acceptor_fit_args, 'Acceptor',
+                       output_dir + '/06_acceptor_delta_E_ij.pdf')
     return data_dict
 
 
-def plot_delta_Eij(delta_Eij, gauss_bins, fit_args, data_type, file_name):
+def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name):
     plt.figure()
-    n, bins, patches = plt.hist(delta_Eij, np.linspace(-0.5, 0.5, 20), color=['b'])
+    n, bins, patches = plt.hist(delta_E_ij, np.linspace(-0.5, 0.5, 20), color=['b'])
     if fit_args is not None:
         gauss_Y = gaussian(gauss_bins[:-1], *fit_args)
         scale_factor = max(n) / max(gauss_Y)
