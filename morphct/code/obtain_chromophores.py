@@ -178,10 +178,10 @@ class chromophore:
                     electronically_active_sites.append(CG_site_ID)
         return electronically_active_sites, current_chromophore_species
 
-    def get_mo_energy(self):
-        if self.species == "Acceptor":
+    def get_MO_energy(self):
+        if self.species == "acceptor":
             return self.LUMO
-        elif self.species == "Donor":
+        elif self.species == "donor":
             return self.HOMO
         else:
             raise Exception("Chromo MUST be Donor OR Acceptor")
