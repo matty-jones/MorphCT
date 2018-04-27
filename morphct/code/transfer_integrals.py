@@ -584,9 +584,9 @@ def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter
         # DEBUG Testing - you can remove these as the assertions in
         # update_pair_chromophore_list should already cover them, however they
         # are fast and will ensure that there are no errors in the
-        # chromophore_list after calculating the T_ij and Delta_Eijs
+        # chromophore_list after calculating the T_ij and Delta_E_ijs
         T_ij_error = check_forward_backward_hop_T_ij(chromophore_list)
-        delta_E_error = check_forward_backward_hop_Eij(chromophore_list)
+        delta_E_error = check_forward_backward_hop_E_ij(chromophore_list)
         if T_ij_error or delta_E_error:
             raise SystemError("assertions failed, please address in code.")
         # END OF DEBUG Testing
@@ -641,8 +641,8 @@ def check_forward_backward_hop_T_ij(chromophore_list):
     return 0
 
 
-def check_forward_backward_hop_Eij(chromophore_list):
-    # Check reverse lookup: Delta Eij === -Delta Eji
+def check_forward_backward_hop_E_ij(chromophore_list):
+    # Check reverse lookup: Delta E_ij === -Delta E_ji
     donor_errors = 0
     acceptor_errors = 0
     for chromophore in chromophore_list:
@@ -669,7 +669,7 @@ def check_forward_backward_hop_Eij(chromophore_list):
                 print("--== Transfer Integrals ==--")
                 print("FORWARD:", chromophore_list[chromo_ID].neighbours_TI[neighbour_loc],
                       "backward:", chromophore_list[neighbour_ID].neighbours_TI[reverse_loc])
-                print("--== Delta Eij ==--")
+                print("--== Delta E_ij ==--")
                 print("FORWARD:", chromophore_list[chromo_ID].neighbours_delta_E[neighbour_loc],
                       "backward:", chromophore_list[neighbour_ID].neighbours_delta_E[reverse_loc])
                 if chromophore.species == 'donor':
@@ -678,8 +678,8 @@ def check_forward_backward_hop_Eij(chromophore_list):
                     acceptor_errors += 1
     if (donor_errors > 0) or (acceptor_errors > 0):
         print("--== CRITICAL ERROR ==--")
-        print("\nThere were", donor_errors, "cases where Eij != -Eji in the donor chromophores.")
-        print("\nThere were", acceptor_errors, "cases where Eij != -Eji in the acceptor chromophores.")
+        print("\nThere were", donor_errors, "cases where E_ij != -E_ji in the donor chromophores.")
+        print("\nThere were", acceptor_errors, "cases where E_ij != -E_ji in the acceptor chromophores.")
         return 1
     return 0
 

@@ -169,10 +169,10 @@ class exciton:
             # an orca error)
             if transfer_integral is None:
                 continue
-            # For the hop, we need to know the change in Eij for the Boltzmann
+            # For the hop, we need to know the change in E_ij for the Boltzmann
             # factor, as well as the distance rij being hopped.
             # In Durham we used a prefactor of sqrt(2) here, can't remember why
-            delta_Eij = self.current_chromophore.neighbours_delta_E[neighbour_index]
+            delta_E_ij = self.current_chromophore.neighbours_delta_E[neighbour_index]
             # The current posn inside the wrapped morphology is easy
             current_chromo_posn = self.current_chromophore.posn
             # The hop destination in wrapped morphology is slightly more
@@ -193,7 +193,7 @@ class exciton:
             # metres. Additionally, all of the energies are in eV currently, so
             # convert them to J
             hop_rate = hf.calculate_FRET_hop_rate(self.prefactor, self.lifetime_parameter, self.r_F, rij,
-                                                  delta_Eij * elementary_charge, self.T)
+                                                  delta_E_ij * elementary_charge, self.T)
             hop_time = hf.determine_event_tau(hop_rate, event_type='exciton-hop',
                                               slowest_event_allowed=slowest_event_allowed,
                                               fastest_event=fastest_event_allowed,
@@ -393,7 +393,7 @@ class carrier:
                     continue
             # Otherwise, we're good to go. Calculate the hop as previously (but
             # a hop to the neighbourChromophore)
-            delta_Eij = self.calculate_delta_E(neighbour_chromophore, neighbour_relative_image,
+            delta_E_ij = self.calculate_delta_E(neighbour_chromophore, neighbour_relative_image,
                                                self.current_chromophore.neighbours_delta_E[neighbour_index])
             # Create a hopping prefactor that can be modified if we're using
             # Koopmans' approximation
@@ -410,14 +410,14 @@ class carrier:
                                                                  destination_chromo_posn) * 1E-10
                 hop_rate = hf.calculate_carrier_hop_rate(self.lambda_ij * elementary_charge,
                                                          transfer_integral * elementary_charge,
-                                                         delta_Eij, self.prefactor, self.T,
+                                                         delta_E_ij, self.prefactor, self.T,
                                                          use_VRH=True, rij=chromophore_separation,
                                                          VRH_prefactor=self.VRH_scaling,
                                                          boltz_pen=self.use_simple_energetic_penalty)
             else:
                 hop_rate = hf.calculate_carrier_hop_rate(self.lambda_ij * elementary_charge,
                                                          transfer_integral * elementary_charge,
-                                                         delta_Eij, self.prefactor, self.T,
+                                                         delta_E_ij, self.prefactor, self.T,
                                                          boltz_pen=self.use_simple_energetic_penalty)
             hop_time = hf.determine_event_tau(hop_rate, event_type='carrier-hop',
                                               slowest_event_allowed=slowest_event_allowed,
@@ -427,7 +427,7 @@ class carrier:
                 # Keep track of the chromophoreID and the corresponding tau
                 hop_times.append([destination_chromophore, hop_time, neighbour_relative_image,
                                   destination_image, self.prefactor, self.lambda_ij * elementary_charge,
-                                  transfer_integral * elementary_charge, delta_Eij])
+                                  transfer_integral * elementary_charge, delta_E_ij])
         # Sort by ascending hop time
         hop_times.sort(key=lambda x: x[1])
         # Take the quickest hop
@@ -509,13 +509,13 @@ class carrier:
         if self.history is not None:
             self.history.append([self.current_device_posn, self.current_chromophore.posn])
 
-    def calculate_delta_E(self, destination_chromophore, neighbour_relative_image, chromo_Eij):
-        # Delta_Eij has 3 main components: 1) the energetic disorder (difference
+    def calculate_delta_E(self, destination_chromophore, neighbour_relative_image, chromo_E_ij):
+        # Delta_E_ij has 3 main components: 1) the energetic disorder (difference
         # in HOMO/LUMO levels), 2) the field within the device, and 3) the
         # Coulombic effect from nearby charges
-        delta_Eij = 0.0  # report this in J
+        delta_E_ij = 0.0  # report this in J
         # 1) Energetic Disorder
-        delta_Eij += (chromo_Eij * elementary_charge)
+        delta_E_ij += (chromo_E_ij * elementary_charge)
         # 2) Field within the device
         current_absolute_position = np.array(self.current_device_posn)\
             * parameter_dict['morphology_cell_size'] + (np.array(self.current_chromophore.posn) * 1E-10)
@@ -527,7 +527,7 @@ class carrier:
         # Cathode at 0
         z_sep = - (destination_absolute_position[2] - current_absolute_position[2])
         charge = elementary_charge * ((2 * self.carrier_type) - 1)
-        delta_Eij += (z_sep * current_field_value * charge)
+        delta_E_ij += (z_sep * current_field_value * charge)
         if self.disable_coulombic is not True:
             # 3) Difference in Coulombic Potential at dest compared to origin
             origin_coulomb, recombine_flag, recombine_ID = calculate_coulomb(
@@ -535,12 +535,12 @@ class carrier:
                 carrier_is_recombining=self.recombining)
             destination_coulomb, dummy1, dummy2 = calculate_coulomb(
                 destination_absolute_position, self.ID, self.carrier_type)
-            delta_Eij += (destination_coulomb - origin_coulomb)
+            delta_E_ij += (destination_coulomb - origin_coulomb)
             if (recombine_flag is True) and (self.recombining is False):
                 # Need to update the recombining details
                 self.recombining = recombine_flag
                 self.recombining_with = recombine_ID
-        return delta_Eij
+        return delta_E_ij
 
 
 class inject_site:

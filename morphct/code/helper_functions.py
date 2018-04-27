@@ -870,7 +870,7 @@ def fix_images(original_morphology):
 # ---============================---
 # ---=== KMC HELPER FUNCTIONS ===---
 # ---============================---
-def calculate_carrier_hop_rate(lambda_ij, T_ij, delta_Eij, prefactor, temp, use_VRH=False, rij=0.0,
+def calculate_carrier_hop_rate(lambda_ij, T_ij, delta_E_ij, prefactor, temp, use_VRH=False, rij=0.0,
                                VRH_delocalisation=1.0, boltz_pen=False):
     # Based on the input parameters, can make this the semiclassical Marcus
     # Hopping Rate Equation, or a more generic Miller Abrahams-based hop
@@ -884,34 +884,34 @@ def calculate_carrier_hop_rate(lambda_ij, T_ij, delta_Eij, prefactor, temp, use_
         k_ij *= np.exp(-(rij / VRH_delocalisation))
     # Simple Boltzmann energy penalty?
     if boltz_pen is True:
-        # Only apply the penalty if delta_Eij is positive
-        if delta_Eij > 0.0:
-            k_ij *= np.exp(-(delta_Eij / (k_B * temp)))
+        # Only apply the penalty if delta_E_ij is positive
+        if delta_E_ij > 0.0:
+            k_ij *= np.exp(-(delta_E_ij / (k_B * temp)))
         # Otherwise, k_ij *= 1
     else:
-        k_ij *= np.exp(-((delta_Eij + lambda_ij)**2) / (4 * lambda_ij * k_B * temp))
+        k_ij *= np.exp(-((delta_E_ij + lambda_ij)**2) / (4 * lambda_ij * k_B * temp))
     return k_ij
 
 
-def calculate_FRET_hop_rate(prefactor, lifetime_parameter, r_F, rij, delta_Eij, T):
+def calculate_FRET_hop_rate(prefactor, lifetime_parameter, r_F, rij, delta_E_ij, T):
     # Foerster Transport Hopping Rate Equation
     # The prefactor included here is a bit of a bodge to try and get the
     # mean-free paths of the excitons more in line with the 5nm of experiment.
     # Possible citation: 10.3390/ijms131217019 (they do not do the simulation
     # they just point out some limitations of FRET which assumes point-dipoles
     # which does not necessarily work in all cases)
-    if delta_Eij <= 0:
+    if delta_E_ij <= 0:
         boltzmann_factor = 1
     else:
-        boltzmann_factor = np.exp(-(elementary_charge * delta_Eij) / (k_B * T))
+        boltzmann_factor = np.exp(-(elementary_charge * delta_E_ij) / (k_B * T))
     k_FRET = prefactor * (1 / lifetime_parameter) * (r_F / rij)**6 * boltzmann_factor
     return k_FRET
 
 
-def calculate_miller_abrahams_hop_rate(prefactor, separation, radius, delta_Eij, T):
+def calculate_miller_abrahams_hop_rate(prefactor, separation, radius, delta_E_ij, T):
     k_ij = prefactor * np.exp(-2 * separation / radius)
-    if delta_Eij > 0:
-        k_ij *= np.exp(-delta_Eij / (k_B * T))
+    if delta_E_ij > 0:
+        k_ij *= np.exp(-delta_E_ij / (k_B * T))
     return k_ij
 
 

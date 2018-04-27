@@ -107,7 +107,7 @@ class carrier:
                 # due to an orca error)
                 if transfer_integral is None:
                     continue
-                delta_Eij = self.current_chromophore.neighbours_delta_E[neighbour_index]
+                delta_E_ij = self.current_chromophore.neighbours_delta_E[neighbour_index]
                 # Create a hopping prefactor that can be modified if we're
                 # using Koopmans' approximation
                 prefactor = 1.0
@@ -126,14 +126,14 @@ class carrier:
                                                                      neighbour_chromo_posn) * 1E-10
                     hop_rate = hf.calculate_carrier_hop_rate(self.lambda_ij * elementary_charge,
                                                              transfer_integral * elementary_charge,
-                                                             delta_Eij * elementary_charge, prefactor,
+                                                             delta_E_ij * elementary_charge, prefactor,
                                                              self.T, use_VRH=True, rij=chromophore_separation,
                                                              VRH_delocalisation=self.VRH_delocalisation,
                                                              boltz_pen=self.use_simple_energetic_penalty)
                 else:
                     hop_rate = hf.calculate_carrier_hop_rate(self.lambda_ij * elementary_charge,
                                                              transfer_integral * elementary_charge,
-                                                             delta_Eij * elementary_charge, prefactor, self.T,
+                                                             delta_E_ij * elementary_charge, prefactor, self.T,
                                                              boltz_pen=self.use_simple_energetic_penalty)
                 hop_time = hf.determine_event_tau(hop_rate)
                 # Keep track of the chromophoreID and the corresponding tau
