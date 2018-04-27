@@ -4,6 +4,7 @@ from morphct.code import helper_functions as hf
 import time as T
 import subprocess as sp
 import pickle
+import distutils.spawn
 
 
 if __name__ == '__main__':
@@ -15,9 +16,9 @@ if __name__ == '__main__':
     except:
         pass
     morphology_name = morphology_file[hf.find_index(morphology_file, '/')[-1] + 1:]
-    orca_path = os.getenv('orca_bin')
+    orca_path = distutils.spawn.find_executable("orca")
     input_dir = morphology_file + '/chromophores/input_orca'
-    log_file = input_dir.replace('/input_orca', '/orc_alog_' + str(CPU_rank) + '.log')
+    log_file = input_dir.replace('/input_orca', '/orca_log_' + str(CPU_rank) + '.log')
     output_dir = morphology_file + '/chromophores/output_orca'
     pickle_file_name = input_dir.replace('input_orca', 'orca_jobs.pickle')
     with open(pickle_file_name, 'rb') as pickle_file:
@@ -40,7 +41,7 @@ if __name__ == '__main__':
                 continue
             except IOError:
                 pass
-        orca_job = sp.popen([str(orca_path), str(job)], stdin=sp.pipe, stdout=sp.pipe, stderr=sp.pipe)
+        orca_job = sp.Popen([str(orca_path), str(job)], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
         job_PID = orca_job.pid
         # Taskset stuff
         # try:

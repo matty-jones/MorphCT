@@ -5,7 +5,7 @@ import sys
 
 
 class morphology:
-    def __init__(self, morphology_XML, morphology_name, parameter_dict, chromophore_list):
+    def __init__(self, morphology_xml, morphology_name, parameter_dict, chromophore_list):
         # Need to save the parameter_dict in full as well as its component
         # values because we're going to update the parameterDict with the new
         # type mappings by the end of this code module.
@@ -13,14 +13,14 @@ class morphology:
         # Import parameters from the parXX.py
         for key, value in parameter_dict.items():
             self.__dict__[key] = value
-        self.xml_path = morphology_XML
+        self.xml_path = morphology_xml
         self.morphology_name = morphology_name
         # self.inputSigma is the `compression value' in Angstroms that has been
         # used to scale the morphology
         # E.G. the P3HT template uses sigma = 1, but the Marsh morphologies use
         # sigma = 3.
-        self.CG_dictionary = helper_functions.load_morphology_XML(self.xml_path, sigma=self.input_sigma)
-        self.CG_dictionary = helper_functions.add_unwrapped_positions(self.CG_dictionary)
+        self.CG_dictionary = hf.load_morphology_xml(self.xml_path, sigma=self.input_sigma)
+        self.CG_dictionary = hf.add_unwrapped_positions(self.CG_dictionary)
         self.chromophore_list = chromophore_list
 
     def analyse_morphology(self):
@@ -48,19 +48,19 @@ class morphology:
         if len(self.CG_to_template_dirs) == 0:
             print("No CG to AA data found in parameter file - the morphology is already"
                   " fine-grained! Skipping this module...")
-            # Write the XML file and create the pickle
-            print("Writing XML file...")
+            # Write the xml file and create the pickle
+            print("Writing xml file...")
             AA_file_name = self.output_morph_dir + '/' + self.morphology_name + '/morphology/'\
                 + self.morphology_name + '.xml'
-            atomistic_morphology = helper_functions.add_unwrapped_positions(self.CG_dictionary)
-            # Now write the morphology XML
-            helper_functions.write_morphology_XML(atomistic_morphology, AA_file_name)
+            atomistic_morphology = hf.add_unwrapped_positions(self.CG_dictionary)
+            # Now write the morphology xml
+            hf.write_morphology_xml(atomistic_morphology, AA_file_name)
             # And finally write the pickle with the CGDictionary as None (to
             # indicate to MorphCT that no fine-graining has taken place), but
             # the other parameters assigned as required.
             pickle_location = self.output_morph_dir + '/' + self.morphology_name + '/code/' +\
                 self.morphology_name + '.pickle'
-            helper_functions.write_pickle((atomistic_morphology, None, None, self.parameter_dict,
+            hf.write_pickle((atomistic_morphology, None, None, self.parameter_dict,
                                            self.chromophore_list), pickle_location)
             return atomistic_morphology, None, None, self.parameter_dict, self.chromophore_list
 
@@ -82,7 +82,7 @@ class morphology:
         self.parameter_dict['new_type_mappings'] = new_type_mappings
         molecule = []
         unique_mappings = []
-        CG_sites, mappings = helper_functions.parallel_sort(list(new_type_mappings.keys()),
+        CG_sites, mappings = hf.parallel_sort(list(new_type_mappings.keys()),
                                                             list(new_type_mappings.values()))
         for index, mapping in enumerate(mappings):
             if mapping not in unique_mappings:
@@ -92,7 +92,7 @@ class morphology:
         printExplanation = True
         for index, CG_sites in enumerate(molecule):
             printMol = True
-            initial_atoms, final_atoms = helper_functions.parallel_sort(
+            initial_atoms, final_atoms = hf.parallel_sort(
                 list(unique_mappings[index].keys()), list(unique_mappings[index].values()))
             for index, initial_atom in enumerate(initial_atoms):
                 if initial_atom == final_atoms[index]:
@@ -102,12 +102,12 @@ class morphology:
                           " typenames in the atomistic templates:")
                     printExplanation = False
                 if printMol is True:
-                    print("Atom types belonging the molecule described by", repr(CGSites) + ":")
+                    print("Atom types belonging the molecule described by", repr(CG_sites) + ":")
                     printMol = False
                 print(initialAtom, "--->", finalAtoms[index])
-        print("Adding", len(moleculeIDs), "molecules to the system...")
+        print("Adding", len(molecule_IDs), "molecules to the system...")
         for molecule_number in range(len(molecule_IDs)):
-            print("Adding molecule number", moleculeNumber, "\r", end=' ')
+            print("Adding molecule number", molecule_number, "\r", end=' ')
             sys.stdout.flush()
             # Obtain the AA dictionary for each molecule using the
             # fine-graining procedure
@@ -132,7 +132,7 @@ class morphology:
         # this
         for key in ['lx', 'ly', 'lz', 'xy', 'xz', 'yz']:
             ghost_dictionary[key] = AA_morphology_dict[key]
-        ghost_dictionary = helper_functions.add_wrapped_positions(ghost_dictionary)
+        ghost_dictionary = hf.add_wrapped_positions(ghost_dictionary)
         for key in ['lx', 'ly', 'lz', 'xy', 'xz', 'yz']:
             ghost_dictionary.pop(key)
         # The real atoms that the ghost particles are bonded to are already
@@ -153,22 +153,22 @@ class morphology:
         # Finally, update the number of atoms
         AA_morphology_dict['natoms'] += len(ghost_dictionary['type'])
         print("\n")
-        # Now write the XML file and create the pickle
-        print("Writing XML file...")
+        # Now write the xml file and create the pickle
+        print("Writing xml file...")
         AA_file_name = self.output_morph_dir + '/' + self.morphology_name + '/morphology/'\
             + self.morphology_name + '.xml'
         # Replace the `positions' with the `unwrapped_positions' ready for
         # writing
-        AA_morphology_dict = helper_functions.replace_wrapped_positions(AA_morphology_dict)
+        AA_morphology_dict = hf.replace_wrapped_positions(AA_morphology_dict)
         # Update the additional_constraints that we put in by checking all of
         # the constraints have the correct names before writing
-        AA_morphology_dict = helper_functions.check_constraint_names(AA_morphology_dict)
-        # Now write the morphology XML
-        helper_functions.write_morphology_XML(AA_morphology_dict, AA_file_name)
+        AA_morphology_dict = hf.check_constraint_names(AA_morphology_dict)
+        # Now write the morphology xml
+        hf.write_morphology_xml(AA_morphology_dict, AA_file_name)
         # And finally write the pickle
         pickle_location = self.output_morph_dir + '/' + self.morphology_name + '/code/'\
             + self.morphology_name + '.pickle'
-        helper_functions.write_pickle((AA_morphology_dict, self.CG_dictionary, CG_to_AAID_master,
+        hf.write_pickle((AA_morphology_dict, self.CG_dictionary, CG_to_AAID_master,
                                        self.parameter_dict, self.chromophore_list), pickle_location)
         return AA_morphology_dict, self.CG_dictionary, CG_to_AAID_master, self.parameter_dict,\
             self.chromophore_list
@@ -179,7 +179,7 @@ class morphology:
         molecule_lengths = []
         # Create a lookup table `neighbour list' for all connected atoms called
         # {bonded_atoms}
-        bonded_atoms = helper_functions.obtain_bonded_list(self.CG_dictionary['bond'])
+        bonded_atoms = hf.obtain_bonded_list(self.CG_dictionary['bond'])
         molecule_list = [i for i in range(len(self.CG_dictionary['type']))]
         # Recursively add all atoms in the neighbour list to this molecule
         for mol_ID in range(len(molecule_list)):
@@ -234,7 +234,7 @@ class morphology:
                 force_field_locations.append(FF_loc)
         for FF_loc in force_field_locations:
             mapping_for_this_FF = {}
-            force_field = helper_functions.load_FFXML(FF_loc)
+            force_field = hf.load_FF_xml(FF_loc)
             for lj_interaction in force_field['lj']:
                 atom_type = lj_interaction[0]
                 while atom_type in morphology_atom_types:
@@ -275,11 +275,11 @@ class atomistic:
         self.AA_templates_dictionary = {}
         # Load the template file for each CG atom
         for CG_atom_type in list(self.CG_to_template_files.keys()):
-            template_dictionary = helper_functions.load_morphology_XML(self.CG_to_template_dirs[CG_atom_type]
+            template_dictionary = hf.load_morphology_xml(self.CG_to_template_dirs[CG_atom_type]
                                                                        + '/' + self.CG_to_template_files[CG_atom_type])
             template_dictionary = self.remap_atom_types(template_dictionary,
                                                         parameter_dict['new_type_mappings'][CG_atom_type])
-            template_dictionary = helper_functions.add_unwrapped_positions(template_dictionary)
+            template_dictionary = hf.add_unwrapped_positions(template_dictionary)
             self.AA_templates_dictionary[CG_atom_type] = template_dictionary
         self.AA_dictionary, self.atom_ID_lookup_table, self.ghost_dictionary = self.run_fine_grainer(ghost_dictionary)
 
@@ -308,7 +308,7 @@ class atomistic:
         # Now update the box parameters
         for key in ['lx', 'ly', 'lz']:
             CG_monomer_dictionary[key] = self.CG_dictionary[key]
-        CG_monomer_dictionary = helper_functions.add_unwrapped_positions(CG_monomer_dictionary)
+        CG_monomer_dictionary = hf.add_unwrapped_positions(CG_monomer_dictionary)
         CG_monomer_dictionary['natoms'] = len(CG_monomer_dictionary['position'])
         return CG_monomer_dictionary
 
@@ -336,7 +336,7 @@ class atomistic:
         # move the template to
         CG_co_ms, self.CG_to_template_AAIDs = self.get_AA_template_position(self.CG_to_template_AAIDs)
         # Need to keep track of the atom ID numbers globally - run_fine_grainer
-        # sees individual monomers, atomistic sees molecules and the XML needs
+        # sees individual monomers, atomistic sees molecules and the xml needs
         # to contain the entire morphology.
         no_atoms_in_molecule = 0
         CG_type_list = {}
@@ -348,7 +348,7 @@ class atomistic:
         current_monomer_index = sum(self.molecule_lengths[:self.molecule_index])
         atom_ID_lookup_table = {}
         # Calculate the total number of permitted atoms
-        total_permitted_atoms = self.total_permitted_atoms(monomer_list)
+        total_permitted_atoms = self.get_total_permitted_atoms(monomer_list)
         # Set the initial and final atom indices to None initially, so that we
         # don't add terminating units for small molecules
         start_atom_index = None
@@ -366,7 +366,7 @@ class atomistic:
                 print(monomer)
                 print(monomerCGTypes)
                 print(templateFiles)
-                raise system_error('not all MONOMER sites are the same template')
+                raise SystemError('Not all monomer sites are the same template')
             # Copy the template dictionary for editing for this monomer
             this_monomer_dictionary = copy.deepcopy(
                 self.AA_templates_dictionary[self.CG_dictionary['type'][monomer[0]]])
@@ -401,7 +401,7 @@ class atomistic:
                         AAID_positions.append(this_monomer_dictionary['unwrapped_position'][AAID])
                         AAID_atom_types.append(this_monomer_dictionary['type'][AAID])
                     # Now create the ghost particle describing the rigid body
-                    ghost_COM = helper_functions.calc_COM(AAID_positions, list_of_atom_types=AAID_atom_types)
+                    ghost_COM = hf.calc_COM(AAID_positions, list_of_atom_types=AAID_atom_types)
                     ghost_dictionary['unwrapped_position'].append(ghost_COM)
                     ghost_dictionary['mass'].append(1.0)
                     ghost_dictionary['diameter'].append(1.0)
@@ -438,7 +438,7 @@ class atomistic:
                     closest_atom_ID = None
                     closest_atom_posn = 1E99
                     for AAID, AA_position in enumerate(this_monomer_dictionary['unwrapped_position']):
-                        separation = helper_functions.calculate_separation(
+                        separation = hf.calculate_separation(
                             self.CG_dictionary['unwrapped_position'][site_ID], AA_position)
                         if separation < closest_atom_posn:
                             closest_atom_posn = separation
@@ -494,7 +494,7 @@ class atomistic:
             # Note that the ghost dictionary bond was already updated to have
             # the correct realAtom AAID for this molecule when the bond was
             # created. Therefore, leave the ghost dictionary unchanged.
-            this_monomer_dictionary, ghost_dictionary = helper_functions.increment_atom_IDs(
+            this_monomer_dictionary, ghost_dictionary = hf.increment_atom_IDs(
                 this_monomer_dictionary, ghost_dictionary, no_atoms_in_molecule, modify_ghost_dictionary=False)
             no_atoms_in_molecule += len(this_monomer_dictionary['type'])
             current_monomer_index += 1
@@ -524,22 +524,22 @@ class atomistic:
                             bonded_AAIDs.append(AAID1)
                 if len(bonded_AAIDs) != connection_info[0]:
                     continue
-                new_hydrogen_positions = helper_functions.get_terminating_positions(
+                new_hydrogen_positions = hf.get_terminating_positions(
                     AA_dictionary['unwrapped_position'][atom_index],
                     [AA_dictionary['unwrapped_position'][bonded_AAID] for bonded_AAID in bonded_AAIDs], 1)
                 for hydrogen_position in new_hydrogen_positions:
                     new_hydrogen_data.append([atom_index, list(hydrogen_position)])
         AA_dictionary = self.add_terminating_to_molecule(AA_dictionary, new_hydrogen_data)
-        AA_dictionary = helper_functions.add_wrapped_positions(AA_dictionary)
-        AA_dictionary = helper_functions.add_masses(AA_dictionary)
-        AA_dictionary = helper_functions.add_diameters(AA_dictionary)
+        AA_dictionary = hf.add_wrapped_positions(AA_dictionary)
+        AA_dictionary = hf.add_masses(AA_dictionary)
+        AA_dictionary = hf.add_diameters(AA_dictionary)
         # Now the molecule is done, we need to add on the correct identifying
         # numbers for all the bonds, angles and dihedrals (just as we did
         # between monomers) for the other molecules in the system, so that they
         # all connect to the right atoms.
         # Note that here we need to increment the '_'+ATOMIDs in the ghost
         # dictionary to take into account the number of molecules.
-        AA_dictionary, ghost_dictionary = helper_functions.increment_atom_IDs(
+        AA_dictionary, ghost_dictionary = hf.increment_atom_IDs(
             AA_dictionary, ghost_dictionary, self.no_atoms_in_morphology, modify_ghost_dictionary=True)
         return AA_dictionary, atom_ID_lookup_table, ghost_dictionary
 
@@ -548,7 +548,7 @@ class atomistic:
         for hydrogen in new_hydrogen_data:
             # hydrogen has the form [BondedAtomID, [position]]
             AA_dictionary['unwrapped_position'].append([coord for coord in hydrogen[1]])
-            AA_dictionary['type'].append('h1')
+            AA_dictionary['type'].append('H1')
             AA_dictionary['body'].append(-1)
             AA_dictionary['charge'].append(0.0)
             AA_dictionary['bond'].append([AA_dictionary['type'][hydrogen[0]] + '-h1', hydrogen[0], hydrogen_ID])
@@ -556,7 +556,7 @@ class atomistic:
             hydrogen_ID += 1
         return AA_dictionary
 
-    def total_permitted_atoms(self, monomer_list):
+    def get_total_permitted_atoms(self, monomer_list):
         # Work out how many atoms we have in the molecule so that we don't
         # create any constraints including atoms outside this molecule
         total_permitted_atoms = 0
@@ -629,7 +629,7 @@ class atomistic:
         return AA_dictionary
 
     def get_AA_template_position(self, CG_to_template_AAIDs):
-        CG_co_ms = {}
+        CG_COMs = {}
         # For each CG site, determine the types and positions so we can
         # calculate the COM
         for site_name in list(CG_to_template_AAIDs.keys()):
@@ -647,5 +647,5 @@ class atomistic:
                 site_types.append(AA_template['type'][atom_ID])
                 site_positions.append(AA_template['unwrapped_position'][atom_ID])
             # These output as numpy arrays because we can't do maths with lists
-            CG_COMs[site_name] = helper_functions.calc_COM(site_positions, list_of_atom_types=site_types)
+            CG_COMs[site_name] = hf.calc_COM(site_positions, list_of_atom_types=site_types)
         return CG_COMs, CG_to_template_AAIDs

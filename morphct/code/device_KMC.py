@@ -29,9 +29,9 @@ class morphology_moiety:
         for chromophore in self.chromophore_list:
             species_present.append(chromophore.species)
         if len(set(species_present)) == 1:
-            if species_present[0] == 'donor':
+            if species_present[0].lower() == 'donor':
                 return 'hole'
-            elif species_present[0] == 'acceptor':
+            elif species_present[0].lower() == 'acceptor':
                 return 'electron'
             else:
                 print("Error in chromophore:")
@@ -188,13 +188,13 @@ def main(parameter_dict):
         run_command = ['python ', SINGLE_RUN_DEVICE_KMC_FILE, output_dir, str(proc_ID),
                        str(child_seed)]
         print(run_command)
-        running_jobs.append(sp.popen(run_command))
+        running_jobs.append(sp.Popen(run_command))
     # Wait for all jobs to complete
     [p.wait() for p in running_jobs]
     print("All KMC jobs completed!")
     # Combine results if required.
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
         pickle_file = sys.argv[1]
     except:

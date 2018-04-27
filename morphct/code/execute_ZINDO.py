@@ -142,7 +142,7 @@ def write_orca_inp(AA_morphology_dict, AAIDs, images, terminating_group_posns, t
                                                            position[2] - central_position[2]))
     # Load the orca input template
     orca_temp_dir = os.path.join(PROJECT_ROOT, "templates")
-    orca_temp_test_dir = os.path.join(PROJECT_ROOT, "code/test_assets")
+    orca_temp_test_dir = os.path.join(PROJECT_ROOT, "code/unit_testing/assets")
     try:
         with open(os.path.join(orca_temp_dir, "template.inp"), 'r') as template_file:
             inp_file_lines = template_file.readlines()
@@ -155,7 +155,7 @@ def write_orca_inp(AA_morphology_dict, AAIDs, images, terminating_group_posns, t
     # Write the orca input file
     with open(input_name, 'w+') as orca_file:
         orca_file.writelines(inp_file_lines)
-    print("\rorca Input File written as", inputName[hf.findIndex(inputName, '/')[-1] + 1:], end=' ')
+    print("\rOrca Input File written as", input_name[hf.find_index(input_name, '/')[-1] + 1:], end=' ')
 
 
 def terminate_monomers(chromophore, parameter_dict, AA_morphology_dict):
@@ -229,7 +229,7 @@ def get_orca_jobs(input_dir, parameter_dict, proc_IDs):
     return jobs_list
 
 
-def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
+def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
     create_input_files(chromophore_list, AA_morphology_dict, parameter_dict)
     input_dir = parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]\
         + '/chromophores/input_orca'
@@ -238,20 +238,20 @@ def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter
     # Shuffle the jobsList to spread it out over the cores
     R.shuffle(jobs_list)
     number_of_inputs = sum([len(orca_files_to_run) for orca_files_to_run in jobs_list])
-    print("Found", numberOfInputs, "orca files to run.")
+    print("Found", number_of_inputs, "orca files to run.")
     if (number_of_inputs > 0):
         # Create pickle file containing the jobs sorted by ProcID to be picked
         # up by single_core_run_orca.py
         pickle_name = input_dir.replace('input_orca', 'orca_jobs.pickle')
         with open(pickle_name, 'wb+') as pickle_file:
             pickle.dump(jobs_list, pickle_file)
-        print("orca jobs list written to", pickleName)
+        print("Orca jobs list written to", pickle_name)
         if len(jobs_list) <= len(proc_IDs):
             proc_IDs = proc_IDs[:len(jobs_list)]
         running_jobs = []
         # Open the required processes to execute the orca jobs
         for CPU_rank, jobs in enumerate(jobs_list):
-            running_jobs.append(sp.popen(['python', SINGLE_ORCA_RUN_FILE, parameter_dict['output_morph_dir']
+            running_jobs.append(sp.Popen(['python', SINGLE_ORCA_RUN_FILE, parameter_dict['output_morph_dir']
                                           + '/' + parameter_dict['morphology'][:-4], str(CPU_rank),
                                           str(int(parameter_dict['overwrite_current_data']))]))
         # Wait for all jobs to complete
@@ -261,7 +261,7 @@ def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter
     return AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
         pickle_file = sys.argv[1]
     except:
@@ -272,4 +272,4 @@ if __name__ == "__main__":
     CG_to_AAID_master = pickle_data[2]
     parameter_dict = pickle_data[3]
     chromophore_list = pickle_data[4]
-    execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list)
+    main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list)

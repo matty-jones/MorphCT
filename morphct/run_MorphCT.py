@@ -39,7 +39,7 @@ class simulation:
         if self.morphology is not None:
             # Copy the current code and the parameter file for safekeeping
             self.copy_code()
-            if self.execute_finegraining is False:
+            if self.execute_fine_graining is False:
                 # Load any previous data to allow us to run individual phases
                 try:
                     pickle_data = hf.load_pickle(self.output_morphology_directory + '/code/'
@@ -56,8 +56,8 @@ class simulation:
                         if key not in list(parameter_dict.keys()):
                             parameter_dict[key] = previous_value
                 except:
-                    print("PICKLE NOT FOUND, EXECUTING FINEGRAINING TO OBTAIN REQUIRED PARAMETERS...")
-                    self.execute_finegraining = False
+                    print("PICKLE NOT FOUND, EXECUTING FINE GRAINING TO OBTAIN REQUIRED PARAMETERS...")
+                    self.execute_fine_graining = False
                     returned_data = fine_grainer.morphology(self.input_morphology_file, self.morphology[:-4],
                                                             parameter_dict, []).analyse_morphology()
                     AA_morphology_dict = returned_data[0]
@@ -137,8 +137,8 @@ class simulation:
     def get_slurm_ID(self):
         # Use Squeue to determine the current slurm job number
         try:
-            squeue_command = sp.popen(['squeue', '-u', os.getenv('user'), '--sort=t'],
-                                      stdin=sp.pipe, stdout=sp.pipe, stderr=sp.pipe).communicate()
+            squeue_command = sp.Popen(['squeue', '-u', str(os.getenv('user')), '--sort=t'],
+                                      stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE).communicate()
         # If Slurm is not installed...
         except OSError:
             return None

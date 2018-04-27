@@ -4,7 +4,7 @@ from morphct.code import helper_functions as hf
 import sys
 
 
-class ExitHOOMD(exception):
+class ExitHOOMD(Exception):
     '''This class is raised to terminate a HOOMD simulation mid-run for
     a particular reason (e.g. minimum KE found)'''
     def __init__(self, string):
@@ -57,14 +57,14 @@ class md_phase:
 
     def load_system(self, input_file):
         # Load the previous phases' xml for continuation
-        system_XML = init.read_xml(filename=input_file)
+        system_xml = init.read_xml(filename=input_file)
         # A snapshot is needed in order to update the velocities
-        snapshot = system_XML.take_snapshot()
+        snapshot = system_xml.take_snapshot()
         # Assign the required velocities based on the requested temperature
         updated_snapshot = self.initialize_velocities(snapshot)
         # Finally, restore the snapshot
-        system_XML.restore_snapshot(updated_snapshot)
-        return system_XML
+        system_xml.restore_snapshot(updated_snapshot)
+        return system_xml
 
     def initialize_velocities(self, snapshot):
         v = np.random.random((len(snapshot.particles.velocity), 3))
@@ -84,7 +84,7 @@ class md_phase:
         # Activate the dumping of the trajectory dcd file
         if self.dcd_file_write is True:
             if self.dcd_file_dumpstep is not 0:
-                print("Setting DCD dump step to", self.DCDFileDumpstep)
+                print("Setting dcd dump step to", self.dcd_file_dumpstep)
                 self.dump_dcd = dump.dcd(filename=self.output_file.replace('xml', 'dcd'),
                                          period=self.dcd_file_dumpstep, overwrite=True)
             else:
@@ -106,60 +106,60 @@ class md_phase:
                                       period=self.duration / 1000.0, overwrite=log_overwrite)
         callback = None
         # Set up the callback function if the termination condition is not max_t
-        if self.termination_condition == 'KE_min':
+        if self.termination_condition.lower() == 'ke_min':
             self.load_from_snapshot = False
-            self.lowest_ke = 9e999
-            self.ke_increased = 0
-            self.first_ke_value = True
-            callback = analyze.callback(callback=self.check_ke, period=self.duration / 1000.0)
-        print("---=== BEGINNING MOLECULAR DYNAMICS PHASE", self.phaseNumber + 1, "===---")
+            self.lowest_KE = 9e999
+            self.KE_increased = 0
+            self.first_KE_value = True
+            callback = analyze.callback(callback=self.check_KE, period=self.duration / 1000.0)
+        print("---=== BEGINNING MOLECULAR DYNAMICS PHASE", self.phase_number + 1, "===---")
         # Run the MD simulation
         try:
             run(self.duration)
         except ExitHOOMD as exitMessage:
             print(exitMessage)
         # Load the snapshot if required
-        if self.termination_condition == 'K_emin':
+        if self.termination_condition.lower() == 'ke_min':
             if self.load_from_snapshot is True:
                 print("Loading from snapshot...")
                 self.system.restore_snapshot(self.snapshot_to_load)
                 del self.snapshot_to_load
-        # Create the output XML file
-        self.dump_XML = dump.xml(filename=self.output_file, position=True, image=True, type=True,
+        # Create the output xml file
+        self.dump_xml = dump.xml(filename=self.output_file, position=True, image=True, type=True,
                                  mass=True, diameter=True, body=True, charge=True, bond=True, angle=True,
                                  dihedral=True, improper=True)
         # Clean up all references to this simulation
         self.rigid_int.disable()
         self.non_rigid_int.disable()
         del self.system, self.dump_dcd, self.step, self.rigid_int, self.non_rigid_int, self.rigid_group,\
-            self.non_rigid_group, callback, self.dump_XML, self.pair_class, self.bond_class,\
+            self.non_rigid_group, callback, self.dump_xml, self.pair_class, self.bond_class,\
             self.angle_class, self.dihedral_class, self.improper_class, self.energy_log
         init.reset()
 
-    def check_ke(self, timestep_number):
+    def check_KE(self, timestep_number):
         # Query the current kinetic energy of the system through the energyLog
-        current_ke = self.energy_log.query('kinetic_energy')
+        current_KE = self.energy_log.query('kinetic_energy')
         # For second and subsequent steps
-        if self.first_ke_value is False:
+        if self.first_KE_value is False:
             # Check if the current KE is greater than the minimum so far
-            if current_ke >= self.lowest_ke:
-                if self.ke_increased == 5:
+            if current_KE >= self.lowest_KE:
+                if self.KE_increased == 5:
                     # Found the lowest KE point for at least 5 dumpsteps
-                    del self.first_ke_value, self.lowest_ke, self.ke_increased
-                    raise ExitHOOMD("lowest energy condition met")
+                    del self.first_KE_value, self.lowest_KE, self.KE_increased
+                    raise ExitHOOMD("Lowest energy condition met")
                 # Increment a counter that indicates how many times the KE has
                 # increased since the minimum
-                self.ke_increased += 1
+                self.KE_increased += 1
             else:
                 # At at least local KE minimum, so store snapshot
-                self.ke_increased = 0
+                self.KE_increased = 0
                 self.load_from_snapshot = True
                 self.snapshot_to_load = self.system.take_snapshot(all=True)
-                self.lowest_ke = current_ke
+                self.lowest_KE = current_KE
         else:
             # Skip the first check because the KE fluctuates wildly within the
             # first dump step
-            self.first_ke_value = False
+            self.first_KE_value = False
         return 0
 
     def get_FF_coeffs(self):
@@ -172,7 +172,7 @@ class md_phase:
         FF_list = []
         # Then load in all of the FFs with the appropriate mappings
         for CG_site in list(all_FF_names.keys()):
-            FF_list.append(hf.load_FFXML(all_FF_names[CG_site], mapping=self.new_type_mappings[CG_site]))
+            FF_list.append(hf.load_FF_xml(all_FF_names[CG_site], mapping=self.new_type_mappings[CG_site]))
         # Combine all of the individual, mapped FFs into one master field
         master_FF = {}
         for FF in FF_list:
@@ -190,7 +190,7 @@ class md_phase:
         self.improper_coeffs = master_FF['improper']
         # Set Pair Coeffs
         self.pair_class = None
-        if self.pair_type != 'none':
+        if self.pair_type.lower() != 'none':
             # Log the correct pairType energy
             self.log_quantities.append('pair_' + self.pair_type + '_energy')
             # HOOMD crashes if you don't specify all pair combinations, so need
@@ -208,7 +208,7 @@ class md_phase:
                         all_pair_types.append(pair_type)
             # Read in the pairTypes, parameters and coefficients and set them
             # for HOOMD
-            if self.pair_type == 'dpd':
+            if self.pair_type.lower() == 'dpd':
                 self.pair_class = pair.dpd(r_cut=self.pair_R_cut * self.s_scale, T=self.temperature)
                 # Use the geometric mixing rule for all possible combinations of
                 # the specified forcefield coefficients
@@ -232,7 +232,7 @@ class md_phase:
                 for pair_type in all_pair_types:
                     self.pair_class.pair_coeff.set(pair_type.split('-')[0], pair_type.split('-')[1],
                                                    A=0.0, r_cut=0.0, gamma=0.0)
-            elif self.pair_type == 'lj':
+            elif self.pair_type.lower() == 'lj':
                 self.pair_class = pair.lj(r_cut=self.pair_R_cut * self.s_scale)
                 self.pair_class.set_params(mode='xplor')
                 for atom_index1, atom_type1 in enumerate([coeff[0] for coeff in self.lj_coeffs]):
@@ -259,7 +259,7 @@ class md_phase:
                                   " Please describe how to interpret them on this line.")
         # Set Bond Coeffs
         # Real bonds
-        if self.bond_type == 'harmonic':
+        if self.bond_type.lower() == 'harmonic':
             self.bond_class = bond.harmonic()
             for bond_coeff in self.bond_coeffs:
                 # [k] = kcal mol^{-1} \AA^{-2} * episilon/sigma^{2}, [r0] =
@@ -269,11 +269,11 @@ class md_phase:
                     k=bond_coeff[1] * (self.e_scale / (self.s_scale**2)),
                     r0=bond_coeff[2] * self.s_scale)
         # Ghost bonds
-        # If there is no anchoring, rather than change the XML, just set the
+        # If there is no anchoring, rather than change the xml, just set the
         # bond k values to 0.
-            if self.group_anchoring == 'all':
+            if self.group_anchoring.lower() == 'all':
                 group_anchoring_types = ['X' + CG_type for CG_type in list(self.CG_to_template_AAIDs.keys())]
-            elif self.group_anchoring == 'none':
+            elif self.group_anchoring.lower() == 'none':
                 group_anchoring_types = []
             else:
                 group_anchoring_types = ['X' + CG_type for CG_type in self.group_anchoring.split(',')]
@@ -299,7 +299,7 @@ class md_phase:
         # Set Angle Coeffs
         self.angle_class = None
         if len(self.angle_coeffs) > 0:
-            if self.angle_type == 'harmonic':
+            if self.angle_type.lower() == 'harmonic':
                 self.angle_class = angle.harmonic()
                 for angle_coeff in self.angle_coeffs:
                     # [k] = kcal mol^{-1} rad^{-2} * epsilon, [t] = rad
@@ -313,7 +313,7 @@ class md_phase:
         # Set Dihedral Coeffs
         self.dihedral_class = None
         if len(self.dihedral_coeffs) > 0:
-            if self.dihedral_type == 'table':
+            if self.dihedral_type.lower() == 'table':
                 self.dihedral_class = dihedral.table(width=1000)
                 for dihedral_coeff in self.dihedral_coeffs:
                     self.dihedral_class.dihedral_coeff.set(
@@ -324,7 +324,7 @@ class md_phase:
                                    v2=dihedral_coeff[3] * self.e_scale,
                                    v3=dihedral_coeff[4] * self.e_scale,
                                    v4=dihedral_coeff[5] * self.e_scale))
-            elif self.dihedral_type == 'opls':
+            elif self.dihedral_type.lower() == 'opls':
                 self.dihedral_class = dihedral.opls()
                 for dihedral_coeff in self.dihedral_coeffs:
                     self.dihedral_class.set_coeff(
@@ -347,7 +347,7 @@ class md_phase:
     def get_integration_groups(self):
         # Based on input parameter, return all non-rigid and rigid atoms to be
         # integrated over
-        if self.integration_target == 'all':
+        if self.integration_target.lower() == 'all':
             integration_types = list(self.CG_to_template_AAIDs.keys())
         else:
             integration_types = self.integration_target.split(',')
@@ -388,7 +388,7 @@ def obtain_scale_factors(parameter_dict):
     LJFFs = []
     for CG_site, directory in parameter_dict['CG_to_template_dirs'].items():
         FF_loc = directory + '/' + parameter_dict['CG_to_template_force_fields'][CG_site]
-        FF = hf.load_FFXML(FF_loc)
+        FF = hf.load_FF_xml(FF_loc)
         LJFFs += FF['lj']
     largest_sigma = max(list(map(float, np.array(LJFFs)[:, 2])))
     largest_epsilon = max(list(map(float, np.array(LJFFs)[:, 1])))
@@ -397,14 +397,14 @@ def obtain_scale_factors(parameter_dict):
 
 def scale_morphology(initial_morphology, parameter_dict, s_scale, e_scale):
     # If sScale != 1.0, then scale the morphology and rewrite the phase0 xml
-    print("Scaling morphology by sigma =", str(1 / sScale) + "...")
+    print("Scaling morphology by sigma =", str(1 / s_scale) + "...")
     if s_scale != 1.0:
         hf.scale(initial_morphology, s_scale)
-    hf.write_morphology_XML(initial_morphology, parameter_dict['output_morph_dir'] + '/'
+    hf.write_morphology_xml(initial_morphology, parameter_dict['output_morph_dir'] + '/'
                             + parameter_dict['morphology'][:-4] + '/morphology/phase0_' + parameter_dict['morphology'])
 
 
-def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
+def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
     # Main execution function for run_HOOMD that performs the required MD phases
     # First, scale the input morphology based on the pair potentials such that
     # the distances and energies are normalised to the strongest pair
@@ -435,7 +435,7 @@ def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter
         output_file = 'phase' + str(phase_no + 1) + '_' + parameter_dict['morphology']
         if output_file in current_files:
             if parameter_dict['overwrite_current_data'] is False:
-                print(outputFile, "already exists. Skipping...")
+                print(output_file, "already exists. Skipping...")
                 continue
         md_phase(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, phase_no,
                  parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]
@@ -443,17 +443,17 @@ def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter
                  parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]
                  + '/morphology/' + output_file,
                  s_scale, e_scale).optimise_structure()
-    final_XML_name = parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]\
+    final_xml_name = parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]\
         + '/morphology/final_' + parameter_dict['morphology']
     if 'final_' + parameter_dict['morphology'] not in current_files:
         # Now all phases are complete, remove the ghost particles from the
         # system
         print("Removing ghost particles to create final output...")
         remove_ghost_particles(parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]
-                               + '/morphology/' + output_file, final_XML_name, sigma=s_scale)
+                               + '/morphology/' + output_file, final_xml_name, sigma=s_scale)
     # Finally, update the pickle file with the most recent and realistic
     # AAMorphologyDict so that we can load it again further along the pipeline
-    AA_morphology_dict = hf.load_morphology_XML(final_XML_name)
+    AA_morphology_dict = hf.load_morphology_xml(final_xml_name)
     # Now that we've obtained the final fine-grained morphology, we need to fix
     # the images to prevent issues with obtaining the chromophores and running
     # them through the ZINDO/S calculations later...
@@ -467,9 +467,9 @@ def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter
     return AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list
 
 
-def remove_ghost_particles(last_phase_XML, output_file_name, sigma=1.0):
+def remove_ghost_particles(last_phase_xml, output_file_name, sigma=1.0):
     # Remove all the ghost particles from the morphology for the final output
-    final_morphology = hf.load_morphology_XML(last_phase_XML)
+    final_morphology = hf.load_morphology_xml(last_phase_xml)
     # Determine the atomIDs for each particle beginning with the letters 'X'
     # or 'R' - these are the ghost particles
     atom_IDs_to_remove = []
@@ -498,10 +498,10 @@ def remove_ghost_particles(last_phase_XML, output_file_name, sigma=1.0):
         for constraint_no in constraints_to_remove:
             final_morphology[key].pop(constraint_no)
     # Output the final morphology
-    hf.write_morphology_XML(final_morphology, output_file_name, sigma)
+    hf.write_morphology_xml(final_morphology, output_file_name, sigma)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
         pickle_file = sys.argv[1]
     except:
@@ -512,4 +512,4 @@ if __name__ == "__main__":
     CG_to_AAID_master = pickle_data[2]
     parameter_dict = pickle_data[3]
     chromophore_list = pickle_data[4]
-    execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list)
+    main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list)

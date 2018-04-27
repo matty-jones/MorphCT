@@ -32,12 +32,12 @@ class carrier:
         self.current_time = 0.0
         self.hole_history_matrix = None
         self.electron_history_matrix = None
-        if self.current_chromophore.species == 'donor':
+        if self.current_chromophore.species.lower() == 'donor':
             self.carrier_type = 'hole'
             self.lambda_ij = parameter_dict['reorganisation_energy_donor']
             if parameter_dict['record_carrier_history'] is True:
                 self.hole_history_matrix = lil_matrix((len(chromophore_list), len(chromophore_list)), dtype=int)
-        elif self.current_chromophore.species == 'acceptor':
+        elif self.current_chromophore.species.lower() == 'acceptor':
             self.carrier_type = 'electron'
             self.lambda_ij = parameter_dict['reorganisation_energy_acceptor']
             if parameter_dict['record_carrier_history'] is True:
@@ -183,9 +183,9 @@ class carrier:
         # Increment the hop counter
         self.no_hops += 1
         # Now update the sparse history matrix
-        if (self.carrier_type == 'hole') and (self.hole_history_matrix is not None):
+        if (self.carrier_type.lower() == 'hole') and (self.hole_history_matrix is not None):
             self.hole_history_matrix[initial_ID, destination_ID] += 1
-        elif (self.carrier_type == 'electron') and (self.electron_history_matrix is not None):
+        elif (self.carrier_type.lower() == 'electron') and (self.electron_history_matrix is not None):
             self.electron_history_matrix[initial_ID, destination_ID] += 1
 
 
@@ -348,9 +348,11 @@ if __name__ == '__main__':
             # Find a random position to start the carrier in
             while True:
                 start_chromo_ID = R.randint(0, len(chromophore_list) - 1)
-                if (carrier_type == 'electron') and (chromophore_list[start_chromo_ID].species != 'acceptor'):
+                if (carrier_type.lower() == 'electron') and (chromophore_list[start_chromo_ID].species.lower()
+                                                             != 'acceptor'):
                     continue
-                elif (carrier_type == 'hole') and (chromophore_list[start_chromo_ID].species != 'donor'):
+                elif (carrier_type.lower() == 'hole') and (chromophore_list[start_chromo_ID].species.lower()
+                                                           != 'donor'):
                     continue
                 break
             # Create the carrier instance
@@ -374,9 +376,9 @@ if __name__ == '__main__':
                 save_data[name].append(this_carrier.__dict__[name])
             # Update the carrierHistoryMatrix
             if parameter_dict['record_carrier_history'] is True:
-                if this_carrier.carrier_type == 'hole':
+                if this_carrier.carrier_type.lower() == 'hole':
                     save_data['hole_history_matrix'] += this_carrier.hole_history_matrix
-                elif this_carrier.carrier_type == 'electron':
+                elif this_carrier.carrier_type.lower() == 'electron':
                     save_data['electron_history_matrix'] += this_carrier.electron_history_matrix
             # Then add in the initial and final positions
             save_data['initial_position'].append(initial_position)
@@ -384,23 +386,23 @@ if __name__ == '__main__':
             t2 = T.time()
             elapsed_time = float(t2) - float(t1)
             if elapsed_time < 60:
-                timeunits = 'seconds.'
+                time_units = 'seconds.'
             elif elapsed_time < 3600:
                 elapsed_time /= 60.0
-                timeunits = 'minutes.'
+                time_units = 'minutes.'
             elif elapsed_time < 86400:
                 elapsed_time /= 3600.0
-                timeunits = 'hours.'
+                time_units = 'hours.'
             else:
                 elapsed_time /= 86400.0
-                timeunits = 'days.'
+                time_units = 'days.'
             elapsed_time = '%.1f' % (float(elapsed_time))
             hf.write_to_file(log_file, [str(this_carrier.carrier_type).capitalize() + ' hopped '
                                         + str(this_carrier.no_hops) + ' times, over '
                                         + str(this_carrier.current_time) + ' seconds, into image '
                                         + str(this_carrier.image) + ', for a displacement of '
                                         + str(this_carrier.displacement) + ', in ' + str(elapsed_time)
-                                        + ' wall-clock ' + str(timeunits)])
+                                        + ' wall-clock ' + str(time_units)])
             # Save the pickle file every hour
             if (t2 - save_time) > 3600:
                 print("Completed", job_number, "of", len(jobs_to_run),
@@ -410,9 +412,9 @@ if __name__ == '__main__':
                                             + ' jobs. making checkpoint at %3d%%' % (
                                                 np.round(job_number / float(len(jobs_to_run)) * 100))])
                 save_pickle(save_data, pickle_file_name.replace('data', save_slot + 'results'))
-                if save_slot == 'slot1':
+                if save_slot.lower() == 'slot1':
                     save_slot = 'slot2'
-                elif save_slot == 'slot2':
+                elif save_slot.lower() == 'slot2':
                     save_slot = 'slot1'
                 save_time = T.time()
     except Exception as error_message:
@@ -426,18 +428,18 @@ if __name__ == '__main__':
     t3 = T.time()
     elapsed_time = float(t3) - float(t0)
     if elapsed_time < 60:
-        timeunits = 'seconds.'
+        time_units = 'seconds.'
     elif elapsed_time < 3600:
         elapsed_time /= 60.0
-        timeunits = 'minutes.'
+        time_units = 'minutes.'
     elif elapsed_time < 86400:
         elapsed_time /= 3600.0
-        timeunits = 'hours.'
+        time_units = 'hours.'
     else:
         elapsed_time /= 86400.0
-        timeunits = 'days.'
+        time_units = 'days.'
     elapsed_time = '%.1f' % (float(elapsed_time))
-    hf.write_to_file(log_file, ['all jobs completed in ' + elapsed_time + ' ' + timeunits])
-    hf.write_to_file(log_file, ['saving the pickle file cleanly before termination...'])
+    hf.write_to_file(log_file, ['All jobs completed in ' + elapsed_time + ' ' + time_units])
+    hf.write_to_file(log_file, ['Saving the pickle file cleanly before termination...'])
     save_pickle(save_data, pickle_file_name.replace('data', 'results'))
-    hf.write_to_file(log_file, ['exiting normally...'])
+    hf.write_to_file(log_file, ['Exiting normally...'])

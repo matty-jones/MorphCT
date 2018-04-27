@@ -80,7 +80,7 @@ class exciton:
             # Determine all potential dissociation options, randomly select one,
             # plop a hole on the donor and electron on the acceptor, then remove
             # this exciton from the system by updating its removed_time
-            if self.current_chromophore.species == 'donor':
+            if self.current_chromophore.species.lower() == 'donor':
                 hole_chromophore = global_chromophore_data.return_specific_chromophore(
                     self.current_device_posn, self.current_chromophore.ID)
                 # The electron chromophore is a randomly selected chromophore of
@@ -100,7 +100,7 @@ class exciton:
                     #                             + " electron_chromophore.occupied = "
                     #                             + str(electron_chromophore.occupied)])
                     self.can_dissociate = False
-            elif self.current_chromophore.species == 'acceptor':
+            elif self.current_chromophore.species.lower() == 'acceptor':
                 electron_chromophore = global_chromophore_data.return_specific_chromophore(
                     self.current_device_posn, self.current_chromophore.ID)
                 # The hole chromophore is a randomly selected chromophore of the opposing
@@ -243,7 +243,7 @@ class exciton:
             target_device_posn = list(np.array(self.current_device_posn) + np.array(self.destination_image))
             new_chromophore = global_chromophore_data.return_closest_chromophore_to_position(
                 target_device_posn, destination_position)
-            if (new_chromophore == 'top') or (new_chromophore == 'bottom'):
+            if (new_chromophore.lower() == 'top') or (new_chromophore.lower() == 'bottom'):
                 # This exciton is hopping out of the active layer and into the
                 # contacts.
                 # Ensure it doesn't get queued up again
@@ -252,7 +252,7 @@ class exciton:
                 # TODO This carrier has left the simulation volume so we now
                 # need to ensure we remove it from the carrier dictionary so
                 # it's not included in any of the Coulombic calculations
-            elif (new_chromophore == 'out of bounds'):
+            elif (new_chromophore.lower() == 'out of bounds'):
                 # Ignore this hop, do a different one instead
                 pass
             else:
@@ -292,9 +292,9 @@ class carrier:
         # Hole. This allows us to do quick arithmetic to get the signs correct
         # in the potential calculations without having to burn through a ton of
         # conditionals.
-        if self.current_chromophore.species == 'donor':
+        if self.current_chromophore.species.lower() == 'donor':
             self.carrier_type = HOLE
-        elif self.current_chromophore.species == 'acceptor':
+        elif self.current_chromophore.species.lower() == 'acceptor':
             self.carrier_type = ELECTRON
         self.relative_permittivity = parameter_dict['relative_permittivity']
         if parameter_dict['record_carrier_history'] is True:
@@ -380,7 +380,7 @@ class carrier:
                     if skip_this_neighbour is False:
                         destination_chromophore = global_chromophore_data.return_closest_chromophore_to_position(
                             destination_image, neighbour_chromophore.posn)
-                        if destination_chromophore == "out of bounds":
+                        if destination_chromophore.lower() == 'out of bounds':
                             continue
                     else:
                         continue
@@ -458,14 +458,14 @@ class carrier:
         # hop away. The destination should have already been updated
         global_chromophore_data.return_specific_chromophore(
             self.current_device_posn, self.current_chromophore.ID).occupied.remove(self.current_device_posn)
-        if (self.destination_chromophore == 'top') or (self.destination_chromophore == 'bottom'):
+        if (self.destination_chromophore.lower() == 'top') or (self.destination_chromophore.lower() == 'bottom'):
                 # This carrier is hopping out of the active layer and into the
                 # contacts. Firstly, work out whether this is a `correct' hop
                 # (i.e. hole hopping to anode or electron hopping to cathode)
                 # that causes photovoltaic current.
-                if self.destination_chromophore == 'top':
+                if self.destination_chromophore.lower() == 'top':
                     # Leaving through top (anode)
-                    if self.injected_from != 'anode':
+                    if self.injected_from.lower() != 'anode':
                         if self.carrier_type == HOLE:
                             number_of_extractions += 1
                         else:
@@ -474,7 +474,7 @@ class carrier:
                     # change.
                 else:
                     # Leaving through bottom (cathode)
-                    if self.injected_from != 'cathode':
+                    if self.injected_from.lower() != 'cathode':
                         if self.carrier_type == ELECTRON:
                             number_of_extractions += 1
                         else:
@@ -608,7 +608,7 @@ def plot_carrier_Z_profiles(all_carriers, parameter_dict, device_array, output_d
     z_len = 1E10 * (np.array(device_array.shape[2]) * parameter_dict['morphology_cell_size'])
     # Now make the plots
     for carrier in carriers_to_plot:
-        if (carrier.injected_from == 'anode') or (carrier.injected_from == 'cathode'):
+        if (carrier.injected_from.lower() == 'anode') or (carrier.injected_from.lower() == 'cathode'):
             continue
         plot_Z_profile(carrier, z_len, output_dir)
 
@@ -625,7 +625,7 @@ def plot_Z_profile(carrier, z_dim_size, output_dir):
             colour = 'b'
         else:
             colour = 'r'
-    file_name = output_dir + 'carrier_%04d_Z_profile.pdf' % (carrier.ID)
+    file_name = output_dir + 'carrier_%05d_Z_profile.pdf' % (carrier.ID)
     plt.figure()
     plt.plot(x_vals, y_vals, color=colour)
     plt.ylim([0, z_dim_size])
@@ -763,7 +763,7 @@ def calculate_dark_current_injections(device_array, parameter_dict):
                         [chromophore, 1E-10 * (chromophore.posn[2] - (-(AA_morphology['lz'] / 2.0)))])
                     valid_cathode_inj_sites += 1
             for [chromophore, separation] in cathode_inject_chromophores:
-                if chromophore.species == 'acceptor':
+                if chromophore.species.lower() == 'acceptor':
                     # Injecting an electron from the cathode (easy)
                     delta_E = elementary_charge * (electron_inject_barrier)
                 else:
@@ -803,7 +803,7 @@ def calculate_dark_current_injections(device_array, parameter_dict):
                         [chromophore, 1E-10 * ((AA_morphology['lz'] / 2.0) - chromophore.posn[2])])
                     valid_anode_inj_sites += 1
             for [chromophore, separation] in anode_inject_chromophores:
-                if chromophore.species == 'acceptor':
+                if chromophore.species.lower() == 'acceptor':
                     # Injecting an electron from the anode (hard)
                     delta_E = elementary_charge * (bandgap - hole_inject_barrier)
                 else:
@@ -869,7 +869,7 @@ def push_to_queue(queue, event):
                                     "Queue = " + repr(queue), "Event = " + repr(event),
                                     "Terminating..."])
         raise KeyboardInterrupt
-    if (event[0] == np.float64(1E99)) and (event[1] != 'photo'):
+    if (event[0] == np.float64(1E99)) and (event[1].lower() != 'photo'):
         log_line_to_write = ["---=== TRIED TO QUEUE EVENT WITH CRAZY LONG WAIT TIME ===---"
                              " event = " + str(event)]
         if event[2].history is not None:
@@ -975,7 +975,7 @@ def plot3D_trajectory(inject_source, carriers_to_plot, parameter_dict, device_ar
         carrier_string = inject_source
     else:
         # Exciton
-        carrier_string = 'exciton_%04d' % (carriers_to_plot[0].ID)
+        carrier_string = 'exciton_%05d' % (carriers_to_plot[0].ID)
     for carrier in carriers_to_plot:
         if 'r_F' in carrier.__dict__:
             color = 'g'
@@ -1217,7 +1217,7 @@ def execute(device_array, chromophore_data, morphology_data, parameter_dict, vol
 
             # Execute the next behaviour (being sure to recalculate rates for
             # any new particles that have appeared)
-            if next_event[1] == 'photo':
+            if next_event[1].lower() == 'photo':
                 # Complete the event by injecting an exciton
                 # First find an injection location. For now, this will just be
                 # somewhere random in the system
@@ -1301,9 +1301,9 @@ def execute(device_array, chromophore_data, morphology_data, parameter_dict, vol
                 exciton_index += 1
                 number_of_photoinjections += 1
 
-            elif (next_event[1] == 'cathode-injection') or (next_event[1] == 'anode-injection'):
+            elif (next_event[1].lower() == 'cathode-injection') or (next_event[1].lower() == 'anode-injection'):
                 inject_site = next_event[2]
-                if inject_site.electrode == 'cathode':
+                if inject_site.electrode.lower() == 'cathode':
                     number_of_injections = number_of_cathode_injections
                 else:
                     number_of_injections = number_of_anode_injections
@@ -1341,18 +1341,18 @@ def execute(device_array, chromophore_data, morphology_data, parameter_dict, vol
                         event_queue = push_to_queue(event_queue,
                                                     (injected_carrier.hop_time, 'carrier_hop', injected_carrier))
                 # Now determine the next DC event and queue it
-                if inject_site.electrode == 'cathode':
+                if inject_site.electrode.lower() == 'cathode':
                     next_cathode_event, cathode_inject_queue = get_next_dark_event(cathode_inject_queue, 'cathode')
                     event_queue = push_to_queue(event_queue,
                                                 (cathode_injection_time, 'cathode-injection', next_cathode_event[2]))
                     number_of_cathode_injections += 1
-                if inject_site.electrode == 'anode':
+                if inject_site.electrode.lower() == 'anode':
                     next_anode_event, anode_inject_queue = get_next_dark_event(anode_inject_queue, 'anode')
                     event_queue = push_to_queue(event_queue,
                                                 (anode_injection_time, 'anode-injection', next_anode_event[2]))
                     number_of_anode_injections += 1
 
-            elif next_event[1] == 'exciton_hop':
+            elif next_event[1].lower() == 'exciton_hop':
                 hopping_exciton = next_event[2]
                 # There is a sporadic (rare) bug that causes excitons to
                 # sometimes get queued up to hop  even though they have already
@@ -1451,7 +1451,7 @@ def execute(device_array, chromophore_data, morphology_data, parameter_dict, vol
                     event_queue = push_to_queue(event_queue,
                                                 (hopping_exciton.hop_time, 'exciton_hop', injected_exciton))
 
-            elif next_event[1] == 'carrier_hop':
+            elif next_event[1].lower() == 'carrier_hop':
                 hopping_carrier = next_event[2]
                 # Check that the carrier is still in the carrier dictionary. If
                 # it's not, then it has already been removed from the system and
@@ -1502,7 +1502,7 @@ def execute(device_array, chromophore_data, morphology_data, parameter_dict, vol
                 #     new_dark_inject.calculate_inject_time()
                 #     heapq.heappush(dark_inject_queue, (new_dark_inject.inject_time, 'dark', new_dark_inject))
 
-            elif next_event[1] == 'recombine':
+            elif next_event[1].lower() == 'recombine':
                 hf.write_to_file(log_file, ["EVENT: Carrier recombination check after "
                                             + str(KMC_iterations) + " iterations (global_time = "
                                             + str(global_time) + ")"])
@@ -1526,14 +1526,14 @@ def execute(device_array, chromophore_data, morphology_data, parameter_dict, vol
                     # photocurrent
                     for recombining_carrier in [carrier1, carrier2]:
                         if ((recombining_carrier.carrier_type == HOLE)
-                            and (recombining_carrier.injected_from == 'anode'))\
+                            and (recombining_carrier.injected_from.lower() == 'anode'))\
                            or ((recombining_carrier.carrier_type == ELECTRON)
-                               and (recombining_carrier.injected_from == 'cathode')):
+                               and (recombining_carrier.injected_from.lower() == 'cathode')):
                             delta_electrical_recombinations += 1
                         elif ((recombining_carrier.carrier_type == ELECTRON)
-                              and (recombining_carrier.injected_from == 'anode')) or\
+                              and (recombining_carrier.injected_from.lower() == 'anode')) or\
                                 ((recombining_carrier.carrier_type == HOLE)
-                                 and (recombining_carrier.injected_from == 'cathode')):
+                                 and (recombining_carrier.injected_from.lower() == 'cathode')):
                             delta_electrical_recombinations -= 1
                 except (ValueError, KeyError):
                     # The second carrier is missing from the simulation (already
@@ -1697,7 +1697,7 @@ def slurm_time_in_S(slurm_time):
     return time_in_S
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     global log_file
 
     KMC_directory = sys.argv[1]

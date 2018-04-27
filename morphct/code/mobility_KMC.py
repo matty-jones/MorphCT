@@ -9,7 +9,7 @@ from morphct.definitions import SINGLE_RUN_MOB_KMC_FILE
 from morphct.code import helper_functions as hf
 
 
-def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
+def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
     try:
         if parameter_dict['use_average_hop_rates']:
             print("Be advised: use_average_hop_rates is set to", repr(parameter_dict['use_average_hop_rates']) + ".")
@@ -45,7 +45,7 @@ def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter
             pickle.dump(jobs, pickle_file)
         print("KMC jobs for proc_ID", proc_ID, "written to KMC_data_%02d.pickle" % (proc_ID))
         # Open the required processes to execute the KMC jobs
-        running_jobs.append(sp.popen(['python', SINGLE_RUN_MOB_KMC_FILE, output_dir, str(proc_ID)]))
+        running_jobs.append(sp.Popen(['python', SINGLE_RUN_MOB_KMC_FILE, output_dir, str(proc_ID)]))
     # Wait for all jobs to complete
     [p.wait() for p in running_jobs]
     # Now combine all of the pickle files into one:
@@ -79,7 +79,7 @@ def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter
         os.remove(file_name)
     return [AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list]
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
         pickle_file = sys.argv[1]
     except:
@@ -90,4 +90,4 @@ if __name__ == "__main__":
     CG_to_AAID_master = pickle_data[2]
     parameter_dict = pickle_data[3]
     chromophore_list = pickle_data[4]
-    execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list)
+    main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list)

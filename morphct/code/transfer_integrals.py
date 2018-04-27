@@ -50,7 +50,7 @@ def load_orca_output(file_name):
             break
     if record_MO_data is False:
         # Molecular orbital data not present in this file
-        raise orca_error(file_name)
+        raise orcaError(file_name)
     return [HOMO_1, HOMO, LUMO, LUMO_1]
 
 
@@ -84,7 +84,7 @@ def modify_orca_files(file_name, failed_file, failed_count, chromophore_list):
         # SERIOUS PROBLEM
         print(str(file_name) + ": Failed to rerun orca 18 times, even with all"
               " the input file tweaks. Examine the geometry - it is most likely unreasonable.")
-        file_string = file_name[[index for index, char in enumerate(file_name) if char == "/"][-1] + 1:-4]
+        file_string = file_name[[index for index, char in enumerate(file_name) if char == '/'][-1] + 1:-4]
         for chromo_string in file_string.split('-'):
             chromo_ID = int(chromo_string)
             print("AAIDs for chromophore", chromo_ID)
@@ -195,7 +195,7 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
     for CPU_rank in proc_IDs:
         # The final argument here tells orca to ignore the presence of the
         # output file and recalculate
-        running_jobs.append(sp.popen(['python', single_orca_run_file, output_dir, str(CPU_rank), '1']))
+        running_jobs.append(sp.Popen(['python', SINGLE_ORCA_RUN_FILE, output_dir, str(CPU_rank), '1']))
     # Wait for running jobs to finish
     [p.wait() for p in running_jobs]
     # Finally, return the failed files list to the main failure handler to see
@@ -212,16 +212,16 @@ def calculate_delta_E(chromophore_list, chromo1_ID, chromo2_ID):
               " (" + str(chromo2.ID) + ") != chromo2_ID (" + str(chromo2_ID) + ")! CHECK CODE!")
         exit()
     # END OF SANITY CHECK
-    if chromo1.species == 'donor':
+    if chromo1.species.lower() == 'donor':
         # Hole transporter
         chromo1_E = chromo1.HOMO
-    elif chromo1.species == 'acceptor':
+    elif chromo1.species.lower() == 'acceptor':
         # Electron transporter
         chromo1_E = chromo1.LUMO
-    if chromo2.species == 'donor':
+    if chromo2.species.lower() == 'donor':
         # Hole transporter
         chromo2_E = chromo2.HOMO
-    elif chromo2.species == 'acceptor':
+    elif chromo2.species.lower() == 'acceptor':
         # Electron transporter
         chromo2_E = chromo2.LUMO
     return chromo2_E - chromo1_E
@@ -329,7 +329,7 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
             print("\rDetermining energy levels for", file_name, end=' ')
             sys.stdout.flush()
             try:
-                energy_levels = load_orca_output(orcA_output_dir + file_name)
+                energy_levels = load_orca_output(orca_output_dir + file_name)
                 dimer_HOMO_1 = energy_levels[0]
                 dimer_HOMO = energy_levels[1]
                 dimer_LUMO = energy_levels[2]
@@ -350,9 +350,9 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
             assert(chromophore_list[chromophore.ID].species == chromophore_list[neighbour_ID].species)
             species = chromophore_list[chromophore.ID].species
             # Calculate the TI using the ESD method
-            if species == 'donor':
+            if species.lower() == 'donor':
                 TI = calculate_TI(dimer_HOMO - dimer_HOMO_1, delta_E)
-            elif species == 'acceptor':
+            elif species.lower() == 'acceptor':
                 TI = calculate_TI(dimer_LUMO - dimer_LUMO_1, delta_E)
             # Get the location of the current chromophore.ID in the neighbour's
             # neighbourList
@@ -443,9 +443,9 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
             assert(chromophore_list[chromophore.ID].species == chromophore_list[neighbour_ID].species)
             species = chromophore_list[chromophore.ID].species
             # Calculate the TI using the ESD method
-            if species == 'donor':
+            if species.lower() == 'donor':
                 TI = calculate_TI(dimer_HOMO - dimer_HOMO_1, delta_E)
-            elif species == 'acceptor':
+            elif species.lower() == 'acceptor':
                 TI = calculate_TI(dimer_LUMO - dimer_LUMO_1, delta_E)
             # Get the location of the neighbour's ID in the current
             # chromophores's neighbourList
@@ -541,7 +541,7 @@ def scale_energies(chromophore_list, parameter_dict):
     return chromophore_list
 
 
-def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
+def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
     pickle_name = parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]\
         + '/code/' + parameter_dict['morphology'][:-4] + '.pickle'
     # First, check that we need to examine the single chromophores
@@ -629,9 +629,9 @@ def check_forward_backward_hop_T_ij(chromophore_list):
                 print("Chromo2 Neighbours: Look for index =", neighbour2_index, "in", chromo2.neighbours)
                 print("Chromo1 TIs: Look for index =", neighbour_index, "in", chromo1.neighboursTI)
                 print("Chromo2 TIs: Look for index =", neighbour2_index, "in", chromo2.neighboursTI)
-                if chromo1.species == 'donor':
+                if chromo1.species.lower() == 'donor':
                     donor_errors += 1
-                elif chromo1.species == 'acceptor':
+                elif chromo1.species.lower() == 'acceptor':
                     acceptor_errors += 1
     if (donor_errors > 0) or (acceptor_errors > 0):
         print("--== CRITICAL ERROR ==--")
@@ -672,9 +672,9 @@ def check_forward_backward_hop_E_ij(chromophore_list):
                 print("--== Delta E_ij ==--")
                 print("FORWARD:", chromophore_list[chromo_ID].neighbours_delta_E[neighbour_loc],
                       "backward:", chromophore_list[neighbour_ID].neighbours_delta_E[reverse_loc])
-                if chromophore.species == 'donor':
+                if chromophore.species.lower() == 'donor':
                     donor_errors += 1
-                elif chromophore.species == 'acceptor':
+                elif chromophore.species.lower() == 'acceptor':
                     acceptor_errors += 1
     if (donor_errors > 0) or (acceptor_errors > 0):
         print("--== CRITICAL ERROR ==--")
@@ -684,7 +684,7 @@ def check_forward_backward_hop_E_ij(chromophore_list):
     return 0
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
         pickle_file = sys.argv[1]
     except NameError:
@@ -695,4 +695,4 @@ if __name__ == "__main__":
     CG_to_AAID_master = pickle_data[2]
     parameter_dict = pickle_data[3]
     chromophore_list = pickle_data[4]
-    execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list)
+    main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list)

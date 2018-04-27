@@ -11,8 +11,8 @@ class chromophore:
     def __init__(self, chromo_ID, chromophore_CG_sites, CG_morphology_dict, AA_morphology_dict,
                  CG_to_AAID_master, parameter_dict, sim_dims):
         self.ID = chromo_ID
-        self.orca_input = '/chromophores/input_orca/single/%04d.inp' % (self.ID)
-        self.orca_output = '/chromophores/output_orca/single/%04d.out' % (self.ID)
+        self.orca_input = '/chromophores/input_orca/single/%05d.inp' % (self.ID)
+        self.orca_output = '/chromophores/output_orca/single/%05d.out' % (self.ID)
         self.CGIDs = chromophore_CG_sites
         # Determine whether this chromophore is a donor or an acceptor, as well
         # as the site types that have been defined as the electronically active
@@ -20,8 +20,9 @@ class chromophore:
         if CG_morphology_dict is not None:
             # Normal operation
             self.CG_types = sorted(list(set([CG_morphology_dict['type'][CGID] for CGID in self.CGIDs])))
-            electronically_active_CG_sites, self.species = self.obtain_electronic_species(
+            electronically_active_CG_sites, self.sub_species = self.obtain_electronic_species(
                 chromophore_CG_sites, CG_morphology_dict['type'], parameter_dict['CG_site_species'])
+            self.species = parameter_dict["chromophore_species"][self.sub_species]["species"]
             # CG_to_AAID_master is a list of dictionaries where each list
             # element corresponds to a new molecule. Firstly, flatten this out
             # so that it becomes a single CG:AAID dictionary
@@ -49,7 +50,8 @@ class chromophore:
                 # this species.
                 electronically_active_CG_sites = chromophore_CG_sites
                 electronically_active_AAIDs = chromophore_CG_sites
-                self.species = list(parameter_dict['CG_site_species'].values())[0]
+                self.sub_species = list(parameter_dict['CG_site_species'].values())[0]
+                self.species = parameter_dict["chromophore_species"][self.sub_species]["species"]
             elif (len(parameter_dict['CG_site_species']) == 0)\
                     and (len(parameter_dict['AA_rigid_body_species']) > 0):
                 # If the CG_site_species have not been specified, then look to
@@ -61,7 +63,7 @@ class chromophore:
                         electronically_active_AAIDs.append(AAID)
                 electronically_active_CG_sites = copy.deepcopy(electronically_active_AAIDs)
                 # Now work out what the species is:
-                for sub_species, rigid_bodies in parameter_dict['AARigidBodySpecies'].items():
+                for sub_species, rigid_bodies in parameter_dict['AA_rigid_body_species'].items():
                     if AA_morphology_dict['body'][electronically_active_CG_sites[0]] in rigid_bodies:
                         self.sub_species = sub_species
                         self.species = parameter_dict["chromophore_species"][self.sub_species]["species"]
@@ -138,11 +140,11 @@ class chromophore:
         self.neighbours_TI = []
 
     def get_important_bonds(self, bond_list):
-        importantBonds = []
+        important_bonds = []
         for bond in bond_list:
             if (bond[1] in self.AAIDs) and (bond[2] in self.AAIDs):
-                importantBonds.append(bond)
-        return importantBonds
+                important_bonds.append(bond)
+        return important_bonds
 
     def obtain_chromophore_COM(self, electronically_active_unwrapped_posns, electronically_active_types, sim_dims):
         # Calculate the chromophore's position in the morphology (CoM of all
@@ -168,7 +170,7 @@ class chromophore:
         for CG_site_ID in chromophore_CG_sites:
             site_type = CG_site_types[CG_site_ID]
             site_species = CG_to_species[site_type]
-            if (site_species != 'None'):
+            if (site_species.lower() != 'none'):
                 if (current_chromophore_species is not None) and (current_chromophore_species != site_species):
                     raise SystemError("Problem - multiple electronic species defined in the same chromophore."
                                       " Please modify the chromophore generation code to fix this issue for"
@@ -179,9 +181,9 @@ class chromophore:
         return electronically_active_sites, current_chromophore_species
 
     def get_MO_energy(self):
-        if self.species == "acceptor":
+        if self.species.lower() == 'acceptor':
             return self.LUMO
-        elif self.species == "donor":
+        elif self.species.lower() == 'donor':
             return self.HOMO
         else:
             raise Exception("Chromo MUST be donor OR acceptor")
@@ -218,13 +220,13 @@ def calculate_chromophores(CG_morphology_dict, AA_morphology_dict, CG_to_AAID_ma
     old_keys = sorted(chromophore_data.keys())
     for new_key, old_key in enumerate(old_keys):
         chromophore_data[new_key] = chromophore_data.pop(old_key)
-    print(str(len(list(chromophoreData.keys()))) + " chromophores successfully identified!")
+    print(str(len(list(chromophore_data.keys()))) + " chromophores successfully identified!")
     # Now let's create a list of all the chromophore instances which contain all
     # of the information we could ever want about them.
     chromophore_instances = []
     for chromo_ID, chromophore_CG_sites in chromophore_data.items():
-        print("\rCalculating properties of chromophore %04d of %04d..." % (
-            chromoID, len(list(chromophoreData.keys())) - 1), end=' ')
+        print("\rCalculating properties of chromophore %05d of %05d..." % (
+            chromo_ID, len(list(chromophore_data.keys())) - 1), end=' ')
         sys.stdout.flush()
         chromophore_instances.append(chromophore(chromo_ID, chromophore_CG_sites, CG_morphology_dict,
                                                  AA_morphology_dict, CG_to_AAID_master, parameter_dict, sim_dims))
@@ -274,13 +276,13 @@ def calculate_chromophores_AA(CG_morphology_dict, AA_morphology_dict, CG_to_AAID
     old_keys = sorted(chromophore_data.keys())
     for new_key, old_key in enumerate(old_keys):
         chromophore_data[new_key] = chromophore_data.pop(old_key)
-    print(str(len(list(chromophoreData.keys()))) + " chromophores successfully identified!")
+    print(str(len(list(chromophore_data.keys()))) + " chromophores successfully identified!")
     # Now let's create a list of all the chromophore instances which contain all
     # of the information we could ever want about them.
     chromophore_instances = []
     for chromo_ID, chromophore_CG_sites in chromophore_data.items():
-        print("\rCalculating properties of chromophore %04d of %04d..." % (
-            chromoID, len(list(chromophoreData.keys())) - 1), end=' ')
+        print("\rCalculating properties of chromophore %05d of %05d..." % (
+            chromo_ID, len(list(chromophore_data.keys())) - 1), end=' ')
         sys.stdout.flush()
         chromophore_instances.append(chromophore(chromo_ID, chromophore_CG_sites, CG_morphology_dict,
                                                  AA_morphology_dict, CG_to_AAID_master, parameter_dict, sim_dims))
@@ -300,9 +302,9 @@ def update_chromophores(atom_ID, chromophore_list, bonded_atoms, CG_type_list, t
             # Also, check that the type to be added is of the same electronic
             # species as the ones added previously, or == 'None'
             if (bonded_type not in types_in_this_chromophore) and (
-                (parameter_dict['CG_site_species'][bonded_type] == 'None') or (
-                    parameter_dict['CG_site_species'][bonded_type] == list(
-                        set([parameter_dict['CG_site_species'][x] for x in types_in_this_chromophore]))[0])):
+                (parameter_dict['CG_site_species'][bonded_type].lower() == 'none') or (
+                    parameter_dict['CG_site_species'][bonded_type].lower() == list(
+                        set([parameter_dict['CG_site_species'][x].lower() for x in types_in_this_chromophore]))[0])):
                 # If the atomID of the bonded atom is larger than that of the
                 # current one, update the bonded atom's ID to the current one's
                 # to put it in this chromophore, then iterate through all of the
@@ -456,9 +458,9 @@ def determine_neighbours_voronoi(chromophore_list, parameter_dict, sim_dims):
             chromo.position = position
             chromo.image = chromophore.super_cell_images[index]
             chromo_index += 1
-            if chromophore.species == 'donor':
+            if chromophore.species.lower() == 'donor':
                 donor_chromos.append(chromo)
-            elif chromophore.species == 'acceptor':
+            elif chromophore.species.lower() == 'acceptor':
                 acceptor_chromos.append(chromo)
             all_chromos.append(chromo)
     # Now obtain the positions and send them to the Delaunay Triangulation
@@ -486,9 +488,9 @@ def determine_neighbours_voronoi(chromophore_list, parameter_dict, sim_dims):
             for chromophore in all_chromos:
                 if np.array_equal(chromophore.image, [0, 0, 0]):
                     original_all_chromo_IDs.append(chromophore.periodic_ID)
-                    if chromophore.species == 'donor':
+                    if chromophore.species.lower() == 'donor':
                         original_donor_chromo_IDs.append(chromophore.periodic_ID)
-                    elif chromophore.species == 'acceptor':
+                    elif chromophore.species.lower() == 'acceptor':
                         original_acceptor_chromo_IDs.append(chromophore.periodic_ID)
             if len(donor_positions) > 0:
                 print("Calculating Neighbours of donor Moieties")
@@ -503,7 +505,7 @@ def determine_neighbours_voronoi(chromophore_list, parameter_dict, sim_dims):
                 chromophore_list = update_chromophore_list_voronoi(
                     original_acceptor_chromo_IDs, all_chromos, acceptor_neighbours, chromophore_list, sim_dims)
         else:
-            raise key_error
+            raise KeyError
     except KeyError:
         # Default behaviour - carriers are blocked by the opposing species
         for chromophore in all_chromos:
@@ -519,8 +521,8 @@ def determine_neighbours_voronoi(chromophore_list, parameter_dict, sim_dims):
 
 def determine_neighbours_cut_off(chromophore_list, parameter_dict, sim_dims):
     for chromophore1 in chromophore_list:
-        print("\rIdentifying neighbours of chromophore %04d of %04d..." % (
-            chromophore1.ID, len(chromophoreList) - 1), end=' ')
+        print("\rIdentifying neighbours of chromophore %05d of %05d..." % (
+            chromophore1.ID, len(chromophore_list) - 1), end=' ')
         sys.stdout.flush()
         for chromophore2 in chromophore_list:
             # Skip if chromo2 is chromo1
@@ -556,9 +558,9 @@ def determine_neighbours_cut_off(chromophore_list, parameter_dict, sim_dims):
                 # Also, make the delta_E and the T_ij lists as long as the
                 # neighbour lists for easy access later
                 if chromophore1.species == chromophore2.species:
-                    if ((chromophore1.species == 'donor') and (
+                    if ((chromophore1.species.lower() == 'donor') and (
                         separation >= parameter_dict['maximum_hole_hop_distance']))\
-                       or ((chromophore1.species == 'acceptor') and (
+                       or ((chromophore1.species.lower() == 'acceptor') and (
                            separation >= parameter_dict['maximum_electron_hop_distance'])):
                         continue
                     if (chromophore2.ID not in chromo1neighbour_IDs):
@@ -582,8 +584,8 @@ def determine_neighbours_cut_off(chromophore_list, parameter_dict, sim_dims):
 def chromo_sort(chromophore_list):
     for index, chromo in enumerate(chromophore_list):
         if index != chromo.ID:
-            print("Inconsistency found in the ordering of the chromophoreList, rewriting the"
-                  " chromophoreList in the correct order...")
+            print("Inconsistency found in the ordering of the chromophore_list, rewriting the"
+                  " chromophore_list in the correct order...")
             new_chromophore_list = []
             for chromo in chromophore_list:
                 new_chromophore_list.append(0)
@@ -594,7 +596,7 @@ def chromo_sort(chromophore_list):
     return chromophore_list
 
 
-def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
+def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
     sim_dims = [[-AA_morphology_dict['lx'] / 2.0, AA_morphology_dict['lx'] / 2.0],
                 [-AA_morphology_dict['ly'] / 2.0, AA_morphology_dict['ly'] / 2.0],
                 [-AA_morphology_dict['lz'] / 2.0, AA_morphology_dict['lz'] / 2.0]]
@@ -625,7 +627,7 @@ def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter
     return AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
         pickle_file = sys.argv[1]
     except:
@@ -636,4 +638,4 @@ if __name__ == "__main__":
     CG_to_AAID_master = pickle_data[2]
     parameter_dict = pickle_data[3]
     chromophore_list = pickle_data[4]
-    execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list)
+    main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list)

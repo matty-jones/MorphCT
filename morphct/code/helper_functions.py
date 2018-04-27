@@ -44,26 +44,26 @@ def calc_COM(list_of_positions, list_of_atom_types=None, list_of_atom_masses=Non
             # Masses obtained from nist.gov, for the atoms we are likely to
             # simulate the most.
             # Add in new atoms here if your molecule requires it!
-            if atom_type.lower == 'br':
+            if atom_type.lower()[:2] == 'br':
                 print("Br 79 being used as the preferred isotope, change in"
                       " helper_functions.calc_COM if not!")
                 list_of_atom_masses.append(78.918338)
-            elif atom_type.lower() == 'si':
+            elif atom_type.lower()[:2] == 'si':
                 list_of_atom_masses.append(27.976926)
-            elif atom_type.lower() == 'c':
+            elif atom_type.lower()[0] == 'c':
                 list_of_atom_masses.append(12.000000)
-            elif atom_type.lower() == 'h':
+            elif atom_type.lower()[0] == 'h':
                 list_of_atom_masses.append(1.007825)
-            elif atom_type.lower() == 's':
+            elif atom_type.lower()[0] == 's':
                 list_of_atom_masses.append(31.972071)
-            elif atom_type.lower() == 'o':
+            elif atom_type.lower()[0] == 'o':
                 list_of_atom_masses.append(15.994914)
-            elif atom_type.lower() == 'n':
+            elif atom_type.lower()[0] == 'n':
                 list_of_atom_masses.append(14.003074)
-            elif (atom_type.lower() == 'd') or (atom_type.lower() == 'a'):
+            elif (atom_type.lower()[0] == 'd') or (atom_type.lower()[0] == 'a'):
                 list_of_atom_masses.append(1.0)
             else:
-                raise SystemError("Unknown atomic mass", atom_type, "please hardcode"
+                raise SystemError("Unknown atomic mass " + str(atom_type) + ". Please hardcode"
                                   " into helper_functions.calc_COM.")
     total_mass = np.sum(list_of_atom_masses)
     for atom_ID, position in enumerate(list_of_positions):
@@ -315,8 +315,8 @@ def get_terminating_positions(current_atom_posn, bonded_atom_positions, number_o
     return hydrogen_positions
 
 
-def load_morphology_XML(xml_path, sigma=1.0):
-    # XML has SimDims as <box
+def load_morphology_xml(xml_path, sigma=1.0):
+    # xml has SimDims as <box
     # Positions as <position and <image
     # Velocities as <velocity
     # Mass as <mass
@@ -451,7 +451,7 @@ def load_morphology_XML(xml_path, sigma=1.0):
     return atom_dictionary
 
 
-def load_FF_XML(xml_path, mapping=False):
+def load_FF_xml(xml_path, mapping=False):
     FF_dict = {'lj': [], 'dpd': [], 'bond': [], 'angle': [], 'dihedral': [], 'improper': []}
     with open(xml_path, 'r') as xml_file:
         xml_data = xml_file.readlines()
@@ -524,7 +524,7 @@ def check_constraint_names(AA_morphology_dict):
     return AA_morphology_dict
 
 
-def write_morphology_XML(input_dictionary, output_file, sigma=1.0, check_wrapped_posns=True):
+def write_morphology_xml(input_dictionary, output_file, sigma=1.0, check_wrapped_posns=True):
     # Firstly, scale everything by the inverse of the provided sigma value
     tilt_factors = ["xy", "yz", "xz"]
     if sigma != 1.0:
@@ -536,7 +536,7 @@ def write_morphology_XML(input_dictionary, output_file, sigma=1.0, check_wrapped
                 any([input_dictionary[tilt_factor] != 0 for tilt_factor in tilt_factors]):
             print("Can't check atom wrapping for cells with a non-zero tilt factor")
         else:
-            print("Checking wrapped positions before writing XML...")
+            print("Checking wrapped positions before writing xml...")
             input_dictionary = check_wrapped_positions(input_dictionary)
     # Add Boiler Plate first
     lines_to_write = ['<?xml version="1.0" encoding="UTF-8"?>\n', '<hoomd_xml version="1.4">\n',
@@ -613,12 +613,12 @@ def write_morphology_XML(input_dictionary, output_file, sigma=1.0, check_wrapped
     print("XML file written to", str(output_file) + "!")
 
 
-def write_XYZ_file(input_dict, output_file):
-    '''This function takes an input dictionary and converts it to an XYZ for use in DFT
+def write_xyz_file(input_dict, output_file):
+    '''This function takes an input dictionary and converts it to an xyz for use in DFT
     calculations'''
     # First line is atom numbers, second line is boiler plate
-    rows_to_write = [str(input_dict['natoms']) + '\n', 'XYZ file generated from XML using'
-                     'helper_functions.XML_to_XYZ\n']
+    rows_to_write = [str(input_dict['natoms']) + '\n', 'xyz file generated from xml using'
+                     'helper_functions.xml_to_xyz\n']
     # Format of xyz is Type, X Pos, Y Pos, Z Pos
     for atom_ID in range(len(input_dict['type'])):
         # Note, this will break for atoms that have two-letter symbols (e.g. Al,
@@ -738,7 +738,6 @@ def check_wrapped_positions(input_dictionary):
             atom_images[atom_ID][2] -= 1
     input_dictionary['position'] = list(atom_positions)
     input_dictionary['image'] = list(atom_images)
-    # print np.sum(np.absolute(atomPositions-tp) > 0.)
     return input_dictionary
 
 
