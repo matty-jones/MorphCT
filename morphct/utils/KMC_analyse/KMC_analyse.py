@@ -533,7 +533,7 @@ def update_molecule(atom_ID, molecule_list, bonded_atoms):
 
 def get_neighbour_cut_off(chromophore_list, morphology_shape, output_dir, periodic=True, specified_cut_off_donor=None,
                           specified_cut_off_acceptor=None):
-    specified_cut_offs = {'Donor': specified_cut_off_donor, 'Acceptor': specified_cut_off_acceptor}
+    specified_cut_offs = {'donor': specified_cut_off_donor, 'acceptor': specified_cut_off_acceptor}
     separation_dist_donor = []
     separation_dist_acceptor = []
     for chromo1 in chromophore_list:
@@ -545,12 +545,12 @@ def get_neighbour_cut_off(chromophore_list, morphology_shape, output_dir, period
             chromo2 = chromophore_list[chromo2_details[0]]
             separation = np.linalg.norm((np.array(chromo2.posn) + (np.array(chromo2_details[1])
                                                                    * np.array(morphology_shape))) - chromo1.posn)
-            if chromo1.species == 'Donor':
+            if chromo1.species == 'donor':
                 separation_dist_donor.append(separation)
-            elif chromo1.species == 'Acceptor':
+            elif chromo1.species == 'acceptor':
                 separation_dist_acceptor.append(separation)
     cut_offs = []
-    material = ['Donor', 'Acceptor']
+    material = ['donor', 'acceptor']
     for material_type, separation_dist in enumerate([separation_dist_donor, separation_dist_acceptor]):
         if len(separation_dist) == 0:
             cut_offs.append(None)
@@ -588,7 +588,7 @@ def get_neighbour_cut_off(chromophore_list, morphology_shape, output_dir, period
 
 def get_stacks(chromophore_list, morphology_shape, cut_off_donor, cut_off_acceptor, periodic=True):
     cut_offs = [cut_off_donor, cut_off_acceptor]
-    materials_to_check = ['Donor', 'Acceptor']
+    materials_to_check = ['donor', 'acceptor']
     stack_dicts = []
     for type_index, material_type in enumerate(materials_to_check):
         cut_off = cut_offs[type_index]
@@ -665,10 +665,10 @@ def plot_Stacks3D(output_dir, chromophore_list, stack_dicts, sim_dims):
             stack_list[stack_ID].append(chromophore)
     for stack_ID, chromos in enumerate(stack_list.values()):
         for chromo in chromos:
-            if chromo.species == 'Donor':
+            if chromo.species == 'donor':
                 ax.scatter(chromo.posn[0], chromo.posn[1], chromo.posn[2], facecolors='w',
                            edgecolors=colours[stack_ID % 8], s=40)
-            elif chromo.species == 'Acceptor':
+            elif chromo.species == 'acceptor':
                 ax.scatter(chromo.posn[0], chromo.posn[1], chromo.posn[2], c=colours[stack_ID % 8],
                            edgecolors=None, s=40)
     # Draw boxlines
@@ -740,7 +740,7 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
     donor_delta_E_ij = []
     acceptor_delta_E_ij = []
     for chromo in chromophore_list:
-        if chromo.species == 'Donor':
+        if chromo.species == 'donor':
             HOMO_levels.append(chromo.HOMO)
             for neighbour_index, delta_E_ij in enumerate(chromo.neighbours_delta_E):
                 if (delta_E_ij is not None) and (chromo.neighbours_TI[neighbour_index] is not None):
@@ -761,9 +761,9 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
         data_dict['donor_frontier_MO_mean'] = HOMO_av
         data_dict['donor_frontier_MO_std'] = HOMO_std
         data_dict['donor_frontier_MO_err'] = HOMO_err
-        print("Donor HOMO Level =", HOMO_av, "+/-", HOMO_err)
-        print("Donor Delta E_ij stats: mean =", donor_mean, "+/-", donor_std / np.sqrt(len(donor_delta_E_ij)))
-        plot_delta_E_ij(donor_delta_E_ij, donor_bin_edges, donor_fit_args, 'Donor',
+        print("donor HOMO Level =", HOMO_av, "+/-", HOMO_err)
+        print("donor Delta E_ij stats: mean =", donor_mean, "+/-", donor_std / np.sqrt(len(donor_delta_E_ij)))
+        plot_delta_E_ij(donor_delta_E_ij, donor_bin_edges, donor_fit_args, 'donor',
                        output_dir + '/05_donor_delta_E_ij.pdf')
     if len(acceptor_delta_E_ij) > 0:
         acceptor_bin_edges, acceptor_fit_args, acceptor_mean, acceptor_std = gauss_fit(acceptor_delta_E_ij)
@@ -776,10 +776,10 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
         data_dict['acceptor_frontier_MO_mean'] = LUMO_av
         data_dict['acceptor_frontier_MO_std'] = LUMO_std
         data_dict['acceptor_frontier_MO_err'] = LUMO_err
-        print("Acceptor LUMO Level =", LUMO_av, "+/-", LUMO_err)
-        print("Acceptor Delta E_ij stats: mean =", acceptor_mean, "+/-",
+        print("acceptor LUMO Level =", LUMO_av, "+/-", LUMO_err)
+        print("acceptor Delta E_ij stats: mean =", acceptor_mean, "+/-",
               acceptor_std / np.sqrt(len(acceptor_delta_E_ij)))
-        plot_delta_E_ij(acceptor_delta_E_ij, acceptor_bin_edges, acceptor_fit_args, 'Acceptor',
+        plot_delta_E_ij(acceptor_delta_E_ij, acceptor_bin_edges, acceptor_fit_args, 'acceptor',
                        output_dir + '/06_acceptor_delta_E_ij.pdf')
     return data_dict
 
@@ -900,46 +900,46 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
                 else:
                     property_lists['inter_mol_rates_donor'].append(rate)
                     property_lists['inter_mol_TIs_donor'].append(T_ij)
-    # Donor Stack Plots:
+    # donor Stack Plots:
     if (len(property_lists['intra_stack_rates_donor']) > 0) or (len(property_lists['inter_stack_rates_donor']) > 0):
-        print("Mean intra-stack Donor rate =", np.mean(property_lists['intra_stack_rates_donor']), "+/-",
+        print("Mean intra-stack donor rate =", np.mean(property_lists['intra_stack_rates_donor']), "+/-",
               np.std(property_lists['intra_stack_rates_donor'])
               / float(len(property_lists['intra_stack_rates_donor'])))
-        print("Mean inter-stack Donor rate =", np.mean(property_lists['inter_stack_rates_donor']), "+/-",
+        print("Mean inter-stack donor rate =", np.mean(property_lists['inter_stack_rates_donor']), "+/-",
               np.std(property_lists['inter_stack_rates_donor'])
               / float(len(property_lists['inter_stack_rates_donor'])))
         plot_stacked_hist_rates(property_lists['intra_stack_rates_donor'], property_lists['inter_stack_rates_donor'],
-                                ['Intra-stack', 'Inter-stack'], 'Donor',
+                                ['Intra-stack', 'Inter-stack'], 'donor',
                                 output_dir + '/16_donor_hopping_rate_stacks.pdf')
         plot_stacked_hist_TIs(property_lists['intra_stack_TIs_donor'], property_lists['inter_stack_TIs_donor'],
-                              ['Intra-stack', 'Inter-stack'], 'Donor',
+                              ['Intra-stack', 'Inter-stack'], 'donor',
                               output_dir + '/12_donor_transfer_integral_stacks.pdf')
-    # Acceptor Stack Plots:
+    # acceptor Stack Plots:
     if (len(property_lists['intra_stack_rates_acceptor']) > 0)\
        or (len(property_lists['inter_stack_rates_acceptor']) > 0):
-        print("Mean intra-stack Acceptor rate =", np.mean(property_lists['intra_stack_rates_acceptor']), "+/-",
+        print("Mean intra-stack acceptor rate =", np.mean(property_lists['intra_stack_rates_acceptor']), "+/-",
               np.std(property_lists['intra_stack_rates_acceptor'])
               / float(len(property_lists['intra_stack_rates_acceptor'])))
-        print("Mean inter-stack Acceptor rate =", np.mean(property_lists['inter_stack_rates_acceptor']), "+/-",
+        print("Mean inter-stack acceptor rate =", np.mean(property_lists['inter_stack_rates_acceptor']), "+/-",
               np.std(property_lists['inter_stack_rates_acceptor'])
               / float(len(property_lists['inter_stack_rates_acceptor'])))
         plot_stacked_hist_rates(property_lists['intra_stack_rates_acceptor'],
                                 property_lists['inter_stack_rates_acceptor'], ['Intra-stack', 'Inter-stack'],
-                                'Acceptor', output_dir + '/18_acceptor_hopping_rate_stacks.pdf')
+                                'acceptor', output_dir + '/18_acceptor_hopping_rate_stacks.pdf')
         plot_stacked_hist_TIs(property_lists['intra_stack_TIs_acceptor'], property_lists['inter_stack_TIs_acceptor'],
-                              ['Intra-stack', 'Inter-stack'], 'Acceptor',
+                              ['Intra-stack', 'Inter-stack'], 'acceptor',
                               output_dir + '/14_acceptor_transfer_integral_stacks.pdf')
-    # Donor Mol Plots:
+    # donor Mol Plots:
     if (len(property_lists['intra_mol_rates_donor']) > 0) or (len(property_lists['inter_mol_rates_donor']) > 0):
         print("Mean intra-molecular donor rate =", np.mean(property_lists['intra_mol_rates_donor']), "+/-",
               np.std(property_lists['intra_mol_rates_donor']) / float(len(property_lists['intra_mol_rates_donor'])))
         print("Mean inter-molecular donor rate =", np.mean(property_lists['inter_mol_rates_donor']), "+/-",
               np.std(property_lists['inter_mol_rates_donor']) / float(len(property_lists['inter_mol_rates_donor'])))
         plot_stacked_hist_rates(property_lists['intra_mol_rates_donor'], property_lists['inter_mol_rates_donor'],
-                                ['Intra-mol', 'Inter-mol'], 'Donor', output_dir + '/15_donor_hopping_rate_mols.pdf')
+                                ['Intra-mol', 'Inter-mol'], 'donor', output_dir + '/15_donor_hopping_rate_mols.pdf')
         plot_stacked_hist_TIs(property_lists['intra_mol_TIs_donor'], property_lists['inter_mol_TIs_donor'],
-                              ['Intra-mol', 'Inter-mol'], 'Donor', output_dir + '/11_donor_transfer_integral_mols.pdf')
-    # Acceptor Mol Plots:
+                              ['Intra-mol', 'Inter-mol'], 'donor', output_dir + '/11_donor_transfer_integral_mols.pdf')
+    # acceptor Mol Plots:
     if (len(property_lists['intra_mol_rates_acceptor']) > 0) or (len(property_lists['inter_mol_rates_acceptor']) > 0):
         print("Mean intra-molecular acceptor rate =", np.mean(property_lists['intra_mol_rates_acceptor']), "+/-",
               np.std(property_lists['intra_mol_rates_acceptor'])
@@ -948,10 +948,10 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
               np.std(property_lists['inter_mol_rates_acceptor'])
               / float(len(property_lists['inter_mol_rates_acceptor'])))
         plot_stacked_hist_rates(property_lists['intra_mol_rates_acceptor'], property_lists['inter_mol_rates_acceptor'],
-                                ['Intra-mol', 'Inter-mol'], 'Acceptor',
+                                ['Intra-mol', 'Inter-mol'], 'acceptor',
                                 output_dir + '/17_acceptor_hopping_rate_mols.pdf')
         plot_stacked_hist_TIs(property_lists['intra_mol_TIs_acceptor'], property_lists['inter_mol_TIs_acceptor'],
-                              ['Intra-mol', 'Inter-mol'], 'Acceptor',
+                              ['Intra-mol', 'Inter-mol'], 'acceptor',
                               output_dir + '/13_acceptor_transfer_integral_mols.pdf')
     # Update the dataDict
     for material in chromo_species:
@@ -1195,8 +1195,8 @@ def main():
             cut_off_acceptor = calculated_cut_off_acceptor
         else:
             cut_off_acceptor = args.cut_off_acceptor
-        print("Cut off in Angstroems (Donor) =", cut_off_donor)
-        print("Cut off in Angstroems (Acceptor) =", cut_off_acceptor)
+        print("Cut off in Angstroems (donor) =", cut_off_donor)
+        print("Cut off in Angstroems (acceptor) =", cut_off_acceptor)
         stack_dicts = get_stacks(chromophore_list, morphology_shape, cut_off_donor, cut_off_acceptor,
                                  periodic=args.periodic_stacks)
         if args.three_D:

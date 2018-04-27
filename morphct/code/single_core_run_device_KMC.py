@@ -772,7 +772,7 @@ def calculate_dark_current_injections(device_array, parameter_dict):
                     # between the chromophore and literature HOMOs would be the
                     # same as the energy difference between the chromophore and
                     # literature LUMOs for injection (this is because we don't
-                    # record the Donor LUMO or the Acceptor HOMO)
+                    # record the donor LUMO or the acceptor HOMO)
                     delta_E = elementary_charge * (bandgap - electron_inject_barrier)
                 inject_rate = hf.calculate_miller_abrahams_hop_rate(
                     parameter_dict['ma_prefactor'], separation, parameter_dict['ma_localisation_radius'],

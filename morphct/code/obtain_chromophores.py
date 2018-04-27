@@ -184,7 +184,7 @@ class chromophore:
         elif self.species == "donor":
             return self.HOMO
         else:
-            raise Exception("Chromo MUST be Donor OR Acceptor")
+            raise Exception("Chromo MUST be donor OR acceptor")
 
 
 def calculate_chromophores(CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict, sim_dims):
@@ -491,13 +491,13 @@ def determine_neighbours_voronoi(chromophore_list, parameter_dict, sim_dims):
                     elif chromophore.species == 'acceptor':
                         original_acceptor_chromo_IDs.append(chromophore.periodic_ID)
             if len(donor_positions) > 0:
-                print("Calculating Neighbours of Donor Moieties")
+                print("Calculating Neighbours of donor Moieties")
                 donor_neighbours = get_voronoi_neighbours(Delaunay(donor_positions), donor_chromos)
                 print("Updating the chromophore list for donor chromos")
                 chromophore_list = update_chromophore_list_voronoi(
                     original_donor_chromo_IDs, all_chromos, donor_neighbours, chromophore_list, sim_dims)
             if len(acceptor_positions) > 0:
-                print("Calculating Neighbours of Acceptor Moieties")
+                print("Calculating Neighbours of acceptor Moieties")
                 acceptor_neighbours = get_voronoi_neighbours(Delaunay(acceptor_positions), acceptor_chromos)
                 print("Updating the chromophore list for acceptor chromos")
                 chromophore_list = update_chromophore_list_voronoi(
