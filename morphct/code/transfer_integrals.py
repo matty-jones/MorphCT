@@ -584,10 +584,10 @@ def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter
         # DEBUG Testing - you can remove these as the assertions in
         # update_pair_chromophore_list should already cover them, however they
         # are fast and will ensure that there are no errors in the
-        # chromophore_list after calculating the Tij and Delta_Eijs
-        Tij_error = check_forward_backward_hop_Tij(chromophore_list)
+        # chromophore_list after calculating the T_ij and Delta_Eijs
+        T_ij_error = check_forward_backward_hop_T_ij(chromophore_list)
         delta_E_error = check_forward_backward_hop_Eij(chromophore_list)
-        if Tij_error or delta_E_error:
+        if T_ij_error or delta_E_error:
             raise SystemError("assertions failed, please address in code.")
         # END OF DEBUG Testing
         print("Pair chromophore calculations completed. Saving...")
@@ -598,8 +598,8 @@ def execute(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter
     return AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list
 
 
-def check_forward_backward_hop_Tij(chromophore_list):
-    # Check reverse lookup: Tij === Tji
+def check_forward_backward_hop_T_ij(chromophore_list):
+    # Check reverse lookup: T_ij === T_ji
     donor_errors = 0
     acceptor_errors = 0
     for chromo1 in chromophore_list:
@@ -635,8 +635,8 @@ def check_forward_backward_hop_Tij(chromophore_list):
                     acceptor_errors += 1
     if (donor_errors > 0) or (acceptor_errors > 0):
         print("--== CRITICAL ERROR ==--")
-        print("\nThere were", donor_errors, "cases where Tij != Tji in the donor chromophores.")
-        print("\nThere were", acceptor_errors, "cases where Tij != Tji in the acceptor chromophores.")
+        print("\nThere were", donor_errors, "cases where T_ij != T_ji in the donor chromophores.")
+        print("\nThere were", acceptor_errors, "cases where T_ij != T_ji in the acceptor chromophores.")
         return 1
     return 0
 

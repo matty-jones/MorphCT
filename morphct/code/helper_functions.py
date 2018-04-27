@@ -870,15 +870,15 @@ def fix_images(original_morphology):
 # ---============================---
 # ---=== KMC HELPER FUNCTIONS ===---
 # ---============================---
-def calculate_carrier_hop_rate(lambda_ij, Tij, delta_Eij, prefactor, temp, use_VRH=False, rij=0.0,
+def calculate_carrier_hop_rate(lambda_ij, T_ij, delta_Eij, prefactor, temp, use_VRH=False, rij=0.0,
                                VRH_delocalisation=1.0, boltz_pen=False):
     # Based on the input parameters, can make this the semiclassical Marcus
     # Hopping Rate Equation, or a more generic Miller Abrahams-based hop
     # Firstly, to prevent divide-by-zero errors:
-    if (Tij == 0.0):
+    if (T_ij == 0.0):
         return 0
     # Regardless of hopping type, sort out the prefactor first:
-    k_ij = prefactor * ((2 * np.pi) / hbar) * (Tij ** 2) * np.sqrt(1.0 / (4 * lambda_ij * np.pi * k_B * temp))
+    k_ij = prefactor * ((2 * np.pi) / hbar) * (T_ij ** 2) * np.sqrt(1.0 / (4 * lambda_ij * np.pi * k_B * temp))
     # VRH?
     if use_VRH is True:
         k_ij *= np.exp(-(rij / VRH_delocalisation))

@@ -824,8 +824,8 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
     T = 290
     for chromo in chromophore_list:
         mol1ID = CG_to_mol_ID[chromo.CGIDs[0]]
-        for index, Tij in enumerate(chromo.neighbours_TI):
-            if (Tij is None) or (Tij == 0):
+        for index, T_ij in enumerate(chromo.neighbours_TI):
+            if (T_ij is None) or (T_ij == 0):
                 continue
             chromo2 = chromophore_list[chromo.neighbours[index][0]]
             mol2ID = CG_to_mol_ID[chromo2.CGIDs[0]]
@@ -861,12 +861,12 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
                                                         * np.array([AA_morphology_dict[axis]
                                                                     for axis in ['lx', 'ly', 'lz']]))
                 chromophore_separation = hf.calculate_separation(chromo.posn, neighbour_chromo_posn) * 1E-10
-                rate = hf.calculate_carrier_hop_rate(lambda_ij * elementary_charge, Tij * elementary_charge,
+                rate = hf.calculate_carrier_hop_rate(lambda_ij * elementary_charge, T_ij * elementary_charge,
                                                      delta_E * elementary_charge, prefactor, T, use_VRH=VRH,
                                                      rij=chromophore_separation, VRH_prefactor=VRH_prefactor,
                                                      boltz_pen=boltz_pen)
             else:
-                rate = hf.calculate_carrier_hop_rate(lambda_ij * elementary_charge, Tij * elementary_charge,
+                rate = hf.calculate_carrier_hop_rate(lambda_ij * elementary_charge, T_ij * elementary_charge,
                                                      delta_E * elementary_charge, prefactor, T, boltz_pen=boltz_pen)
             if chromo2.ID < chromo.ID:
                 continue
@@ -874,32 +874,32 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
             if chromo.species == 'acceptor':
                 if stack_dicts[1][chromo.ID] == stack_dicts[1][chromo.neighbours[index][0]]:
                     property_lists['intra_stack_rates_acceptor'].append(rate)
-                    property_lists['intra_stack_TIs_acceptor'].append(Tij)
+                    property_lists['intra_stack_TIs_acceptor'].append(T_ij)
                 else:
                     property_lists['inter_stack_rates_acceptor'].append(rate)
-                    property_lists['inter_stack_TIs_acceptor'].append(Tij)
+                    property_lists['inter_stack_TIs_acceptor'].append(T_ij)
             else:
                 if stack_dicts[0][chromo.ID] == stack_dicts[0][chromo.neighbours[index][0]]:
                     property_lists['intra_stack_rates_donor'].append(rate)
-                    property_lists['intra_stack_TIs_donor'].append(Tij)
+                    property_lists['intra_stack_TIs_donor'].append(T_ij)
                 else:
                     property_lists['inter_stack_rates_donor'].append(rate)
-                    property_lists['inter_stack_TIs_donor'].append(Tij)
+                    property_lists['inter_stack_TIs_donor'].append(T_ij)
             # Now do intra- / inter- molecules
             if mol1ID == mol2ID:
                 if chromo.species == 'acceptor':
                     property_lists['intra_mol_rates_acceptor'].append(rate)
-                    property_lists['intra_mol_TIs_acceptor'].append(Tij)
+                    property_lists['intra_mol_TIs_acceptor'].append(T_ij)
                 else:
                     property_lists['intra_mol_rates_donor'].append(rate)
-                    property_lists['intra_mol_TIs_donor'].append(Tij)
+                    property_lists['intra_mol_TIs_donor'].append(T_ij)
             else:
                 if chromo.species == 'acceptor':
                     property_lists['inter_mol_rates_acceptor'].append(rate)
-                    property_lists['inter_mol_TIs_acceptor'].append(Tij)
+                    property_lists['inter_mol_TIs_acceptor'].append(T_ij)
                 else:
                     property_lists['inter_mol_rates_donor'].append(rate)
-                    property_lists['inter_mol_TIs_donor'].append(Tij)
+                    property_lists['inter_mol_TIs_donor'].append(T_ij)
     # Donor Stack Plots:
     if (len(property_lists['intra_stack_rates_donor']) > 0) or (len(property_lists['inter_stack_rates_donor']) > 0):
         print("Mean intra-stack Donor rate =", np.mean(property_lists['intra_stack_rates_donor']), "+/-",
