@@ -87,7 +87,7 @@ class chromophore:
         electronically_active_unwrapped_posns = [AA_morphology_dict['unwrapped_position'][AAID]
                                                  for AAID in electronically_active_AAIDs]
         electronically_active_types = [AA_morphology_dict['type'][AAID] for AAID in electronically_active_AAIDs]
-        self.unwrapped_posn, self.posn, self.image = self.obtain_chromophore_com(
+        self.unwrapped_posn, self.posn, self.image = self.obtain_chromophore_COM(
             electronically_active_unwrapped_posns, electronically_active_types, sim_dims)
         # A list of the important bonds for this chromophore from the morphology
         # would be useful when determining if a terminating group is already
@@ -144,10 +144,10 @@ class chromophore:
                 importantBonds.append(bond)
         return importantBonds
 
-    def obtain_chromophore_com(self, electronically_active_unwrapped_posns, electronically_active_types, sim_dims):
+    def obtain_chromophore_COM(self, electronically_active_unwrapped_posns, electronically_active_types, sim_dims):
         # Calculate the chromophore's position in the morphology (CoM of all
         # atoms in self.AAIDs from AA_morphology_dict)
-        chromo_unwrapped_posn = hf.calc_com(electronically_active_unwrapped_posns,
+        chromo_unwrapped_posn = hf.calc_COM(electronically_active_unwrapped_posns,
                                             list_of_atom_types=electronically_active_types)
         chromo_wrapped_posn = copy.deepcopy(chromo_unwrapped_posn)
         chromo_wrapped_image = [0, 0, 0]

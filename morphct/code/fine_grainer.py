@@ -401,15 +401,15 @@ class atomistic:
                         AAID_positions.append(this_monomer_dictionary['unwrapped_position'][AAID])
                         AAID_atom_types.append(this_monomer_dictionary['type'][AAID])
                     # Now create the ghost particle describing the rigid body
-                    ghost_com = helper_functions.calc_com(AAID_positions, list_of_atom_types=AAID_atom_types)
-                    ghost_dictionary['unwrapped_position'].append(ghost_com)
+                    ghost_COM = helper_functions.calc_COM(AAID_positions, list_of_atom_types=AAID_atom_types)
+                    ghost_dictionary['unwrapped_position'].append(ghost_COM)
                     ghost_dictionary['mass'].append(1.0)
                     ghost_dictionary['diameter'].append(1.0)
                     ghost_dictionary['type'].append('R' + str(CG_type_list[site_ID]))
                     ghost_dictionary['body'].append(current_monomer_index)
                     ghost_dictionary['charge'].append(0.0)
                     # Then create the corresponding CG anchorpoint
-                    ghost_dictionary['unwrapped_position'].append(ghost_com)
+                    ghost_dictionary['unwrapped_position'].append(ghost_COM)
                     ghost_dictionary['mass'].append(1.0)
                     ghost_dictionary['diameter'].append(1.0)
                     ghost_dictionary['type'].append('X' + str(CG_type_list[site_ID]))

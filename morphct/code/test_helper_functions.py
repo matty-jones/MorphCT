@@ -198,8 +198,8 @@ class TestGeneralOperations(TestCommand):
                                                              np.array([6.8, 15.2, 1.59])]
                           )
 
-    def test_calc_com(self):
-        function = "calc_com"
+    def test_calc_COM(self):
+        function = "calc_COM"
         # Check COM with atom types
         self.compare_equal(function, np.array([0.65551656, -0.26839579, 1.19994922]),
                            posn_args=[[[9.785, 1.847, -0.12], [1.391, -8.481, 6.544], [-2.97, 5.524, -9.939],
