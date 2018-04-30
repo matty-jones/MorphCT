@@ -21,7 +21,7 @@ output_device_dir = TEST_ROOT + '/temp'
 The name of the morphology to run (needs to match the name of the xml (including file extension) in input_morph_dir.
 Can be set to None if only running device simulations (and molecular sims are already completed)
 '''
-morphology = 'donor_polymer_periodic.xml'
+morphology = 'donor_polymer.xml'
 
 '''
 The sigma value to use (in Angstroems) - necessary for the quantum chemical calculations.
@@ -55,11 +55,11 @@ The following section allows the user to select which MorphCT modules they would
 comments after each module describe the prerequisites that must be run first.
 '''
 execute_fine_graining = True                 # Requires: None
-execute_molecular_dynamics = True            # Requires: fine_graining
-execute_obtain_chromophores = True           # Requires: Atomistic morphology, or molecular_dynamics
-execute_zindo = True                         # Requires: obtain_chromophores
-execute_calculate_transfer_integrals = True  # Requires: execute_zindo
-execute_calculate_mobility = True            # Requires: calculate_transfer_integrals
+execute_molecular_dynamics = False            # Requires: fine_graining
+execute_obtain_chromophores = False           # Requires: Atomistic morphology, or molecular_dynamics
+execute_zindo = False                         # Requires: obtain_chromophores
+execute_calculate_transfer_integrals = False  # Requires: execute_zindo
+execute_calculate_mobility = False            # Requires: calculate_transfer_integrals
 execute_device_simulation = False              # Requires: calculate_transfer_integrals for all device_components
 
 # ---==============================================---
@@ -561,12 +561,6 @@ ma_localisation_radius = 1E-9
 '''
 The following parameters describe the incident photons and other factors external to the device
 '''
-
-'''
-The applied electric field across the contacts in units of V/m
-NOTE: DEPRACATED? CHECK THIS
-'''
-electrical_field = 1E7
 
 '''
 The incident flux in units of m_W/cm^{2}

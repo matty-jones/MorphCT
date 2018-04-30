@@ -556,12 +556,6 @@ The following parameters describe the incident photons and other factors externa
 '''
 
 '''
-The applied electric field across the contacts in units of V/m
-NOTE: DEPRACATED? CHECK THIS
-'''
-electrical_field = 1E7
-
-'''
 The incident flux in units of m_W/cm^{2}
 '''
 incident_flux = 10000
