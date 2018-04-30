@@ -11,6 +11,7 @@ from morphct.code import execute_ZINDO
 from morphct.code import transfer_integrals
 from morphct.code import mobility_KMC
 from morphct.code import device_KMC
+from morphct.definitions import PROJECT_ROOT
 
 
 class simulation:
@@ -132,7 +133,6 @@ class simulation:
                 print("---=== EXECUTING KINETIC MONTE CARLO DEVICE SIMULATIONS... ===---")
                 device_KMC.main(parameter_dict)
                 print("---=== EXECUTION COMPLETED ===---")
-        exit()
 
     def get_slurm_ID(self):
         # Use Squeue to determine the current slurm job number
@@ -186,21 +186,19 @@ class simulation:
 
     def copy_code(self):
         print("Copying code...")
-        code_dir = os.getcwd() + '/code'
+        code_dir = os.path.join(PROJECT_ROOT, 'code')
         if self.morphology is not None:
-            print('cp ' + code_dir + '/*.py ' + self.output_morphology_directory + '/code/')
-            print('cp ' + os.getcwd() + '/' + self.parameter_file + ' '
-                  + self.output_morphology_directory + '/code/')
-            print('cp ' + self.input_morphology_file + ' ' + self.output_morphology_directory + '/code/input.xml')
-            shutil.copy(os.getcwd() + '/' + self.parameter_file, self.output_morphology_directory + '/code')
-            for file_name in glob.glob(code_dir + '/*.py'):
-                shutil.copy(file_name, self.output_morphology_directory + '/code/')
-            shutil.copy(os.getcwd() + '/' + self.parameter_file, self.output_morphology_directory + '/code/')
-            shutil.copy(self.input_morphology_file, self.output_morphology_directory + '/code/input.xml')
+            par_copy = [self.parameter_file, os.path.join(self.output_morphology_directory, 'code')]
+            code_copy = [code_dir + '/*.py', os.path.join(self.output_morphology_directory, 'code')]
+            input_copy = [self.input_morphology_file, os.path.join(self.output_morphology_directory,
+                                                                   'code', 'input.xml')]
+            print('cp', input_copy[0], input_copy[1])
+            shutil.copy(input_copy[0], input_copy[1])
         elif self.device_morphology is not None:
-            print('cp ' + code_dir + '/*.py ' + self.output_device_directory + '/code/')
-            print('cp ' + os.getcwd() + '/' + self.parameter_file + ' ' + self.output_device_directory + '/code/')
-            shutil.copy(os.getcwd() + '/' + self.parameter_file, self.output_device_directory + '/code')
-            for file_name in glob.glob(code_dir + '/*.py'):
-                shutil.copy(file_name, self.output_device_directory + '/code/')
-            shutil.copy(os.getcwd() + '/' + self.parameter_file, self.output_device_directory + '/code/')
+            par_copy = [self.parameter_file, os.path.join(self.output_device_directory, 'code')]
+            code_copy = [code_dir + '/*.py', os.path.join(self.output_device_directory, 'code')]
+        print('cp', par_copy[0], par_copy[1])
+        print('cp', code_copy[0], code_copy[1])
+        shutil.copy(par_copy[0], par_copy[1])
+        for file_name in glob.glob(code_copy[0]):
+            shutil.copy(file_name, code_copy[1])
