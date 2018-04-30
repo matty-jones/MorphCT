@@ -1,0 +1,15 @@
+name: morphct
+channels:
+- glotzer
+- defaults
+dependencies:
+- python=3.6
+- hoomd=1.3
+- scipy=0.19.1
+- matplotlib=2.0.2
+# Tests
+- pytest=3.5.1
+- pytest-cov
+- PyYAML
+- pip:
+  - coveralls

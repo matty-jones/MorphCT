@@ -477,10 +477,8 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
             assert(chromophore_list[chromo1_ID].neighbours_delta_E[neighbour_loc] ==
                    -chromophore_list[chromo2_ID].neighbours_delta_E[reverse_loc])
             # END DEBUG ASSERTIONS
-        print(len(failedPairChromos))
         for file_name in successful_reruns:
             failed_pair_chromos.pop(file_name)
-        print(len(failed_pair_chromos))
     print("")
     # Finally, delete any of the files that need to be deleted.
     if parameter_dict['remove_orca_inputs'] is True:
