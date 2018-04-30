@@ -1,4 +1,3 @@
-import unittest
 import os
 import sys
 import copy
@@ -37,11 +36,8 @@ test_FF_dict = {'lj': [['C1', 0.07, 3.55], ['C2', 0.07, 3.55], ['C9', 0.07, 3.55
          ['C2-C9', 906.2, 1.43277], ['C1-C10', 784.58, 1.45]],
 'dpd': [['C1', 10.0, 2.0], ['C2', 10.0, 2.0], ['C9', 10.0, 2.0], ['C10', 10.0, 2.0]]}
 
-class TestCommand(unittest.TestCase):
+class TestCommand(object):
     file_created = None
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     def fn_response(self, function, posn_args, kw_args):
         cmd = getattr(hf, function)
@@ -62,7 +58,7 @@ class TestCommand(unittest.TestCase):
             return cmd()
 
     def compare_lt(self, object1, object2):
-        self.assertTrue(object2 > object1, msg="Expected object1 (" + repr(object1)
+        assert object2 > object1, ("Expected object1 (" + repr(object1)
                         + ") to be less than object2 (" + repr(object2) + ").")
 
     def compare_equal(self, function, expected, posn_args=None, kw_args=None):
@@ -80,33 +76,33 @@ class TestCommand(unittest.TestCase):
                                 if isinstance(value2, (float)):
                                     # Check that the answer is within 1E-4% of expected
                                     difference = np.abs(value2 - response[key][index][index2])
-                                    self.assertTrue(difference <= np.abs(1E-6 * value2), msg="Expected " + repr(value2)
+                                    assert difference <= np.abs(1E-6 * value2), ("Expected " + repr(value2)
                                                     + " for key " + repr([key, index, index2]) + ", but got "
                                                     + repr(response[key][index][index2]) + ", which is more than "
                                                     + "1E-4% (" + repr(difference) + ") from expected.")
                                 else:
-                                    self.assertEqual(response[key][index][index2], value2, msg="Expected "
+                                    assert response[key][index][index2] == value2, ("Expected "
                                                      + repr(value2) + " for key " + repr([key, index]) + ", but got "
                                                      + repr(response[key][index][index2]) + " instead.")
                         elif isinstance(value, (float)):
                             # Check that the answer is within 1E-4% of expected
                             difference = np.abs(value - response[key][index])
-                            self.assertTrue(difference <= np.abs(1E-6 * value), msg="Expected " + repr(value)
+                            assert difference <= np.abs(1E-6 * value), ("Expected " + repr(value)
                                             + " for key " + repr([key, index]) + ", but got "
                                             + repr(response[key][index]) + ", which is more than 1E-4% ("
                                             + repr(difference) + ") from expected.")
                         else:
-                            self.assertEqual(response[key][index], value, msg="Expected " + repr(value) + " for key "
+                            assert response[key][index] == value, ("Expected " + repr(value) + " for key "
                                              + repr([key, index]) + ", but got " + repr(response[key][index])
                                              + " instead.")
                 elif isinstance(val, (float)):
                     # Check that the answer is within 1E-4% of expected
                     difference = np.abs(val - response[key])
-                    self.assertTrue(difference <= np.abs(1E-6 * val), msg="Expected " + repr(val) + " for key "
+                    assert difference <= np.abs(1E-6 * val), ("Expected " + repr(val) + " for key "
                                     + repr(key) + ", but got " + repr(response[key]) + ", which is more than 1E-4% ("
                                     + repr(difference) + ") from expected.")
                 else:
-                    self.assertEqual(response[key], val, msg="Expected " + repr(val) + " for key " + repr(key)
+                    assert response[key] == val, ("Expected " + repr(val) + " for key " + repr(key)
                                      + ", but got " + repr(response[key]) + " instead.")
         # Tensor
         elif isinstance(expected, (np.matrixlib.defmatrix.matrix)):
@@ -115,7 +111,7 @@ class TestCommand(unittest.TestCase):
                     val = float(expected[rowID, colID])
                     # Check that the answer is within 1E-4% of expected
                     difference = np.abs(val - response[rowID, colID])
-                    self.assertTrue(difference <= np.abs(1E-6 * val), msg="Expected " + repr(val) + " for index "
+                    assert difference <= np.abs(1E-6 * val), ("Expected " + repr(val) + " for index "
                                     + repr([rowID, colID]) + ", but got " + repr(response[rowID, colID])
                                     + ", which is more than 1E-4% (" + repr(difference) + ") from expected.")
         # Vector
@@ -125,11 +121,11 @@ class TestCommand(unittest.TestCase):
                     if isinstance(val, (float)):
                         # Check that the answer is within 1E-4% of expected
                         difference = np.abs(val - response[index])
-                        self.assertTrue(difference <= np.abs(1E-6 * val), msg="Expected " + repr(val) + " for index "
+                        assert difference <= np.abs(1E-6 * val), ("Expected " + repr(val) + " for index "
                                         + repr(index) + ", but got " + repr(response[index])
                                         + ", which is more than 1E-4% (" + repr(difference) + ") from expected.")
                     else:
-                        self.assertEqual(response[index], val, msg="Expected " + repr(val) + " for index "
+                        assert response[index] == val, ("Expected " + repr(val) + " for index "
                                          + repr(index) + ", but got " + repr(response[index]) + " instead.")
             except ValueError:
                 # Actually a list of vectors
@@ -138,12 +134,12 @@ class TestCommand(unittest.TestCase):
                         if isinstance(val, (float)):
                             # Check that the answer is within 1E-4% of expected
                             difference = np.abs(val - response[array_index][index])
-                            self.assertTrue(difference <= np.abs(1E-6 * val), msg="Expected " + repr(val)
+                            assert difference <= np.abs(1E-6 * val), ("Expected " + repr(val)
                                             + " for index " + repr([array_index, index]) + ", but got "
                                             + repr(response[array_index][index]) + ", which is more than 1E-4% ("
                                             + repr(difference) + ") from expected.")
                         else:
-                            self.assertEqual(response[array_index][index], val, msg="Expected " + repr(val)
+                            assert response[array_index][index] == val, ("Expected " + repr(val)
                                              + " for index " + repr([array_index, index]) + ", but got "
                                              + repr(response[array_index][index]) + " instead.")
         # Scalar
@@ -151,11 +147,11 @@ class TestCommand(unittest.TestCase):
             if isinstance(response, (float)):
                 # Check that the answer is within 1E-4% of expected
                 difference = np.abs(expected - response)
-                self.assertTrue(difference <= (1E-6 * expected), msg="Expected " + repr(response) + " but got "
+                assert difference <= (1E-6 * expected), ("Expected " + repr(response) + " but got "
                                 + repr(response) + ", which is more than 1E-4% (" + repr(difference) + ")"
                                 " from expected.")
             else:
-                self.assertEqual(response, expected, msg="Expected " + repr(response) + " but got "
+                assert response == expected, ("Expected " + repr(response) + " but got "
                                  + repr(response) + " instead.")
 
     def confirm_file_exists(self, function, expected, posn_args=None, kw_args=None):
@@ -163,15 +159,15 @@ class TestCommand(unittest.TestCase):
         directory = '/'.join(expected.split('/')[:-1])
         file_name = expected.split('/')[-1]
         files = os.listdir(directory)
-        self.assertTrue(file_name in files)
+        assert file_name in files, ("Expected the file " + str(file_name) + " to exist, but it doesn't.")
         self.file_created = expected
 
-    def setUp(self):
+    def setup_method(self):
         #pass
         np.random.seed(929292929)
         sys.stdout = None
 
-    def tearDown(self):
+    def teardown_method(self):
         if self.file_created is not None:
             os.remove('./' + self.file_created)
         sys.stdout = sys.__stdout__
@@ -290,39 +286,39 @@ class TestGeneralOperations(TestCommand):
 class TestFileManipHelperFunctions(TestCommand):
     def test_write_CSV(self):
         function = "write_CSV"
-        file_name = "./test_assets/test.csv"
+        file_name = "./assets/test.csv"
         self.confirm_file_exists(function, file_name,
                                  posn_args=[file_name, [['el1_1', 'el1_2'], ['row2_1', 'row2_2']]],
                                 )
 
     def test_load_morphology_xml(self):
-        function = "load_morphology_XML"
-        input_xml = "./test_assets/test_input.xml"
+        function = "load_morphology_xml"
+        input_xml = "./assets/test_input.xml"
         output_dictionary = copy.deepcopy(test_morphology_dict)
         self.compare_equal(function, output_dictionary, posn_args=[input_xml])
 
     def test_load_FF_xml(self):
-        function = "load_FF_XML"
-        input_xml = "./test_assets/test_FF.xml"
+        function = "load_FF_xml"
+        input_xml = "./assets/test_small_FF.xml"
         output_dictionary = copy.deepcopy(test_FF_dict)
         self.compare_equal(function, output_dictionary, posn_args=[input_xml])
 
     def test_write_morphology_xml(self):
-        function = "write_morphology_XML"
+        function = "write_morphology_xml"
         input_dictionary = copy.deepcopy(test_morphology_dict)
-        output_xml = "./test_assets/test_output.xml"
+        output_xml = "./assets/test_output.xml"
         self.confirm_file_exists(function, output_xml, posn_args=[input_dictionary, output_xml])
 
-    def test_write_XYZ_file(self):
-        function = "write_XYZ_file"
+    def test_write_xyz_file(self):
+        function = "write_xyz_file"
         input_dictionary = copy.deepcopy(test_morphology_dict)
-        output_xml = "./test_assets/test_output.xyz"
+        output_xml = "./assets/test_output.xyz"
         self.confirm_file_exists(function, output_xml, posn_args=[input_dictionary, output_xml])
 
     def test_write_to_file(self):
         function = "write_to_file"
         input_data = ['This is', 'test data']
-        file_name = "./test_assets/test_output.log"
+        file_name = "./assets/test_output.log"
         # Check creating a new file
         self.confirm_file_exists(function, file_name, posn_args=[file_name, input_data],
                                  kw_args={'mode': 'output_file'})
@@ -335,22 +331,22 @@ class TestFileManipHelperFunctions(TestCommand):
 
     def test_pickles(self):
         # First load the test file
-        input_file = "./test_assets/test_lattice.pickle"
+        input_file = "./assets/donor_polymer_periodic.pickle"
         data = hf.load_pickle(input_file)
-        self.assertTrue(len(data) == 5, msg="Expected pickle file to contain 5 elements, instead it"
+        assert len(data) == 5, ("Expected pickle file to contain 5 elements, instead it"
                        + " contained " + repr(len(data)) + ".")
-        self.assertTrue(type(data[0]) == dict, msg="Expected first element of the pickle file (AA_morphology_dict)"
-                       + " to be a dictionary, instead its type is " + repr(type(data[0])) + ".")
-        self.assertTrue(data[1] is None, msg="Expected second element of the pickle file (CG_morphology_dict)"
-                       + " to be NoneType, instead its type is " + repr(type(data[1])) + ".")
-        self.assertTrue(data[2] is None, msg="Expected third element of the pickle file (CG_to_AAID_master)"
-                       + " to be NoneType, instead its type is " + repr(type(data[2])) + ".")
-        self.assertTrue(type(data[3]) == dict, msg="Expected fourth element of the pickle file (parameter_dict)"
-                       + " to be dict, instead its type is " + repr(type(data[3])) + ".")
-        self.assertTrue(type(data[4]) == list, msg="Expected fifth element of the pickle file (chromophore_list)"
-                       + " to be list, instead its type is " + repr(type(data[4])) + ".")
+        assert type(data[0]) == dict, ("Expected first element of the pickle file (AA_morphology_dict)"
+               + " to be a dictionary, instead its type is " + repr(type(data[0])) + ".")
+        assert type(data[1]) == dict, ("Expected second element of the pickle file (CG_morphology_dict)"
+               + " to be a dictionary, instead its type is " + repr(type(data[1])) + ".")
+        assert type(data[2]) == list, ("Expected third element of the pickle file (CG_to_AAID_master)"
+               + " to be a list, instead its type is " + repr(type(data[2])) + ".")
+        assert type(data[3]) == dict, ("Expected fourth element of the pickle file (parameter_dict)"
+               + " to be a dictionary, instead its type is " + repr(type(data[3])) + ".")
+        assert type(data[4]) == list, ("Expected fifth element of the pickle file (chromophore_list)"
+                       + " to be a list, instead its type is " + repr(type(data[4])) + ".")
         # Then write it out somewhere else
-        output_file = "./test_assets/test_output.pickle"
+        output_file = "./assets/test_output.pickle"
         self.confirm_file_exists("write_pickle", output_file, posn_args=[data, output_file])
 
 
@@ -548,7 +544,3 @@ class TestKMCHelperFunctions(TestCommand):
         e_charge = 1.602E-19
         self.compare_equal(function, 2.3484760270796596e-15,
                            posn_args=[1E15])
-
-
-if __name__ == "__main__":
-    unittest.main()
