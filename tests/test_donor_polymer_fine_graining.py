@@ -1,6 +1,6 @@
 from morphct.definitions import TEST_ROOT
 from morphct.code import helper_functions as hf
-from comparisons import TestCommand
+from comparisons import TestCommand, setup_module, teardown_module
 from morphct import run_MorphCT
 import os
 import shutil
@@ -11,9 +11,9 @@ import sys
 # ---======== Directory and File Structure ========---
 # ---==============================================---
 
-input_morph_dir =   TEST_ROOT + '/assets'
-output_morph_dir =  TEST_ROOT + '/temp'
-input_device_dir =  TEST_ROOT + '/assets'
+input_morph_dir = TEST_ROOT + '/assets'
+output_morph_dir = TEST_ROOT + '/temp'
+input_device_dir = TEST_ROOT + '/assets'
 output_device_dir = TEST_ROOT + '/temp'
 
 # ---==============================================---
@@ -90,25 +90,18 @@ molecule_terminating_connections = {
 # ---================= Begin run ==================---
 # ---==============================================---
 
-parameter_file = __file__
+parameter_file = os.path.realpath(__file__)
 proc_IDs = hf.get_CPU_cores()
 parameter_names = [i for i in dir() if (not i.startswith('__')) and (not i.startswith('@'))\
                   and (i not in ['run_MorphCT', 'helper_functions', 'hf', 'os', 'shutil', 'TestCommand'])]
 parameters = {}
 for name in parameter_names:
     parameters[name] = locals()[name]
-
-sys.stdout = None
 run_MorphCT.simulation(**parameters)  # Execute MorphCT using these simulation parameters
-sys.stdout = sys.__stdout__
 
 # ---==============================================---
 # ---================= Run Tests ==================---
 # ---==============================================---
-
-def teardown_module(module):
-    sys.stdout = sys.__stdout__
-    shutil.rmtree(os.path.join(TEST_ROOT, 'temp'))
 
 
 class TestCompareOutputs(TestCommand):
@@ -122,8 +115,8 @@ class TestCompareOutputs(TestCommand):
     output_chromophore_list = output_pickle_data[4]
 
     # Load the expected pickle
-    expected_pickle_data = hf.load_pickle(os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code',
-                                                       morphology.replace('.xml', '.pickle')))
+    expected_pickle_data = hf.load_pickle(os.path.join(TEST_ROOT, 'assets',
+                                                       'donor_polymer_post_fine_graining.pickle'))
     expected_AA_morphology_dict = expected_pickle_data[0]
     expected_CG_morphology_dict = expected_pickle_data[1]
     expected_CG_to_AAID_master = expected_pickle_data[2]
@@ -134,13 +127,45 @@ class TestCompareOutputs(TestCommand):
         self.compare_equal(self.output_AA_morphology_dict, self.expected_AA_morphology_dict)
 
     def test_check_CG_morphology_dict(self):
-        self.compare_equal(self.output_CG_morphology_dict,  self.expected_CG_morphology_dict)
+        self.compare_equal(self.output_CG_morphology_dict, self.expected_CG_morphology_dict)
 
     def test_check_CG_to_AAID_master(self):
-        self.compare_equal(self.output_CG_to_AAID_master,  self.expected_CG_to_AAID_master)
+        self.compare_equal(self.output_CG_to_AAID_master, self.expected_CG_to_AAID_master)
 
     def test_check_parameter_dict(self):
-        self.compare_equal(self.output_parameter_dict,  self.expected_parameter_dict)
+        self.compare_equal(self.output_parameter_dict, self.expected_parameter_dict)
 
     def test_check_chromophore_list(self):
-        self.compare_equal(self.output_chromophore_list,  self.expected_chromophore_list)
+        self.compare_equal(self.output_chromophore_list, self.expected_chromophore_list)
+
+    def test_check_code_copied(self):
+        code_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code')
+        self.confirm_file_exists(os.path.join(code_dir, 'fine_grainer.py'))
+        self.confirm_file_exists(os.path.join(code_dir, 'run_HOOMD.py'))
+        self.confirm_file_exists(os.path.join(code_dir, 'obtain_chromophores.py'))
+        self.confirm_file_exists(os.path.join(code_dir, 'execute_ZINDO.py'))
+        self.confirm_file_exists(os.path.join(code_dir, 'transfer_integrals.py'))
+        self.confirm_file_exists(os.path.join(code_dir, 'mobility_KMC.py'))
+        self.confirm_file_exists(os.path.join(code_dir, 'device_KMC.py'))
+        self.confirm_file_exists(os.path.join(code_dir, 'single_core_run_device_KMC.py'))
+        self.confirm_file_exists(os.path.join(code_dir, 'single_core_run_mob_KMC.py'))
+        self.confirm_file_exists(os.path.join(code_dir, 'single_core_run_orca.py'))
+
+    def test_check_par_copied(self):
+        code_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code')
+        self.confirm_file_exists(os.path.join(code_dir, __file__))
+
+    def test_check_input_morph_copied(self):
+        code_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code')
+        self.confirm_file_exists(os.path.join(code_dir, 'input.xml'))
+
+    def test_check_morphology_created(self):
+        morph_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'morphology')
+        self.confirm_file_exists(os.path.join(morph_dir, morphology))
+
+    def test_check_morphology(self):
+        morph_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'morphology')
+        output_morphology = hf.load_morphology_xml(os.path.join(morph_dir, morphology))
+        expected_morphology = hf.load_morphology_xml(os.path.join(TEST_ROOT, 'assets',
+                                                                  'donor_polymer_post_fine_graining.xml'))
+        self.compare_equal(output_morphology, expected_morphology)

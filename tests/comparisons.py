@@ -1,7 +1,9 @@
 import os
 import sys
 import numpy as np
+import shutil
 from morphct.code import helper_functions as hf
+from morphct.definitions import TEST_ROOT
 
 
 class TestCommand(object):
@@ -146,7 +148,17 @@ class TestCommand(object):
         np.random.seed(929292929)
         sys.stdout = None
 
-    def teardown_method(self):
-        if self.file_created is not None:
-            os.remove('./' + self.file_created)
-            sys.stdout = sys.__stdout__
+
+def setup_module(module):
+    os.makedirs(os.path.join(TEST_ROOT, 'temp'), exist_ok=True)
+
+
+def teardown_module(module):
+    sys.stdout = sys.__stdout__
+    directory_to_clean = os.path.join(TEST_ROOT, 'temp')
+    for file_name in os.listdir(directory_to_clean):
+        file_path = os.path.join(directory_to_clean, file_name)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+        elif os.path.isdir(file_path):
+            shutil.rmtree(file_path)
