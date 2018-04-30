@@ -1,4 +1,4 @@
-from morphct.definitions import PROJECT_ROOT
+from morphct.definitions import TEST_ROOT
 
 # ---==============================================---
 # ---======== Directory and File Structure ========---
@@ -9,10 +9,10 @@ The following parameters describe the location of the required input and
 eventual output files. Note that morph directories must be specified, even
 for device files to ensure the correct device components are loaded.
 '''
-input_morph_dir =   PROJECT_ROOT + '/code/unit_testing/assets'
-output_morph_dir =  PROJECT_ROOT + '/code/unit_testing/temp'
-input_device_dir =  PROJECT_ROOT + '/code/unit_testing/assets'
-output_device_dir = PROJECT_ROOT + '/code/unit_testing/temp'
+input_morph_dir =   TEST_ROOT + '/assets'
+output_morph_dir =  TEST_ROOT + '/temp'
+input_device_dir =  TEST_ROOT + '/assets'
+output_device_dir = TEST_ROOT + '/temp'
 
 # ---==============================================---
 # ---========== Input Morphology Details ==========---
@@ -74,9 +74,9 @@ The directory that points to the relevant template files
 (KEYS = CG site type, VALUES = directory to use)
 '''
 CG_to_template_dirs = {
-    'A': PROJECT_ROOT + '/code/unit_testing/assets',
-    'B': PROJECT_ROOT + '/code/unit_testing/assets',
-    'C': PROJECT_ROOT + '/code/unit_testing/assets',
+    'A': TEST_ROOT + '/assets',
+    'B': TEST_ROOT + '/assets',
+    'C': TEST_ROOT + '/assets',
 }
 
 '''
