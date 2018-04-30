@@ -81,7 +81,7 @@ def test_check_periodic_neighbours(pickle_file):
 
 
 if __name__ == "__main__":
-    # pickleFile = 'test_assets/bilayerBCC/code/bilayerBCC.pickle'
+    # pickle_file = 'test_assets/bilayerBCC/code/bilayerBCC.pickle'
     pickle_file = 'test_assets/p3ht/code/p1-l15-f0.0-p0.1-t1.5-e0.5.pickle'
     # testFindNeighbours(pickleFile)
     test_write_orca_output(pickle_file)
