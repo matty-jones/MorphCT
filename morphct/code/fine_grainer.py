@@ -108,7 +108,8 @@ class morphology:
         print("Adding", len(molecule_IDs), "molecules to the system...")
         for molecule_number in range(len(molecule_IDs)):
             print("Adding molecule number", molecule_number, "\r", end=' ')
-            sys.stdout.flush()
+            if sys.stdout is not None:
+                sys.stdout.flush()
             # Obtain the AA dictionary for each molecule using the
             # fine-graining procedure
             AA_molecule_dict, C_gto_AAIDs, ghost_dictionary = atomistic(
