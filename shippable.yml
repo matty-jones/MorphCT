@@ -1,0 +1,31 @@
+#### CI CONFIG
+
+language: python
+
+python:
+  - "3.5"
+
+integrations:
+  notifications:
+    - integrationName: hipchat-integration
+      type: hipchat
+      recipients:
+        - "#3719716"
+
+env:
+  global:
+  - TRAVIS=False
+  - secure: 
+build:
+  cache: true
+  cache_dir_list:
+    - /opt/conda/envs/morphct/
+  pre_ci_boot:
+    image_name: continuumio/miniconda3
+    image_tag: 4.4.10
+    pull: true
+  ci:
+    - source conda_cache_check.bash
+    - pip install -e .
+    - pytest
+    - COVERALLS_REPO_TOKEN=$COVERALLS_REPO_TOKEN coveralls
