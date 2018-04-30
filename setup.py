@@ -103,7 +103,7 @@ setup(
             "fixImages=morphct.utils.fix_images.fix_images:main",
             "orca2xyz=morphct.utils.orca_to_xyz.convert_to_xyz:main",
             "KMCAnalyse=morphct.utils.KMC_analyse.KMC_analyse:main",
-            "createMontage=morphct.utils.imagemagick_stitch.create_montage:main"
+            "createMontage=morphct.utils.imagemagick_stitch.create_montage:main",
             "addHydrogens=morphct.utils.add_hydrogens_to_UA.add_hydrogens:main"
         ],
     },

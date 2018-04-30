@@ -32,14 +32,13 @@ class carrier:
         self.current_time = 0.0
         self.hole_history_matrix = None
         self.electron_history_matrix = None
+        self.lambda_ij = self.current_chromophore.reorganisation_energy
         if self.current_chromophore.species.lower() == 'donor':
             self.carrier_type = 'hole'
-            self.lambda_ij = parameter_dict['reorganisation_energy_donor']
             if parameter_dict['record_carrier_history'] is True:
                 self.hole_history_matrix = lil_matrix((len(chromophore_list), len(chromophore_list)), dtype=int)
         elif self.current_chromophore.species.lower() == 'acceptor':
             self.carrier_type = 'electron'
-            self.lambda_ij = parameter_dict['reorganisation_energy_acceptor']
             if parameter_dict['record_carrier_history'] is True:
                 self.electron_history_matrix = lil_matrix((len(chromophore_list), len(chromophore_list)), dtype=int)
         self.no_hops = 0
@@ -77,7 +76,7 @@ class carrier:
         except KeyError:
             self.use_VRH = False
         if self.use_VRH is True:
-            self.VRH_delocalisation = parameter_dict['VRH_delocalisation']
+            self.VRH_delocalisation = self.current_chromophore.VRH_delocalisation
 
     def calculate_hop(self, chromophore_list):
         # Terminate if the next hop would be more than the termination limit
@@ -368,10 +367,12 @@ if __name__ == '__main__':
             final_position = this_carrier.current_chromophore.posn
             final_image = this_carrier.image
             sim_dims = this_carrier.sim_dims
-            this_carrier.displacement = calculate_displacement(initial_position, final_position, final_image, sim_dims)
+            this_carrier.displacement = calculate_displacement(initial_position, final_position,
+                                                               final_image, sim_dims)
             # Now the calculations are completed, create a barebones class
             # containing the save data
-            importantData = ['ID', 'image', 'lifetime', 'currentTime', 'noHops', 'displacement', 'carrierType']
+            importantData = ['ID', 'image', 'lifetime', 'current_time',
+                             'no_hops', 'displacement', 'carrier_type']
             for name in importantData:
                 save_data[name].append(this_carrier.__dict__[name])
             # Update the carrierHistoryMatrix

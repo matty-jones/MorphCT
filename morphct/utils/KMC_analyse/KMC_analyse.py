@@ -260,7 +260,7 @@ def plot_MSD(times, MSDs, time_standard_errors, MSD_standard_errors, directory, 
     plt.plot(times, MSDs)
     plt.errorbar(times, MSDs, xerr=time_standard_errors, yerr=MSD_standard_errors)
     plt.plot(fit_X, fit_Y, 'r')
-    plt.xlabel('time (s)')
+    plt.xlabel('Time (s)')
     plt.ylabel('MSD (m' + r'$^{2}$)')
     mobility_string = '%.3e' % mobility
     plt.title(r'$\mu_{0,' + carrier_type[0] + r'}$' + ' = ' + mobility_string + ' cm' + r'$^{2}$/vs' % (mobility),
@@ -272,7 +272,7 @@ def plot_MSD(times, MSDs, time_standard_errors, MSD_standard_errors, directory, 
     plt.semilogx(times, MSDs)
     plt.errorbar(times, MSDs, xerr=time_standard_errors, yerr=MSD_standard_errors)
     plt.semilogx(fit_X, fit_Y, 'r')
-    plt.xlabel('time (s)')
+    plt.xlabel('Time (s)')
     plt.ylabel('MSD (m' + r'$^{2}$)')
     mobility_string = '%.3e' % mobility
     plt.title(r'$\mu_{0,' + carrier_type[0] + r'}$' + ' = ' + mobility_string + ' cm' + r'$^{2}$/vs' % (mobility),
@@ -284,7 +284,7 @@ def plot_MSD(times, MSDs, time_standard_errors, MSD_standard_errors, directory, 
     plt.plot(times, MSDs)
     plt.errorbar(times, MSDs, xerr=time_standard_errors, yerr=MSD_standard_errors)
     plt.plot(fit_X, fit_Y, 'r')
-    plt.xlabel('time (s)')
+    plt.xlabel('Time (s)')
     plt.ylabel('MSD (m' + r'$^{2}$)')
     plt.xscale('log')
     plt.yscale('log')
@@ -437,7 +437,7 @@ def plot_temperature_progression(temp_data, mobility_data, anisotropy_data, carr
     yvals = list(np.array(mobility_data)[:, 0])
     yerrs = list(np.array(mobility_data)[:, 1])
     plt.xlabel(x_label)
-    plt.ylabel('mobility (cm' + r'$^{2}$ ' + 'V' + r'$^{-1}$' + r's$^{-1}$)')
+    plt.ylabel('Mobility (cm' + r'$^{2}$ ' + 'V' + r'$^{-1}$' + r's$^{-1}$)')
     plt.semilogy(xvals, yvals, c='k')
     plt.errorbar(xvals, yvals, xerr=0, yerr=yerrs)
     file_name = './mobility' + carrier_type + '.pdf'
@@ -577,7 +577,7 @@ def get_neighbour_cut_off(chromophore_list, morphology_shape, output_dir, period
             cut_off = specified_cut_offs[material[material_type]]
         cut_offs.append(cut_off)
         plt.axvline(x=cut_off, ls='dashed', c='k')
-        plt.xlabel(material[material_type] + r' r$_{ij}$' + ' (A)')
+        plt.xlabel(material[material_type].capitalize() + r' r$_{ij}$' + ' (A)')
         plt.ylabel("Frequency (Arb. U.)")
         plt.savefig(output_dir + "/03_neighbour_hist_" + material[material_type].lower() + ".pdf")
         plt.close()
@@ -794,7 +794,7 @@ def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name):
     else:
         print("No Gaussian found (probably zero-width delta function)")
     plt.ylabel('Frequency (Arb. U.)')
-    plt.xlabel(data_type + r' $\Delta E_{ij}$ (eV)')
+    plt.xlabel(data_type.capitalize() + r' $\Delta E_{ij}$ (eV)')
     plt.xlim([-0.5, 0.5])
     plt.savefig(file_name)
     plt.close()
@@ -813,14 +813,6 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
                           for hop_target in hop_targets for hop_property in hop_properties
                           for species in chromo_species]:
         property_lists[property_name] = []
-    try:
-        if parameter_dict['reorganisation_energy_donor'] is not None:
-            donor_lambda_ij = parameter_dict['reorganisation_energy_donor']
-        if parameter_dict['reorganisation_energy_acceptor'] is not None:
-            acceptor_lambda_ij = parameter_dict['reorganisation_energy_acceptor']
-    except KeyError:  # Old MorphCT fix
-        print("Only one reorganisation energy found, assuming donor and continuing")
-        donor_lambda_ij = parameter_dict['reorganisation_energy']
     T = 290
     for chromo in chromophore_list:
         mol1ID = CG_to_mol_ID[chromo.CGIDs[0]]
@@ -831,7 +823,7 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
             mol2ID = CG_to_mol_ID[chromo2.CGIDs[0]]
             delta_E = chromo.neighbours_delta_E[index]
             if chromo.sub_species == chromo2.sub_species:
-                lambda_ij = chromo.reorganisation_energy * elementaryCharge
+                lambda_ij = chromo.reorganisation_energy * elementary_charge
             else:
                 lambda_ij = (chromo.reorganisation_energy + chromo2.reorganisation_energy)/2
             # Now take into account the various behaviours we can have from the parameter file
@@ -852,7 +844,7 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
             try:
                 VRH = parameter_dict['use_VRH']
                 if VRH is True:
-                    VRH_prefactor = 1.0 / parameter_dict['VRH_delocalisation']
+                    VRH_delocalisation = 1.0 / chromo.VRH_delocalisation
             except KeyError:
                 VRH = False
             if VRH is True:
@@ -863,7 +855,8 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
                 chromophore_separation = hf.calculate_separation(chromo.posn, neighbour_chromo_posn) * 1E-10
                 rate = hf.calculate_carrier_hop_rate(lambda_ij * elementary_charge, T_ij * elementary_charge,
                                                      delta_E * elementary_charge, prefactor, T, use_VRH=VRH,
-                                                     rij=chromophore_separation, VRH_prefactor=VRH_prefactor,
+                                                     rij=chromophore_separation,
+                                                     VRH_delocalisation=VRH_delocalisation,
                                                      boltz_pen=boltz_pen)
             else:
                 rate = hf.calculate_carrier_hop_rate(lambda_ij * elementary_charge, T_ij * elementary_charge,
@@ -976,7 +969,7 @@ def plot_stacked_hist_rates(data1, data2, labels, data_type, file_name):
     (n, bins, patches) = plt.hist([data1, data2], bins=np.logspace(1, 18, 40), stacked=True, color=['r', 'b'],
                                   label=labels)
     plt.ylabel('Frequency (Arb. U.)')
-    plt.xlabel(data_type + r' k$_{ij}$ (s' + r'$^{-1}$' + ')')
+    plt.xlabel(data_type.capitalize() + r' k$_{ij}$ (s' + r'$^{-1}$' + ')')
     plt.xlim([1, 1E18])
     plt.xticks([1E0, 1E3, 1E6, 1E9, 1E12, 1E15, 1E18])
     plt.ylim([0, np.max(n) * 1.02])
@@ -992,7 +985,7 @@ def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name):
     (n, bins, patches) = plt.hist([data1, data2], bins=np.linspace(0, 1.2, 20), stacked=True, color=['r', 'b'],
                                   label=labels)
     plt.ylabel('Frequency (Arb. U.)')
-    plt.xlabel(data_type + r' T$_{ij}$ (eV)')
+    plt.xlabel(data_type.capitalize() + r' T$_{ij}$ (eV)')
     plt.xlim([0, 1.2])
     plt.ylim([0, np.max(n) * 1.02])
     plt.legend(loc=0, prop={'size': 18})

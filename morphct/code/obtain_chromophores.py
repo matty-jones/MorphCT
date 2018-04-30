@@ -23,6 +23,10 @@ class chromophore:
             electronically_active_CG_sites, self.sub_species = self.obtain_electronic_species(
                 chromophore_CG_sites, CG_morphology_dict['type'], parameter_dict['CG_site_species'])
             self.species = parameter_dict["chromophore_species"][self.sub_species]["species"]
+            self.reorganisation_energy = parameter_dict["chromophore_species"][self.sub_species][
+                "reorganisation_energy"]
+            self.VRH_delocalisation = parameter_dict["chromophore_species"][self.sub_species][
+                "VRH_delocalisation"]
             # CG_to_AAID_master is a list of dictionaries where each list
             # element corresponds to a new molecule. Firstly, flatten this out
             # so that it becomes a single CG:AAID dictionary
@@ -52,6 +56,10 @@ class chromophore:
                 electronically_active_AAIDs = chromophore_CG_sites
                 self.sub_species = list(parameter_dict['CG_site_species'].values())[0]
                 self.species = parameter_dict["chromophore_species"][self.sub_species]["species"]
+                self.reorganisation_energy = parameter_dict["chromophore_species"][self.sub_species][
+                    "reorganisation_energy"]
+                self.VRH_delocalisation = parameter_dict["chromophore_species"][self.sub_species][
+                    "VRH_delocalisation"]
             elif (len(parameter_dict['CG_site_species']) == 0)\
                     and (len(parameter_dict['AA_rigid_body_species']) > 0):
                 # If the CG_site_species have not been specified, then look to
@@ -67,9 +75,9 @@ class chromophore:
                     if AA_morphology_dict['body'][electronically_active_CG_sites[0]] in rigid_bodies:
                         self.sub_species = sub_species
                         self.species = parameter_dict["chromophore_species"][self.sub_species]["species"]
-                        self.reorganisation_energy = parameterDict["chromophore_species"][self.sub_species][
+                        self.reorganisation_energy = parameter_dict["chromophore_species"][self.sub_species][
                             "reorganisation_energy"]
-                        self.VRH_delocalisation = parameterDict["chromophore_species"][self.sub_species][
+                        self.VRH_delocalisation = parameter_dict["chromophore_species"][self.sub_species][
                             "VRH_delocalisation"]
                         break
                 try:

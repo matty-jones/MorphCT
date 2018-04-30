@@ -429,7 +429,7 @@ The following parameters are relevant only for the mobility KMC simulations
 '''
 The total number of holes to simulate
 '''
-number_of_holes_per_simulation_time = 10
+number_of_holes_per_simulation_time = 5
 
 '''
 The total number of holes to simulate
@@ -444,7 +444,7 @@ hop_limit = 0
 '''
 The termination condition for the mobility KMC simulations
 '''
-simulation_times = [1.00e-11]
+simulation_times = [1.00e-11, 1.00e-10, 1.00e-9]
 
 '''
 This flag combines the KMC results from multiple cores before termination. Often this doesn't finish in time
