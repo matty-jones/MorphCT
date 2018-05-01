@@ -1,3 +1,5 @@
+.pytest_cache/
+codecoverage/
 utils/drawDevice/*/
 utils/*/storage
 *temp*
