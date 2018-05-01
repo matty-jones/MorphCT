@@ -1,7 +1,6 @@
 utils/drawDevice/*/
 utils/*/storage
 *temp*
-*test*
 *.hoomdxml
 *ipynb*
 *par*.py
