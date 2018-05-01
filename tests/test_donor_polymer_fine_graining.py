@@ -134,10 +134,12 @@ class TestCompareOutputs(TestCommand):
         self.compare_equal(self.output_CG_to_AAID_master, self.expected_CG_to_AAID_master)
 
     def test_check_parameter_dict(self):
-        # Pop the "parameter_file" key, since this logs where the par file is kept and will
+        # Pop the system-dependent keys, such as the input and output dirs since this will
         # always be system-dependent
-        self.output_parameter_dict.pop('parameter_file')
-        self.expected_parameter_dict.pop('parameter_file')
+        for key in ['parameter_file', 'output_morph_dir', 'CG_to_template_dirs', 'output_morphology_directory',
+                    'input_device_dir', 'input_morphology_file', 'output_device_dir', 'input_morph_dir']:
+            self.output_parameter_dict.pop(key)
+            self.expected_parameter_dict.pop(key)
         self.compare_equal(self.output_parameter_dict, self.expected_parameter_dict)
 
     def test_check_chromophore_list(self):
