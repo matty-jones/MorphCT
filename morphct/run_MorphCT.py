@@ -188,15 +188,15 @@ class simulation:
         print("Copying code...")
         code_dir = os.path.join(PROJECT_ROOT, 'code')
         if self.morphology is not None:
-            par_copy = [self.parameter_file, os.path.join(self.output_morphology_directory, 'code')]
-            code_copy = [code_dir + '/*.py', os.path.join(self.output_morphology_directory, 'code')]
+            par_copy = [self.parameter_file, os.path.join(self.output_morphology_directory, 'code/')]
+            code_copy = [code_dir + '/*.py', os.path.join(self.output_morphology_directory, 'code/')]
             input_copy = [self.input_morphology_file, os.path.join(self.output_morphology_directory,
                                                                    'code', 'input.xml')]
             print('cp', input_copy[0], input_copy[1])
             shutil.copy(input_copy[0], input_copy[1])
         elif self.device_morphology is not None:
-            par_copy = [self.parameter_file, os.path.join(self.output_device_directory, 'code')]
-            code_copy = [code_dir + '/*.py', os.path.join(self.output_device_directory, 'code')]
+            par_copy = [self.parameter_file, os.path.join(self.output_device_directory, 'code/')]
+            code_copy = [code_dir + '/*.py', os.path.join(self.output_device_directory, 'code/')]
         print('cp', par_copy[0], par_copy[1])
         print('cp', code_copy[0], code_copy[1])
         shutil.copy(par_copy[0], par_copy[1])

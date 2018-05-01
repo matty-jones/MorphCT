@@ -1,7 +1,7 @@
 from morphct.definitions import TEST_ROOT
 from morphct.code import helper_functions as hf
-from comparisons import TestCommand, setup_module, teardown_module
 from morphct import run_MorphCT
+from testing_tools import TestCommand, setup_module, teardown_module
 import os
 import shutil
 import sys
@@ -93,7 +93,8 @@ molecule_terminating_connections = {
 parameter_file = os.path.realpath(__file__)
 proc_IDs = hf.get_CPU_cores()
 parameter_names = [i for i in dir() if (not i.startswith('__')) and (not i.startswith('@'))\
-                  and (i not in ['run_MorphCT', 'helper_functions', 'hf', 'os', 'shutil', 'TestCommand'])]
+                  and (i not in ['run_MorphCT', 'helper_functions', 'hf', 'os', 'shutil', 'TestCommand',
+                                'TEST_ROOT', 'setup_module', 'teardown_module', 'testing_tools'])]
 parameters = {}
 for name in parameter_names:
     parameters[name] = locals()[name]

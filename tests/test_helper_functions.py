@@ -4,7 +4,7 @@ import copy
 import numpy as np
 from morphct.code import helper_functions as hf
 from morphct.definitions import TEST_ROOT
-from comparisons import TestCommand, setup_module, teardown_module
+from testing_tools import TestCommand, setup_module, teardown_module
 import multiprocessing as mp
 
 test_morphology_dict = {'natoms': 4,
