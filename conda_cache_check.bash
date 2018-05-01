@@ -5,6 +5,6 @@ if [ -d /opt/conda/envs/morphct ]; then
 	source activate morphct
 else
 	echo "Rebuilding Conda Env";
-	conda env create -f morphct.yml;
+	conda env create -f environment.yml;
         source activate morphct.
 fi
