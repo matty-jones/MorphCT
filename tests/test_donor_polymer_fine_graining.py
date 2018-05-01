@@ -134,6 +134,10 @@ class TestCompareOutputs(TestCommand):
         self.compare_equal(self.output_CG_to_AAID_master, self.expected_CG_to_AAID_master)
 
     def test_check_parameter_dict(self):
+        # Pop the "parameter_file" key, since this logs where the par file is kept and will
+        # always be system-dependent
+        self.output_parameter_dict.pop('parameter_file')
+        self.expected_parameter_dict.pop('parameter_file')
         self.compare_equal(self.output_parameter_dict, self.expected_parameter_dict)
 
     def test_check_chromophore_list(self):
