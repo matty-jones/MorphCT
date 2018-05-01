@@ -254,7 +254,8 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
     for chromo_location, chromophore in enumerate(chromophore_list):
         file_name = 'single/%05d.out' % (chromophore.ID)
         print("\rDetermining energy levels for", file_name, end=' ')
-        sys.stdout.flush()
+        if sys.stdout is not None:
+            sys.stdout.flush()
         # Update the chromophores in the chromophore_list with their
         # energy_levels
         try:
@@ -327,7 +328,8 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 continue
             file_name = 'pair/%05d-%05d.out' % (chromophore.ID, neighbour_ID)
             print("\rDetermining energy levels for", file_name, end=' ')
-            sys.stdout.flush()
+            if sys.stdout is not None:
+                sys.stdout.flush()
             try:
                 energy_levels = load_orca_output(orca_output_dir + file_name)
                 dimer_HOMO_1 = energy_levels[0]

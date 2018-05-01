@@ -618,16 +618,17 @@ output_log_to_STDOUT = True
 # ---================= Begin run ==================---
 # ---==============================================---
 
-parameter_file = __file__
 
 if __name__ == "__main__":
-    from morphct import run_MorphCT
     import sys
+    import os
+    from morphct import run_MorphCT
     from morphct.code import helper_functions as hf
 
+    parameter_file = os.path.realpath(__file__)
     proc_IDs = hf.get_CPU_cores()
-    parameter_names = [i for i in dir() if (not i.startswith('__'))\
-                      and (i not in ['run_MorphCT', 'helper_functions', 'hf', 'sys'])]
+    parameter_names = [i for i in dir() if (not i.startswith('__')) and (not i.startswith('@'))\
+                      and (i not in ['run_MorphCT', 'helper_functions', 'hf', 'sys', 'os'])]
     parameters = {}
     for name in parameter_names:
         parameters[name] = locals()[name]

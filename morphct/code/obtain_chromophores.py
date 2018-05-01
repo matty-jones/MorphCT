@@ -235,7 +235,8 @@ def calculate_chromophores(CG_morphology_dict, AA_morphology_dict, CG_to_AAID_ma
     for chromo_ID, chromophore_CG_sites in chromophore_data.items():
         print("\rCalculating properties of chromophore %05d of %05d..." % (
             chromo_ID, len(list(chromophore_data.keys())) - 1), end=' ')
-        sys.stdout.flush()
+        if sys.stdout is not None:
+            sys.stdout.flush()
         chromophore_instances.append(chromophore(chromo_ID, chromophore_CG_sites, CG_morphology_dict,
                                                  AA_morphology_dict, CG_to_AAID_master, parameter_dict, sim_dims))
     print("")
@@ -291,7 +292,8 @@ def calculate_chromophores_AA(CG_morphology_dict, AA_morphology_dict, CG_to_AAID
     for chromo_ID, chromophore_CG_sites in chromophore_data.items():
         print("\rCalculating properties of chromophore %05d of %05d..." % (
             chromo_ID, len(list(chromophore_data.keys())) - 1), end=' ')
-        sys.stdout.flush()
+        if sys.stdout is not None:
+            sys.stdout.flush()
         chromophore_instances.append(chromophore(chromo_ID, chromophore_CG_sites, CG_morphology_dict,
                                                  AA_morphology_dict, CG_to_AAID_master, parameter_dict, sim_dims))
     print("")
@@ -531,7 +533,8 @@ def determine_neighbours_cut_off(chromophore_list, parameter_dict, sim_dims):
     for chromophore1 in chromophore_list:
         print("\rIdentifying neighbours of chromophore %05d of %05d..." % (
             chromophore1.ID, len(chromophore_list) - 1), end=' ')
-        sys.stdout.flush()
+        if sys.stdout is not None:
+            sys.stdout.flush()
         for chromophore2 in chromophore_list:
             # Skip if chromo2 is chromo1
             if chromophore1.ID == chromophore2.ID:

@@ -759,8 +759,9 @@ def write_to_file(log_file, string_list, mode='log_file'):
     else:
         open_as = 'a+'
     if log_file == 'stdout':
-        for line in string_list:
-            sys.stdout.writelines(line + '\n')
+        if sys.stdout is not None:
+            for line in string_list:
+                sys.stdout.writelines(line + '\n')
     else:
         with open(log_file, open_as) as log_write:
             for line in string_list:
