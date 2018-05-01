@@ -7,7 +7,7 @@ python:
 
 integrations:
   notifications:
-    - integrationName: hipchat-integration-morpct
+    - integrationName: hipchat-integration-morphct
       type: hipchat
       recipients:
         - "#3712501"
