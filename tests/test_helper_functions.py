@@ -4,8 +4,9 @@ import copy
 import numpy as np
 from morphct.code import helper_functions as hf
 from morphct.definitions import TEST_ROOT
-from testing_tools import TestCommand, setup_module, teardown_module
+from testing_tools import TestCommand
 import multiprocessing as mp
+import shutil
 
 test_morphology_dict = {'natoms': 4,
 'dimensions': 3,
@@ -153,7 +154,7 @@ class TestGeneralOperations(TestCommand):
 class TestFileManipHelperFunctions(TestCommand):
     def test_write_CSV(self):
         function = "write_CSV"
-        file_name = os.path.join(TEST_ROOT, "temp", "test.csv")
+        file_name = os.path.join(TEST_ROOT, "output_hf", "test.csv")
         self.confirm_file_exists(file_name, function=function,
                                  posn_args=[file_name, [['el1_1', 'el1_2'], ['row2_1', 'row2_2']]],
                                 )
@@ -173,19 +174,19 @@ class TestFileManipHelperFunctions(TestCommand):
     def test_write_morphology_xml(self):
         function = "write_morphology_xml"
         input_dictionary = copy.deepcopy(test_morphology_dict)
-        output_xml = os.path.join(TEST_ROOT, "temp", "test_output.xml")
+        output_xml = os.path.join(TEST_ROOT, "output_hf", "test_output.xml")
         self.confirm_file_exists(output_xml, function=function, posn_args=[input_dictionary, output_xml])
 
     def test_write_xyz_file(self):
         function = "write_xyz_file"
         input_dictionary = copy.deepcopy(test_morphology_dict)
-        output_xml = os.path.join(TEST_ROOT, "temp", "test_output.xyz")
+        output_xml = os.path.join(TEST_ROOT, "output_hf", "test_output.xyz")
         self.confirm_file_exists(output_xml, function=function, posn_args=[input_dictionary, output_xml])
 
     def test_write_to_file(self):
         function = "write_to_file"
         input_data = ['This is', 'test data']
-        file_name = os.path.join(TEST_ROOT, "temp", "test_output.log")
+        file_name = os.path.join(TEST_ROOT, "output_hf", "test_output.log")
         # Check creating a new file
         self.confirm_file_exists(file_name, function=function, posn_args=[file_name, input_data],
                                  kw_args={'mode': 'output_file'})
@@ -213,7 +214,7 @@ class TestFileManipHelperFunctions(TestCommand):
         assert type(data[4]) == list, ("Expected fifth element of the pickle file (chromophore_list)"
                        + " to be a list, instead its type is " + repr(type(data[4])) + ".")
         # Then write it out somewhere else
-        output_file = os.path.join(TEST_ROOT, "temp", "test_output.pickle")
+        output_file = os.path.join(TEST_ROOT, "output_hf", "test_output.pickle")
         self.confirm_file_exists(output_file, function="write_pickle", posn_args=[data, output_file])
 
 
@@ -412,3 +413,14 @@ class TestKMCHelperFunctions(TestCommand):
         e_charge = 1.602E-19
         self.compare_equal(2.3484760270796596e-15, function=function,
                            posn_args=[1E15])
+
+def setup_module():
+    try:
+        shutil.rmtree(os.path.join(TEST_ROOT, 'output_hf'))
+    except OSError:
+        pass
+    os.makedirs(os.path.join(TEST_ROOT, 'output_hf'))
+
+
+def teardown_module():
+    shutil.rmtree(os.path.join(TEST_ROOT, 'output_hf'))

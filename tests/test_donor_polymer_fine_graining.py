@@ -1,20 +1,19 @@
 from morphct.definitions import TEST_ROOT
 from morphct.code import helper_functions as hf
 from morphct import run_MorphCT
-from testing_tools import TestCommand, setup_module, teardown_module
+from testing_tools import TestCommand
 import os
 import shutil
 import sys
-
 
 # ---==============================================---
 # ---======== Directory and File Structure ========---
 # ---==============================================---
 
 input_morph_dir = TEST_ROOT + '/assets'
-output_morph_dir = TEST_ROOT + '/temp'
+output_morph_dir = TEST_ROOT + '/output_FG'
 input_device_dir = TEST_ROOT + '/assets'
-output_device_dir = TEST_ROOT + '/temp'
+output_device_dir = TEST_ROOT + '/output_FG'
 
 # ---==============================================---
 # ---========== Input Morphology Details ==========---
@@ -94,11 +93,12 @@ parameter_file = os.path.realpath(__file__)
 proc_IDs = hf.get_CPU_cores()
 parameter_names = [i for i in dir() if (not i.startswith('__')) and (not i.startswith('@'))\
                   and (i not in ['run_MorphCT', 'helper_functions', 'hf', 'os', 'shutil', 'TestCommand',
-                                'TEST_ROOT', 'setup_module', 'teardown_module', 'testing_tools'])]
+                                'TEST_ROOT', 'setup_module', 'teardown_module', 'testing_tools', 'sys'])]
 parameters = {}
 for name in parameter_names:
     parameters[name] = locals()[name]
 run_MorphCT.simulation(**parameters)  # Execute MorphCT using these simulation parameters
+
 
 # ---==============================================---
 # ---================= Run Tests ==================---
@@ -176,3 +176,6 @@ class TestCompareOutputs(TestCommand):
         expected_morphology = hf.load_morphology_xml(os.path.join(TEST_ROOT, 'assets',
                                                                   'donor_polymer_post_fine_graining.xml'))
         self.compare_equal(output_morphology, expected_morphology)
+
+def teardown_module():
+    shutil.rmtree(output_morph_dir)

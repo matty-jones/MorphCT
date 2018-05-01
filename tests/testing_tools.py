@@ -148,12 +148,3 @@ class TestCommand(object):
     def setup_method(self):
         np.random.seed(929292929)
         sys.stdout = None
-
-
-def setup_module(module):
-    os.makedirs(os.path.join(TEST_ROOT, 'temp'), exist_ok=True)
-
-
-def teardown_module(module):
-    pass
-    # shutil.rmtree(os.path.join(TEST_ROOT, 'temp'))
