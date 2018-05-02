@@ -27,5 +27,6 @@ build:
   ci:
     - source conda_cache_check.bash
     - pip install -e .
-    - pytest -c pytest-shippable.ini 
+    - PYTEST_ADDOPTS="-c pytest-shippable.ini" pytest
+  on_success:
     - COVERALLS_REPO_TOKEN=$COVERALLS_REPO_TOKEN coveralls
