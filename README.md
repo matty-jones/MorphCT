@@ -1,5 +1,8 @@
 ![alt-text](morphCTLogo.png "MorphCT Logo" =500x)
 
+[![Run Status](https://api.shippable.com/projects/5ae1ee243e7d2b0700153be4/badge?branch=dev)](https://app.shippable.com/bitbucket/cmelab/morphct) 
+[![Coverage Status](https://coveralls.io/repos/bitbucket/cmelab/morphct/badge.svg?branch=dev)](https://coveralls.io/bitbucket/cmelab/morphct?branch=dev)
+
 # PLEASE NOTE, README IS A WORK IN PROGRESS. ADDITIONALLY, CODE IS BEING UNIFIED ACCORDING TO PEP8 AND WILL SOON BE ADDED TO PYPI/CONDA. #
 
 Progress on these tasks can be seen in the feat/utils branch.
