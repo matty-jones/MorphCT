@@ -33,7 +33,7 @@ class TestCommand(object):
                                    + ") to be less than object2 (" + repr(object2) + ").")
 
     def compare_equal(self, expected, response=None, function=None, posn_args=None, kw_args=None):
-        if response is None:
+        if function is not None:
             response = self.fn_response(function, posn_args, kw_args)
         # Dictionary
         if isinstance(expected, (dict)):
