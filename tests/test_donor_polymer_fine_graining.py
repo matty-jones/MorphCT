@@ -117,7 +117,7 @@ def run_simulation():
 
     # Load the expected pickle
     expected_pickle_data = hf.load_pickle(os.path.join(input_morph_dir, 'FG',
-                                                       'donor_polymer_post_fine_graining.pickle'))
+                                                       morphology.replace('.xml', '_post_fine_graining.pickle')))
     fix_dict['expected_AA_morphology_dict'] = expected_pickle_data[0]
     fix_dict['expected_CG_morphology_dict'] = expected_pickle_data[1]
     fix_dict['expected_CG_to_AAID_master'] = expected_pickle_data[2]
@@ -199,8 +199,8 @@ class TestCompareOutputs(TestCommand):
         morphology = run_simulation['output_parameter_dict']['morphology']
         morph_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'morphology')
         output_morphology = hf.load_morphology_xml(os.path.join(morph_dir, morphology))
-        expected_morphology = hf.load_morphology_xml(os.path.join(input_morph_dir, 'FG',
-                                                                  'donor_polymer_post_fine_graining.xml'))
+        expected_morphology = hf.load_morphology_xml(os.path.join(input_morph_dir, 'FG', morphology.replace(
+            '.xml', '_post_fine_graining.xml')))
         self.compare_equal(output_morphology, expected_morphology)
 
 

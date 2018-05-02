@@ -9,6 +9,7 @@ import pytest
 
 @pytest.fixture(scope='module')
 def run_simulation():
+    sys.stdout = None
     # ---==============================================---
     # ---======== Directory and File Structure ========---
     # ---==============================================---
@@ -64,7 +65,7 @@ def run_simulation():
     dihedral_types = ['opls']
     integration_targets = ['all']
     timesteps = [1E-3, 1E-3, 1E-7, 1E-4]
-    durations = [1E5, 1E5, 1E4, 1E5]
+    durations = [1E5, 5E4, 1E4, 5E4]
     termination_conditions = ['ke_min', 'max_t', 'max_t', 'max_t']
     group_anchorings = ['all', 'all', 'all', 'none']
     dcd_file_write = True
@@ -92,10 +93,11 @@ def run_simulation():
         shutil.rmtree(output_morph_dir)
     except OSError:
         pass
-    os.makedirs(os.path.join(output_morph_dir, 'donor_polymer', 'code'))
-    shutil.copy(os.path.join(TEST_ROOT, 'assets', 'donor_polymer', 'FG',
-                             'donor_polymer_post_fine_graining.pickle'),
-                os.path.join(output_morph_dir, 'donor_polymer', 'code', 'donor_polymer.pickle'))
+    os.makedirs(os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code'))
+    shutil.copy(os.path.join(TEST_ROOT, 'assets', os.path.splitext(morphology)[0], 'FG',
+                             morphology.replace('.xml', '_post_fine_graining.pickle')),
+                os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code',
+                             morphology.replace('.xml', '.pickle')))
 
     run_MorphCT.simulation(**parameters)  # Execute MorphCT using these simulation parameters
     # The output dictionary from this fixing
@@ -112,12 +114,14 @@ def run_simulation():
 
     # Load the expected pickle
     expected_pickle_data = hf.load_pickle(os.path.join(input_morph_dir, 'RH',
-                                                       'donor_polymer_post_run_HOOMD.pickle'))
+                                                       morphology.replace('.xml', '_post_run_HOOMD.pickle')))
     fix_dict['expected_AA_morphology_dict'] = expected_pickle_data[0]
     fix_dict['expected_CG_morphology_dict'] = expected_pickle_data[1]
     fix_dict['expected_CG_to_AAID_master'] = expected_pickle_data[2]
     fix_dict['expected_parameter_dict'] = expected_pickle_data[3]
     fix_dict['expected_chromophore_list'] = expected_pickle_data[4]
+
+    sys.stdout = sys.__stdout__
     return fix_dict
 
 
@@ -128,8 +132,13 @@ def run_simulation():
 
 class TestCompareOutputs(TestCommand):
     def test_check_AA_morphology_dict(self, run_simulation):
-        self.compare_equal(run_simulation['output_AA_morphology_dict'],
-                           run_simulation['expected_AA_morphology_dict'])
+        for key in run_simulation['expected_AA_morphology_dict']:
+            try:
+                self.compare_equal(len(run_simulation['output_AA_morphology_dict'][key]),
+                                   len(run_simulation['expected_AA_morphology_dict'][key]))
+            except TypeError:
+                self.compare_equal(run_simulation['output_AA_morphology_dict'][key],
+                                   run_simulation['expected_AA_morphology_dict'][key])
 
     def test_check_CG_morphology_dict(self, run_simulation):
         self.compare_equal(run_simulation['output_CG_morphology_dict'],
