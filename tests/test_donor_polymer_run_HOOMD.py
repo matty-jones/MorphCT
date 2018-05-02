@@ -9,7 +9,6 @@ import pytest
 
 @pytest.fixture(scope='module')
 def run_simulation():
-    sys.stdout = None
     # ---==============================================---
     # ---======== Directory and File Structure ========---
     # ---==============================================---
@@ -102,7 +101,6 @@ def run_simulation():
     run_MorphCT.simulation(**parameters)  # Execute MorphCT using these simulation parameters
     # The output dictionary from this fixing
     fix_dict = {}
-
     # Load the output pickle
     output_pickle_data = hf.load_pickle(os.path.join(output_morph_dir, os.path.splitext(morphology)[0],
                                                           'code', morphology.replace('.xml', '.pickle')))
@@ -111,7 +109,6 @@ def run_simulation():
     fix_dict['output_CG_to_AAID_master'] = output_pickle_data[2]
     fix_dict['output_parameter_dict'] = output_pickle_data[3]
     fix_dict['output_chromophore_list'] = output_pickle_data[4]
-
     # Load the expected pickle
     expected_pickle_data = hf.load_pickle(os.path.join(input_morph_dir, 'RH',
                                                        morphology.replace('.xml', '_post_run_HOOMD.pickle')))
@@ -120,8 +117,6 @@ def run_simulation():
     fix_dict['expected_CG_to_AAID_master'] = expected_pickle_data[2]
     fix_dict['expected_parameter_dict'] = expected_pickle_data[3]
     fix_dict['expected_chromophore_list'] = expected_pickle_data[4]
-
-    sys.stdout = sys.__stdout__
     return fix_dict
 
 
