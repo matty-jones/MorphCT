@@ -14,9 +14,9 @@ def run_simulation():
     # ---==============================================---
 
     input_morph_dir = TEST_ROOT + '/assets/donor_polymer'
-    output_morph_dir = TEST_ROOT + '/output_FG'
+    output_morph_dir = TEST_ROOT + '/output_RH'
     input_device_dir = TEST_ROOT + '/assets/donor_polymer'
-    output_device_dir = TEST_ROOT + '/output_FG'
+    output_device_dir = TEST_ROOT + '/output_RH'
 
     # ---==============================================---
     # ---========== Input Morphology Details ==========---
@@ -33,8 +33,8 @@ def run_simulation():
     # ---============= Execution Modules ==============---
     # ---==============================================---
 
-    execute_fine_graining = True                 # Requires: None
-    execute_molecular_dynamics = False            # Requires: fine_graining
+    execute_fine_graining = False                 # Requires: None
+    execute_molecular_dynamics = True            # Requires: fine_graining
     execute_obtain_chromophores = False           # Requires: Atomistic morphology, or molecular_dynamics
     execute_zindo = False                         # Requires: obtain_chromophores
     execute_calculate_transfer_integrals = False  # Requires: execute_zindo
@@ -42,7 +42,7 @@ def run_simulation():
     execute_device_simulation = False              # Requires: calculate_transfer_integrals for all device_components
 
     # ---==============================================---
-    # ---========== Fine Graining Parameters ==========---
+    # ---=========== Forcefield Parameters ============---
     # ---==============================================---
 
     CG_to_template_dirs = {
@@ -50,43 +50,31 @@ def run_simulation():
         'B': TEST_ROOT + '/assets/donor_polymer',
         'C': TEST_ROOT + '/assets/donor_polymer',
     }
-    CG_to_template_files = {
-        'A': 'P3HT_template.xml',
-        'B': 'P3HT_template.xml',
-        'C': 'P3HT_template.xml',
-    }
     CG_to_template_force_fields = {
         'A': 'test_FF.xml',
         'B': 'test_FF.xml',
         'C': 'test_FF.xml',
     }
-    CG_to_template_AAIDs = {
-        'A': [0, 1, 2, 3, 4, 24],
-        'B': [5, 6, 7, 18, 19, 20, 21, 22, 23],
-        'C': [8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
-    }
-    CG_to_template_bonds = {
-        'bondB': ['C2-C3', 2, 5],
-        'bondC': ['C5-C6', 7, 8],
-    }
-    rigid_body_sites = {
-        'A': [0, 1, 2, 3, 4],
-    }
-    additional_constraints = [
-        ['C1-C10', 3, 25],
-        ['C1-C10-C9', 3, 25, 26],
-        ['C1-C10-S1', 3, 25, 29],
-        ['S1-C1-C10', 4, 3, 25],
-        ['C2-C1-C10', 2, 3, 25],
-        ['C1-C10-C9-C2', 3, 25, 26, 27],
-        ['C1-C10-S1-C1', 3, 25, 29, 28],
-        ['S1-C1-C10-S1', 4, 3, 25, 29],
-        ['C2-C1-C10-S1', 2, 3, 25, 29],
-    ]
-    molecule_terminating_connections = {
-        'C1': [[2, 1]],
-        'C10': [[2, 1]]
-    }
+    pair_R_cut = 10.0
+    pair_dpd_gamma_val = 0.0
+
+    # ---==============================================---
+    # ---===== Molecular Dynamics Phase Parameters ====---
+    # ---==============================================---
+    number_of_phases = 4
+    temperatures = [1.0]
+    taus = [1.0]
+    pair_types = ['none', 'dpd', 'lj', 'lj', 'lj', 'lj', 'lj', 'lj']
+    bond_types = ['harmonic']
+    angle_types = ['harmonic']
+    dihedral_types = ['opls']
+    integration_targets = ['all']
+    timesteps = [1E-3, 1E-3, 1E-7, 1E-4]
+    durations = [1E5, 5E4, 1E4, 5E4]
+    termination_conditions = ['ke_min', 'max_t', 'max_t', 'max_t']
+    group_anchorings = ['all', 'all', 'all', 'none']
+    dcd_file_write = True
+    dcd_file_dumpsteps = [0]
 
     # ---==============================================---
     # ---================= Begin run ==================---
@@ -95,17 +83,30 @@ def run_simulation():
     parameter_file = os.path.realpath(__file__)
     proc_IDs = hf.get_CPU_cores()
     parameter_names = [i for i in dir() if (not i.startswith('__')) and (not i.startswith('@'))\
-                       and (not i.startswith('Test')) and (not i.startswith('test'))\
-                       and (i not in ['run_MorphCT', 'helper_functions', 'hf', 'os', 'shutil', 'TestCommand',
-                                      'TEST_ROOT', 'setup_module', 'teardown_module', 'testing_tools', 'sys',
-                                      'pytest'])]
+                      and (i not in ['run_MorphCT', 'helper_functions', 'hf', 'os', 'shutil', 'TestCommand',
+                                    'TEST_ROOT', 'setup_module', 'teardown_module', 'testing_tools', 'sys',
+                                    'pytest'])]
     parameters = {}
     for name in parameter_names:
         parameters[name] = locals()[name]
+
+
+    # ---==============================================---
+    # ---=============== Setup Prereqs ================---
+    # ---==============================================---
+    try:
+        shutil.rmtree(output_morph_dir)
+    except OSError:
+        pass
+    os.makedirs(os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code'))
+    shutil.copy(os.path.join(TEST_ROOT, 'assets', os.path.splitext(morphology)[0], 'FG',
+                             morphology.replace('.xml', '_post_fine_graining.pickle')),
+                os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code',
+                             morphology.replace('.xml', '.pickle')))
+
     run_MorphCT.simulation(**parameters)  # Execute MorphCT using these simulation parameters
     # The output dictionary from this fixing
     fix_dict = {}
-
     # Load the output pickle
     output_pickle_data = hf.load_pickle(os.path.join(output_morph_dir, os.path.splitext(morphology)[0],
                                                           'code', morphology.replace('.xml', '.pickle')))
@@ -114,16 +115,16 @@ def run_simulation():
     fix_dict['output_CG_to_AAID_master'] = output_pickle_data[2]
     fix_dict['output_parameter_dict'] = output_pickle_data[3]
     fix_dict['output_chromophore_list'] = output_pickle_data[4]
-
     # Load the expected pickle
-    expected_pickle_data = hf.load_pickle(os.path.join(input_morph_dir, 'FG',
-                                                       morphology.replace('.xml', '_post_fine_graining.pickle')))
+    expected_pickle_data = hf.load_pickle(os.path.join(input_morph_dir, 'RH',
+                                                       morphology.replace('.xml', '_post_run_HOOMD.pickle')))
     fix_dict['expected_AA_morphology_dict'] = expected_pickle_data[0]
     fix_dict['expected_CG_morphology_dict'] = expected_pickle_data[1]
     fix_dict['expected_CG_to_AAID_master'] = expected_pickle_data[2]
     fix_dict['expected_parameter_dict'] = expected_pickle_data[3]
     fix_dict['expected_chromophore_list'] = expected_pickle_data[4]
     return fix_dict
+
 
 # ---==============================================---
 # ---================= Run Tests ==================---
@@ -132,8 +133,13 @@ def run_simulation():
 
 class TestCompareOutputs(TestCommand):
     def test_check_AA_morphology_dict(self, run_simulation):
-        self.compare_equal(run_simulation['output_AA_morphology_dict'],
-                           run_simulation['expected_AA_morphology_dict'])
+        for key in run_simulation['expected_AA_morphology_dict']:
+            try:
+                self.compare_equal(len(run_simulation['output_AA_morphology_dict'][key]),
+                                   len(run_simulation['expected_AA_morphology_dict'][key]))
+            except TypeError:
+                self.compare_equal(run_simulation['output_AA_morphology_dict'][key],
+                                   run_simulation['expected_AA_morphology_dict'][key])
 
     def test_check_CG_morphology_dict(self, run_simulation):
         self.compare_equal(run_simulation['output_CG_morphology_dict'],
@@ -160,52 +166,50 @@ class TestCompareOutputs(TestCommand):
         self.compare_equal(run_simulation['output_chromophore_list'],
                            run_simulation['expected_chromophore_list'])
 
-    def test_check_code_copied(self, run_simulation):
-        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
-        morphology = run_simulation['output_parameter_dict']['morphology']
-        code_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code')
-        self.confirm_file_exists(os.path.join(code_dir, 'fine_grainer.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'run_HOOMD.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'obtain_chromophores.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'execute_ZINDO.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'transfer_integrals.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'mobility_KMC.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'device_KMC.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'single_core_run_device_KMC.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'single_core_run_mob_KMC.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'single_core_run_orca.py'))
-
-    def test_check_par_copied(self, run_simulation):
-        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
-        morphology = run_simulation['output_parameter_dict']['morphology']
-        code_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code')
-        self.confirm_file_exists(os.path.join(code_dir, __file__))
-
-    def test_check_input_morph_copied(self, run_simulation):
-        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
-        morphology = run_simulation['output_parameter_dict']['morphology']
-        code_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code')
-        self.confirm_file_exists(os.path.join(code_dir, 'input.xml'))
-
-    def test_check_morphology_created(self, run_simulation):
+    def test_check_morphology_phase0_created(self, run_simulation):
         output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
         morphology = run_simulation['output_parameter_dict']['morphology']
         morph_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'morphology')
-        self.confirm_file_exists(os.path.join(morph_dir, morphology))
+        self.confirm_file_exists(os.path.join(morph_dir, 'phase0_' + morphology))
 
-    def test_check_morphology(self, run_simulation):
+    def test_check_morphology_phase1_created(self, run_simulation):
         output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
-        input_morph_dir = run_simulation['output_parameter_dict']['input_morph_dir']
         morphology = run_simulation['output_parameter_dict']['morphology']
         morph_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'morphology')
-        output_morphology = hf.load_morphology_xml(os.path.join(morph_dir, morphology))
-        expected_morphology = hf.load_morphology_xml(os.path.join(input_morph_dir, 'FG', morphology.replace(
-            '.xml', '_post_fine_graining.xml')))
-        self.compare_equal(output_morphology, expected_morphology)
+        self.confirm_file_exists(os.path.join(morph_dir, 'phase1_' + morphology))
+        self.confirm_file_exists(os.path.join(morph_dir, 'phase1_' + morphology.replace('xml', 'dcd')))
+
+    def test_check_morphology_phase2_created(self, run_simulation):
+        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
+        morphology = run_simulation['output_parameter_dict']['morphology']
+        morph_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'morphology')
+        self.confirm_file_exists(os.path.join(morph_dir, 'phase2_' + morphology))
+        self.confirm_file_exists(os.path.join(morph_dir, 'phase2_' + morphology.replace('xml', 'dcd')))
+
+    def test_check_morphology_phase3_created(self, run_simulation):
+        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
+        morphology = run_simulation['output_parameter_dict']['morphology']
+        morph_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'morphology')
+        self.confirm_file_exists(os.path.join(morph_dir, 'phase3_' + morphology))
+        self.confirm_file_exists(os.path.join(morph_dir, 'phase3_' + morphology.replace('xml', 'dcd')))
+
+    def test_check_morphology_phase4_created(self, run_simulation):
+        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
+        morphology = run_simulation['output_parameter_dict']['morphology']
+        morph_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'morphology')
+        self.confirm_file_exists(os.path.join(morph_dir, 'phase4_' + morphology))
+        self.confirm_file_exists(os.path.join(morph_dir, 'phase4_' + morphology.replace('xml', 'dcd')))
+
+    def test_check_morphology_final_created(self, run_simulation):
+        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
+        morphology = run_simulation['output_parameter_dict']['morphology']
+        morph_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'morphology')
+        self.confirm_file_exists(os.path.join(morph_dir, 'final_' + morphology))
+        self.confirm_file_exists(os.path.join(morph_dir, 'energies_' + morphology.replace('xml', 'log')))
 
 
 def teardown_module():
-    shutil.rmtree(os.path.join(TEST_ROOT, 'output_FG'))
+    shutil.rmtree(os.path.join(TEST_ROOT, 'output_RH'))
 
 
 if __name__ == "__main__":

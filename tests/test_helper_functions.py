@@ -199,7 +199,7 @@ class TestFileManipHelperFunctions(TestCommand):
 
     def test_pickles(self):
         # First load the test file
-        input_file = os.path.join(TEST_ROOT, "assets", "donor_polymer_hf_test.pickle")
+        input_file = os.path.join(TEST_ROOT, "assets", "hf_test.pickle")
         data = hf.load_pickle(input_file)
         assert len(data) == 5, ("Expected pickle file to contain 5 elements, instead it"
                        + " contained " + repr(len(data)) + ".")
