@@ -44,6 +44,12 @@ def run_simulation():
     # ---==============================================---
     # ---=========== Forcefield Parameters ============---
     # ---==============================================---
+
+    CG_to_template_dirs = {
+        'A': TEST_ROOT + '/assets/donor_polymer',
+        'B': TEST_ROOT + '/assets/donor_polymer',
+        'C': TEST_ROOT + '/assets/donor_polymer',
+    }
     CG_to_template_force_fields = {
         'A': 'test_FF.xml',
         'B': 'test_FF.xml',
