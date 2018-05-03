@@ -7,8 +7,28 @@ import shutil
 import sys
 import pytest
 
-@pytest.fixture(scope='module')
-def run_simulation():
+@pytest.fixture(scope='module',
+                params=[{'voronoi': False, 'hop_range': 10.0, 'transiting': False, 'koopmans': False},
+                        {'voronoi': True, 'hop_range': 10.0, 'transiting': False, 'koopmans': False},
+                        {'voronoi': False, 'hop_range': 5.0, 'transiting': False, 'koopmans': False},
+                        {'voronoi': False, 'hop_range': 10.0, 'transiting': True, 'koopmans': False},
+                        {'voronoi': False, 'hop_range': 10.0, 'transiting': False, 'koopmans': True},
+                       ]
+               )
+def run_simulation(request):
+    _voronoi = request.param['voronoi']
+    _hop_range_value = request.param['hop_range']
+    _transiting = request.param['transiting']
+    _koopmans = request.param['koopmans']
+    if _hop_range_value != 10.0:
+        _hop_range = True
+    else:
+        _hop_range = False
+    _modifiers = {'True': [], 'False': []}
+    for _key in request.param.keys():
+        _boolean = eval(''.join(['_', _key]))
+        _modifiers[repr(_boolean)].append(_key)
+
     # ---==============================================---
     # ---======== Directory and File Structure ========---
     # ---==============================================---
@@ -55,10 +75,10 @@ def run_simulation():
         'B': 'none',
         'C': 'none',
     }
-    use_voronoi_neighbours = True
-    maximum_hole_hop_distance = 10.0
-    maximum_electron_hop_distance = 10.0
-    permit_hops_through_opposing_chromophores = False
+    use_voronoi_neighbours = _voronoi
+    maximum_hole_hop_distance = _hop_range
+    maximum_electron_hop_distance = _hop_range
+    permit_hops_through_opposing_chromophores = _transiting
     remove_orca_inputs = True
     remove_orca_outputs = True
     chromophore_length = 3
@@ -75,7 +95,7 @@ def run_simulation():
         "VRH_delocalisation": 2e-10,
       },
     }
-    use_koopmans_approximation = False
+    use_koopmans_approximation = _koopmans
     koopmans_hopping_prefactor = 1E-3
 
     # ---==============================================---
@@ -84,10 +104,10 @@ def run_simulation():
 
     parameter_file = os.path.realpath(__file__)
     proc_IDs = hf.get_CPU_cores()
-    parameter_names = [i for i in dir() if (not i.startswith('__')) and (not i.startswith('@'))\
+    parameter_names = [i for i in dir() if (not i.startswith('_')) and (not i.startswith('@'))\
                       and (i not in ['run_MorphCT', 'helper_functions', 'hf', 'os', 'shutil', 'TestCommand',
                                     'TEST_ROOT', 'setup_module', 'teardown_module', 'testing_tools', 'sys',
-                                    'pytest'])]
+                                    'pytest', 'request'])]
     parameters = {}
     for name in parameter_names:
         parameters[name] = locals()[name]
@@ -117,10 +137,10 @@ def run_simulation():
     fix_dict['output_CG_to_AAID_master'] = output_pickle_data[2]
     fix_dict['output_parameter_dict'] = output_pickle_data[3]
     fix_dict['output_chromophore_list'] = output_pickle_data[4]
-    # Load the expected pickle
-    expected_pickle_data = hf.load_pickle(os.path.join(input_morph_dir, 'OC',
-                                                       morphology.replace('.xml',
-                                                                          '_post_obtain_chromophores.pickle')))
+    # Load the correct expected pickle
+    pickle_name = os.path.join(input_morph_dir, 'OC', morphology.replace('.xml', '_post_obtain_chromophores'))
+    pickle_name_modified = '_'.join([pickle_name] + sorted(_modifiers['True']))
+    expected_pickle_data = hf.load_pickle(''.join([pickle_name_modified, '.pickle']))
     fix_dict['expected_AA_morphology_dict'] = expected_pickle_data[0]
     fix_dict['expected_CG_morphology_dict'] = expected_pickle_data[1]
     fix_dict['expected_CG_to_AAID_master'] = expected_pickle_data[2]
@@ -177,4 +197,8 @@ def teardown_module():
 
 
 if __name__ == "__main__":
-    run_simulation()
+    class parameters:
+        def __init__(self, param):
+            self.param = param
+
+    run_simulation(parameters({'voronoi': False, 'hop_range': 10.0, 'transiting': False, 'koopmans': False}))
