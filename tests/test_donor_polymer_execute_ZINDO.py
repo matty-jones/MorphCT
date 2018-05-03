@@ -143,6 +143,53 @@ class TestCompareOutputs(TestCommand):
                 self.compare_equal(run_simulation['output_chromophore_list'][index].__dict__[key],
                                    chromophore.__dict__[key])
 
+    def test_check_input_single_orca_files_created(self, run_simulation):
+        input_morph_dir = run_simulation['output_parameter_dict']['input_morph_dir']
+        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
+        morphology = run_simulation['output_parameter_dict']['morphology']
+        chromo_dir = os.path.join(input_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
+                                  'input_orca', 'single')
+        asset_dir = os.path.join(input_morph_dir, os.path.splitext(morphology)[0], 'EZ',
+                                    'input_orca', 'single')
+        for file_name in os.listdir(asset_dir):
+            self.confirm_file_exists(os.path.join(chromo_dir, file_name))
+
+    def test_check_input_pair_orca_files_created(self, run_simulation):
+        input_morph_dir = run_simulation['output_parameter_dict']['input_morph_dir']
+        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
+        morphology = run_simulation['output_parameter_dict']['morphology']
+        chromo_dir = os.path.join(input_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
+                                  'input_orca', 'pair')
+        asset_dir = os.path.join(input_morph_dir, os.path.splitext(morphology)[0], 'EZ',
+                                    'input_orca', 'pair')
+        for file_name in os.listdir(asset_dir):
+            self.confirm_file_exists(os.path.join(chromo_dir, file_name))
+
+    def test_check_output_single_orca_files_created(self, run_simulation):
+        input_morph_dir = run_simulation['output_parameter_dict']['input_morph_dir']
+        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
+        morphology = run_simulation['output_parameter_dict']['morphology']
+        chromo_dir = os.path.join(input_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
+                                  'output_orca', 'single')
+        asset_dir = os.path.join(input_morph_dir, os.path.splitext(morphology)[0], 'EZ',
+                                    'output_orca', 'single')
+        for file_name in os.listdir(asset_dir):
+            self.confirm_file_exists(os.path.join(chromo_dir, file_name))
+
+    def test_check_output_pair_orca_files_created(self, run_simulation):
+        input_morph_dir = run_simulation['output_parameter_dict']['input_morph_dir']
+        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
+        morphology = run_simulation['output_parameter_dict']['morphology']
+        chromo_dir = os.path.join(input_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
+                                  'output_orca', 'pair')
+        asset_dir = os.path.join(input_morph_dir, os.path.splitext(morphology)[0], 'EZ',
+                                    'output_orca', 'pair')
+        for file_name in os.listdir(asset_dir):
+            self.confirm_file_exists(os.path.join(chromo_dir, file_name))
+
+
+# TODO: Parse the output files to check we get the same energy levels (should be deterministic)
+
 
 def teardown_module():
     shutil.rmtree(os.path.join(TEST_ROOT, 'output_EZ'))
