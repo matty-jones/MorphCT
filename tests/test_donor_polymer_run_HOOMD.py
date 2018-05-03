@@ -207,6 +207,14 @@ class TestCompareOutputs(TestCommand):
         self.confirm_file_exists(os.path.join(morph_dir, 'final_' + morphology))
         self.confirm_file_exists(os.path.join(morph_dir, 'energies_' + morphology.replace('xml', 'log')))
 
+    def test_check_morphology_final_output_pickle(self, run_simulation):
+        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
+        morphology = run_simulation['output_parameter_dict']['morphology']
+        morph_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'morphology')
+        final_MD_output = hf.load_morphology_xml(os.path.join(morph_dir, 'final_' + morphology))
+        self.compare_equal(final_MD_output,
+                           run_simulation['output_AA_morphology_dict'])
+
 
 def teardown_module():
     shutil.rmtree(os.path.join(TEST_ROOT, 'output_RH'))
