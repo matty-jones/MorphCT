@@ -460,6 +460,8 @@ def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_di
     AA_morphology_dict = hf.fix_images(AA_morphology_dict)
     # ...add in the unwrapped positions...
     AA_morphology_dict = hf.add_unwrapped_positions(AA_morphology_dict)
+    # ...rewrite the final morphology xml...
+    hf.write_morphology_xml(AA_morphology_dict, final_xml_name)
     # ...and write the pickle file.
     hf.write_pickle((AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict,
                      chromophore_list), parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]
