@@ -4,6 +4,7 @@ import shutil
 import numpy as np
 import time as T
 from morphct.code import helper_functions as hf
+from morphct.code import obtain_chromophores as oc
 from morphct.definitions import TEST_ROOT
 
 
@@ -102,6 +103,65 @@ class TestCommand(object):
                             ("Expected " + repr(val) + " for index "
                              + repr(index) + ", but got " + repr(response[index])
                              + ", which is more than 1E-4% (" + repr(difference) + ") from expected.")
+                    elif isinstance(val, (oc.chromophore)):
+                        val = val.__dict__
+                        expected = expected.__dict__
+
+
+                        ### BELOW HERE IS BROKEN
+
+
+                        for key, val in expected.items():
+                            if isinstance(val, (list, np.ndarray)):
+                                # Array in dict (a la morphology_dictionary['position'])
+                                for index, value in enumerate(val):
+                                    # Coordinates in array (a la morphology_dictionary['position'])
+                                    if isinstance(value, (list, np.ndarray)):
+                                        for index2, value2 in enumerate(value):
+                                            if isinstance(value2, (float)):
+                                                # Check that the answer is within 1E-4% of expected
+                                                difference = np.abs(value2 - response[key][index][index2])
+                                                assert difference <= np.abs(1E-6 * value2),\
+                                                    ("Expected " + repr(value2)
+                                                     + " for key " + repr([key, index, index2]) + ", but got "
+                                                     + repr(response[key][index][index2]) + ", which is more than "
+                                                     + "1E-4% (" + repr(difference) + ") from expected.")
+                                            else:
+                                                assert response[key][index][index2] == value2,\
+                                                    ("Expected "
+                                                     + repr(value2) + " for key " + repr([key, index]) + ", but got "
+                                                     + repr(response[key][index][index2]) + " instead.")
+                                    elif isinstance(value, (float)):
+                                        # Check that the answer is within 1E-4% of expected
+                                        difference = np.abs(value - response[key][index])
+                                        assert difference <= np.abs(1E-6 * value),\
+                                            ("Expected " + repr(value)
+                                             + " for key " + repr([key, index]) + ", but got "
+                                             + repr(response[key][index]) + ", which is more than 1E-4% ("
+                                             + repr(difference) + ") from expected.")
+                                    else:
+                                        assert response[key][index] == value,\
+                                            ("Expected " + repr(value) + " for key "
+                                             + repr([key, index]) + ", but got " + repr(response[key][index])
+                                             + " instead.")
+                            elif isinstance(val, (float)):
+                                # Check that the answer is within 1E-4% of expected
+                                difference = np.abs(val - response[key])
+                                assert difference <= np.abs(1E-6 * val),\
+                                    ("Expected " + repr(val) + " for key "
+                                     + repr(key) + ", but got " + repr(response[key]) + ", which is more than 1E-4% ("
+                                     + repr(difference) + ") from expected.")
+                            else:
+                                assert response[key] == val, ("Expected " + repr(val) + " for key " + repr(key)
+                                                              + ", but got " + repr(response[key]) + " instead.")
+
+
+
+
+
+                    ### ABOVE HERE IS BROKEN
+
+
                     else:
                         assert response[index] == val,\
                             ("Expected " + repr(val) + " for index "
