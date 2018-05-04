@@ -55,7 +55,7 @@ def run_simulation():
     # ---=== Mobility Specific KMC Parameters ===---
     number_of_holes_per_simulation_time = 5
     number_of_electrons_per_simulation_time = 0
-    hop_limit = 0
+    hop_limit = 10
     simulation_times = [1.00e-11, 1.00e-10, 1.00e-9]
     combine_KMC_results = True
     use_average_hop_rates = False
