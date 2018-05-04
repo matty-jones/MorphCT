@@ -82,7 +82,3 @@ class TestCommand(object):
         file_name = expected.split('/')[-1]
         files = os.listdir(directory)
         assert file_name in files, ("Expected the file " + str(file_name) + " to exist, but it doesn't.")
-
-    def setup_method(self):
-        np.random.seed(929292929)
-        sys.stdout = None

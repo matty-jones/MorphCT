@@ -412,6 +412,7 @@ class TestKMCHelperFunctions(TestCommand):
 
     def test_determine_event_tau(self):
         function = "determine_event_tau"
+        np.random.seed(929292929)
         self.compare_equal(2.3484760270796596e-15, function=function,
                            posn_args=[1E15])
 
