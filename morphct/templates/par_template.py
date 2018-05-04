@@ -48,6 +48,14 @@ output directory.
 '''
 overwrite_current_data = True
 
+'''
+An integer to set the master random seed in definitions.py. From this seed, all child process seeds will be spawned.
+Default is None, which will generate a seed based on the system time at runtime. Setting the seed to a 32-bit integer
+will ensure that runs with identical parameter files will generate identical data.
+'''
+random_seed_override = None
+
+
 # ---==============================================---
 # ---============= Execution Modules ==============---
 # ---==============================================---

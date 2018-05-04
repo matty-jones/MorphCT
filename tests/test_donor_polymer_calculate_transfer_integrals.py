@@ -7,36 +7,16 @@ import shutil
 import pytest
 
 
-@pytest.fixture(scope='module',
-                params=[{'voronoi': False, 'hop_range': 10.0, 'transiting': False, 'koopmans': False},
-                        {'voronoi': True, 'hop_range': 10.0, 'transiting': False, 'koopmans': False},
-                        {'voronoi': False, 'hop_range': 5.0, 'transiting': False, 'koopmans': False},
-                        {'voronoi': False, 'hop_range': 10.0, 'transiting': True, 'koopmans': False},
-                        {'voronoi': False, 'hop_range': 10.0, 'transiting': False, 'koopmans': True},
-                        ]
-                )
-def run_simulation(request):
-    _voronoi = request.param['voronoi']
-    _hop_range_value = request.param['hop_range']
-    _transiting = request.param['transiting']
-    _koopmans = request.param['koopmans']
-    if _hop_range_value != 10.0:
-        _hop_range = True
-    else:
-        _hop_range = False
-    _modifiers = {'True': [], 'False': []}
-    for _key in request.param.keys():
-        _boolean = eval(''.join(['_', _key]))
-        _modifiers[repr(_boolean)].append(_key)
-
+@pytest.fixture(scope='module')
+def run_simulation():
     # ---==============================================---
     # ---======== Directory and File Structure ========---
     # ---==============================================---
 
     input_morph_dir = TEST_ROOT + '/assets/donor_polymer'
-    output_morph_dir = TEST_ROOT + '/output_OC'
+    output_morph_dir = TEST_ROOT + '/output_TI'
     input_device_dir = TEST_ROOT + '/assets/donor_polymer'
-    output_device_dir = TEST_ROOT + '/output_OC'
+    output_device_dir = TEST_ROOT + '/output_TI'
 
     # ---==============================================---
     # ---========== Input Morphology Details ==========---
@@ -56,50 +36,11 @@ def run_simulation(request):
 
     execute_fine_graining = False                 # Requires: None
     execute_molecular_dynamics = False            # Requires: fine_graining
-    execute_obtain_chromophores = True           # Requires: Atomistic morphology, or molecular_dynamics
+    execute_obtain_chromophores = False           # Requires: Atomistic morphology, or molecular_dynamics
     execute_zindo = False                         # Requires: obtain_chromophores
-    execute_calculate_transfer_integrals = False  # Requires: execute_zindo
+    execute_calculate_transfer_integrals = True  # Requires: execute_zindo
     execute_calculate_mobility = False            # Requires: calculate_transfer_integrals
     execute_device_simulation = False              # Requires: calculate_transfer_integrals for all device_components
-
-    # ---==============================================---
-    # ---============ Chromophore Parameters ==========---
-    # ---==============================================---
-
-    molecule_terminating_connections = {
-        'C1': [[2, 1]],
-        'C10': [[2, 1]]
-    }
-    AA_rigid_body_species = {
-    }
-    CG_site_species = {
-        'A': 'donor',
-        'B': 'none',
-        'C': 'none',
-    }
-    use_voronoi_neighbours = _voronoi
-    maximum_hole_hop_distance = _hop_range
-    maximum_electron_hop_distance = _hop_range
-    permit_hops_through_opposing_chromophores = _transiting
-    remove_orca_inputs = True
-    remove_orca_outputs = True
-    chromophore_length = 3
-
-    # ---==============================================---
-    # ---=== Chromophore Energy Scaling Parameters ====---
-    # ---==============================================---
-
-    chromophore_species = {
-        "donor": {
-            "literature_MO": -5.0,
-            "target_DOS_std": 0.1,
-            "reorganisation_energy": 0.3064,
-            "species": "donor",
-            "VRH_delocalisation": 2e-10,
-        },
-    }
-    use_koopmans_approximation = _koopmans
-    koopmans_hopping_prefactor = 1E-3
 
     # ---==============================================---
     # ---================= Begin run ==================---
@@ -107,11 +48,11 @@ def run_simulation(request):
 
     parameter_file = os.path.realpath(__file__)
     proc_IDs = hf.get_CPU_cores()
-    parameter_names = [i for i in dir() if (not i.startswith('_')) and (not i.startswith('@'))
+    parameter_names = [i for i in dir() if (not i.startswith('__')) and (not i.startswith('@'))
                        and (not i.startswith('Test')) and (not i.startswith('test'))
                        and (i not in ['run_MorphCT', 'helper_functions', 'hf', 'os', 'shutil', 'TestCommand',
                                       'TEST_ROOT', 'setup_module', 'teardown_module', 'testing_tools', 'sys',
-                                      'pytest', 'request'])]
+                                      'pytest'])]
     parameters = {}
     for name in parameter_names:
         parameters[name] = locals()[name]
@@ -125,14 +66,23 @@ def run_simulation(request):
     except OSError:
         pass
     os.makedirs(os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code'))
-    shutil.copy(os.path.join(TEST_ROOT, 'assets', os.path.splitext(morphology)[0], 'RH',
-                             morphology.replace('.xml', '_post_run_HOOMD.pickle')),
+    shutil.copy(os.path.join(TEST_ROOT, 'assets', os.path.splitext(morphology)[0], 'EZ',
+                             morphology.replace('.xml', '_post_execute_ZINDO.pickle')),
                 os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code',
                              morphology.replace('.xml', '.pickle')))
+    shutil.copytree(os.path.join(TEST_ROOT, 'assets', os.path.splitext(morphology)[0], 'EZ',
+                                 'input_orca'),
+                    os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
+                                 'input_orca'))
+    shutil.copytree(os.path.join(TEST_ROOT, 'assets', os.path.splitext(morphology)[0], 'EZ',
+                                 'output_orca'),
+                    os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
+                                 'output_orca'))
 
     run_MorphCT.simulation(**parameters)  # Execute MorphCT using these simulation parameters
     # The output dictionary from this fixing
     fix_dict = {}
+
     # Load the output pickle
     output_pickle_data = hf.load_pickle(os.path.join(output_morph_dir, os.path.splitext(morphology)[0],
                                                      'code', morphology.replace('.xml', '.pickle')))
@@ -141,17 +91,17 @@ def run_simulation(request):
     fix_dict['output_CG_to_AAID_master'] = output_pickle_data[2]
     fix_dict['output_parameter_dict'] = output_pickle_data[3]
     fix_dict['output_chromophore_list'] = output_pickle_data[4]
-    # Load the correct expected pickle
-    pickle_name = os.path.join(input_morph_dir, 'OC', morphology.replace('.xml', '_post_obtain_chromophores'))
-    pickle_name_modified = '_'.join([pickle_name] + sorted(_modifiers['True']))
-    expected_pickle_data = hf.load_pickle(''.join([pickle_name_modified, '.pickle']))
+
+    # Load the expected pickle
+    expected_pickle_data = hf.load_pickle(
+        os.path.join(input_morph_dir, 'TI',
+                     morphology.replace('.xml', '_post_calculate_transfer_integrals.pickle')))
     fix_dict['expected_AA_morphology_dict'] = expected_pickle_data[0]
     fix_dict['expected_CG_morphology_dict'] = expected_pickle_data[1]
     fix_dict['expected_CG_to_AAID_master'] = expected_pickle_data[2]
     fix_dict['expected_parameter_dict'] = expected_pickle_data[3]
     fix_dict['expected_chromophore_list'] = expected_pickle_data[4]
     return fix_dict
-
 
 # ---==============================================---
 # ---================= Run Tests ==================---
@@ -160,13 +110,8 @@ def run_simulation(request):
 
 class TestCompareOutputs(TestCommand):
     def test_check_AA_morphology_dict(self, run_simulation):
-        for key in run_simulation['expected_AA_morphology_dict']:
-            try:
-                self.compare_equal(len(run_simulation['output_AA_morphology_dict'][key]),
-                                   len(run_simulation['expected_AA_morphology_dict'][key]))
-            except TypeError:
-                self.compare_equal(run_simulation['output_AA_morphology_dict'][key],
-                                   run_simulation['expected_AA_morphology_dict'][key])
+        self.compare_equal(run_simulation['output_AA_morphology_dict'],
+                           run_simulation['expected_AA_morphology_dict'])
 
     def test_check_CG_morphology_dict(self, run_simulation):
         self.compare_equal(run_simulation['output_CG_morphology_dict'],
@@ -190,19 +135,16 @@ class TestCompareOutputs(TestCommand):
         self.compare_equal(output_pars, expected_pars)
 
     def test_check_chromophore_list(self, run_simulation):
-        for index, chromophore in enumerate(run_simulation['expected_chromophore_list']):
-            for key in chromophore.__dict__.keys():
-                self.compare_equal(run_simulation['output_chromophore_list'][index].__dict__[key],
-                                   chromophore.__dict__[key])
+        self.compare_equal(run_simulation['output_chromophore_list'],
+                           run_simulation['expected_chromophore_list'])
+
+
+# TODO: Tests for failed singles and failed pairs
 
 
 def teardown_module():
-    shutil.rmtree(os.path.join(TEST_ROOT, 'output_OC'))
+    shutil.rmtree(os.path.join(TEST_ROOT, 'output_TI'))
 
 
 if __name__ == "__main__":
-    class parameters:
-        def __init__(self, param):
-            self.param = param
-
-    run_simulation(parameters({'voronoi': False, 'hop_range': 10.0, 'transiting': False, 'koopmans': False}))
+    run_simulation()

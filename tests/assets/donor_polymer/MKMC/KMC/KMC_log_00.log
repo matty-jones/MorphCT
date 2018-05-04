@@ -1,0 +1,22 @@
+Found 15 jobs to run.
+Found main morphology pickle file at /Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/tests/output_MKMC/donor_polymer/code/donor_polymer.pickle! loading data...
+Main morphology pickle loaded!
+Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.2 wall-clock seconds.
+Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+All jobs completed in 0.2 seconds.
+Saving the pickle file cleanly before termination...
+Pickle file saved successfully as /Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/tests/output_MKMC/donor_polymer/KMC/KMC_results_00.pickle!
+Exiting normally...
