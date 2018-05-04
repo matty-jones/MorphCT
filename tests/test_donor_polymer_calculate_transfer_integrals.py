@@ -4,8 +4,8 @@ from morphct import run_MorphCT
 from testing_tools import TestCommand
 import os
 import shutil
-import sys
 import pytest
+
 
 @pytest.fixture(scope='module')
 def run_simulation():
@@ -41,15 +41,14 @@ def run_simulation():
     execute_calculate_mobility = False            # Requires: calculate_transfer_integrals
     execute_device_simulation = False              # Requires: calculate_transfer_integrals for all device_components
 
-
     # ---==============================================---
     # ---================= Begin run ==================---
     # ---==============================================---
 
     parameter_file = os.path.realpath(__file__)
     proc_IDs = hf.get_CPU_cores()
-    parameter_names = [i for i in dir() if (not i.startswith('__')) and (not i.startswith('@'))\
-                       and (not i.startswith('Test')) and (not i.startswith('test'))\
+    parameter_names = [i for i in dir() if (not i.startswith('__')) and (not i.startswith('@'))
+                       and (not i.startswith('Test')) and (not i.startswith('test'))
                        and (i not in ['run_MorphCT', 'helper_functions', 'hf', 'os', 'shutil', 'TestCommand',
                                       'TEST_ROOT', 'setup_module', 'teardown_module', 'testing_tools', 'sys',
                                       'pytest'])]
@@ -71,12 +70,12 @@ def run_simulation():
                              morphology.replace('.xml', '.pickle')))
     shutil.copytree(os.path.join(TEST_ROOT, 'assets', os.path.splitext(morphology)[0], 'EZ',
                                  'input_orca'),
-                os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
-                             'input_orca'))
+                    os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
+                                 'input_orca'))
     shutil.copytree(os.path.join(TEST_ROOT, 'assets', os.path.splitext(morphology)[0], 'EZ',
                                  'output_orca'),
-                os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
-                             'output_orca'))
+                    os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
+                                 'output_orca'))
 
     run_MorphCT.simulation(**parameters)  # Execute MorphCT using these simulation parameters
     # The output dictionary from this fixing
@@ -84,7 +83,7 @@ def run_simulation():
 
     # Load the output pickle
     output_pickle_data = hf.load_pickle(os.path.join(output_morph_dir, os.path.splitext(morphology)[0],
-                                                          'code', morphology.replace('.xml', '.pickle')))
+                                                     'code', morphology.replace('.xml', '.pickle')))
     fix_dict['output_AA_morphology_dict'] = output_pickle_data[0]
     fix_dict['output_CG_morphology_dict'] = output_pickle_data[1]
     fix_dict['output_CG_to_AAID_master'] = output_pickle_data[2]
@@ -126,8 +125,8 @@ class TestCompareOutputs(TestCommand):
         output_pars = {}
         expected_pars = {}
         for key in run_simulation['expected_parameter_dict']:
-            if key  in ['parameter_file', 'output_morph_dir', 'CG_to_template_dirs', 'output_morphology_directory',
-                        'input_device_dir', 'input_morphology_file', 'output_device_dir', 'input_morph_dir']:
+            if key in ['parameter_file', 'output_morph_dir', 'CG_to_template_dirs', 'output_morphology_directory',
+                       'input_device_dir', 'input_morphology_file', 'output_device_dir', 'input_morph_dir']:
                 continue
             output_pars = run_simulation['output_parameter_dict'][key]
             expected_pars = run_simulation['expected_parameter_dict'][key]
