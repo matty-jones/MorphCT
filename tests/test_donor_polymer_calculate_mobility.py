@@ -67,7 +67,8 @@ def run_simulation():
     # ---==============================================---
 
     parameter_file = os.path.realpath(__file__)
-    proc_IDs = hf.get_CPU_cores()
+    # Force serial running
+    proc_IDs = [0]
     parameter_names = [i for i in dir() if (not i.startswith('__')) and (not i.startswith('@'))
                        and (not i.startswith('Test')) and (not i.startswith('test'))
                        and (i not in ['run_MorphCT', 'helper_functions', 'hf', 'os', 'shutil', 'TestCommand',
@@ -80,6 +81,7 @@ def run_simulation():
     # ---==============================================---
     # ---=============== Setup Prereqs ================---
     # ---==============================================---
+
     try:
         shutil.rmtree(output_morph_dir)
     except OSError:
@@ -149,8 +151,8 @@ class TestCompareOutputs(TestCommand):
         self.compare_equal(run_simulation['output_chromophore_list'],
                            run_simulation['expected_chromophore_list'])
 
-
-# TODO: Tests for failed singles and failed pairs
+    def test_check_KMC_outputs(self, run_simulation):
+        pass
 
 
 def teardown_module():
