@@ -2,7 +2,6 @@ import os
 import glob
 import sys
 import numpy as np
-import random as R
 import pickle
 import subprocess as sp
 from morphct.definitions import SINGLE_RUN_MOB_KMC_FILE
@@ -32,7 +31,7 @@ def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_di
             carrier_list.append([carrier_no, lifetime, 'hole'])
         for carrier_no in range(parameter_dict['number_of_electrons_per_simulation_time']):
             carrier_list.append([carrier_no, lifetime, 'electron'])
-    R.shuffle(carrier_list)
+    np.random.shuffle(carrier_list)
     proc_IDs = parameter_dict['proc_IDs']
     output_dir = parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4] + '/KMC'
     jobs_list = [carrier_list[i:i + (int(np.ceil(len(carrier_list) / len(proc_IDs))))]

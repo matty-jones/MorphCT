@@ -5,7 +5,6 @@ import os
 import numpy as np
 from morphct.code import helper_functions as hf
 import time as T
-import random as R
 from scipy.sparse import lil_matrix
 import pickle
 
@@ -330,8 +329,8 @@ if __name__ == '__main__':
     # Attempt to catch a kill signal to ensure that we save the pickle before
     # termination
     killer = termination_signal()
-    seed = R.randint(0, sys.maxsize)
-    R.seed(seed)
+    seed = np.random.randint(0, sys.maxsize)
+    np.random.seed(seed)
     # Save the pickle as a list of `saveCarrier' instances that contain the
     # bare minimum
     save_data = initialise_save_data(len(chromophore_list), seed)
@@ -346,7 +345,7 @@ if __name__ == '__main__':
             t1 = T.time()
             # Find a random position to start the carrier in
             while True:
-                start_chromo_ID = R.randint(0, len(chromophore_list) - 1)
+                start_chromo_ID = np.random.randint(0, len(chromophore_list) - 1)
                 if (carrier_type.lower() == 'electron') and (chromophore_list[start_chromo_ID].species.lower()
                                                              != 'acceptor'):
                     continue

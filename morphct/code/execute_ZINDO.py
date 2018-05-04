@@ -5,7 +5,6 @@ from morphct.code import helper_functions as hf
 from morphct.definitions import PROJECT_ROOT, SINGLE_ORCA_RUN_FILE
 import subprocess as sp
 import multiprocessing as mp
-import random as R
 import pickle
 
 
@@ -236,7 +235,7 @@ def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_di
     proc_IDs = parameter_dict['proc_IDs']
     jobs_list = get_orca_jobs(input_dir, parameter_dict, proc_IDs)
     # Shuffle the jobsList to spread it out over the cores
-    R.shuffle(jobs_list)
+    np.random.shuffle(jobs_list)
     number_of_inputs = sum([len(orca_files_to_run) for orca_files_to_run in jobs_list])
     print("Found", number_of_inputs, "orca files to run.")
     if (number_of_inputs > 0):

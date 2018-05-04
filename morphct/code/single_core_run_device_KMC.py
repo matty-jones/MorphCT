@@ -1,7 +1,6 @@
 import os
 import sys
 import copy
-import random as R
 import time as T
 import numpy as np
 import heapq
@@ -55,7 +54,7 @@ class exciton:
         self.T = parameter_dict['system_temperature']
         self.lifetime_parameter = parameter_dict['exciton_lifetime']
         # DEBUG excitons live forever
-        self.recombination_time = -np.log(R.random()) * self.lifetime_parameter
+        self.recombination_time = -np.log(np.random.random()) * self.lifetime_parameter
         self.r_F = parameter_dict['forster_radius']
         self.prefactor = parameter_dict['hopping_prefactor']
         self.number_of_hops = 0
@@ -85,7 +84,7 @@ class exciton:
                     self.current_device_posn, self.current_chromophore.ID)
                 # The electron chromophore is a randomly selected chromophore of
                 # the opposing type that is in range of the current one
-                electron_chromophore_ID = R.choice(self.current_chromophore.dissociation_neighbours)[0]
+                electron_chromophore_ID = np.random.choice(self.current_chromophore.dissociation_neighbours)[0]
                 electron_chromophore = global_chromophore_data.return_specific_chromophore(
                     self.current_device_posn, electron_chromophore_ID)
                 if (self.current_device_posn not in hole_chromophore.occupied) \
@@ -105,7 +104,7 @@ class exciton:
                     self.current_device_posn, self.current_chromophore.ID)
                 # The hole chromophore is a randomly selected chromophore of the opposing
                 # type that is in range of the current one
-                hole_chromophore_ID = R.choice(self.current_chromophore.dissociation_neighbours)[0]
+                hole_chromophore_ID = np.random.choice(self.current_chromophore.dissociation_neighbours)[0]
                 hole_chromophore = global_chromophore_data.return_specific_chromophore(
                     self.current_device_posn, hole_chromophore_ID)
                 if (self.current_device_posn not in hole_chromophore.occupied)\
@@ -394,7 +393,7 @@ class carrier:
             # Otherwise, we're good to go. Calculate the hop as previously (but
             # a hop to the neighbourChromophore)
             delta_E_ij = self.calculate_delta_E(neighbour_chromophore, neighbour_relative_image,
-                                               self.current_chromophore.neighbours_delta_E[neighbour_index])
+                                                self.current_chromophore.neighbours_delta_E[neighbour_index])
             # Create a hopping prefactor that can be modified if we're using
             # Koopmans' approximation
             if self.use_koopmans_approximation:
@@ -1221,7 +1220,7 @@ def execute(device_array, chromophore_data, morphology_data, parameter_dict, vol
                 # Complete the event by injecting an exciton
                 # First find an injection location. For now, this will just be
                 # somewhere random in the system
-                random_device_position = [R.randint(0, x - 1) for x in device_array.shape]
+                random_device_position = [np.random.randint(0, x - 1) for x in device_array.shape]
                 hf.write_to_file(log_file, ["EVENT: Photoinjection #" + str(number_of_photoinjections)
                                             + " into " + repr(random_device_position) + " (which has type "
                                             + repr(device_array[tuple(random_device_position)]) + ") after "
@@ -1702,7 +1701,7 @@ if __name__ == '__main__':
 
     KMC_directory = sys.argv[1]
     CPU_rank = int(sys.argv[2])
-    R.seed(int(sys.argv[3]))
+    np.random.seed(int(sys.argv[3]))
     overwrite = False
     try:
         overwrite = bool(sys.argv[4])

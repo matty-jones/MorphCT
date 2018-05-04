@@ -1,7 +1,6 @@
 import os
 import sys
 import numpy as np
-import random as R
 import pickle
 import subprocess as sp
 from morphct.definitions import SINGLE_RUN_DEVICE_KMC_FILE
@@ -60,7 +59,7 @@ class chromophore_data_container:
 
     def return_random_chromophore(self, device_position):
         device_moiety_type = self.device_array[tuple(device_position)]
-        return R.choice(self.moiety_dictionary[device_moiety_type].chromophore_list)
+        return np.random.choice(self.moiety_dictionary[device_moiety_type].chromophore_list)
 
     def return_closest_chromophore_to_position(self, device_position, desired_position):
         closest_chromo_ID = None
@@ -138,7 +137,7 @@ def load_device_morphology(parameter_dict):
 
 def main(parameter_dict):
     # Set the random seed now for all the child processes
-    R.seed(3232)
+    np.random.seed(3232)
 
     # First job will be to load in the device morphology, when I work out what
     # format I want it to be.
@@ -183,7 +182,7 @@ def main(parameter_dict):
         # stream. This way, we ensure that each child process has a different
         # random number stream to the other processes, but it's the same stream
         # every time we run the program.
-        child_seed = R.randint(0, 2**32)
+        child_seed = np.random.randint(0, 2**32)
         # Previous run command:
         run_command = ['python ', SINGLE_RUN_DEVICE_KMC_FILE, output_dir, str(proc_ID),
                        str(child_seed)]
