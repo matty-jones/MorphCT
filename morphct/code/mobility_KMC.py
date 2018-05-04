@@ -1,14 +1,16 @@
-import os
 import glob
+import os
+import pickle
 import sys
 import numpy as np
-import pickle
 import subprocess as sp
-from morphct.definitions import SINGLE_RUN_MOB_KMC_FILE
+from morphct.definitions import SINGLE_RUN_MOB_KMC_FILE, RANDOM_SEED
 from morphct.code import helper_functions as hf
 
 
 def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
+    # Get the random seed now for all the child processes
+    np.random.seed(RANDOM_SEED)
     try:
         if parameter_dict['use_average_hop_rates']:
             print("Be advised: use_average_hop_rates is set to", repr(parameter_dict['use_average_hop_rates']) + ".")
@@ -44,7 +46,19 @@ def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_di
             pickle.dump(jobs, pickle_file)
         print("KMC jobs for proc_ID", proc_ID, "written to KMC_data_%02d.pickle" % (proc_ID))
         # Open the required processes to execute the KMC jobs
-        running_jobs.append(sp.Popen(['python', SINGLE_RUN_MOB_KMC_FILE, output_dir, str(proc_ID)]))
+        # Random seeding is a little weird here. If we don't generate a random
+        # seed in the child process, it will just use the system time. So, we
+        # generate a seed here to get the same random number stream each time,
+        # and then feed the child process a new seed from the random number
+        # stream. This way, we ensure that each child process has a different
+        # random number stream to the other processes, but it's the same stream
+        # every time we run the program.
+        child_seed = np.random.randint(0, 2**32)
+        # Previous run command:
+        run_command = ['python ', SINGLE_RUN_MOB_KMC_FILE, output_dir, str(proc_ID),
+                       str(child_seed)]
+        print(run_command)
+        running_jobs.append(sp.Popen(run_command))
     # Wait for all jobs to complete
     [p.wait() for p in running_jobs]
     # Now combine all of the pickle files into one:

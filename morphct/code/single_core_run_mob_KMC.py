@@ -1,12 +1,12 @@
-import sys
-import signal
-import traceback
 import os
+import pickle
+import signal
+import sys
+import traceback
 import numpy as np
-from morphct.code import helper_functions as hf
 import time as T
 from scipy.sparse import lil_matrix
-import pickle
+from morphct.code import helper_functions as hf
 
 
 elementary_charge = 1.60217657E-19  # C
@@ -274,9 +274,10 @@ def update_molecule(atom_ID, molecule_list, bonded_atoms):
 if __name__ == '__main__':
     KMC_directory = sys.argv[1]
     CPU_rank = int(sys.argv[2])
+    np.random.seed(int(sys.argv[3]))
     overwrite = False
     try:
-        overwrite = bool(sys.argv[3])
+        overwrite = bool(sys.argv[4])
     except:
         pass
     # Load `jobs_to_run' which is a list, where each element contains the
@@ -329,8 +330,6 @@ if __name__ == '__main__':
     # Attempt to catch a kill signal to ensure that we save the pickle before
     # termination
     killer = termination_signal()
-    seed = np.random.randint(0, sys.maxsize)
-    np.random.seed(seed)
     # Save the pickle as a list of `saveCarrier' instances that contain the
     # bare minimum
     save_data = initialise_save_data(len(chromophore_list), seed)

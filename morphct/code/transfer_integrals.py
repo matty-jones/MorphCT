@@ -1,11 +1,11 @@
-import numpy as np
-import sys
-import os
-from morphct.code import helper_functions as hf
-from morphct.definitions import SINGLE_ORCA_RUN_FILE
-import subprocess as sp
-import pickle
 import glob
+import os
+import pickle
+import sys
+import numpy as np
+import subprocess as sp
+from morphct.definitions import SINGLE_ORCA_RUN_FILE
+from morphct.code import helper_functions as hf
 
 
 class orcaError(Exception):

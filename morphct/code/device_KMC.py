@@ -1,9 +1,9 @@
 import os
+import pickle
 import sys
 import numpy as np
-import pickle
 import subprocess as sp
-from morphct.definitions import SINGLE_RUN_DEVICE_KMC_FILE
+from morphct.definitions import SINGLE_RUN_DEVICE_KMC_FILE, RANDOM_SEED
 from morphct.code import helper_functions as hf
 
 
@@ -136,19 +136,16 @@ def load_device_morphology(parameter_dict):
 
 
 def main(parameter_dict):
-    # Set the random seed now for all the child processes
-    np.random.seed(3232)
-
+    # Get the random seed now for all the child processes
+    np.random.seed(RANDOM_SEED)
     # First job will be to load in the device morphology, when I work out what
     # format I want it to be.
     device_array, moiety_dictionary = load_device_morphology(parameter_dict)
-
     # Initialise the helperClass to obtain all of the chromophoreData required,
     # allowing it be accessed globally
     chromophore_data = chromophore_data_container(device_array, moiety_dictionary,
                                                   parameter_dict['wrap_device_xy'])
     morphology_data = morphology_data_container(device_array, moiety_dictionary)
-
     # Write these classes out to a pickle file so that they can be loaded by the
     # child processes later
     to_pickle = [device_array, chromophore_data, morphology_data, parameter_dict]

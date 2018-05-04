@@ -1,10 +1,10 @@
-import numpy as np
-import sys
-from morphct.code import helper_functions as hf
 import copy
-from scipy.spatial import Delaunay
-from collections import defaultdict
 import itertools
+import sys
+import numpy as np
+from collections import defaultdict
+from scipy.spatial import Delaunay
+from morphct.code import helper_functions as hf
 
 
 class chromophore:

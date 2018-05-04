@@ -1,17 +1,16 @@
-import os
-import sys
 import copy
-import time as T
-import numpy as np
 import heapq
+import os
 import pickle
+import sys
 import matplotlib.pyplot as plt
+import numpy as np
+import time as T
 try:
     import mpl_toolkits.mplot3d as p3
 except ImportError:
     print("Could not import 3D plotting engine, calling the plot_device_components function"
           " will result in an error!")
-
 from morphct.code import helper_functions as hf
 
 

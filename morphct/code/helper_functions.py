@@ -1,10 +1,10 @@
-import numpy as np
 import copy
-import os
-import sys
-import pickle
-import multiprocessing as mp
 import csv
+import os
+import pickle
+import sys
+import multiprocessing as mp
+import numpy as np
 
 
 # UNIVERSAL CONSTANTS, DO NOT CHANGE!
