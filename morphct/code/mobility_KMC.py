@@ -19,7 +19,13 @@ def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_di
             print("Average Inter-molecular hop rate:", parameter_dict['average_inter_hop_rate'])
     except KeyError:
         pass
-    # Attempt 2. PROGRAM THIS SERIALLY FIRST SO THAT IT WORKS
+    # We need to make sure that the most up-to-date parameters for this system
+    # (parameter_dict) gets correctly passed on to the child processes. We do
+    # this by re-saving the pickle using these new parameters.
+    pickle_name = os.path.join(parameter_dict['output_morph_dir'], parameter_dict['morphology'][:-4],
+                               'code', ''.join([parameter_dict['morphology'][:-4], '.pickle']))
+    hf.write_pickle((AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict,
+                     chromophore_list), pickle_name)
     # Determine the maximum simulation times based on the parameter dictionary
     simulation_times = parameter_dict['simulation_times']
     carrier_list = []
@@ -41,7 +47,7 @@ def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_di
     print("Writing job pickles for each CPU...")
     running_jobs = []
     for proc_ID, jobs in enumerate(jobs_list):
-        pickle_name = output_dir + '/KMC_data_%02d.pickle' % (proc_ID)
+        pickle_name = os.path.join(output_dir, 'KMC_data_%02d.pickle' % (proc_ID))
         with open(pickle_name, 'wb+') as pickle_file:
             pickle.dump(jobs, pickle_file)
         print("KMC jobs for proc_ID", proc_ID, "written to KMC_data_%02d.pickle" % (proc_ID))
@@ -55,7 +61,7 @@ def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_di
         # every time we run the program.
         child_seed = np.random.randint(0, 2**32)
         # Previous run command:
-        run_command = ['python ', SINGLE_RUN_MOB_KMC_FILE, output_dir, str(proc_ID),
+        run_command = ['python', SINGLE_RUN_MOB_KMC_FILE, output_dir, str(proc_ID),
                        str(child_seed)]
         print(run_command)
         running_jobs.append(sp.Popen(run_command))
