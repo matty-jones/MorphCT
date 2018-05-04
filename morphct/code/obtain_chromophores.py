@@ -631,8 +631,8 @@ def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_di
         chromophore_list = determine_neighbours_cut_off(chromophore_list, parameter_dict, sim_dims)
     # Now we have updated the chromophore_list, rewrite the pickle with this new
     # information.
-    pickle_name = parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]\
-        + '/code/' + parameter_dict['morphology'][:-4] + '.pickle'
+    pickle_name = os.path.join(parameter_dict['output_morph_dir'], parameter_dict['morphology'][:-4],
+        + '/code/' + ''.join([parameter_dict['morphology'][:-4], '.pickle']))
     hf.write_pickle((AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict,
                      chromophore_list), pickle_name)
     return AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list

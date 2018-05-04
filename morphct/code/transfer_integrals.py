@@ -542,8 +542,8 @@ def scale_energies(chromophore_list, parameter_dict):
 
 
 def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
-    pickle_name = parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]\
-        + '/code/' + parameter_dict['morphology'][:-4] + '.pickle'
+    pickle_name = os.path.join(parameter_dict['output_morph_dir'], parameter_dict['morphology'][:-4],
+                               'code', ''.join([parameter_dict['morphology'][:-4], '.pickle']))
     # First, check that we need to examine the single chromophores
     run_singles = False
     if parameter_dict['overwrite_current_data'] is False:

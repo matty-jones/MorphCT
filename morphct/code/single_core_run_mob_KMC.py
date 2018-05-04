@@ -306,7 +306,7 @@ if __name__ == '__main__':
     pickle_dir = KMC_directory.replace('/KMC', '/code')
     for file_name in os.listdir(pickle_dir):
         if 'pickle' in file_name:
-            main_morphology_pickle_name = pickle_dir + '/' + file_name
+            main_morphology_pickle_name = os.path.join(pickle_dir, file_name)
     hf.write_to_file(log_file, ['Found main morphology pickle file at ' + main_morphology_pickle_name
                                 + '! loading data...'])
     pickle_data = hf.load_pickle(main_morphology_pickle_name)
@@ -332,7 +332,7 @@ if __name__ == '__main__':
     killer = termination_signal()
     # Save the pickle as a list of `saveCarrier' instances that contain the
     # bare minimum
-    save_data = initialise_save_data(len(chromophore_list), seed)
+    save_data = initialise_save_data(len(chromophore_list), int(sys.argv[3]))
     if parameter_dict['record_carrier_history'] is False:
         save_data['hole_history_matrix'] = None
         save_data['electron_history_matrix'] = None

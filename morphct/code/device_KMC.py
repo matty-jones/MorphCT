@@ -162,11 +162,11 @@ def main(parameter_dict):
                  for i in range(0, len(voltages),
                                 int(np.ceil(len(voltages) / float(len(proc_IDs)))))]
     running_jobs = []
-    output_dir = parameter_dict['output_device_dir'] + '/'\
-        + parameter_dict['device_morphology'] + '/KMC'
+    output_dir = os.path.join(parameter_dict['output_device_dir'],
+                              parameter_dict['device_morphology'], 'KMC')
     print("Writing job pickles for each CPU...")
     for proc_ID, jobs in enumerate(jobs_list):
-        pickle_name = output_dir + '/KMC_data_%02d.pickle' % (proc_ID)
+        pickle_name = os.path.join(output_dir,'KMC_data_%02d.pickle' % (proc_ID))
         with open(pickle_name, 'wb+') as pickle_file:
             pickle.dump(jobs, pickle_file)
         print("KMC jobs for proc_ID", proc_ID, "written to KMC_data_%02d.pickle"
