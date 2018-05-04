@@ -62,6 +62,7 @@ def run_simulation():
     # ---==============================================---
     # ---===== Molecular Dynamics Phase Parameters ====---
     # ---==============================================---
+
     number_of_phases = 4
     temperatures = [1.0]
     taus = [1.0]

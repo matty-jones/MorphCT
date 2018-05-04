@@ -65,6 +65,7 @@ def run_simulation(request):
     # ---==============================================---
     # ---============ Chromophore Parameters ==========---
     # ---==============================================---
+
     molecule_terminating_connections = {
         'C1': [[2, 1]],
         'C10': [[2, 1]]
@@ -87,6 +88,7 @@ def run_simulation(request):
     # ---==============================================---
     # ---=== Chromophore Energy Scaling Parameters ====---
     # ---==============================================---
+
     chromophore_species = {
         "donor": {
             "literature_MO": -5.0,
