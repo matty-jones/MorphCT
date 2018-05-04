@@ -14,9 +14,9 @@ def run_simulation():
     # ---==============================================---
 
     input_morph_dir = TEST_ROOT + '/assets/donor_polymer'
-    output_morph_dir = TEST_ROOT + '/output_FG'
+    output_morph_dir = TEST_ROOT + '/output_TI'
     input_device_dir = TEST_ROOT + '/assets/donor_polymer'
-    output_device_dir = TEST_ROOT + '/output_FG'
+    output_device_dir = TEST_ROOT + '/output_TI'
 
     # ---==============================================---
     # ---========== Input Morphology Details ==========---
@@ -33,60 +33,13 @@ def run_simulation():
     # ---============= Execution Modules ==============---
     # ---==============================================---
 
-    execute_fine_graining = True                 # Requires: None
+    execute_fine_graining = False                 # Requires: None
     execute_molecular_dynamics = False            # Requires: fine_graining
     execute_obtain_chromophores = False           # Requires: Atomistic morphology, or molecular_dynamics
     execute_zindo = False                         # Requires: obtain_chromophores
-    execute_calculate_transfer_integrals = False  # Requires: execute_zindo
+    execute_calculate_transfer_integrals = True  # Requires: execute_zindo
     execute_calculate_mobility = False            # Requires: calculate_transfer_integrals
     execute_device_simulation = False              # Requires: calculate_transfer_integrals for all device_components
-
-    # ---==============================================---
-    # ---========== Fine Graining Parameters ==========---
-    # ---==============================================---
-
-    CG_to_template_dirs = {
-        'A': TEST_ROOT + '/assets/donor_polymer',
-        'B': TEST_ROOT + '/assets/donor_polymer',
-        'C': TEST_ROOT + '/assets/donor_polymer',
-    }
-    CG_to_template_files = {
-        'A': 'P3HT_template.xml',
-        'B': 'P3HT_template.xml',
-        'C': 'P3HT_template.xml',
-    }
-    CG_to_template_force_fields = {
-        'A': 'test_FF.xml',
-        'B': 'test_FF.xml',
-        'C': 'test_FF.xml',
-    }
-    CG_to_template_AAIDs = {
-        'A': [0, 1, 2, 3, 4, 24],
-        'B': [5, 6, 7, 18, 19, 20, 21, 22, 23],
-        'C': [8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
-    }
-    CG_to_template_bonds = {
-        'bondB': ['C2-C3', 2, 5],
-        'bondC': ['C5-C6', 7, 8],
-    }
-    rigid_body_sites = {
-        'A': [0, 1, 2, 3, 4],
-    }
-    additional_constraints = [
-        ['C1-C10', 3, 25],
-        ['C1-C10-C9', 3, 25, 26],
-        ['C1-C10-S1', 3, 25, 29],
-        ['S1-C1-C10', 4, 3, 25],
-        ['C2-C1-C10', 2, 3, 25],
-        ['C1-C10-C9-C2', 3, 25, 26, 27],
-        ['C1-C10-S1-C1', 3, 25, 29, 28],
-        ['S1-C1-C10-S1', 4, 3, 25, 29],
-        ['C2-C1-C10-S1', 2, 3, 25, 29],
-    ]
-    molecule_terminating_connections = {
-        'C1': [[2, 1]],
-        'C10': [[2, 1]]
-    }
 
     # ---==============================================---
     # ---================= Begin run ==================---
@@ -102,6 +55,28 @@ def run_simulation():
     parameters = {}
     for name in parameter_names:
         parameters[name] = locals()[name]
+
+    # ---==============================================---
+    # ---=============== Setup Prereqs ================---
+    # ---==============================================---
+    try:
+        shutil.rmtree(output_morph_dir)
+    except OSError:
+        pass
+    os.makedirs(os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code'))
+    shutil.copy(os.path.join(TEST_ROOT, 'assets', os.path.splitext(morphology)[0], 'EZ',
+                             morphology.replace('.xml', '_post_execute_ZINDO.pickle')),
+                os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code',
+                             morphology.replace('.xml', '.pickle')))
+    shutil.copytree(os.path.join(TEST_ROOT, 'assets', os.path.splitext(morphology)[0], 'EZ',
+                                 'input_orca'),
+                    os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
+                                 'input_orca'))
+    shutil.copytree(os.path.join(TEST_ROOT, 'assets', os.path.splitext(morphology)[0], 'EZ',
+                                 'output_orca'),
+                    os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
+                                 'output_orca'))
+
     run_MorphCT.simulation(**parameters)  # Execute MorphCT using these simulation parameters
     # The output dictionary from this fixing
     fix_dict = {}
@@ -116,8 +91,9 @@ def run_simulation():
     fix_dict['output_chromophore_list'] = output_pickle_data[4]
 
     # Load the expected pickle
-    expected_pickle_data = hf.load_pickle(os.path.join(input_morph_dir, 'FG',
-                                                       morphology.replace('.xml', '_post_fine_graining.pickle')))
+    expected_pickle_data = hf.load_pickle(
+        os.path.join(input_morph_dir, 'TI',
+                     morphology.replace('.xml', '_post_calculate_transfer_integrals.pickle')))
     fix_dict['expected_AA_morphology_dict'] = expected_pickle_data[0]
     fix_dict['expected_CG_morphology_dict'] = expected_pickle_data[1]
     fix_dict['expected_CG_to_AAID_master'] = expected_pickle_data[2]
@@ -160,52 +136,12 @@ class TestCompareOutputs(TestCommand):
         self.compare_equal(run_simulation['output_chromophore_list'],
                            run_simulation['expected_chromophore_list'])
 
-    def test_check_code_copied(self, run_simulation):
-        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
-        morphology = run_simulation['output_parameter_dict']['morphology']
-        code_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code')
-        self.confirm_file_exists(os.path.join(code_dir, 'fine_grainer.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'run_HOOMD.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'obtain_chromophores.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'execute_ZINDO.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'transfer_integrals.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'mobility_KMC.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'device_KMC.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'single_core_run_device_KMC.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'single_core_run_mob_KMC.py'))
-        self.confirm_file_exists(os.path.join(code_dir, 'single_core_run_orca.py'))
 
-    def test_check_par_copied(self, run_simulation):
-        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
-        morphology = run_simulation['output_parameter_dict']['morphology']
-        code_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code')
-        self.confirm_file_exists(os.path.join(code_dir, __file__))
-
-    def test_check_input_morph_copied(self, run_simulation):
-        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
-        morphology = run_simulation['output_parameter_dict']['morphology']
-        code_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code')
-        self.confirm_file_exists(os.path.join(code_dir, 'input.xml'))
-
-    def test_check_morphology_created(self, run_simulation):
-        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
-        morphology = run_simulation['output_parameter_dict']['morphology']
-        morph_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'morphology')
-        self.confirm_file_exists(os.path.join(morph_dir, morphology))
-
-    def test_check_morphology(self, run_simulation):
-        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
-        input_morph_dir = run_simulation['output_parameter_dict']['input_morph_dir']
-        morphology = run_simulation['output_parameter_dict']['morphology']
-        morph_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'morphology')
-        output_morphology = hf.load_morphology_xml(os.path.join(morph_dir, morphology))
-        expected_morphology = hf.load_morphology_xml(os.path.join(input_morph_dir, 'FG', morphology.replace(
-            '.xml', '_post_fine_graining.xml')))
-        self.compare_equal(output_morphology, expected_morphology)
+# TODO: Tests for failed singles and failed pairs
 
 
 def teardown_module():
-    shutil.rmtree(os.path.join(TEST_ROOT, 'output_FG'))
+    shutil.rmtree(os.path.join(TEST_ROOT, 'output_TI'))
 
 
 if __name__ == "__main__":

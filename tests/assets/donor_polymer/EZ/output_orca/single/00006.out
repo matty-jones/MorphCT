@@ -1,0 +1,694 @@
+
+                                 *****************
+                                 * O   R   C   A *
+                                 *****************
+
+           --- An Ab Initio, DFT and Semiempirical electronic structure package ---
+
+                  #######################################################
+                  #                        -***-                        #
+                  #  Department of molecular theory and spectroscopy    #
+                  #              Directorship: Frank Neese              #
+                  # Max Planck Institute for Chemical Energy Conversion #
+                  #                  D-45470 Muelheim/Ruhr              #
+                  #                       Germany                       #
+                  #                                                     #
+                  #                  All rights reserved                #
+                  #                        -***-                        #
+                  #######################################################
+
+
+                         Program Version 3.0.3 - RELEASE   -
+
+
+ With contributions from (in alphabetic order):
+   Ute Becker             : Parallelization
+   Dmytro Bykov           : SCF Hessian
+   Dmitry Ganyushin       : Spin-Orbit,Spin-Spin,Magnetic field MRCI
+   Andreas Hansen         : Spin unrestricted coupled pair/coupled cluster methods
+   Dimitrios Liakos       : Extrapolation schemes; parallel MDCI
+   Robert Izsak           : Overlap fitted RIJCOSX, COSX-SCS-MP3
+   Christian Kollmar      : KDIIS, OOCD, Brueckner-CCSD(T), CCSD density
+   Simone Kossmann        : Meta GGA functionals, TD-DFT gradient, OOMP2, MP2 Hessian
+   Taras Petrenko         : DFT Hessian,TD-DFT gradient, ASA and ECA modules, normal mode analysis, Resonance Raman, ABS, FL, XAS/XES, NRVS
+   Christoph Reimann      : Effective Core Potentials
+   Michael Roemelt        : Restricted open shell CIS
+   Christoph Riplinger    : Improved optimizer, TS searches, QM/MM, DLPNO-CCSD
+   Barbara Sandhoefer     : DKH picture change effects
+   Igor Schapiro          : Molecular dynamics
+   Kantharuban Sivalingam : CASSCF convergence, NEVPT2
+   Boris Wezisla          : Elementary symmetry handling
+   Frank Wennmohs         : Technical directorship
+
+
+ We gratefully acknowledge several colleagues who have allowed us to
+ interface, adapt or use parts of their codes:
+   Stefan Grimme, W. Hujo, H. Kruse, T. Risthaus : VdW corrections, initial TS optimization,
+                                                   DFT functionals, gCP
+   Ed Valeev                                     : LibInt (2-el integral package), F12 methods
+   Garnet Chan, S. Sharma, R. Olivares           : DMRG
+   Ulf Ekstrom                                   : XCFun DFT Library
+   Mihaly Kallay                                 : mrcc  (arbitrary order and MRCC methods)
+   Andreas Klamt, Michael Diedenhofen            : otool_cosmo (COSMO solvation model)
+   Frank Weinhold                                : gennbo (NPA and NBO analysis)
+   Christopher J. Cramer and Donald G. Truhlar   : smd solvation model
+
+
+ Your calculation uses the libint2 library for the computation of 2-el integrals
+ For citations please refer to: http://libint.valeyev.net
+
+ This ORCA versions uses:
+   CBLAS   interface :  Fast vector & matrix operations
+   LAPACKE interface :  Fast linear algebra routines
+   SCALAPACK package :  Parallel linear algebra routines
+
+
+leaving
+================================================================================
+                                        WARNINGS
+                       Please study these warnings very carefully!
+================================================================================
+Now building the actual basis set
+
+WARNING: Direct SCF is incompatible with Method<>HF and Method<>DFT
+  ===> : conventional SCF is chosen
+
+WARNING: The NDO methods need Guess=HUECKEL or Guess=HCORE or Guess=MOREAD
+  ===> : Guess is set to Hueckel
+
+WARNING: The NDO methods need %rel::SOCType==1
+  ===> : %rel::SOCType is set to 1
+
+WARNING: The NDO methods cannot have frozencore=1
+  ===> : %method FrozenCore=0 end
+
+
+INFO   : the flag for use of LIBINT has been found!
+
+================================================================================
+                                       INPUT FILE
+================================================================================
+NAME = /Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/tests/output_EZ/donor_polymer/chromophores/input_orca/single/00006.inp
+|  1> # ================================================================
+|  2> # Orca input file made by Matty Jones
+|  3> # ================================================================
+|  4> ! ZINDO/S 
+|  5> ! NOPOP
+|  6> ! NOMOPRINT
+|  7> * xyz 0   1
+|  8>  C  1.71224  4.14701  -0.87735
+|  9>  C  1.48644  2.79298  -1.12936
+| 10>  C  1.89699  1.92545  -0.06960
+| 11>  C  2.44976  2.59785  1.02477
+| 12>  S  2.40213  4.20770  0.62913
+| 13>  H  1.03922  2.39820  -2.09739
+| 14>  C  1.72267  0.32482  -0.19184
+| 15>  C  1.11526  -0.58230  1.10958
+| 16>  C  -0.54578  -0.90887  1.30767
+| 17>  H  -0.61438  -2.02453  1.61728
+| 18>  H  -0.88560  -0.26684  2.21235
+| 19>  H  1.63019  -1.61444  1.04826
+| 20>  H  1.45927  -0.04651  2.07463
+| 21>  H  2.75839  -0.13694  -0.42279
+| 22>  H  1.03063  0.07532  -1.10893
+| 23>  C  -1.60155  -0.65399  0.09249
+| 24>  C  -1.80169  -1.98382  -0.94219
+| 25>  C  -2.99649  -3.08451  -0.49544
+| 26>  H  -4.01294  -2.53887  -0.41254
+| 27>  H  -2.72017  -3.55613  0.52425
+| 28>  H  -3.06616  -3.91395  -1.30024
+| 29>  H  -0.79851  -2.54723  -0.99930
+| 30>  H  -2.07314  -1.57519  -1.98538
+| 31>  H  -2.64264  -0.40953  0.53578
+| 32>  H  -1.25521  0.24157  -0.54900
+| 33>  H  1.48963  4.96425  -1.51466
+| 34>  H  2.82143  2.16850  1.91983
+| 35> *
+| 36> 
+| 37>                          ****END OF INPUT****
+================================================================================
+
+                       ****************************
+                       * Single Point Calculation *
+                       ****************************
+
+---------------------------------
+CARTESIAN COORDINATES (ANGSTROEM)
+---------------------------------
+  C      1.712240    4.147010   -0.877350
+  C      1.486440    2.792980   -1.129360
+  C      1.896990    1.925450   -0.069600
+  C      2.449760    2.597850    1.024770
+  S      2.402130    4.207700    0.629130
+  H      1.039220    2.398200   -2.097390
+  C      1.722670    0.324820   -0.191840
+  C      1.115260   -0.582300    1.109580
+  C     -0.545780   -0.908870    1.307670
+  H     -0.614380   -2.024530    1.617280
+  H     -0.885600   -0.266840    2.212350
+  H      1.630190   -1.614440    1.048260
+  H      1.459270   -0.046510    2.074630
+  H      2.758390   -0.136940   -0.422790
+  H      1.030630    0.075320   -1.108930
+  C     -1.601550   -0.653990    0.092490
+  C     -1.801690   -1.983820   -0.942190
+  C     -2.996490   -3.084510   -0.495440
+  H     -4.012940   -2.538870   -0.412540
+  H     -2.720170   -3.556130    0.524250
+  H     -3.066160   -3.913950   -1.300240
+  H     -0.798510   -2.547230   -0.999300
+  H     -2.073140   -1.575190   -1.985380
+  H     -2.642640   -0.409530    0.535780
+  H     -1.255210    0.241570   -0.549000
+  H      1.489630    4.964250   -1.514660
+  H      2.821430    2.168500    1.919830
+
+----------------------------
+CARTESIAN COORDINATES (A.U.)
+----------------------------
+  NO LB      ZA    FRAG    MASS        X           Y           Z
+   0 C     4.0000    0    12.011          3.235664675545324          7.836713174632769         -1.657951223595810
+   1 C     4.0000    0    12.011          2.808964514505905          5.277967297519377         -2.134181106605304
+   2 C     4.0000    0    12.011          3.584791578787275          3.638573184558674         -0.131524938920919
+   3 C     4.0000    0    12.011          4.629375493834925          4.909225037007324          1.936534650258481
+   4 S     6.0000    0    32.060          4.539367838076257          7.951400653700451          1.188883402633877
+   5 H     1.0000    0     1.008          1.963841192893643          4.531941214369946         -3.963492696025094
+   6 C     4.0000    0    12.011          3.255374519122122          0.613820842820301         -0.362525061531453
+   7 C     4.0000    0    12.011          2.107535968117015         -1.100387527782345          2.096802323676342
+   8 C     4.0000    0    12.011         -1.031374729371541         -1.717515391337008          2.471138173544803
+   9 H     1.0000    0     1.008         -1.161009942158539         -3.825807249907592          3.056216281868162
+  10 H     1.0000    0     1.008         -1.673541464200661         -0.504254521575547          4.180735612380681
+  11 H     1.0000    0     1.008          3.080612646257085         -3.050849459647826          1.980924317144291
+  12 H     1.0000    0     1.008          2.757620655447265         -0.087891162488677          3.920482529217046
+  13 H     1.0000    0     1.008          5.212601670547041         -0.258779096779176         -0.798957312160566
+  14 H     1.0000    0     1.008          1.947608445403259          0.142334172406949         -2.095574001689294
+  15 C     4.0000    0    12.011         -3.026490889781581         -1.235861994323159          0.174780770126377
+  16 C     4.0000    0    12.011         -3.404700678224580         -3.748876498995657         -1.780481066119264
+  17 C     4.0000    0    12.011         -5.662545463033692         -5.828879157341440         -0.936245915789945
+  18 H     1.0000    0     1.008         -7.583357591857949         -4.797768989628649         -0.779587619287873
+  19 H     1.0000    0     1.008         -5.140376337708571         -6.720111796621381          0.990688925708216
+  20 H     1.0000    0     1.008         -5.794202682783985         -7.396293601861083         -2.457097508369769
+  21 H     1.0000    0     1.008         -1.508965215197459         -4.813567100108230         -1.888403325627507
+  22 H     1.0000    0     1.008         -3.917666837277503         -2.976677708891417         -3.751824471764575
+  23 H     1.0000    0     1.008         -4.993865870545656         -0.773899543624770          1.012477468032328
+  24 H     1.0000    0     1.008         -2.372003140559294          0.456501142171357         -1.037459647522767
+  25 H     1.0000    0     1.008          2.814992740873114          9.381072960318573         -2.862292586005163
+  26 H     1.0000    0     1.008          5.331730006029437          4.097871121408234          3.627952923686037
+
+--------------------------------
+INTERNAL COORDINATES (ANGSTROEM)
+--------------------------------
+ C      0   0   0   0.000000     0.000     0.000
+ C      1   0   0   1.395669     0.000     0.000
+ C      2   1   0   1.429773   114.102     0.000
+ C      3   2   1   1.398328   113.693     0.000
+ S      1   2   3   1.658045   105.479     0.000
+ H      2   1   3   1.137075   123.655   181.391
+ C      3   2   1   1.614728   120.954   180.478
+ C      7   3   2   1.698678   120.661   224.416
+ C      8   7   3   1.704389   122.673    90.874
+ H      9   8   7   1.159854   105.841   136.971
+ H      9   8   7   1.160227   105.667   251.227
+ H      8   7   3   1.155087   106.087   212.076
+ H      8   7   3   1.156173   106.596   328.162
+ H      7   3   2   1.157271   108.301   103.470
+ H      7   3   2   1.175680   109.449   347.572
+ C      9   8   7   1.629809   120.977    13.771
+ C     16   9   8   1.696781   114.111    88.828
+ C     17  16   9   1.684830   115.719    88.762
+ H     18  17  16   1.156618   109.513    57.623
+ H     18  17  16   1.156955   109.308   297.273
+ H     18  17  16   1.157812   109.049   177.507
+ H     17  16   9   1.151982   108.109   327.368
+ H     17  16   9   1.152783   107.565   209.228
+ H     16   9   8   1.157642   109.274   208.596
+ H     16   9   8   1.154768   109.949   327.679
+ H      1   2   3   1.060000   127.261   180.000
+ H      4   3   2   1.060006   127.206   180.000
+
+---------------------------
+INTERNAL COORDINATES (A.U.)
+---------------------------
+ C      0   0   0   0.000000     0.000     0.000
+ C      1   0   0   2.637432     0.000     0.000
+ C      2   1   0   2.701879   114.102     0.000
+ C      3   2   1   2.642458   113.693     0.000
+ S      1   2   3   3.133251   105.479     0.000
+ H      2   1   3   2.148760   123.655   181.391
+ C      3   2   1   3.051394   120.954   180.478
+ C      7   3   2   3.210037   120.661   224.416
+ C      8   7   3   3.220828   122.673    90.874
+ H      9   8   7   2.191807   105.841   136.971
+ H      9   8   7   2.192511   105.667   251.227
+ H      8   7   3   2.182798   106.087   212.076
+ H      8   7   3   2.184850   106.596   328.162
+ H      7   3   2   2.186925   108.301   103.470
+ H      7   3   2   2.221713   109.449   347.572
+ C      9   8   7   3.079892   120.977    13.771
+ C     16   9   8   3.206452   114.111    88.828
+ C     17  16   9   3.183867   115.719    88.762
+ H     18  17  16   2.185692   109.513    57.623
+ H     18  17  16   2.186329   109.308   297.273
+ H     18  17  16   2.187947   109.049   177.507
+ H     17  16   9   2.176930   108.109   327.368
+ H     17  16   9   2.178444   107.565   209.228
+ H     16   9   8   2.187626   109.274   208.596
+ H     16   9   8   2.182195   109.949   327.679
+ H      1   2   3   2.003110   127.261   180.000
+ H      4   3   2   2.003121   127.206   180.000
+
+----------------------------
+SLATER BASIS SET DIM=  60
+----------------------------
+  0 C     2 shells
+ l=0 nsto= 1
+    2       1.625000000000        1.000000000000
+ l=1 nsto= 1
+    2       1.625000000000        1.000000000000
+  1 C     2 shells
+ l=0 nsto= 1
+    2       1.625000000000        1.000000000000
+ l=1 nsto= 1
+    2       1.625000000000        1.000000000000
+  2 C     2 shells
+ l=0 nsto= 1
+    2       1.625000000000        1.000000000000
+ l=1 nsto= 1
+    2       1.625000000000        1.000000000000
+  3 C     2 shells
+ l=0 nsto= 1
+    2       1.625000000000        1.000000000000
+ l=1 nsto= 1
+    2       1.625000000000        1.000000000000
+  4 S     2 shells
+ l=0 nsto= 1
+    3       1.925000000000        1.000000000000
+ l=1 nsto= 1
+    3       1.925000000000        1.000000000000
+  5 H     1 shells
+ l=0 nsto= 1
+    1       1.200000000000        1.000000000000
+  6 C     2 shells
+ l=0 nsto= 1
+    2       1.625000000000        1.000000000000
+ l=1 nsto= 1
+    2       1.625000000000        1.000000000000
+  7 C     2 shells
+ l=0 nsto= 1
+    2       1.625000000000        1.000000000000
+ l=1 nsto= 1
+    2       1.625000000000        1.000000000000
+  8 C     2 shells
+ l=0 nsto= 1
+    2       1.625000000000        1.000000000000
+ l=1 nsto= 1
+    2       1.625000000000        1.000000000000
+  9 H     1 shells
+ l=0 nsto= 1
+    1       1.200000000000        1.000000000000
+ 10 H     1 shells
+ l=0 nsto= 1
+    1       1.200000000000        1.000000000000
+ 11 H     1 shells
+ l=0 nsto= 1
+    1       1.200000000000        1.000000000000
+ 12 H     1 shells
+ l=0 nsto= 1
+    1       1.200000000000        1.000000000000
+ 13 H     1 shells
+ l=0 nsto= 1
+    1       1.200000000000        1.000000000000
+ 14 H     1 shells
+ l=0 nsto= 1
+    1       1.200000000000        1.000000000000
+ 15 C     2 shells
+ l=0 nsto= 1
+    2       1.625000000000        1.000000000000
+ l=1 nsto= 1
+    2       1.625000000000        1.000000000000
+ 16 C     2 shells
+ l=0 nsto= 1
+    2       1.625000000000        1.000000000000
+ l=1 nsto= 1
+    2       1.625000000000        1.000000000000
+ 17 C     2 shells
+ l=0 nsto= 1
+    2       1.625000000000        1.000000000000
+ l=1 nsto= 1
+    2       1.625000000000        1.000000000000
+ 18 H     1 shells
+ l=0 nsto= 1
+    1       1.200000000000        1.000000000000
+ 19 H     1 shells
+ l=0 nsto= 1
+    1       1.200000000000        1.000000000000
+ 20 H     1 shells
+ l=0 nsto= 1
+    1       1.200000000000        1.000000000000
+ 21 H     1 shells
+ l=0 nsto= 1
+    1       1.200000000000        1.000000000000
+ 22 H     1 shells
+ l=0 nsto= 1
+    1       1.200000000000        1.000000000000
+ 23 H     1 shells
+ l=0 nsto= 1
+    1       1.200000000000        1.000000000000
+ 24 H     1 shells
+ l=0 nsto= 1
+    1       1.200000000000        1.000000000000
+ 25 H     1 shells
+ l=0 nsto= 1
+    1       1.200000000000        1.000000000000
+ 26 H     1 shells
+ l=0 nsto= 1
+    1       1.200000000000        1.000000000000
+------------------------------------------------------------------------------
+                           ORCA NDO INTEGRAL CALCULATION
+------------------------------------------------------------------------------
+
+--------------
+NDO PARAMETERS
+--------------
+
+Gamma integral treatment              ... Mataga-Nishimoto
+Nuclear repulsuion treatment          ... Direct (ZA*ZB/RAB)
+Interaction factors:
+s-s (sigma) =    1.0000
+s-p (sigma) =    1.0000
+s-d (sigma) =    1.0000
+p-p (sigma) =    1.2670  p-p(pi) =    0.5850
+p-d (sigma) =    1.0000  p-d(pi) =    1.0000
+d-d (sigma) =    1.0000  d-d(pi) =    1.0000 d-d (delta) =    1.0000
+
+fGamma parameter for Mataga-Nishimoto gamma integrals:    1.2000
+
+--------------------------
+Parameters for Element H :
+--------------------------
+ One-electron parameters (in eV)
+  U(s)  =   -13.060000 Beta(s) =    12.000000 Neff(s) =     1.000000
+ One-center electron repulsion parameters (in eV)
+  G(s,s)=    12.850000
+--------------------------
+Parameters for Element C :
+--------------------------
+ One-electron parameters (in eV)
+  U(s)  =   -50.870766 Beta(s) =    17.000000 Neff(s) =     2.000000
+  U(p)  =   -41.599980 Beta(p) =    17.000000 Neff(p) =     2.000000 
+ One-center electron repulsion parameters (in eV)
+  G(s,s)=    11.110000
+  G(s,p)=    11.110000 G(p,p)  =    11.110000
+ Slater-Condon parameters (in eV)
+ F2(p,p)=     4.5098 G1(s,p)=    6.8977
+--------------------------
+Parameters for Element S :
+--------------------------
+ One-electron parameters (in eV)
+  U(s)  =   -69.509597 Beta(s) =    15.000000 Neff(s) =     2.000000
+  U(p)  =   -60.725746 Beta(p) =    15.000000 Neff(p) =     4.000000 
+ One-center electron repulsion parameters (in eV)
+  G(s,s)=    10.090000
+  G(s,p)=    10.090000 G(p,p)  =    10.090000
+ Slater-Condon parameters (in eV)
+ F2(p,p)=     4.5377 G1(s,p)=    3.0756
+
+ Number of atoms                    ....   27
+ Number of basis functions          ....   60
+
+ Overlap integrals                  .... done
+ One electron matrix                .... done
+ Nuclear repulsion                  .... done
+ Integral list                      .... done
+ Electron-electron repulsion        .... done
+-------------------------------------------------------------------------------
+                                 ORCA SCF
+-------------------------------------------------------------------------------
+
+------------
+SCF SETTINGS
+------------
+Hamiltonian:
+ ZDO-Hamiltonian        Method          .... INDO
+
+
+General Settings:
+ Integral files         IntName         .... /Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/tests/output_EZ/donor_polymer/chromophores/input_orca/single/00006
+ Hartree-Fock type      HFTyp           .... RHF
+ Total Charge           Charge          ....    0
+ Multiplicity           Mult            ....    1
+ Number of Electrons    NEL             ....   62
+ Basis Dimension        Dim             ....   60
+ Nuclear Repulsion      ENuc            ....    298.1559763952 Eh
+
+Convergence Acceleration:
+ DIIS                   CNVDIIS         .... on
+   Start iteration      DIISMaxIt       ....    12
+   Startup error        DIISStart       ....  0.200000
+   # of expansion vecs  DIISMaxEq       ....     5
+   Bias factor          DIISBfac        ....   1.050
+   Max. coefficient     DIISMaxC        ....  10.000
+ Newton-Raphson         CNVNR           .... off
+ SOSCF                  CNVSOSCF        .... on
+   Start iteration      SOSCFMaxIt      ....   150
+   Startup grad/error   SOSCFStart      ....  0.003300
+ Level Shifting         CNVShift        .... on
+   Level shift para.    LevelShift      ....    0.2500
+   Turn off err/grad.   ShiftErr        ....    0.0010
+ Zerner damping         CNVZerner       .... off
+ Static damping         CNVDamp         .... on
+   Fraction old density DampFac         ....    0.7000
+   Max. Damping (<1)    DampMax         ....    0.9800
+   Min. Damping (>=0)   DampMin         ....    0.0000
+   Turn off err/grad.   DampErr         ....    0.1000
+ Fernandez-Rico         CNVRico         .... off
+
+SCF Procedure:
+ Maximum # iterations   MaxIter         ....   125
+ SCF integral mode      SCFMode         .... Conventional
+ Integral Buffer length BufferLength    .... 1048576
+ Integral index format  IndFormat       ....     0
+ Integral value format  ValFormat       ....     0
+ Integral Storage       Thresh          ....  1.000e-08 Eh
+
+Convergence Tolerance:
+ Convergence Check Mode ConvCheckMode   .... Total+1el-Energy
+ Energy Change          TolE            ....  1.000e-06 Eh
+ 1-El. energy change                    ....  1.000e-03 Eh
+ Orbital Gradient       TolG            ....  5.000e-05
+ Orbital Rotation angle TolX            ....  5.000e-05
+ DIIS Error             TolErr          ....  1.000e-06
+
+
+Diagonalization of the overlap matrix:
+Smallest eigenvalue                        ... 1.697e-01
+Time for diagonalization                   ...    0.001 sec
+Threshold for overlap eigenvalues          ... 1.000e-08
+Number of eigenvalues below threshold      ... 0
+Time for construction of square roots      ...    0.000 sec
+Total time needed                          ...    0.002 sec
+
+-------------------------------
+INITIAL GUESS: EXTENDED HUECKEL
+-------------------------------
+EHT matrix was read from disk
+EHT matrix was diagonalized
+Initial density was built
+                      ------------------
+                      INITIAL GUESS DONE
+                      ------------------
+
+ InCore treatment chosen:
+   Memory dedicated               ...    1024 MB
+   Memory needed                  ...      0 MB
+   Number of tiny    integrals    ...       0
+   Number of small   integrals    ...       0
+   Number of regular integrals    ...    1896
+
+--------------
+SCF ITERATIONS
+--------------
+ITER       Energy         Delta-E        Max-DP      RMS-DP      [F,P]     Damp
+  0     -5.9000858767   0.000000000000 0.04324142  0.00204541  0.1160674 0.7000
+  1     -5.9209677648  -0.020881888048 0.04213721  0.00192599  0.0795640 0.7000
+                               ***Turning on DIIS***
+  2     -5.9364084699  -0.015440705157 0.11088924  0.00494277  0.0484198 0.0000
+  3     -5.9775132440  -0.041104774085 0.01857215  0.00104085  0.0211268 0.0000
+  4     -5.9688596810   0.008653562966 0.01408695  0.00071028  0.0081834 0.0000
+  5     -5.9777445640  -0.008884882993 0.00993191  0.00047953  0.0048359 0.0000
+  6     -5.9788886288  -0.001144064813 0.00739555  0.00033999  0.0027099 0.0000
+                      *** Initiating the SOSCF procedure ***
+                           *** Shutting down DIIS ***
+                      *** Re-Reading the Fockian *** 
+                      *** Removing any level shift *** 
+ITER      Energy       Delta-E        Grad      Rot      Max-DP    RMS-DP
+  7     -5.97684672   0.0020419132  0.003023  0.003023  0.004423  0.000191
+  8     -5.97597912   0.0008675921  0.000799  0.002190  0.002200  0.000087
+  9     -5.97598633  -0.0000072100  0.000354  0.002145  0.002453  0.000092
+ 10     -5.97598897  -0.0000026360  0.000027  0.000063  0.000139  0.000005
+                 **** Energy Check signals convergence ****
+              ***Rediagonalizing the Fockian in SOSCF/NRSCF***
+
+               *****************************************************
+               *                     SUCCESS                       *
+               *           SCF CONVERGED AFTER  11 CYCLES          *
+               *****************************************************
+
+
+----------------
+TOTAL SCF ENERGY
+----------------
+
+Total Energy       :           -5.97598899 Eh            -162.61493 eV
+
+Components:
+Nuclear Repulsion  :          298.15597640 Eh            8113.23659 eV
+Electronic Energy  :         -304.13196539 Eh           -8275.85151 eV
+
+One Electron Energy:         -563.05957786 Eh          -15321.63005 eV
+Two Electron Energy:          258.92761247 Eh            7045.77854 eV
+
+
+---------------
+SCF CONVERGENCE
+---------------
+
+  Last Energy change         ...   -2.2721e-08  Tolerance :   1.0000e-06
+  Last MAX-Density change    ...    4.3110e-05  Tolerance :   1.0000e-05
+  Last RMS-Density change    ...    1.7879e-06  Tolerance :   1.0000e-06
+  Last Orbital Gradient      ...    8.1513e-06  Tolerance :   5.0000e-05
+  Last Orbital Rotation      ...    1.7911e-05  Tolerance :   5.0000e-05
+
+             **** THE GBW FILE WAS UPDATED (/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/tests/output_EZ/donor_polymer/chromophores/input_orca/single/00006.gbw) ****
+             **** DENSITY FILE WAS UPDATED (/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/tests/output_EZ/donor_polymer/chromophores/input_orca/single/00006.scfp.tmp) ****
+             **** ENERGY FILE WAS UPDATED (/Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/tests/output_EZ/donor_polymer/chromophores/input_orca/single/00006.en.tmp) ****
+----------------
+ORBITAL ENERGIES
+----------------
+
+  NO   OCC          E(Eh)            E(eV) 
+   0   2.0000      -1.556975       -42.3674 
+   1   2.0000      -1.397953       -38.0402 
+   2   2.0000      -1.284344       -34.9488 
+   3   2.0000      -1.174990       -31.9731 
+   4   2.0000      -1.106502       -30.1094 
+   5   2.0000      -1.065171       -28.9848 
+   6   2.0000      -0.972574       -26.4651 
+   7   2.0000      -0.898845       -24.4588 
+   8   2.0000      -0.841899       -22.9092 
+   9   2.0000      -0.822140       -22.3716 
+  10   2.0000      -0.788243       -21.4492 
+  11   2.0000      -0.721845       -19.6424 
+  12   2.0000      -0.692340       -18.8395 
+  13   2.0000      -0.678977       -18.4759 
+  14   2.0000      -0.645635       -17.5686 
+  15   2.0000      -0.612407       -16.6644 
+  16   2.0000      -0.585151       -15.9228 
+  17   2.0000      -0.581597       -15.8261 
+  18   2.0000      -0.571972       -15.5641 
+  19   2.0000      -0.541806       -14.7433 
+  20   2.0000      -0.535140       -14.5619 
+  21   2.0000      -0.529454       -14.4072 
+  22   2.0000      -0.501338       -13.6421 
+  23   2.0000      -0.498442       -13.5633 
+  24   2.0000      -0.493342       -13.4245 
+  25   2.0000      -0.477825       -13.0023 
+  26   2.0000      -0.466444       -12.6926 
+  27   2.0000      -0.459023       -12.4906 
+  28   2.0000      -0.437982       -11.9181 
+  29   2.0000      -0.357385        -9.7249 
+  30   2.0000      -0.304436        -8.2841 
+  31   0.0000       0.007618         0.2073 
+  32   0.0000       0.069236         1.8840 
+  33   0.0000       0.076458         2.0805 
+  34   0.0000       0.086089         2.3426 
+  35   0.0000       0.101834         2.7710 
+  36   0.0000       0.107274         2.9191 
+  37   0.0000       0.122330         3.3288 
+  38   0.0000       0.144616         3.9352 
+  39   0.0000       0.160910         4.3786 
+  40   0.0000       0.166085         4.5194 
+  41   0.0000       0.167320         4.5530 
+  42   0.0000       0.204770         5.5721 
+  43   0.0000       0.232493         6.3265 
+  44   0.0000       0.234957         6.3935 
+  45   0.0000       0.236717         6.4414 
+  46   0.0000       0.239995         6.5306 
+  47   0.0000       0.241192         6.5632 
+  48   0.0000       0.242603         6.6016 
+  49   0.0000       0.245027         6.6675 
+  50   0.0000       0.245784         6.6881 
+  51   0.0000       0.258927         7.0458 
+  52   0.0000       0.266916         7.2632 
+  53   0.0000       0.280383         7.6296 
+  54   0.0000       0.306346         8.3361 
+  55   0.0000       0.310658         8.4534 
+  56   0.0000       0.341697         9.2980 
+  57   0.0000       0.354532         9.6473 
+  58   0.0000       0.412344        11.2204 
+  59   0.0000       0.430387        11.7114 
+-------
+TIMINGS
+-------
+
+Total SCF time: 0 days 0 hours 0 min 0 sec 
+
+Total time                  ....       0.075 sec
+Sum of individual times     ....       0.064 sec  ( 85.4%)
+
+Fock matrix formation       ....       0.049 sec  ( 65.4%)
+Diagonalization             ....       0.006 sec  (  7.4%)
+Density matrix formation    ....       0.001 sec  (  1.5%)
+Population analysis         ....       0.000 sec  (  0.0%)
+Initial guess               ....       0.001 sec  (  0.8%)
+Orbital Transformation      ....       0.000 sec  (  0.0%)
+Orbital Orthonormalization  ....       0.000 sec  (  0.0%)
+DIIS solution               ....       0.005 sec  (  7.1%)
+SOSCF solution              ....       0.002 sec  (  3.3%)
+
+-------------------------   --------------------
+FINAL SINGLE POINT ENERGY        -5.975988992212
+-------------------------   --------------------
+
+
+                            ***************************************
+                            *     ORCA property calculations      *
+                            ***************************************
+
+                                    ---------------------
+                                    Active property flags
+                                    ---------------------
+   (+) Dipole Moment
+
+
+------------------------------------------------------------------------------
+                       ORCA ELECTRIC PROPERTIES CALCULATION
+------------------------------------------------------------------------------
+
+Dipole Moment Calculation                       ... on
+Quadrupole Moment Calculation                   ... off
+Polarizability Calculation                      ... off
+GBWName                                         ... /Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/tests/output_EZ/donor_polymer/chromophores/input_orca/single/00006.gbw
+Electron density file                           ... /Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/tests/output_EZ/donor_polymer/chromophores/input_orca/single/00006.scfp.tmp
+
+-------------
+DIPOLE MOMENT
+-------------
+                                X             Y             Z
+Electronic contribution:     66.62235     112.03580      14.35794
+Nuclear contribution   :    -36.07448     -60.30882      -7.31470
+                        -----------------------------------------
+Total Dipole Moment    :     30.54786      51.72698       7.04324
+                        -----------------------------------------
+Magnitude (a.u.)       :     60.48520
+Magnitude (Debye)      :    153.74116
+
+
+Timings for individual modules:
+
+Sum of individual times         ...        0.147 sec (=   0.002 min)
+STO integral calculation        ...        0.037 sec (=   0.001 min)  25.4 %
+SCF iterations                  ...        0.109 sec (=   0.002 min)  74.6 %
+                             ****ORCA TERMINATED NORMALLY****
+TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 419 msec
+
