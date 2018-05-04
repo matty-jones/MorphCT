@@ -28,6 +28,7 @@ def run_simulation():
     device_components = {
     }
     overwrite_current_data = True
+    random_seed_override = 929292929
 
     # ---==============================================---
     # ---============= Execution Modules ==============---
