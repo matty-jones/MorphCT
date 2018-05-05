@@ -4,13 +4,13 @@ import pickle
 import sys
 import numpy as np
 import subprocess as sp
-from morphct.definitions import SINGLE_RUN_MOB_KMC_FILE, RANDOM_SEED
+from morphct.definitions import PROJECT_ROOT, SINGLE_RUN_MOB_KMC_FILE
 from morphct.code import helper_functions as hf
 
 
 def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
     # Get the random seed now for all the child processes
-    np.random.seed(RANDOM_SEED)
+    np.random.seed(hf.obtain_random_seed())
     try:
         if parameter_dict['use_average_hop_rates']:
             print("Be advised: use_average_hop_rates is set to", repr(parameter_dict['use_average_hop_rates']) + ".")

@@ -62,16 +62,9 @@ class simulation:
                             parameter_dict[key] = previous_value
                 except:
                     print("PICKLE NOT FOUND, EXECUTING FINE GRAINING TO OBTAIN REQUIRED PARAMETERS...")
-                    self.execute_fine_graining = False
-                    returned_data = fine_grainer.morphology(self.input_morphology_file, self.morphology[:-4],
-                                                            parameter_dict, []).analyse_morphology()
-                    AA_morphology_dict = returned_data[0]
-                    CG_morphology_dict = returned_data[1]
-                    CG_to_AAID_master = returned_data[2]
-                    parameter_dict = returned_data[3]
-                    chromophore_list = returned_data[4]
+                    self.execute_fine_graining = True
             # Now begin running the code based on user's flags
-            else:
+            if self.execute_fine_graining is True:
                 print("---=== BACKMAPPING COARSE-GRAINED SITES... ===---")
                 returned_data = fine_grainer.morphology(self.input_morphology_file, self.morphology[:-4],
                                                         parameter_dict, []).analyse_morphology()
@@ -195,13 +188,14 @@ class simulation:
                     os.makedirs(directory, exist_ok=True)
 
     def update_random_seed(self, seed):
-        print("Updating the random seed...")
         lines = []
         with open(os.path.join(PROJECT_ROOT, 'definitions.py'), 'r') as definitions_file:
             lines = definitions_file.readlines()
         for line_no, line in enumerate(lines):
             if 'RANDOM_SEED' in line:
+                print(' '.join(["Updating the random seed from", line.split()[-1], "to", str(seed)]))
                 lines[line_no] = ''.join(['RANDOM_SEED = ', str(seed), '\n'])
+                break
         with open(os.path.join(PROJECT_ROOT, 'definitions.py'), 'w+') as definitions_file:
             definitions_file.writelines(lines)
 

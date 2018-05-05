@@ -4,7 +4,7 @@ import sys
 import multiprocessing as mp
 import numpy as np
 import subprocess as sp
-from morphct.definitions import PROJECT_ROOT, SINGLE_ORCA_RUN_FILE, RANDOM_SEED
+from morphct.definitions import PROJECT_ROOT, SINGLE_ORCA_RUN_FILE
 from morphct.code import helper_functions as hf
 
 
@@ -230,7 +230,7 @@ def get_orca_jobs(input_dir, parameter_dict, proc_IDs):
 
 def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
     # Get the random seed now for all the child processes
-    np.random.seed(RANDOM_SEED)
+    np.random.seed(hf.obtain_random_seed())
     create_input_files(chromophore_list, AA_morphology_dict, parameter_dict)
     input_dir = parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]\
         + '/chromophores/input_orca'
