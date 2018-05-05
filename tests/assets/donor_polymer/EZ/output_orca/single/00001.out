@@ -633,18 +633,18 @@ TIMINGS
 
 Total SCF time: 0 days 0 hours 0 min 0 sec 
 
-Total time                  ....       0.071 sec
-Sum of individual times     ....       0.061 sec  ( 86.0%)
+Total time                  ....       0.085 sec
+Sum of individual times     ....       0.073 sec  ( 85.8%)
 
-Fock matrix formation       ....       0.047 sec  ( 66.2%)
-Diagonalization             ....       0.005 sec  (  7.6%)
-Density matrix formation    ....       0.001 sec  (  1.2%)
+Fock matrix formation       ....       0.055 sec  ( 65.1%)
+Diagonalization             ....       0.006 sec  (  6.7%)
+Density matrix formation    ....       0.001 sec  (  0.8%)
 Population analysis         ....       0.000 sec  (  0.0%)
-Initial guess               ....       0.001 sec  (  0.8%)
+Initial guess               ....       0.001 sec  (  1.1%)
 Orbital Transformation      ....       0.000 sec  (  0.0%)
 Orbital Orthonormalization  ....       0.000 sec  (  0.0%)
-DIIS solution               ....       0.005 sec  (  7.4%)
-SOSCF solution              ....       0.002 sec  (  2.9%)
+DIIS solution               ....       0.008 sec  (  9.4%)
+SOSCF solution              ....       0.002 sec  (  2.7%)
 
 -------------------------   --------------------
 FINAL SINGLE POINT ENERGY        -9.697402070775
@@ -686,9 +686,9 @@ Magnitude (Debye)      :    179.32811
 
 Timings for individual modules:
 
-Sum of individual times         ...        0.163 sec (=   0.003 min)
-STO integral calculation        ...        0.055 sec (=   0.001 min)  33.7 %
-SCF iterations                  ...        0.108 sec (=   0.002 min)  66.3 %
+Sum of individual times         ...        0.202 sec (=   0.003 min)
+STO integral calculation        ...        0.042 sec (=   0.001 min)  20.6 %
+SCF iterations                  ...        0.161 sec (=   0.003 min)  79.4 %
                              ****ORCA TERMINATED NORMALLY****
-TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 598 msec
+TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 500 msec
 

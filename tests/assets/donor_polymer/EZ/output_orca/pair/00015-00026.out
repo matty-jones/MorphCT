@@ -754,7 +754,7 @@ ITER       Energy         Delta-E        Max-DP      RMS-DP      [F,P]     Damp
   3    -18.5861333703  -0.080592515593 0.02432337  0.00073796  0.0201868 0.0000
   4    -18.5711370909   0.014996279425 0.01715305  0.00050671  0.0091505 0.0000
   5    -18.5887039191  -0.017566828209 0.01206572  0.00034192  0.0054839 0.0000
-  6    -18.5913014689  -0.002597549841 0.00851860  0.00024375  0.0032108 0.0000
+  6    -18.5913014689  -0.002597549842 0.00851860  0.00024375  0.0032108 0.0000
                       *** Initiating the SOSCF procedure ***
                            *** Shutting down DIIS ***
                       *** Re-Reading the Fockian *** 
@@ -931,18 +931,18 @@ TIMINGS
 
 Total SCF time: 0 days 0 hours 0 min 0 sec 
 
-Total time                  ....       0.144 sec
-Sum of individual times     ....       0.112 sec  ( 77.8%)
+Total time                  ....       0.164 sec
+Sum of individual times     ....       0.120 sec  ( 73.4%)
 
-Fock matrix formation       ....       0.058 sec  ( 40.3%)
-Diagonalization             ....       0.023 sec  ( 16.2%)
-Density matrix formation    ....       0.005 sec  (  3.6%)
+Fock matrix formation       ....       0.048 sec  ( 29.3%)
+Diagonalization             ....       0.025 sec  ( 15.1%)
+Density matrix formation    ....       0.005 sec  (  3.2%)
 Population analysis         ....       0.000 sec  (  0.0%)
-Initial guess               ....       0.003 sec  (  2.0%)
+Initial guess               ....       0.003 sec  (  1.8%)
 Orbital Transformation      ....       0.000 sec  (  0.0%)
 Orbital Orthonormalization  ....       0.000 sec  (  0.0%)
-DIIS solution               ....       0.012 sec  (  8.6%)
-SOSCF solution              ....       0.010 sec  (  7.1%)
+DIIS solution               ....       0.033 sec  ( 20.4%)
+SOSCF solution              ....       0.006 sec  (  3.6%)
 
 -------------------------   --------------------
 FINAL SINGLE POINT ENERGY       -18.585210689860
@@ -984,9 +984,9 @@ Magnitude (Debye)      :    121.81018
 
 Timings for individual modules:
 
-Sum of individual times         ...        0.255 sec (=   0.004 min)
-STO integral calculation        ...        0.074 sec (=   0.001 min)  28.9 %
-SCF iterations                  ...        0.181 sec (=   0.003 min)  71.1 %
+Sum of individual times         ...        0.237 sec (=   0.004 min)
+STO integral calculation        ...        0.039 sec (=   0.001 min)  16.3 %
+SCF iterations                  ...        0.198 sec (=   0.003 min)  83.7 %
                              ****ORCA TERMINATED NORMALLY****
-TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 788 msec
+TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 529 msec
 

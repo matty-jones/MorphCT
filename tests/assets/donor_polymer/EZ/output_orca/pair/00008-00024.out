@@ -720,7 +720,7 @@ Convergence Tolerance:
 
 Diagonalization of the overlap matrix:
 Smallest eigenvalue                        ... 1.695e-01
-Time for diagonalization                   ...    0.004 sec
+Time for diagonalization                   ...    0.003 sec
 Threshold for overlap eigenvalues          ... 1.000e-08
 Number of eigenvalues below threshold      ... 0
 Time for construction of square roots      ...    0.001 sec
@@ -931,17 +931,17 @@ TIMINGS
 
 Total SCF time: 0 days 0 hours 0 min 0 sec 
 
-Total time                  ....       0.130 sec
-Sum of individual times     ....       0.101 sec  ( 77.5%)
+Total time                  ....       0.133 sec
+Sum of individual times     ....       0.106 sec  ( 80.3%)
 
-Fock matrix formation       ....       0.047 sec  ( 36.4%)
-Diagonalization             ....       0.028 sec  ( 21.2%)
-Density matrix formation    ....       0.005 sec  (  4.0%)
+Fock matrix formation       ....       0.048 sec  ( 36.0%)
+Diagonalization             ....       0.033 sec  ( 24.8%)
+Density matrix formation    ....       0.005 sec  (  3.8%)
 Population analysis         ....       0.000 sec  (  0.0%)
 Initial guess               ....       0.003 sec  (  2.4%)
 Orbital Transformation      ....       0.000 sec  (  0.0%)
 Orbital Orthonormalization  ....       0.000 sec  (  0.0%)
-DIIS solution               ....       0.011 sec  (  8.7%)
+DIIS solution               ....       0.011 sec  (  8.5%)
 SOSCF solution              ....       0.006 sec  (  4.8%)
 
 -------------------------   --------------------
@@ -984,9 +984,9 @@ Magnitude (Debye)      :     91.82995
 
 Timings for individual modules:
 
-Sum of individual times         ...        0.211 sec (=   0.004 min)
-STO integral calculation        ...        0.040 sec (=   0.001 min)  19.1 %
-SCF iterations                  ...        0.171 sec (=   0.003 min)  80.9 %
+Sum of individual times         ...        0.209 sec (=   0.003 min)
+STO integral calculation        ...        0.041 sec (=   0.001 min)  19.8 %
+SCF iterations                  ...        0.168 sec (=   0.003 min)  80.2 %
                              ****ORCA TERMINATED NORMALLY****
-TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 533 msec
+TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 511 msec
 

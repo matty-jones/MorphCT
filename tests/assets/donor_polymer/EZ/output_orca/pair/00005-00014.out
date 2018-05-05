@@ -791,7 +791,7 @@ Two Electron Energy:          539.15091188 Eh           14671.04217 eV
 SCF CONVERGENCE
 ---------------
 
-  Last Energy change         ...   -6.7792e-08  Tolerance :   1.0000e-06
+  Last Energy change         ...   -6.7791e-08  Tolerance :   1.0000e-06
   Last MAX-Density change    ...    6.4505e-05  Tolerance :   1.0000e-05
   Last RMS-Density change    ...    1.7412e-06  Tolerance :   1.0000e-06
   Last Orbital Gradient      ...    1.7750e-05  Tolerance :   5.0000e-05
@@ -931,21 +931,21 @@ TIMINGS
 
 Total SCF time: 0 days 0 hours 0 min 0 sec 
 
-Total time                  ....       0.159 sec
-Sum of individual times     ....       0.117 sec  ( 73.2%)
+Total time                  ....       0.144 sec
+Sum of individual times     ....       0.102 sec  ( 71.2%)
 
-Fock matrix formation       ....       0.057 sec  ( 35.9%)
-Diagonalization             ....       0.028 sec  ( 17.4%)
-Density matrix formation    ....       0.006 sec  (  3.5%)
+Fock matrix formation       ....       0.052 sec  ( 36.2%)
+Diagonalization             ....       0.023 sec  ( 16.3%)
+Density matrix formation    ....       0.005 sec  (  3.5%)
 Population analysis         ....       0.000 sec  (  0.0%)
-Initial guess               ....       0.003 sec  (  1.8%)
+Initial guess               ....       0.003 sec  (  2.0%)
 Orbital Transformation      ....       0.000 sec  (  0.0%)
 Orbital Orthonormalization  ....       0.000 sec  (  0.0%)
-DIIS solution               ....       0.016 sec  ( 10.3%)
-SOSCF solution              ....       0.007 sec  (  4.3%)
+DIIS solution               ....       0.013 sec  (  9.0%)
+SOSCF solution              ....       0.006 sec  (  4.3%)
 
 -------------------------   --------------------
-FINAL SINGLE POINT ENERGY       -22.788185444623
+FINAL SINGLE POINT ENERGY       -22.788185444622
 -------------------------   --------------------
 
 
@@ -984,9 +984,9 @@ Magnitude (Debye)      :    128.46766
 
 Timings for individual modules:
 
-Sum of individual times         ...        0.239 sec (=   0.004 min)
-STO integral calculation        ...        0.040 sec (=   0.001 min)  16.7 %
-SCF iterations                  ...        0.199 sec (=   0.003 min)  83.3 %
+Sum of individual times         ...        0.231 sec (=   0.004 min)
+STO integral calculation        ...        0.051 sec (=   0.001 min)  22.1 %
+SCF iterations                  ...        0.180 sec (=   0.003 min)  77.9 %
                              ****ORCA TERMINATED NORMALLY****
-TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 717 msec
+TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 572 msec
 

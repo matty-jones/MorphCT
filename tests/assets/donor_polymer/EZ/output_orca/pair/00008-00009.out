@@ -704,11 +704,11 @@ Convergence Tolerance:
 
 Diagonalization of the overlap matrix:
 Smallest eigenvalue                        ... 1.673e-01
-Time for diagonalization                   ...    0.005 sec
+Time for diagonalization                   ...    0.003 sec
 Threshold for overlap eigenvalues          ... 1.000e-08
 Number of eigenvalues below threshold      ... 0
 Time for construction of square roots      ...    0.001 sec
-Total time needed                          ...    0.008 sec
+Total time needed                          ...    0.004 sec
 
 -------------------------------
 INITIAL GUESS: EXTENDED HUECKEL
@@ -732,13 +732,13 @@ SCF ITERATIONS
 --------------
 ITER       Energy         Delta-E        Max-DP      RMS-DP      [F,P]     Damp
   0     -8.4541540284   0.000000000000 0.03762513  0.00142870  0.0919871 0.7000
-  1     -8.4939625107  -0.039808482279 0.03480183  0.00135054  0.0654880 0.7000
+  1     -8.4939625107  -0.039808482280 0.03480183  0.00135054  0.0654880 0.7000
                                ***Turning on DIIS***
-  2     -8.5237443762  -0.029781865508 0.08616017  0.00349266  0.0430905 0.0000
-  3     -8.6050538800  -0.081309503859 0.01559173  0.00074872  0.0174926 0.0000
-  4     -8.5836556332   0.021398246873 0.00919205  0.00051672  0.0054503 0.0000
-  5     -8.6019675635  -0.018311930364 0.00624097  0.00034462  0.0031167 0.0000
-  6     -8.6056080072  -0.003640443718 0.00478573  0.00025079  0.0016919 0.0000
+  2     -8.5237443762  -0.029781865507 0.08616017  0.00349266  0.0430905 0.0000
+  3     -8.6050538800  -0.081309503858 0.01559173  0.00074872  0.0174926 0.0000
+  4     -8.5836556332   0.021398246872 0.00919205  0.00051672  0.0054503 0.0000
+  5     -8.6019675635  -0.018311930363 0.00624097  0.00034462  0.0031167 0.0000
+  6     -8.6056080072  -0.003640443719 0.00478573  0.00025079  0.0016919 0.0000
                       *** Initiating the SOSCF procedure ***
                            *** Shutting down DIIS ***
                       *** Re-Reading the Fockian *** 
@@ -912,21 +912,21 @@ TIMINGS
 
 Total SCF time: 0 days 0 hours 0 min 0 sec 
 
-Total time                  ....       0.194 sec
-Sum of individual times     ....       0.110 sec  ( 56.8%)
+Total time                  ....       0.128 sec
+Sum of individual times     ....       0.103 sec  ( 80.1%)
 
-Fock matrix formation       ....       0.048 sec  ( 24.8%)
-Diagonalization             ....       0.023 sec  ( 12.0%)
-Density matrix formation    ....       0.004 sec  (  2.3%)
+Fock matrix formation       ....       0.048 sec  ( 37.7%)
+Diagonalization             ....       0.024 sec  ( 19.0%)
+Density matrix formation    ....       0.007 sec  (  5.6%)
 Population analysis         ....       0.000 sec  (  0.0%)
-Initial guess               ....       0.002 sec  (  1.3%)
+Initial guess               ....       0.003 sec  (  2.1%)
 Orbital Transformation      ....       0.000 sec  (  0.0%)
 Orbital Orthonormalization  ....       0.000 sec  (  0.0%)
-DIIS solution               ....       0.027 sec  ( 14.0%)
-SOSCF solution              ....       0.005 sec  (  2.5%)
+DIIS solution               ....       0.016 sec  ( 12.6%)
+SOSCF solution              ....       0.004 sec  (  3.2%)
 
 -------------------------   --------------------
-FINAL SINGLE POINT ENERGY        -8.602042537818
+FINAL SINGLE POINT ENERGY        -8.602042537819
 -------------------------   --------------------
 
 
@@ -965,9 +965,9 @@ Magnitude (Debye)      :     48.48913
 
 Timings for individual modules:
 
-Sum of individual times         ...        0.404 sec (=   0.007 min)
-STO integral calculation        ...        0.164 sec (=   0.003 min)  40.7 %
-SCF iterations                  ...        0.240 sec (=   0.004 min)  59.3 %
+Sum of individual times         ...        0.214 sec (=   0.004 min)
+STO integral calculation        ...        0.049 sec (=   0.001 min)  22.8 %
+SCF iterations                  ...        0.166 sec (=   0.003 min)  77.2 %
                              ****ORCA TERMINATED NORMALLY****
-TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 942 msec
+TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 527 msec
 

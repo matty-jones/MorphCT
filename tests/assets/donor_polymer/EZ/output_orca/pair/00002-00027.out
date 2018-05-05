@@ -723,8 +723,8 @@ Smallest eigenvalue                        ... 1.694e-01
 Time for diagonalization                   ...    0.003 sec
 Threshold for overlap eigenvalues          ... 1.000e-08
 Number of eigenvalues below threshold      ... 0
-Time for construction of square roots      ...    0.099 sec
-Total time needed                          ...    0.102 sec
+Time for construction of square roots      ...    0.001 sec
+Total time needed                          ...    0.004 sec
 
 -------------------------------
 INITIAL GUESS: EXTENDED HUECKEL
@@ -931,18 +931,18 @@ TIMINGS
 
 Total SCF time: 0 days 0 hours 0 min 0 sec 
 
-Total time                  ....       0.151 sec
-Sum of individual times     ....       0.123 sec  ( 81.4%)
+Total time                  ....       0.137 sec
+Sum of individual times     ....       0.109 sec  ( 80.0%)
 
-Fock matrix formation       ....       0.067 sec  ( 44.7%)
-Diagonalization             ....       0.024 sec  ( 16.1%)
-Density matrix formation    ....       0.005 sec  (  3.6%)
+Fock matrix formation       ....       0.053 sec  ( 38.5%)
+Diagonalization             ....       0.025 sec  ( 18.1%)
+Density matrix formation    ....       0.007 sec  (  4.8%)
 Population analysis         ....       0.000 sec  (  0.0%)
 Initial guess               ....       0.003 sec  (  2.0%)
 Orbital Transformation      ....       0.000 sec  (  0.0%)
 Orbital Orthonormalization  ....       0.000 sec  (  0.0%)
-DIIS solution               ....       0.013 sec  (  8.6%)
-SOSCF solution              ....       0.010 sec  (  6.3%)
+DIIS solution               ....       0.016 sec  ( 11.7%)
+SOSCF solution              ....       0.007 sec  (  4.9%)
 
 -------------------------   --------------------
 FINAL SINGLE POINT ENERGY       -16.995951994947
@@ -984,9 +984,9 @@ Magnitude (Debye)      :    281.55889
 
 Timings for individual modules:
 
-Sum of individual times         ...        0.332 sec (=   0.006 min)
-STO integral calculation        ...        0.042 sec (=   0.001 min)  12.5 %
-SCF iterations                  ...        0.290 sec (=   0.005 min)  87.5 %
+Sum of individual times         ...        0.213 sec (=   0.004 min)
+STO integral calculation        ...        0.039 sec (=   0.001 min)  18.4 %
+SCF iterations                  ...        0.174 sec (=   0.003 min)  81.6 %
                              ****ORCA TERMINATED NORMALLY****
-TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 833 msec
+TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 515 msec
 

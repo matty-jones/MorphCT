@@ -482,11 +482,11 @@ Convergence Tolerance:
 
 Diagonalization of the overlap matrix:
 Smallest eigenvalue                        ... 1.689e-01
-Time for diagonalization                   ...    0.002 sec
+Time for diagonalization                   ...    0.001 sec
 Threshold for overlap eigenvalues          ... 1.000e-08
 Number of eigenvalues below threshold      ... 0
 Time for construction of square roots      ...    0.000 sec
-Total time needed                          ...    0.003 sec
+Total time needed                          ...    0.002 sec
 
 -------------------------------
 INITIAL GUESS: EXTENDED HUECKEL
@@ -633,21 +633,21 @@ TIMINGS
 
 Total SCF time: 0 days 0 hours 0 min 0 sec 
 
-Total time                  ....       0.069 sec
-Sum of individual times     ....       0.060 sec  ( 86.7%)
+Total time                  ....       0.086 sec
+Sum of individual times     ....       0.065 sec  ( 75.1%)
 
-Fock matrix formation       ....       0.047 sec  ( 68.5%)
-Diagonalization             ....       0.005 sec  (  6.8%)
-Density matrix formation    ....       0.001 sec  (  1.6%)
+Fock matrix formation       ....       0.046 sec  ( 53.3%)
+Diagonalization             ....       0.005 sec  (  6.2%)
+Density matrix formation    ....       0.001 sec  (  0.8%)
 Population analysis         ....       0.000 sec  (  0.0%)
-Initial guess               ....       0.001 sec  (  0.9%)
+Initial guess               ....       0.001 sec  (  0.8%)
 Orbital Transformation      ....       0.000 sec  (  0.0%)
 Orbital Orthonormalization  ....       0.000 sec  (  0.0%)
-DIIS solution               ....       0.004 sec  (  6.2%)
-SOSCF solution              ....       0.002 sec  (  2.7%)
+DIIS solution               ....       0.009 sec  ( 10.5%)
+SOSCF solution              ....       0.003 sec  (  3.5%)
 
 -------------------------   --------------------
-FINAL SINGLE POINT ENERGY        -8.212649430982
+FINAL SINGLE POINT ENERGY        -8.212649430983
 -------------------------   --------------------
 
 
@@ -686,9 +686,9 @@ Magnitude (Debye)      :    178.05523
 
 Timings for individual modules:
 
-Sum of individual times         ...        0.143 sec (=   0.002 min)
-STO integral calculation        ...        0.041 sec (=   0.001 min)  28.5 %
-SCF iterations                  ...        0.103 sec (=   0.002 min)  71.5 %
+Sum of individual times         ...        0.332 sec (=   0.006 min)
+STO integral calculation        ...        0.112 sec (=   0.002 min)  33.8 %
+SCF iterations                  ...        0.220 sec (=   0.004 min)  66.2 %
                              ****ORCA TERMINATED NORMALLY****
-TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 555 msec
+TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 599 msec
 

@@ -752,9 +752,9 @@ ITER       Energy         Delta-E        Max-DP      RMS-DP      [F,P]     Damp
                                ***Turning on DIIS***
   2    -16.7904937750  -0.031044440286 0.11781198  0.00350925  0.0469627 0.0000
   3    -16.8721064007  -0.081612625772 0.02378763  0.00073472  0.0199586 0.0000
-  4    -16.8568120196   0.015294381076 0.01598237  0.00050534  0.0082968 0.0000
-  5    -16.8737502828  -0.016938263116 0.01125165  0.00034140  0.0049657 0.0000
-  6    -16.8762907206  -0.002540437839 0.00838312  0.00024241  0.0030571 0.0000
+  4    -16.8568120196   0.015294381077 0.01598237  0.00050534  0.0082968 0.0000
+  5    -16.8737502828  -0.016938263117 0.01125165  0.00034140  0.0049657 0.0000
+  6    -16.8762907206  -0.002540437838 0.00838312  0.00024241  0.0030571 0.0000
                       *** Initiating the SOSCF procedure ***
                            *** Shutting down DIIS ***
                       *** Re-Reading the Fockian *** 
@@ -791,7 +791,7 @@ Two Electron Energy:          549.57355963 Eh           14954.65684 eV
 SCF CONVERGENCE
 ---------------
 
-  Last Energy change         ...   -5.3225e-08  Tolerance :   1.0000e-06
+  Last Energy change         ...   -5.3226e-08  Tolerance :   1.0000e-06
   Last MAX-Density change    ...    5.8934e-05  Tolerance :   1.0000e-05
   Last RMS-Density change    ...    1.4262e-06  Tolerance :   1.0000e-06
   Last Orbital Gradient      ...    1.3409e-05  Tolerance :   5.0000e-05
@@ -931,21 +931,21 @@ TIMINGS
 
 Total SCF time: 0 days 0 hours 0 min 0 sec 
 
-Total time                  ....       0.160 sec
-Sum of individual times     ....       0.107 sec  ( 66.9%)
+Total time                  ....       0.132 sec
+Sum of individual times     ....       0.107 sec  ( 81.2%)
 
-Fock matrix formation       ....       0.052 sec  ( 32.3%)
-Diagonalization             ....       0.027 sec  ( 16.9%)
-Density matrix formation    ....       0.005 sec  (  3.2%)
+Fock matrix formation       ....       0.051 sec  ( 38.6%)
+Diagonalization             ....       0.028 sec  ( 21.4%)
+Density matrix formation    ....       0.005 sec  (  4.1%)
 Population analysis         ....       0.000 sec  (  0.0%)
-Initial guess               ....       0.003 sec  (  2.2%)
+Initial guess               ....       0.003 sec  (  2.4%)
 Orbital Transformation      ....       0.000 sec  (  0.0%)
 Orbital Orthonormalization  ....       0.000 sec  (  0.0%)
-DIIS solution               ....       0.014 sec  (  8.6%)
-SOSCF solution              ....       0.006 sec  (  3.7%)
+DIIS solution               ....       0.013 sec  (  9.8%)
+SOSCF solution              ....       0.006 sec  (  4.9%)
 
 -------------------------   --------------------
-FINAL SINGLE POINT ENERGY       -16.870206884876
+FINAL SINGLE POINT ENERGY       -16.870206884877
 -------------------------   --------------------
 
 
@@ -984,9 +984,9 @@ Magnitude (Debye)      :    163.11901
 
 Timings for individual modules:
 
-Sum of individual times         ...        0.238 sec (=   0.004 min)
-STO integral calculation        ...        0.039 sec (=   0.001 min)  16.2 %
-SCF iterations                  ...        0.199 sec (=   0.003 min)  83.8 %
+Sum of individual times         ...        0.223 sec (=   0.004 min)
+STO integral calculation        ...        0.054 sec (=   0.001 min)  24.0 %
+SCF iterations                  ...        0.170 sec (=   0.003 min)  76.0 %
                              ****ORCA TERMINATED NORMALLY****
-TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 539 msec
+TOTAL RUN TIME: 0 days 0 hours 0 minutes 0 seconds 529 msec
 
