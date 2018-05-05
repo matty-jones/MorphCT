@@ -1,5 +1,6 @@
 import copy
 import itertools
+import os
 import sys
 import numpy as np
 from collections import defaultdict
@@ -632,7 +633,7 @@ def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_di
     # Now we have updated the chromophore_list, rewrite the pickle with this new
     # information.
     pickle_name = os.path.join(parameter_dict['output_morph_dir'], parameter_dict['morphology'][:-4],
-        + '/code/' + ''.join([parameter_dict['morphology'][:-4], '.pickle']))
+                               'code/', ''.join([parameter_dict['morphology'][:-4], '.pickle']))
     hf.write_pickle((AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict,
                      chromophore_list), pickle_name)
     return AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list
