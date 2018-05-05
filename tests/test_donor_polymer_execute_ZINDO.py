@@ -76,7 +76,7 @@ def run_simulation():
         pass
     os.makedirs(os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code'))
     shutil.copy(os.path.join(TEST_ROOT, 'assets', os.path.splitext(morphology)[0], 'OC',
-                             morphology.replace('.xml', '_post_obtain_chromophores.pickle')),
+                             morphology.replace('.xml', '_post_obtain_chromophores_voronoi.pickle')),
                 os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code',
                              morphology.replace('.xml', '.pickle')))
 
