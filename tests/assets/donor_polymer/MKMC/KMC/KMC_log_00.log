@@ -1,22 +1,37 @@
-Found 15 jobs to run.
+Found 30 jobs to run.
 Found main morphology pickle file at /Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/tests/output_MKMC/donor_polymer/code/donor_polymer.pickle! loading data...
 Main morphology pickle loaded!
-Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.2 wall-clock seconds.
+Hole hopped 122 times, over 9.85513485685e-13 seconds, into image [0, 0, 0], for a displacement of 8.22436975012, in 0.1 wall-clock seconds.
+Hole hopped 785 times, over 9.99346928719e-12 seconds, into image [0, -1, 0], for a displacement of 29.2203311277, in 0.5 wall-clock seconds.
+Hole hopped 1059 times, over 9.91941910912e-12 seconds, into image [0, 1, 0], for a displacement of 28.722496046, in 0.6 wall-clock seconds.
+Hole hopped 97 times, over 9.70754854876e-13 seconds, into image [0, 1, 0], for a displacement of 12.1994849133, in 0.1 wall-clock seconds.
+Hole hopped 838 times, over 9.97771025655e-12 seconds, into image [0, -1, 0], for a displacement of 25.134742536, in 0.5 wall-clock seconds.
+Hole hopped 2 times, over 7.57986652699e-15 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 93 times, over 9.98629454323e-13 seconds, into image [0, 0, 0], for a displacement of 20.7469479917, in 0.1 wall-clock seconds.
+Hole hopped 76 times, over 9.98400414182e-13 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.1 wall-clock seconds.
+Hole hopped 101 times, over 9.88987463435e-13 seconds, into image [0, 0, 0], for a displacement of 12.2315095584, in 0.1 wall-clock seconds.
+Hole hopped 19 times, over 8.58554245177e-14 seconds, into image [0, 0, 0], for a displacement of 12.4717670087, in 0.0 wall-clock seconds.
+Hole hopped 7 times, over 8.4617191984e-14 seconds, into image [0, 0, 0], for a displacement of 4.07536926494, in 0.0 wall-clock seconds.
+Hole hopped 8 times, over 7.90945211061e-14 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
 Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 11 times, over 9.94092098913e-14 seconds, into image [0, 0, 0], for a displacement of 4.13536361178, in 0.0 wall-clock seconds.
 Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-All jobs completed in 0.2 seconds.
+Hole hopped 101 times, over 9.97588853635e-13 seconds, into image [0, 0, 0], for a displacement of 20.4691743158, in 0.1 wall-clock seconds.
+Hole hopped 772 times, over 9.99202557705e-12 seconds, into image [0, 0, 0], for a displacement of 8.50172858626, in 0.5 wall-clock seconds.
+Hole hopped 81 times, over 9.83594871252e-13 seconds, into image [0, 0, 0], for a displacement of 4.18038524748, in 0.0 wall-clock seconds.
+Hole hopped 987 times, over 9.99416397499e-12 seconds, into image [0, 0, 0], for a displacement of 28.8491709332, in 0.6 wall-clock seconds.
+Hole hopped 63 times, over 9.83442582537e-13 seconds, into image [0, 0, 0], for a displacement of 4.20525519777, in 0.0 wall-clock seconds.
+Hole hopped 118 times, over 9.79495095237e-13 seconds, into image [0, 0, 0], for a displacement of 24.6030475344, in 0.1 wall-clock seconds.
+Hole hopped 947 times, over 9.98804017019e-12 seconds, into image [0, 0, 0], for a displacement of 4.18038524748, in 0.6 wall-clock seconds.
+Hole hopped 9 times, over 6.3164798649e-14 seconds, into image [0, 0, 0], for a displacement of 4.1649112056, in 0.0 wall-clock seconds.
+Hole hopped 10 times, over 9.50066086905e-14 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 6 times, over 7.55488771039e-14 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 809 times, over 9.99522232215e-12 seconds, into image [0, 0, 0], for a displacement of 21.0279072377, in 0.5 wall-clock seconds.
+Hole hopped 608 times, over 9.96471794808e-12 seconds, into image [0, 0, 0], for a displacement of 17.3517176157, in 0.3 wall-clock seconds.
+Hole hopped 4 times, over 8.15349703586e-14 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 64 times, over 8.91221913975e-13 seconds, into image [0, 0, 0], for a displacement of 7.78656370888, in 0.0 wall-clock seconds.
+Hole hopped 593 times, over 9.9691428922e-12 seconds, into image [0, 0, 0], for a displacement of 4.20525519777, in 0.3 wall-clock seconds.
+All jobs completed in 5.1 seconds.
 Saving the pickle file cleanly before termination...
 Pickle file saved successfully as /Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/tests/output_MKMC/donor_polymer/KMC/KMC_results_00.pickle!
 Exiting normally...
