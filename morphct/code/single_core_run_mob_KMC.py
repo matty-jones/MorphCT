@@ -138,10 +138,9 @@ class carrier:
                 hop_times.append([self.current_chromophore.neighbours[neighbour_index][0], hop_time, relative_image])
         # Sort by ascending hop time
         hop_times.sort(key=lambda x: x[1])
-        # Take the quickest hop
         if len(hop_times) == 0:
             # We are trapped here, so create a dummy hop with time 1E99
-            hop_times = [[self.current_chromophore, 1E99, [0, 0, 0]]]
+            hop_times = [[self.current_chromophore.ID, 1E99, [0, 0, 0]]]
         # As long as we're not limiting by the number of hops:
         if self.hop_limit is None:
             # Ensure that the next hop does not put the carrier over its
@@ -151,7 +150,8 @@ class carrier:
                 return 1
         # Move the carrier and send the contiuation signal to
         # singleCoreRunKMC.py
-        self.perform_hop(hop_times[0][0], hop_times[0][1], hop_times[0][2])
+        # Take the quickest hop
+        self.perform_hop(chromophore_list[hop_times[0][0]], hop_times[0][1], hop_times[0][2])
         return 0
 
     def perform_hop(self, destination_chromophore, hop_time, relative_image):
