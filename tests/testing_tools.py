@@ -51,11 +51,9 @@ class TestCommand(object):
 
     def check_scalar(self, response, expected):
         # Check that the answer is within 1E-4% of expected
-        difference = np.abs(expected - response)
-        assert difference <= np.abs(1E-6 * expected),\
-            ("Expected " + repr(expected) + " but got "
-             + repr(response) + ", which is more than 1E-4% (" + repr(difference) + ")"
-             " from expected.")
+        assert np.isclose(response, expected, 1E-6), ''.join(["Expected ", repr(expected), " but got ",
+                                                              repr(response), ", which is more than"
+                                                              " 1E-4% from expected."])
 
     def check_identical(self, response, expected):
         assert response == expected, ("Expected " + repr(expected) + " but got "
