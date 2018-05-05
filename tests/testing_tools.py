@@ -3,6 +3,7 @@ import sys
 import shutil
 import numpy as np
 import time as T
+import scipy.sparse
 from morphct.code import helper_functions as hf
 from morphct.code import obtain_chromophores as oc
 from morphct.definitions import TEST_ROOT
@@ -40,6 +41,8 @@ class TestCommand(object):
             self.check_scalar(response, expected)
         elif isinstance(expected, (np.matrixlib.defmatrix.matrix)):
             self.check_matrix(response, expected)
+        elif isinstance(expected, (scipy.sparse.lil.lil_matrix)):
+            self.check_matrix(response.toarray(), expected.toarray())
         elif isinstance(expected, (list, np.ndarray)):
             self.check_array(response, expected)
         elif isinstance(expected, (dict)):

@@ -4,6 +4,7 @@ from morphct import run_MorphCT
 from testing_tools import TestCommand
 import os
 import shutil
+import pickle
 import pytest
 
 
@@ -73,7 +74,7 @@ def run_simulation():
                        and (not i.startswith('Test')) and (not i.startswith('test'))
                        and (i not in ['run_MorphCT', 'helper_functions', 'hf', 'os', 'shutil', 'TestCommand',
                                       'TEST_ROOT', 'setup_module', 'teardown_module', 'testing_tools', 'sys',
-                                      'pytest'])]
+                                      'pytest', 'pickle'])]
     parameters = {}
     for name in parameter_names:
         parameters[name] = locals()[name]
@@ -151,8 +152,50 @@ class TestCompareOutputs(TestCommand):
         self.compare_equal(run_simulation['output_chromophore_list'],
                            run_simulation['expected_chromophore_list'])
 
-    def test_check_KMC_outputs(self, run_simulation):
-        pass
+    def test_check_KMC_outputs_created(self, run_simulation):
+        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
+        morphology = run_simulation['output_parameter_dict']['morphology']
+        KMC_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'KMC')
+        self.confirm_file_exists(os.path.join(KMC_dir, 'KMC_log_00.log'))
+        self.confirm_file_exists(os.path.join(KMC_dir, 'KMC_results.pickle'))
+
+    def test_check_KMC_log_identical(self, run_simulation):
+        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
+        morphology = run_simulation['output_parameter_dict']['morphology']
+        KMC_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'KMC')
+        with open(os.path.join(KMC_dir, 'KMC_log_00.log'), 'r') as result_file,\
+                open(os.path.join(TEST_ROOT, 'assets', os.path.splitext(morphology)[0],
+                                  'MKMC', 'KMC', 'KMC_log_00.log'), 'r') as expected_file:
+            expected_lines = expected_file.readlines()
+            result_lines = result_file.readlines()
+            for line_no, line in enumerate(expected_lines):
+                floats_expected = []
+                floats_result = []
+                # Get just the floats
+                for word in line.split():
+                    try:
+                        floats_expected.append(float(word))
+                    except ValueError:
+                        pass
+                for word in result_lines[line_no].split():
+                    try:
+                        floats_result.append(float(word))
+                    except ValueError:
+                        pass
+                # Skip the last float because it's just how long it took,
+                # which will likely vary
+                self.compare_equal(floats_expected[:-1], floats_result[:-1])
+
+    def test_check_KMC_pickle_identical(self, run_simulation):
+        output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
+        morphology = run_simulation['output_parameter_dict']['morphology']
+        KMC_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'KMC')
+        with open(os.path.join(TEST_ROOT, 'assets', os.path.splitext(morphology)[0],
+                               'MKMC', 'KMC', 'KMC_results.pickle'), 'rb') as expected_pickle:
+            expected = pickle.load(expected_pickle)
+        with open(os.path.join(KMC_dir, 'KMC_results.pickle'), 'rb') as results_pickle:
+            results = pickle.load(results_pickle)
+        self.compare_equal(expected, results)
 
 
 def teardown_module():
