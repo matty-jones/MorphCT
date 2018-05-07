@@ -3,6 +3,7 @@ import sys
 import shutil
 import numpy as np
 import time as T
+import scipy.sparse
 from morphct.code import helper_functions as hf
 from morphct.code import obtain_chromophores as oc
 from morphct.definitions import TEST_ROOT
@@ -40,6 +41,8 @@ class TestCommand(object):
             self.check_scalar(response, expected)
         elif isinstance(expected, (np.matrixlib.defmatrix.matrix)):
             self.check_matrix(response, expected)
+        elif isinstance(expected, (scipy.sparse.lil.lil_matrix)):
+            self.check_matrix(response.toarray(), expected.toarray())
         elif isinstance(expected, (list, np.ndarray)):
             self.check_array(response, expected)
         elif isinstance(expected, (dict)):
@@ -51,11 +54,9 @@ class TestCommand(object):
 
     def check_scalar(self, response, expected):
         # Check that the answer is within 1E-4% of expected
-        difference = np.abs(expected - response)
-        assert difference <= np.abs(1E-6 * expected),\
-            ("Expected " + repr(expected) + " but got "
-             + repr(response) + ", which is more than 1E-4% (" + repr(difference) + ")"
-             " from expected.")
+        assert np.isclose(response, expected, 1E-6), ''.join(["Expected ", repr(expected), " but got ",
+                                                              repr(response), ", which is more than"
+                                                              " 1E-4% from expected."])
 
     def check_identical(self, response, expected):
         assert response == expected, ("Expected " + repr(expected) + " but got "
@@ -82,7 +83,3 @@ class TestCommand(object):
         file_name = expected.split('/')[-1]
         files = os.listdir(directory)
         assert file_name in files, ("Expected the file " + str(file_name) + " to exist, but it doesn't.")
-
-    def setup_method(self):
-        np.random.seed(929292929)
-        sys.stdout = None

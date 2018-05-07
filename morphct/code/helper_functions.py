@@ -1,10 +1,11 @@
-import numpy as np
 import copy
-import os
-import sys
-import pickle
-import multiprocessing as mp
 import csv
+import os
+import pickle
+import sys
+import multiprocessing as mp
+import numpy as np
+from morphct.definitions import PROJECT_ROOT
 
 
 # UNIVERSAL CONSTANTS, DO NOT CHANGE!
@@ -811,6 +812,21 @@ def convert_string_to_int(x):
         except:
             continue
     return 99999
+
+
+def obtain_random_seed():
+    # NOTE: This function seems pointless because I could just
+    # from morphct.definitions import RANDOM_SEED, but you run into lots of
+    # problems with the interpreter caching the contents of morphct.definitions
+    # before run_MorphCT has time to change it, which messes everything up.
+    # As it stands, definitions is a good place for the random seed to be
+    # stored and tuned, but we need this hacky fix to be able to load in the
+    # most up-to-date seed as and when we need it.
+    with open(os.path.join(PROJECT_ROOT, 'definitions.py'), 'r') as file_name:
+        lines = file_name.readlines()
+        for line in lines:
+            if 'RANDOM_SEED' in line:
+                return int(line.split()[-1])
 
 
 def fix_images(original_morphology):

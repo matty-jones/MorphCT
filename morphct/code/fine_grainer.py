@@ -1,7 +1,7 @@
 import copy
+import sys
 import numpy as np
 from morphct.code import helper_functions as hf
-import sys
 
 
 class morphology:

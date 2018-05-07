@@ -1,7 +1,7 @@
-from hoomd_script import *
-import numpy as np
-from morphct.code import helper_functions as hf
 import sys
+import numpy as np
+from hoomd_script import *
+from morphct.code import helper_functions as hf
 
 
 class ExitHOOMD(Exception):
@@ -405,6 +405,8 @@ def scale_morphology(initial_morphology, parameter_dict, s_scale, e_scale):
 
 
 def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
+    # Get the random seed now for all the child processes
+    np.random.seed(hf.obtain_random_seed())
     # Main execution function for run_HOOMD that performs the required MD phases
     # First, scale the input morphology based on the pair potentials such that
     # the distances and energies are normalised to the strongest pair

@@ -1,10 +1,11 @@
-from morphct.definitions import TEST_ROOT
-from morphct.code import helper_functions as hf
-from morphct import run_MorphCT
-from testing_tools import TestCommand
 import os
-import shutil
 import pytest
+import shutil
+import sys
+from morphct import run_MorphCT
+from morphct.definitions import TEST_ROOT
+from testing_tools import TestCommand
+from morphct.code import helper_functions as hf
 
 
 @pytest.fixture(scope='module')
@@ -28,6 +29,7 @@ def run_simulation():
     device_components = {
     }
     overwrite_current_data = True
+    random_seed_override = 929292929
 
     # ---==============================================---
     # ---============= Execution Modules ==============---
@@ -61,6 +63,7 @@ def run_simulation():
     # ---==============================================---
     # ---===== Molecular Dynamics Phase Parameters ====---
     # ---==============================================---
+
     number_of_phases = 4
     temperatures = [1.0]
     taus = [1.0]
@@ -133,7 +136,7 @@ def run_simulation():
 
 
 class TestCompareOutputs(TestCommand):
-    def test_check_AA_morphology_dict(self, run_simulation):
+    def test_check_AA_morphology_dict_len(self, run_simulation):
         for key in run_simulation['expected_AA_morphology_dict']:
             try:
                 self.compare_equal(len(run_simulation['output_AA_morphology_dict'][key]),
@@ -141,6 +144,13 @@ class TestCompareOutputs(TestCommand):
             except TypeError:
                 self.compare_equal(run_simulation['output_AA_morphology_dict'][key],
                                    run_simulation['expected_AA_morphology_dict'][key])
+
+    @pytest.mark.skipif(sys.platform != 'darwin',
+                        reason="Expected output will change on non-OSX platforms.")
+    def test_check_AA_morphology_dict_direct(self, run_simulation):
+        for key in run_simulation['expected_AA_morphology_dict']:
+            self.compare_equal(run_simulation['output_AA_morphology_dict'][key],
+                               run_simulation['expected_AA_morphology_dict'][key])
 
     def test_check_CG_morphology_dict(self, run_simulation):
         self.compare_equal(run_simulation['output_CG_morphology_dict'],

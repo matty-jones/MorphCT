@@ -1,13 +1,12 @@
-import sys
-import signal
-import traceback
 import os
-import numpy as np
-from morphct.code import helper_functions as hf
-import time as T
-import random as R
-from scipy.sparse import lil_matrix
 import pickle
+import signal
+import sys
+import traceback
+import numpy as np
+import time as T
+from scipy.sparse import lil_matrix
+from morphct.code import helper_functions as hf
 
 
 elementary_charge = 1.60217657E-19  # C
@@ -139,10 +138,7 @@ class carrier:
                 hop_times.append([self.current_chromophore.neighbours[neighbour_index][0], hop_time, relative_image])
         # Sort by ascending hop time
         hop_times.sort(key=lambda x: x[1])
-        # Take the quickest hop
-        if len(hop_times) > 0:
-            destination_chromophore = chromophore_list[hop_times[0][0]]
-        else:
+        if len(hop_times) == 0:
             # We are trapped here, so create a dummy hop with time 1E99
             hop_times = [[self.current_chromophore.ID, 1E99, [0, 0, 0]]]
         # As long as we're not limiting by the number of hops:
@@ -154,7 +150,8 @@ class carrier:
                 return 1
         # Move the carrier and send the contiuation signal to
         # singleCoreRunKMC.py
-        self.perform_hop(destination_chromophore, hop_times[0][1], hop_times[0][2])
+        # Take the quickest hop
+        self.perform_hop(chromophore_list[hop_times[0][0]], hop_times[0][1], hop_times[0][2])
         return 0
 
     def perform_hop(self, destination_chromophore, hop_time, relative_image):
@@ -275,9 +272,10 @@ def update_molecule(atom_ID, molecule_list, bonded_atoms):
 if __name__ == '__main__':
     KMC_directory = sys.argv[1]
     CPU_rank = int(sys.argv[2])
+    np.random.seed(int(sys.argv[3]))
     overwrite = False
     try:
-        overwrite = bool(sys.argv[3])
+        overwrite = bool(sys.argv[4])
     except:
         pass
     # Load `jobs_to_run' which is a list, where each element contains the
@@ -306,7 +304,7 @@ if __name__ == '__main__':
     pickle_dir = KMC_directory.replace('/KMC', '/code')
     for file_name in os.listdir(pickle_dir):
         if 'pickle' in file_name:
-            main_morphology_pickle_name = pickle_dir + '/' + file_name
+            main_morphology_pickle_name = os.path.join(pickle_dir, file_name)
     hf.write_to_file(log_file, ['Found main morphology pickle file at ' + main_morphology_pickle_name
                                 + '! loading data...'])
     pickle_data = hf.load_pickle(main_morphology_pickle_name)
@@ -330,11 +328,9 @@ if __name__ == '__main__':
     # Attempt to catch a kill signal to ensure that we save the pickle before
     # termination
     killer = termination_signal()
-    seed = R.randint(0, sys.maxsize)
-    R.seed(seed)
     # Save the pickle as a list of `saveCarrier' instances that contain the
     # bare minimum
-    save_data = initialise_save_data(len(chromophore_list), seed)
+    save_data = initialise_save_data(len(chromophore_list), int(sys.argv[3]))
     if parameter_dict['record_carrier_history'] is False:
         save_data['hole_history_matrix'] = None
         save_data['electron_history_matrix'] = None
@@ -346,7 +342,7 @@ if __name__ == '__main__':
             t1 = T.time()
             # Find a random position to start the carrier in
             while True:
-                start_chromo_ID = R.randint(0, len(chromophore_list) - 1)
+                start_chromo_ID = np.random.randint(0, len(chromophore_list) - 1)
                 if (carrier_type.lower() == 'electron') and (chromophore_list[start_chromo_ID].species.lower()
                                                              != 'acceptor'):
                     continue

@@ -1,10 +1,10 @@
-import sys
-import os
-from morphct.code import helper_functions as hf
-import time as T
-import subprocess as sp
-import pickle
 import distutils.spawn
+import os
+import pickle
+import sys
+import subprocess as sp
+import time as T
+from morphct.code import helper_functions as hf
 
 
 if __name__ == '__main__':

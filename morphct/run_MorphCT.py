@@ -24,11 +24,11 @@ class simulation:
         self.slurm_job_ID = self.get_slurm_ID()
         # Parse the parameter file to get more useful file locations
         if self.morphology is not None:
-            self.input_morphology_file = self.input_morph_dir + '/' + self.morphology
-            self.output_morphology_directory = self.output_morph_dir + '/' + self.morphology[:-4]
+            self.input_morphology_file = os.path.join(self.input_morph_dir, self.morphology)
+            self.output_morphology_directory = os.path.join(self.output_morph_dir, self.morphology[:-4])
         if self.device_morphology is not None:
-            self.input_device_file = self.input_device_dir + '/' + self.device_morphology
-            self.output_device_directory = self.output_device_dir + '/' + self.device_morphology
+            self.input_device_file = os.path.join(self.input_device_dir, self.device_morphology)
+            self.output_device_directory = os.path.join(self.output_device_dir, self.device_morphology)
         # Add all the parameters to the parameterDict, which will be used to
         # send everything between classes
         for key, value in self.__dict__.items():
@@ -37,14 +37,18 @@ class simulation:
             parameter_dict[key] = value
         # Make the correct directory tree
         self.make_dir_tree()
+        # Change the random seed if necessary
+        if ('random_seed_override' in parameter_dict.keys())\
+           and (parameter_dict['random_seed_override'] is not None):
+            self.update_random_seed(parameter_dict['random_seed_override'])
         if self.morphology is not None:
             # Copy the current code and the parameter file for safekeeping
             self.copy_code()
             if self.execute_fine_graining is False:
                 # Load any previous data to allow us to run individual phases
                 try:
-                    pickle_data = hf.load_pickle(self.output_morphology_directory + '/code/'
-                                                 + self.morphology[:-4] + '.pickle')
+                    pickle_data = hf.load_pickle(os.path.join(self.output_morphology_directory, 'code',
+                                                              ''.join([self.morphology[:-4], '.pickle'])))
                     AA_morphology_dict = pickle_data[0]
                     CG_morphology_dict = pickle_data[1]
                     CG_to_AAID_master = pickle_data[2]
@@ -58,16 +62,9 @@ class simulation:
                             parameter_dict[key] = previous_value
                 except:
                     print("PICKLE NOT FOUND, EXECUTING FINE GRAINING TO OBTAIN REQUIRED PARAMETERS...")
-                    self.execute_fine_graining = False
-                    returned_data = fine_grainer.morphology(self.input_morphology_file, self.morphology[:-4],
-                                                            parameter_dict, []).analyse_morphology()
-                    AA_morphology_dict = returned_data[0]
-                    CG_morphology_dict = returned_data[1]
-                    CG_to_AAID_master = returned_data[2]
-                    parameter_dict = returned_data[3]
-                    chromophore_list = returned_data[4]
+                    self.execute_fine_graining = True
             # Now begin running the code based on user's flags
-            else:
+            if self.execute_fine_graining is True:
                 print("---=== BACKMAPPING COARSE-GRAINED SITES... ===---")
                 returned_data = fine_grainer.morphology(self.input_morphology_file, self.morphology[:-4],
                                                         parameter_dict, []).analyse_morphology()
@@ -133,6 +130,10 @@ class simulation:
                 print("---=== EXECUTING KINETIC MONTE CARLO DEVICE SIMULATIONS... ===---")
                 device_KMC.main(parameter_dict)
                 print("---=== EXECUTION COMPLETED ===---")
+        # Return the random seed to None
+        if ('random_seed_override' in parameter_dict.keys())\
+           and (parameter_dict['random_seed_override'] is not None):
+            self.update_random_seed(None)
 
     def get_slurm_ID(self):
         # Use Squeue to determine the current slurm job number
@@ -167,22 +168,36 @@ class simulation:
             for directory_to_make in ['chromophores/input_orca/single', 'chromophores/input_orca/pair',
                                       'chromophores/output_orca/single', 'chromophores/output_orca/pair',
                                       'KMC', 'molecules', 'morphology', 'code']:
-                print('mkdir -p ' + self.output_morphology_directory + '/' + directory_to_make)
+                print('mkdir -p', os.path.join(self.output_morphology_directory, directory_to_make))
                 # Make sure that the mkdir command has finished before moving on
-                os.makedirs(self.output_morphology_directory + '/' + directory_to_make, exist_ok=True)
+                os.makedirs(os.path.join(self.output_morphology_directory, directory_to_make), exist_ok=True)
         elif self.device_morphology is not None:
             if self.overwrite_current_data is True:
-                print('rm -r ' + self.outputDeviceDirectory + '/')
-                shutil.rmtree(self.output_device_directory + '/', ignore_errors=True)
+                print('rm -r ' + self.outputDeviceDirectory)
+                shutil.rmtree(self.output_device_directory, ignore_errors=True)
             for device_directory_to_make in ['code', 'KMC', 'figures']:
                 if device_directory_to_make == 'figures':
                     for potential_val in self.voltage_sweep:
-                        directory = device_directory_to_make + '/' + str(potential_val)
-                        print('mkdir -p ' + self.output_device_directory + '/' + directory)
-                        os.makedirs(self.output_device_directory + '/' + directory, exist_ok=True)
+                        directory = os.path.join(self.output_device_directory, device_directory_to_make,
+                                                 str(potential_val))
+                        print('mkdir -p', directory)
+                        os.makedirs(directory, exist_ok=True)
                 else:
-                    print('mkdir -p ' + self.output_device_directory + '/' + device_directory_to_make)
-                    os.makedirs(self.output_device_directory + '/' + device_directory_to_make, exist_ok=True)
+                    directory = os.path.join(self.output_device_directory, device_directory_to_make)
+                    print('mkdir -p', directory)
+                    os.makedirs(directory, exist_ok=True)
+
+    def update_random_seed(self, seed):
+        lines = []
+        with open(os.path.join(PROJECT_ROOT, 'definitions.py'), 'r') as definitions_file:
+            lines = definitions_file.readlines()
+        for line_no, line in enumerate(lines):
+            if 'RANDOM_SEED' in line:
+                print(' '.join(["Updating the random seed from", line.split()[-1], "to", str(seed)]))
+                lines[line_no] = ''.join(['RANDOM_SEED = ', str(seed), '\n'])
+                break
+        with open(os.path.join(PROJECT_ROOT, 'definitions.py'), 'w+') as definitions_file:
+            definitions_file.writelines(lines)
 
     def copy_code(self):
         print("Copying code...")

@@ -1,11 +1,11 @@
-import os
 import copy
+import os
+import shutil
+import multiprocessing as mp
 import numpy as np
-from morphct.code import helper_functions as hf
 from morphct.definitions import TEST_ROOT
 from testing_tools import TestCommand
-import multiprocessing as mp
-import shutil
+from morphct.code import helper_functions as hf
 
 
 test_morphology_dict = {'natoms': 4,
@@ -412,6 +412,7 @@ class TestKMCHelperFunctions(TestCommand):
 
     def test_determine_event_tau(self):
         function = "determine_event_tau"
+        np.random.seed(929292929)
         self.compare_equal(2.3484760270796596e-15, function=function,
                            posn_args=[1E15])
 
