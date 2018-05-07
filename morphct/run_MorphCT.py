@@ -60,6 +60,14 @@ class simulation:
                     for key, previous_value in previous_parameter_dict.items():
                         if key not in list(parameter_dict.keys()):
                             parameter_dict[key] = previous_value
+                    # We need to make sure that the most up-to-date parameters
+                    # for this system (parameter_dict) gets correctly passed
+                    # on to the child processes. We do this by re-saving the
+                    # pickle using these new parameters.
+                    pickle_name = os.path.join(parameter_dict['output_morph_dir'], parameter_dict['morphology'][:-4],
+                                               'code', ''.join([parameter_dict['morphology'][:-4], '.pickle']))
+                    hf.write_pickle((AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict,
+                                 chromophore_list), pickle_name)
                 except:
                     print("PICKLE NOT FOUND, EXECUTING FINE GRAINING TO OBTAIN REQUIRED PARAMETERS...")
                     self.execute_fine_graining = True
