@@ -79,7 +79,6 @@ def run_simulation():
                              morphology.replace('.xml', '_post_obtain_chromophores_voronoi.pickle')),
                 os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code',
                              morphology.replace('.xml', '.pickle')))
-
     run_MorphCT.simulation(**parameters)  # Execute MorphCT using these simulation parameters
     # The output dictionary from this fixing
     fix_dict = {}
@@ -148,10 +147,9 @@ class TestCompareOutputs(TestCommand):
         input_morph_dir = run_simulation['output_parameter_dict']['input_morph_dir']
         output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
         morphology = run_simulation['output_parameter_dict']['morphology']
-        chromo_dir = os.path.join(input_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
+        chromo_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
                                   'input_orca', 'single')
-        asset_dir = os.path.join(input_morph_dir, os.path.splitext(morphology)[0], 'EZ',
-                                    'input_orca', 'single')
+        asset_dir = os.path.join(input_morph_dir, 'EZ', 'input_orca', 'single')
         for file_name in os.listdir(asset_dir):
             self.confirm_file_exists(os.path.join(chromo_dir, file_name))
 
@@ -159,10 +157,9 @@ class TestCompareOutputs(TestCommand):
         input_morph_dir = run_simulation['output_parameter_dict']['input_morph_dir']
         output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
         morphology = run_simulation['output_parameter_dict']['morphology']
-        chromo_dir = os.path.join(input_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
+        chromo_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
                                   'input_orca', 'pair')
-        asset_dir = os.path.join(input_morph_dir, os.path.splitext(morphology)[0], 'EZ',
-                                    'input_orca', 'pair')
+        asset_dir = os.path.join(input_morph_dir, 'EZ', 'input_orca', 'pair')
         for file_name in os.listdir(asset_dir):
             self.confirm_file_exists(os.path.join(chromo_dir, file_name))
 
@@ -170,10 +167,9 @@ class TestCompareOutputs(TestCommand):
         input_morph_dir = run_simulation['output_parameter_dict']['input_morph_dir']
         output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
         morphology = run_simulation['output_parameter_dict']['morphology']
-        chromo_dir = os.path.join(input_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
+        chromo_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
                                   'output_orca', 'single')
-        asset_dir = os.path.join(input_morph_dir, os.path.splitext(morphology)[0], 'EZ',
-                                    'output_orca', 'single')
+        asset_dir = os.path.join(input_morph_dir, 'EZ', 'output_orca', 'single')
         for file_name in os.listdir(asset_dir):
             self.confirm_file_exists(os.path.join(chromo_dir, file_name))
 
@@ -181,10 +177,9 @@ class TestCompareOutputs(TestCommand):
         input_morph_dir = run_simulation['output_parameter_dict']['input_morph_dir']
         output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
         morphology = run_simulation['output_parameter_dict']['morphology']
-        chromo_dir = os.path.join(input_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
+        chromo_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'chromophores',
                                   'output_orca', 'pair')
-        asset_dir = os.path.join(input_morph_dir, os.path.splitext(morphology)[0], 'EZ',
-                                    'output_orca', 'pair')
+        asset_dir = os.path.join(input_morph_dir, 'EZ', 'output_orca', 'pair')
         for file_name in os.listdir(asset_dir):
             self.confirm_file_exists(os.path.join(chromo_dir, file_name))
 

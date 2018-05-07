@@ -21,8 +21,8 @@ build:
   cache_dir_list:
     - /opt/conda/envs/morphct/
   pre_ci_boot:
-    image_name: continuumio/miniconda3
-    image_tag: 4.4.10
+    image_name: cmelab/orca
+    image_tag: 0.0.1
     pull: true
   ci:
     - source conda_cache_check.bash

@@ -19,13 +19,6 @@ def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_di
             print("Average Inter-molecular hop rate:", parameter_dict['average_inter_hop_rate'])
     except KeyError:
         pass
-    # We need to make sure that the most up-to-date parameters for this system
-    # (parameter_dict) gets correctly passed on to the child processes. We do
-    # this by re-saving the pickle using these new parameters.
-    pickle_name = os.path.join(parameter_dict['output_morph_dir'], parameter_dict['morphology'][:-4],
-                               'code', ''.join([parameter_dict['morphology'][:-4], '.pickle']))
-    hf.write_pickle((AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict,
-                     chromophore_list), pickle_name)
     # Determine the maximum simulation times based on the parameter dictionary
     simulation_times = parameter_dict['simulation_times']
     carrier_list = []

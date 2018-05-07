@@ -229,6 +229,7 @@ def get_orca_jobs(input_dir, parameter_dict, proc_IDs):
 
 
 def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
+    print(parameter_dict['output_morph_dir'])
     # Get the random seed now for all the child processes
     np.random.seed(hf.obtain_random_seed())
     create_input_files(chromophore_list, AA_morphology_dict, parameter_dict)
@@ -258,7 +259,7 @@ def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_di
         # Wait for all jobs to complete
         [p.wait() for p in running_jobs]
         # Delete the job pickle
-        os.system(' '.join(['rm',pickle_name]))
+        os.system(' '.join(['rm', pickle_name]))
     return AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list
 
 
