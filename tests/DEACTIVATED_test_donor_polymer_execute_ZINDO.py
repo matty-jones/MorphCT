@@ -79,7 +79,6 @@ def run_simulation():
                              morphology.replace('.xml', '_post_obtain_chromophores_voronoi.pickle')),
                 os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'code',
                              morphology.replace('.xml', '.pickle')))
-
     run_MorphCT.simulation(**parameters)  # Execute MorphCT using these simulation parameters
     # The output dictionary from this fixing
     fix_dict = {}
@@ -91,6 +90,9 @@ def run_simulation():
     fix_dict['output_CG_to_AAID_master'] = output_pickle_data[2]
     fix_dict['output_parameter_dict'] = output_pickle_data[3]
     fix_dict['output_chromophore_list'] = output_pickle_data[4]
+    print(output_morph_dir)
+    print(fix_dict['output_parameter_dict']['output_morph_dir'])
+    exit()
     # Load the correct expected pickle
     expected_pickle_data = hf.load_pickle(os.path.join(input_morph_dir, 'EZ',
                                                        morphology.replace('.xml', '_post_execute_ZINDO.pickle')))
