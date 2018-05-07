@@ -74,6 +74,7 @@ class TestCommand(object):
 
     def check_dictionary(self, response, expected):
         for expected_key, expected_val in expected.items():
+            print("".join(["Checking key ", str(expected_key), "..."]))
             self.compare_equal(response[expected_key], expected_val)
 
     def confirm_file_exists(self, expected, response=None, function=None, posn_args=None, kw_args=None):
