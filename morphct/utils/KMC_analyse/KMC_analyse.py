@@ -1111,9 +1111,9 @@ def main():
                                               ' as the sequence of x values. For instance -s "1.5,1.75,2.0,2.25,2.5"'
                                               ' will assign each of the 5 following directories these x-values when'
                                               ' plotting the mobility evolution.'))
-    parser.add_argument("-x", "--xlabel", default="temperature (Arb. U.)", required=False,
+    parser.add_argument("-x", "--xlabel", default="Temperature (Arb. U.)", required=False,
                         help=('Specify an x-label for the combined plot (only used if -s is specified). Default ='
-                              '"temperature (Arb. U.)"'))
+                              '"Temperature (Arb. U.)"'))
     args, directory_list = parser.parse_known_args()
 
     sys.setrecursionlimit(10000)
