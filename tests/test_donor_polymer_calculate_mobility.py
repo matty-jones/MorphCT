@@ -1,11 +1,11 @@
-from morphct.definitions import TEST_ROOT
-from morphct.code import helper_functions as hf
-from morphct import run_MorphCT
-from testing_tools import TestCommand
 import os
-import shutil
 import pickle
 import pytest
+import shutil
+from morphct import run_MorphCT
+from morphct.definitions import TEST_ROOT
+from testing_tools import TestCommand
+from morphct.code import helper_functions as hf
 
 
 @pytest.fixture(scope='module')

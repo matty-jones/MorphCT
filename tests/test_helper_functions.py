@@ -1,11 +1,11 @@
-import os
 import copy
+import os
+import shutil
+import multiprocessing as mp
 import numpy as np
-from morphct.code import helper_functions as hf
 from morphct.definitions import TEST_ROOT
 from testing_tools import TestCommand
-import multiprocessing as mp
-import shutil
+from morphct.code import helper_functions as hf
 
 
 test_morphology_dict = {'natoms': 4,
