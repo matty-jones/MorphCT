@@ -1,4 +1,4 @@
-![alt-text](morphCTLogo.png "MorphCT Logo" =500x)
+[![alt-text](morphCTLogo.png "MorphCT Logo" =500x)](https://bitbucket.org/cmelab/morphct)
 
 [![DOI](https://zenodo.org/badge/100152281.svg)](https://zenodo.org/badge/latestdoi/100152281)
 [![Run Status](https://api.shippable.com/projects/5ae1ee243e7d2b0700153be4/badge?branch=dev)](https://app.shippable.com/bitbucket/cmelab/morphct) 
@@ -12,7 +12,7 @@ MorphCT has been released under a GPL3 license (please see LICENSE.TXT for condi
 
 # Code Description #
 
-The intention of this code is to form a modular, computational pipeline that can powerfully and coherently relate organic molecular morphology on the Angstroem lengthscale to electronic device performance over hundreds of nanometers.
+[The intention of this code is to form a modular, computational pipeline that can powerfully and coherently relate organic molecular morphology on the Angstroem lengthscale to electronic device performance over hundreds of nanometers.](https://bitbucket.org/cmelab/morphct)
 
 MorphCT accomplishes this by:
 
@@ -91,7 +91,7 @@ MorphCT accomplishes this by:
 
 # Contributing #
 
-* Please note that the [github repository](https://github.com/matty-jones/MorphCT) for MorphCT is a mirror of the codebase stored on [Bitbucket](https://bitbucket.org/cmelab/morphct). While issues and PRs raised on github will be considered, our development primarily occurs on Bitbucket, and these will take priority. You are welcome to come and join us on Bitbucket!
+* Please note that the [github repository](https://github.com/matty-jones/MorphCT) for MorphCT is a mirror of the codebase stored on [Bitbucket](https://bitbucket.org/cmelab/morphct). Issues and PRs should be raised on Bitbucket (free account).
 * Please feel free to [fork](https://confluence.atlassian.com/bitbucket/forking-a-repository-221449527.html) the repository and submit your [pull requests](https://www.atlassian.com/git/tutorials/making-a-pull-request) to the `dev` branch.
 * Alternatively, raising issues and voting for the issues most important to you is highly recommended and appreciated.
 * All contributions should be PEP8 compliant (comment lines limited to 80 characters, code lines limited to 120 characters).
