@@ -12,7 +12,7 @@ MorphCT has been released under a GPL3 license (please see LICENSE.TXT for condi
 
 # Code Description #
 
-[The intention of this code is to form a modular, computational pipeline that can powerfully and coherently relate organic molecular morphology on the Angstroem lengthscale to electronic device performance over hundreds of nanometers.](https://bitbucket.org/cmelab/morphct)
+The intention of this code is to form a modular, computational pipeline that can powerfully and coherently relate organic molecular morphology on the Angstroem lengthscale to electronic device performance over hundreds of nanometers.
 
 MorphCT accomplishes this by:
 
