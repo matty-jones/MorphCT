@@ -120,10 +120,10 @@ if __name__ == "__main__":
             AAIDToMolID[AAID] = index
 
     molIDs = []
-    # Get only the PCBM molecules:
     for AAID, atomType in enumerate(morphology['type']):
-        if atomType == 'FCA':
-            molIDs.append(AAIDToMolID[AAID])
+        # Get only the PCBM molecules:
+        #if atomType == 'FCA':
+        molIDs.append(AAIDToMolID[AAID])
     molIDs = list(set(molIDs))
 
 

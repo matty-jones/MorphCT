@@ -1,167 +1,105 @@
-![alt-text](morphCTLogo.png "MorphCT Logo" =500x)
+[![alt-text](morphCTLogo.png "MorphCT Logo" =500x)](https://bitbucket.org/cmelab/morphct)
 
-# PLEASE NOTE, README IS A WORK IN PROGRESS. ADDITIONALLY, CODE IS BEING UNIFIED ACCORDING TO PEP8 AND WILL SOON BE ADDED TO PYPI/CONDA. #
+[![DOI](https://zenodo.org/badge/100152281.svg)](https://zenodo.org/badge/latestdoi/100152281)
+[![Run Status](https://api.shippable.com/projects/5ae1ee243e7d2b0700153be4/badge?branch=dev)](https://app.shippable.com/bitbucket/cmelab/morphct) 
+[![Coverage Status](https://coveralls.io/repos/bitbucket/cmelab/morphct/badge.svg?branch=dev)](https://coveralls.io/bitbucket/cmelab/morphct?branch=dev)
 
-Progress on these tasks can be seen in the feat/utils branch.
+# Intellectual Property #
 
-MorphCT has been released under a GPL3 license (please see LICENSE.TXT for conditions). Please [read and cite our MorphCT paper](https://doi.org/10.1080/08927022.2017.1296958) if you use our code in your published work:
-
-
-The intention of this code is to:
-
-* Parse any coarse-grained morphology input in the HOOMD xml format. Atomistic morphologies should work too, but the infrastructure is currently set up to map single simulation elements to multiple atoms, so there will likely be plenty of redundant code.
-* Fine-grain each morphology by reading in an atomistic molecular template (containing either the full molecule or a single repeat unit in the case of polymer chains) and mapping the atoms to the appropriate simulation elements in the input morphology. The output morphology is geometrically relaxed into a realistic conformation.
-* Split the morphology into individual molecules (if required for external analysis e.g. polymer characteristics or quantum chemical computation)
-* Determine the electronic chromophores that charge carriers (both electrons and holes for acceptor and donor material respectively) are likely to be delocalised along
-* Perform fast quantum chemical calculations (semi-empirical ZINDO/S) to determine the frontier molecular orbitals of each chromophore and calculate the electronic transfer integrals between each neighbouring pair (within a given cut-off)
-* Use the transfer integrals to run a simple Kinetic Monte Carlo algorithm to determine the charge carrier mobility, which can be used to infer morphology charge transport properties
+MorphCT has been released under a GPL3 license (please see LICENSE.TXT for conditions). Please read and cite our [Molecular Simulations paper](https://doi.org/10.1080/08927022.2017.1296958), and our [zenodo DOI](https://zenodo.org/record/1228321) if you use our code in your published work.
 
 ---
 
-# Table of Contents #
+# Code Description #
 
-* [Package and Directory Structures](#markdown-header-package-and-directory-structures)
-* [General Code Comments](#markdown-header-general-code-comments)
-* [Job Pipeline](#markdown-header-job-pipeline)
-* [Example P3HT Simulation](#markdown-header-example-p3ht-simulation)
-* [Analysis Programs Included](#markdown-header-analysis-programs-included)
-* [Future Work](#markdown-header-future-work)
+The intention of this code is to form a modular, computational pipeline that can powerfully and coherently relate organic molecular morphology on the Angstroem lengthscale to electronic device performance over hundreds of nanometers.
 
----
+MorphCT accomplishes this by:
 
-# Package and Directory Structures #
-
-* ## MorphCT ##
-  
-  *The main `MorphCT` directory contains all of the required subdirectories, as well as the infrastructure for generating new MorphCT jobs. These jobs are executed by running a parameter file (`parXX.py`), which can be created manually by modifying the template, or by using `generateParameterFile.py`, and answering the questions posed. It is recommended that for each coarse-graining scheme, `generateParameterFile.py` is used only once and then manually copied and modified as desired to account for different inputs, forcefields or simulation parameters to save time.
-  The parameter file then calls `runMorphCT.py` to execute the requested MorphCT modules with the parameters outlined in `parXX.py`.
-  For the user's convenience, an example SLURM submission script is also included as `submitMorphXXCT.sh`, which is calibrated to run on Boise State University's Kestrel HPC Cluster.*
-
-
-  * ### analysis ###
-  
-    *The `analysis` directory contains several useful scripts for the preparation and analysis of input and output files. A complete description of these and more analysis scripts is given in [Analysis Programs Included](#analysis). Additionally, the user is encouraged to create their own analysis scripts for their system, to utilise the MorphCT data however they see fit.*
-
-  
-  * ### code ###
-  
-    *The `code` directory contains all of the important classes and functions for the various modules that can be executed in MorphCT. A summary of the function of each module and the important features available is given in [Job Pipeline](#pipeline). MorphCT's modular design permits additional modules to be added to improve functionality. The `helperFunctions.py` contains the generic functions/xml parsing subroutines that are shared between the worker modules.*
-
-  
-  * ### inputCGMorphs ###
-    
-    *The `inputCGMorphs` directory contains the coarse-grained simulations that the user would like to input into MorphCT, in order to determine the charge-transport characteristics. The `parXX.py` file selectes the morphology to be considered. The pipeline expects the input morphology to be in HOOMD-Blue XML format. While one of the main features of MorphCT is to fine-grain CG morphologies back to their atomistic representation, there is no reason that the pipeline will not function on an already atomistic morphology, however a significant proportion of code is likely to be redundant, and the user will have to spend significantly more time tuning the `parXX.py` parameter file to work with the infrastructure.*
-
-  
-  * ### templates ###
-    
-    *The `templates` directory contains blank versions of all the files required to make MorphCT run. For instance, `parTemplate.py` is a blank `parXX.py` file that `generateParameterFile.py` reads in and modifies in order to generate a new MorphCT job. `template.inp` is the blank ZINDO/S input file for the ORCA simulation suite, which is used to perform the electronic structure calculations. `sample.sh` is a SLURM script which can be used to send MorphCT jobs to a cluster. Finally, `template.xml` is a blank HOOMD XML file, which is populated with the atomistic morphology after the relaxed atomic positions have been determined.
-    Within this directory, the user should place their atomistic templates corresponding to the coarse-grained morphologies in the inputCGMorphs directory. An example has been provided in the repository and explained in [Example - P3HT Simulation](#example).*
+* Converting any coarse-grained organic morphology to the atomistic representation for submission to quantum chemical calculations through a process called fine-graining.
+* Splitting the morphology into electronically-active chromophores that charge carriers (holes in the case of donor materials, electrons for acceptors) are likely to be delocalised along, and can perform quantized charge hops between.
+* Performing high-throughput, fast quantum chemical calculations to obtain the energetic landscape caused by conformational disorder, as well as electronic transfer integrals between chromophore pairs.
+* Using these calculated electronic properties as inputs into a kinetic Monte Carlo algorithm to simulate the motion of charge carriers throughout the device, allowing carrier mobilities to be obtained (a good proxy for device performance)
+* Using the charge transport properties of previous morphological moieties to simulate the various mechanisms as play in an organic photovoltaic device (applied voltage bias, photoinjection, dark-current injection, exciton transport, exciton dissociation, carrier transport, extraction, geminate recombination, bimolecular recombination) in order to generate J-V curves and calculate OPV device efficiencies to guide manufacturing.
 
 ---
 
-# General Code Comments #
+# Tagged Releases #
 
-MorphCT is a modular 'one-size-fits-all' virtual organic electronic device simulator, that crosses all of the important lengthscales for device operation, from the angstroem lengthscale for individual molecules, right up to the hundreds of nanometers required to simulate the organic active layer. The modules that constitute the MorphCT pipeline are described in detail below in [Job Pipeline](#pipeline), however this section will sereve to introduce the reader to the file types and data structures that are used to perform those calculations.
-
-In order to effectively transfer information between the standalone modules, a variety of file types and data structures are used:
-
-
-* parXX.py
-    * The parXX.py is the main executable of MorphCT and contains all of the tunable parameters for the simulations, including the input morphology and molecules, the force-field parameters to use during the fine-graining process, the duration of the KMC simulations etc. There are too many variables here to list in full, and so the user is encouraged to explore the file themselves, as many of the variable names are self-explanatory or are commented to provide more information.
-
-
-* .xml (HOOMD)
-    * The real workhorse of MorphCT - the input coarse-grained morphologies are entered into the pipeline as HOOMD .xml files, the coarse-grained to fine-grained templates are HOOMD .xml files, and the fine-graining phases produces HOOMD .xml files for visualization purposes. In MorphCT, these xml files are stored in a morphology dictionary format using `helperFunctions.readMorphologyXML`.
-
-
-* *Morphology Dictionary Data Structure*
-    * The morphology dictionary consits of keys corresponding to the HOOMD .xml tags (`natoms`, `dimensions`, `lx`, `ly`, `lz`, `time_step`, `position`, `image`, `type`, `body`, `charge`, `mass`, `diameter`, `bond`, `angle`, `dihedral`, `improper`) and values corresponding to the atom IDs given in the .xml. The data types for each key can vary but match those given in the HOOMD .xml. For example, the `body` tag is a list of integers, where each element in the list corresponds to each morphology element and the integer describes the rigid-body identifier. The `position` tag is a list of triplet floats that describe the x, y and z coordinates of each morphology element. The `bond` tag is a list of triplets, the first element of which is a string describing the bond type, and the second and third elements are integers corresponding to the IDs of the two bonded elements. In most cases, an additional `unwrapped_position` key is also used, which unwraps the periodic boundary image given in the atoms `image` tag. This is useful for subsequent chromophore calculations.
-
-
-* .pickle *(Main Morphology)*
-    * All of the required data for every point in the pipeline is stored in the corresponding pickle file for that morphology. Specifically, the pickle contains 5 objects:
-        * `AAMorphologyDict`: The morphology dictionary that contains the atoms present in the fine-grained atomistic morphology
-        * `CGMorphologyDict`: The morphology dictionary that contains the coarse-grained beads present in the input morphology
-        * `CGToAAIDMaster`: A list of dictionaries, where each element in the list is a dictionary corresponding to each molecule in the system, with keys corresponding to the coarse-grained bead IDs from the input morphology, and values a list of all of the fine-grained atom IDs that the coarse-grained bead represents
-        * `parameterDict`: A dictionary of the input parameters specified in the `parXX.py` parameter file
-        * `chromophoreList`: A list of chromophore class instances that contain all of the important chromophore information. The structure of the chromophore class is outlined below.
-    During the simulations, any unknown data is replaced in the pickle with an empty NoneType object. For instance, the `chromophoreList` data is only obtained after the `obtainChromophores.py` section of the pipeline, whereby the `chromophoreList` object is replaced by the actual chromophore information. The data is stored in this manner to provide easy resuming of the pipeline (the code can dynamically determine which data is missing and perform any prerequisite steps accordingly), as well as the ability to extract all important data from the system at any time for further analysis and plotting.
-
-
-* *Chromophore class instances*
-    * The chromophore class is created in the `obtainChromophores.py` module, and contains a number of properties that are useful for the consideration and calculation of chromophores within the system. These include physical properties such as `self.ID`, `self.CGIDs` and `self.AAIDs` that describe the ID of the chromophore, and the corresponding coarse-grained and fine-grained elements that the chromophore represents, respectively. Also included are the `self.unwrappedPosn`, `self.posn`, `self.image` which locate the chromophore and `self.bonds` which describes the important bonds from the fine-grained morphology that are important for this chromophore. The energetic information for the chromophore is stored in `self.HOMO_1`, `self.HOMO`, `self.LUMO` and `self.LUMO_1`, along with the chromophore's `self.species` which defines whether it is a donor or acceptor chromophore (and therefore which energy levels are the most important). The species is defined when the chromophore is first generated, based on the input parameters, however the energy levels will only be populated after the ZINDO/S calculations have been performed. `self.neighbours` contains the chromophore IDs that are sufficiently close to the current chromophore to permitting charge transfer, and the corresponding electronic transfer integrals and site energy differences for each neighbour are stored in `self.neighboursTI` and `self.neighboursDeltaE` respectively. Again, these will be empty lists/NoneType until the quantum chemical calculations have been performed. Note that some branches of MorphCT include treatment of chromophores with length greater than a single monomer, and so some additional chromophore properties have been defined in order to account for this.
-
-    
-* *Carrier class instances*
-    * The carrier class is created in the `hoppingKMC.py` module, after the KMC jobs have been split onto individual cores and executed with `singleCoreRunKMC.py` (many carriers are created and their transport determined, so creating the classes in this way saved having to do excess read/write cycles). The current location of a given carrier is not stored as cartesian coordinates, instead its position is determined by the current `self.image` and `self.currentChromophore`, which records the ID of the chromophore the carrier is currently localised on. The initial starting point `self.initialChromophore` (always in periodic image [0, 0, 0]) is also recorded so that the carrier's displacement can be calculated. If the appropriate flag has been activated in the parameter file, the `self.carrierHistoryMatrix` is a `scipy.sparse.lilmatrix` n x n array, where n is the total number of chromophores in the system. A hop from chromophore_i to chromophore_j increments `self.carrierHistoryMatrix[i,j]` by one, in order to show where a hop has taken place in the morphology. Finally, the KMC simulation for the carrier is terminated when either `self.noHops` > the `hopLimit` assigned in the parameter file, or if `self.currentTime` > `self.lifetime`, where lifetime is the total KMC simulation time given by `simulationTimes` in the parameter file.
-
-    
-* .pickle *(KMCResults)*
-    * The KMCResults pickle is created at the end of the `hoppingKMC.py` module, when all of the required carrier simulations have completed. It contains a single dictionary where the keys are the same as the carrier class instances, and the values are lists where each element corresponds to a single charge carrier. Note that, to conserve storage space for the pickle files, all of the `self.carrierHistoryMatrix` variables are summed together when the pickle is output, resulting in a single sparse matrix describing the routes of all carriers across the KMC simulations. The KMC code outputs a KMCResults.pickle every hour, to one of two "save slots". This means that only a maximum of one hour of simulation data can be lost, even if the simulation is terminated while the code is writing the pickle.
+* v3.0: MorphCT codebase brought up to PEP8 standard (with line limit of 120 characters), refactored to work as a package, added extensive unit tests to the pipeline (pytest) and added continuous integration support using Shipable and Coveralls.
+* v2.2: Additional funcionality added for blend morphologies, multiple donor/acceptor species, variable-range hopping, Voronoi neighbourhood analysis and other performance tweaks. Results in preparation to be submitted in Q2 2018.
+* v2.1: MorphCT updated from python 2.7 to python 3.5
+* v2.0: Hardcode removed, utility of MorphCT expanded to any organic molecule with more customizable features (support for small molecules included)
+* v1.0: MorphCT released under GPL. Hardcoded mobility results for P3HT, results published in [Molecular Simulation](https://doi.org/10.1080/08927022.2017.1296958) 
 
 ---
 
-# Job Pipeline #
+# Getting Started #
 
-* ### Prerequisites ###
+## Installation ##
 
-1. MorphCT is written in the `python` 2.7 programming language and requires the following modules from the `scipy` stack in addition to the standard python library modules: `numpy`, `matplotlib`, `scipy.sparse`, and `mpl_toolkits` (optional for 3D plotting). Support for Python 3.X will soon be added.
-2. In order to use the fine-graining modules `runHoomd` and `extractMol`, the Molecular Dynamics simulation package HOOMD-Blue is required. The source code for HOOMD-Blue can be found at [https://bitbucket.org/glotzer/hoomd-blue/](https://bitbucket.org/glotzer/hoomd-blue/). Note that the current version of MorphCT uses HOOMD 1.3 for its fine-graining procedure and so HOOMD 2.X is currently unsupported. The installation of HOOMD-Blue should automatically set the correct `PATH` and `PYTHONPATH` environment variables, and this can be tested by ensuring that typing `hoomd` into the terminal brings up a python IDE.
-3. In order to use the quantum-chemical module `executeZINDO`, the quantum-chemical simulation package ORCA is required. The pre-compiled binaries for ORCA can be downloaded from [https://orcaforum.cec.mpg.de/downloads.php](https://orcaforum.cec.mpg.de/downloads.php). MorphCT has been set up to use ORCA 3.0.3. Previous versions of ORCA may be compatible but are unsupported. After installing ORCA, the `ORCA_BIN` environment variable must be set as the directory that contains the `orca` binary, using the `export` command on Linux-based machines.
+* MorphCT requires Python 3.
+* Additionally, due to the number of non-core python modules used in the codebase, it is recommended to use an environment manager to set up and run MorphCT. Prerequisites are listed below if the user desires manual setup.
+    * Support is provided for using the Conda environment manager, and users are recommended to download and install the appropriate distribution of [Miniconda](https://conda.io/miniconda.html) for their operating system.
+    * After Miniconda has been installed and added to the `$PATH` variable, the environment can be set up by using `conda env create -f environment.yml` from inside MorphCT's root directory. This will use Conda and Pip to install all of the required modules to run MorphCT successfully.
+    * The created environment can be activated using `source activate morphct`. This environment will need to be active in order for MorphCT to run.
+* In order to perform the molecular dynamics simulations, the user will require v1.3 of [HOOMD-Blue](http://glotzerlab.engin.umich.edu/hoomd-blue/) to be installed on their system. This can be obtained from the above link, and is freely available for all users. Please read and cite the following papers [#1](https://doi.org/10.1016/j.jcp.2008.01.047), [#2](https://doi.org/10.1016/j.cpc.2015.02.028) when using HOOMD-Blue.
+    * The Miniconda environment discussed above includes a build of HOOMD-Blue v1.3, which suffices for the unit tests and small systems (< 1000 particles). Depending on the infrastructure available on the user's system, it may be beneficial to remove this instantiation of HOOMD, and instead use a custom-compiled build to utilise any graphical processing units for larger systems.
+    * Note that MorphCT does not yet support v2.X of HOOMD, due to technical issues concerning the implementation of rigid bodies.
+* In order to perform the quantum chemical calculations, the user will require [orca](https://cec.mpg.de/orcadownload/index.php) to be installed on their system. Orca is available from the above link and is freely available for academic use. Please read and cite the following [paper](https://doi.org/10.1002/wcms.81) when using orca.
+    * Support is officially provided for orca v3.X, but orca v4.X also functions correctly.
 
-* ### Input Files ###
+## Dependencies ##
 
-*List input files required and where to put them.*
+* Required:
+    * Python == 3.5
+    * Scipy == 0.19.1
+    * Matplotlib == 2.0.2
 
-* ### Generating Parameter Files ###
+* Optional:
+    * HOOMD-Blue == 1.3
+    * Orca >= 3.0
+    * Pytest
+    * Pytest-Cov
+    * PyYAML
+    * Coveralls
 
-*Explain everything in the parameter file and how to generate*
+## Running Tests ##
 
-* ### Fine-Graining Morphology ###
-
-*For each module be sure to say what the parameter flag is, and how (basically) it works.*
-
-* ### Extracting Molecules ###
-
-* ### Identifying Chromophores ###
-
-* ### Performing Quantum Chemical Calculations ###
-
-* ### Calculating Electronic Transfer Integrals ###
-
-* ### Executing Kinetic Monte Carlo Simulations ###
-
-* ### Analysing Data ###
-
-*Talk about how to extract the mobility data after the KMC*
-
----
-
-# Example - P3HT Simulation #
-
-For the user's convenience, an example has been provided in the repository. `mid3HT.xml` is an atomistic representation for a single repeat monomer of poly(3-hexylthiophene), which corresponds to the coarse-grained morphologies `p1-L15-f0.0-P0.1-TX.X-e0.5.xml` provided in `inputCGMorphs`. The parameter file `par00.py` shows BLAH BLAH
-
-INCLUDE A BREAKDOWN OF HOW LONG EACH MODULE TAKES
+* More than 100 unit tests are provided to ensure that MorphCT has been set up correctly.
+* These can be executed by running `pytest` in the MorphCT root directory, or in `morphct/tests`.
 
 ---
 
-# Analysis Programs Included #
+# Running Jobs #
 
-For instance, `KMCOut` parses the output KMC pickle file and determines the carrier mobility, anisotropy and connectivity of the simulated morphology. `plotTI` allows for extensive plotting of the electronic properties between statepoints, highlighting the distributions of frontier molecular orbitals, transfer integrals and both intra- and inter-molecular hopping rates. `trimMorphology` can operate on the coarse-grained input file to remove particular coarse-grained elements, while maintaining a consistent intra-molecular constraints list (i.e. remove a CG site type and all bonds, angles, dihedrals and impropers associated with that type while leaving the rest of the morphology intact).    
+## Inputs ##
+
+* After setup, MorphCT requires two types of inputs: the input molecular system (coarse-grained or already atomistic), and a relevant parameter dictionary describing the modules to execute and the parameters to use.
+* The input molecular system consists of several xml files depending on the users requirements:
+    * Input morphology xml: The main molecular morphology to be input to the pipeline. This should be in HOOMD xml format and can be coarse-grained (in which case, the fine-graining module must be called first before the transport properties can be obtained), or atomistic (if only the transport properties of the system are required). If providing an atomistic morphology, then this is the only molecular system input required.
+    * Atomistic Template: If fine-graining is desired, this HOOMD xml file describes the atomstic template to be mapped onto the input coarse-grained system. Examples are given in the `templates` directory for a variety of organic molecule types: `P3HT.xml`, `C60.xml`, `BDTTPD.xml`, `perylene.xml`, `perylothiophene.xml` and `PCBM.xml`.
+    * Atomistic Forcefields: If fine-graining is desired, this xml file contains the forcefield parameters describing the atomistic interactions used to relax the morphology to a realistic conformation after fine-graining. Examples are given in the `templates` directory for several of the example molecules `FFP3HT.xml`, `FFC60.xml`, `FFPerylene.xml`, `FFPerylothiophene.xml`.
+* An example is provided for the user in `morphct/templates/par_template.py`. This file is heavily documented to describe the functions and features of MorphCT, and should be the first port-of-call for seeing what is possible with the program.
+
+## Job Execution ##
+
+* Jobs can be invoked by using the HOOMD v1.3 python wrapper around the relevant parameter file for the job: `hoomd par_template.py`.
+* MorphCT has also been heavily tested on several High Performance Computing Clusters, and found to scale well. Child jobs are spawned for parallelisable modules in the pipeline, so simply submitting the `hoomd par_template.py` command to the HPC resource management system should be sufficient to parallelise the jobs where possible.
 
 ---
 
-# Future Work #
+# Contributing #
 
-* Update MorphCT to use Python 3.X
-* Update MorphCT to use HOOMD 2.X
-* Enhance the Kinetic Monte Carlo simulations to permit full device characterisation (i.e. include exciton generation, multiple carriers, electrical contacts, carrier recombination, separation, and injection, etc.)
-* Consider removing the `chromophoreList` and treat it separately too?
-* Benchmark code and optimise the most commonly-called subroutines
+* Please note that the [github repository](https://github.com/matty-jones/MorphCT) for MorphCT is a mirror of the codebase stored on [Bitbucket](https://bitbucket.org/cmelab/morphct). Issues and PRs should be raised on Bitbucket (free account).
+* Please feel free to [fork](https://confluence.atlassian.com/bitbucket/forking-a-repository-221449527.html) the repository and submit your [pull requests](https://www.atlassian.com/git/tutorials/making-a-pull-request) to the `dev` branch.
+* Alternatively, raising issues and voting for the issues most important to you is highly recommended and appreciated.
+* All contributions should be PEP8 compliant (comment lines limited to 80 characters, code lines limited to 120 characters).
+* All pull requests require approval from at least one reviewer, a successful build on the latest commit to the fork, and no failed builds on the latest commit to the fork to be accepted.
 
-### MJ TO DOs ###
+---
 
-* Remove redundant analysis scripts and update readme
-* Find and fix the mystery seg fault caused by ORCA on Kestrel
-* Check which templates we actually use and remove the ones we don't. Then update the readme.
+# Maintainers #
+
+* Matthew Jones (mattyjones@boisestate.edu)
+* Mike Henry (mikehenry@boisestate.edu)

@@ -1,7 +1,8 @@
+.pytest_cache/
+codecoverage/
 utils/drawDevice/*/
 utils/*/storage
 *temp*
-*test*
 *.hoomdxml
 *ipynb*
 *par*.py
@@ -35,6 +36,7 @@ storage/*
 input*/*
 output*/*
 profiling*
+morphct/storage/*
 
 # Created by https://www.gitignore.io/api/vim,python
 

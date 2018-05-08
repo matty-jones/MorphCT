@@ -1,0 +1,32 @@
+#### CI CONFIG
+
+language: python
+
+python:
+  - "3.5"
+
+integrations:
+  notifications:
+    - integrationName: hipchat-integration-morphct
+      type: hipchat
+      recipients:
+        - "#3712501"
+
+env:
+  global:
+  - TRAVIS=False
+  - secure: IglsuSUzH/Sw5DMaiXGPs62rE8s1FBqEwkk1rkGcI4jjfQoNv8ESH48fba3jjSq+/aK8ag0kBa96Y2zVslLH6fB3KpYNPl2HPg9rY0+ytDkcZZBSa3Kn2fkGgWVFA5TrFG9ROGHY+BgDPyLVBQOF7K0ugL0wEQANetSC9ufvDXbsFAEHMKX29QC9rjwdAzZbRH2GZJrTXK3zaNAH2+pitLpmGa6sr93TP1iyXoM4kfHY/zhZGqXumxvQk6snny7jOsgBK1fGIlrxgDaNm1n9u62a7ZV1aMJ5ZR4pOK6isF6f/AG8HTPIXaLRPyV8gFlTNmuXAg4iXpiH9ug8oViZDw== 
+build:
+  cache: true
+  cache_dir_list:
+    - /opt/conda/envs/morphct/
+  pre_ci_boot:
+    image_name: cmelab/orca
+    image_tag: 0.0.1
+    pull: true
+  ci:
+    - source conda_cache_check.bash
+    - pip install -e .
+    - PYTEST_ADDOPTS="-c pytest-shippable.ini" pytest
+  on_success:
+    - COVERALLS_REPO_TOKEN=$COVERALLS_REPO_TOKEN coveralls
