@@ -6,7 +6,7 @@
 
 # Intellectual Property #
 
-MorphCT has been released under a GPL3 license (please see LICENSE.TXT for conditions). Please read and cite our [Molecular Simulations paper](https://doi.org/10.1080/08927022.2017.1296958), and our [zenodo DOI](https://zenodo.org/record/1228321) if you use our code in your published work.
+MorphCT has been released under a GPL3 license (please see LICENSE.TXT for conditions). Please read and cite our [Molecular Simulations paper](https://doi.org/10.1080/08927022.2017.1296958), and our [zenodo DOI](https://zenodo.org/badge/latestdoi/100152281) if you use our code in your published work.
 
 ---
 
