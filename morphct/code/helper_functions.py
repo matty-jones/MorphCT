@@ -826,7 +826,10 @@ def obtain_random_seed():
         lines = file_name.readlines()
         for line in lines:
             if 'RANDOM_SEED' in line:
-                return int(line.split()[-1])
+                try:
+                    return int(line.split()[-1])
+                except ValueError:
+                    return None
 
 
 def fix_images(original_morphology):
