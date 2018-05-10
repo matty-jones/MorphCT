@@ -16,7 +16,10 @@ if __name__ == '__main__':
     except:
         pass
     morphology_name = morphology_file[hf.find_index(morphology_file, '/')[-1] + 1:]
-    orca_path = distutils.spawn.find_executable("orca")
+    try:
+        orca_path = os.environ['ORCA_BIN']
+    except KeyError:
+        orca_path = distutils.spawn.find_executable("orca")
     input_dir = morphology_file + '/chromophores/input_orca'
     log_file = input_dir.replace('/input_orca', '/orca_log_' + str(CPU_rank) + '.log')
     output_dir = morphology_file + '/chromophores/output_orca'
