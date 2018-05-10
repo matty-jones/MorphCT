@@ -1188,8 +1188,12 @@ def main():
             cut_off_acceptor = calculated_cut_off_acceptor
         else:
             cut_off_acceptor = args.cut_off_acceptor
-        print("Cut off in Angstroems (donor) =", cut_off_donor)
-        print("Cut off in Angstroems (acceptor) =", cut_off_acceptor)
+        if cut_off_donor is not None:
+            print("Cut off in Angstroems (donor) =", cut_off_donor)
+            data_dict['donor_stack_cut_off'] = cut_off_donor
+        if cut_off_acceptor is not None:
+            print("Cut off in Angstroems (acceptor) =", cut_off_acceptor)
+            data_dict['acceptor_stack_cut_off'] = cut_off_acceptor
         stack_dicts = get_stacks(chromophore_list, morphology_shape, cut_off_donor, cut_off_acceptor,
                                  periodic=args.periodic_stacks)
         if args.three_D:
