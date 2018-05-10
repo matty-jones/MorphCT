@@ -1,3 +1,4 @@
+import csv
 import os
 import pytest
 import shutil
@@ -9,7 +10,8 @@ from morphct.code import helper_functions as hf
 
 
 @pytest.fixture(scope='module',
-                params=['', '-tp']
+                params=['', '-tp', '-d 0.3', '-x "TEST_OUTPUT"',
+                        '-s 0.0,1.0']
                 )
 def run_simulation(request):
     flags = request.param
@@ -35,10 +37,11 @@ def run_simulation(request):
                     os.path.join(output_dir, 'KMC'))
     command = [component for component in ['KMCAnalyse', flags, output_dir] if
                len(component) > 0]
+    if '-s' in flags:
+        command.append(output_dir)
     print("Executing command", command)
     subprocess.Popen(command).communicate()
-    exit()
-    return 0
+    return flags
 
 
 # ---==============================================---
@@ -47,12 +50,114 @@ def run_simulation(request):
 
 
 class TestCompareOutputs(TestCommand):
-    def test_check_AA_morphology_dict(self, run_simulation):
-        return True
+    def test_check_results_exists(self, run_simulation):
+        self.confirm_file_exists(os.path.join(
+            TEST_ROOT, 'output_KMCA', 'results.csv'))
+
+    def test_compare_results(self, run_simulation):
+        flags = ''
+        if len(run_simulation) > 0:
+            flags = run_simulation.split()[0]
+        with open(os.path.join(TEST_ROOT, 'assets', 'donor_polymer',
+                               'KMCA', ''.join(['results',
+                                                flags,
+                                                '.csv'])),
+                  'r') as expected_csv:
+            reader = csv.reader(expected_csv)
+            expected_dict = {rows[0]: rows[1] for rows in reader}
+        with open(os.path.join(TEST_ROOT, 'output_KMCA', 'results.csv'),
+                  'r') as results_csv:
+            reader = csv.reader(results_csv)
+            results_dict = {rows[0]: rows[1] for rows in reader}
+        self.compare_equal(expected_dict, response=results_dict)
+
+    def test_check_network_figure(self, run_simulation):
+        if '-t' in run_simulation:
+            self.confirm_file_exists(os.path.join(
+                TEST_ROOT, 'output_KMCA', 'figures', '01_3d_hole.pdf'))
+        else:
+            self.confirm_file_exists(os.path.join(
+                TEST_ROOT, 'output_KMCA', 'figures', '01_3d_hole.pdf'),
+                negate=True)
+
+    def test_check_stack_figure(self, run_simulation):
+        if '-t' in run_simulation:
+            self.confirm_file_exists(os.path.join(
+                TEST_ROOT, 'output_KMCA', 'figures', '03_stacks.pdf'))
+        else:
+            self.confirm_file_exists(os.path.join(
+                TEST_ROOT, 'output_KMCA', 'figures', '03_stacks.pdf'),
+                negate=True)
+
+    def test_check_neighbour_hist_figure(self, run_simulation):
+        self.confirm_file_exists(os.path.join(
+            TEST_ROOT, 'output_KMCA', 'figures',
+            '04_neighbour_hist_donor.pdf'))
+
+    def test_check_delta_E_figure(self, run_simulation):
+        self.confirm_file_exists(os.path.join(
+            TEST_ROOT, 'output_KMCA', 'figures',
+            '06_donor_delta_E_ij.pdf'))
+
+    def test_check_anisotropy_figure(self, run_simulation):
+        if '-t' in run_simulation:
+            self.confirm_file_exists(os.path.join(
+                TEST_ROOT, 'output_KMCA', 'figures', '08_anisotropy_hole.pdf'))
+        else:
+            self.confirm_file_exists(os.path.join(
+                TEST_ROOT, 'output_KMCA', 'figures', '08_anisotropy_hole.pdf'),
+                negate=True)
+
+    def test_check_transfer_integral_mols_figure(self, run_simulation):
+        self.confirm_file_exists(os.path.join(
+            TEST_ROOT, 'output_KMCA', 'figures',
+            '10_donor_transfer_integral_mols.pdf'))
+
+    def test_check_transfer_integral_stacks_figure(self, run_simulation):
+        self.confirm_file_exists(os.path.join(
+            TEST_ROOT, 'output_KMCA', 'figures',
+            '12_donor_transfer_integral_stacks.pdf'))
+
+    def test_check_hopping_rate_mols_figure(self, run_simulation):
+        self.confirm_file_exists(os.path.join(
+            TEST_ROOT, 'output_KMCA', 'figures',
+            '14_donor_hopping_rate_mols.pdf'))
+
+    def test_check_hopping_rate_stacks_figure(self, run_simulation):
+        self.confirm_file_exists(os.path.join(
+            TEST_ROOT, 'output_KMCA', 'figures',
+            '16_donor_hopping_rate_stacks.pdf'))
+
+    def test_check_lin_MSD_figure(self, run_simulation):
+        self.confirm_file_exists(os.path.join(
+            TEST_ROOT, 'output_KMCA', 'figures',
+            '18_lin_MSD_hole.pdf'))
+
+    def test_check_semi_log_MSD_figure(self, run_simulation):
+        self.confirm_file_exists(os.path.join(
+            TEST_ROOT, 'output_KMCA', 'figures',
+            '20_semi_log_MSD_hole.pdf'))
+
+    def test_check_log_MSD_figure(self, run_simulation):
+        self.confirm_file_exists(os.path.join(
+            TEST_ROOT, 'output_KMCA', 'figures',
+            '22_log_MSD_hole.pdf'))
+
+    def test_check_anisotropy_sequence_figure(self, run_simulation):
+        if '-s' in run_simulation:
+            self.confirm_file_exists(os.path.join(
+                TEST_ROOT, 'anisotropy_hole.pdf'))
+
+    def test_check_mobility_sequence_figure(self, run_simulation):
+        if '-s' in run_simulation:
+            self.confirm_file_exists(os.path.join(
+                TEST_ROOT, 'mobility_hole.pdf'))
 
 
 def teardown_module():
     shutil.rmtree(os.path.join(TEST_ROOT, 'output_KMCA'))
+    os.remove(os.path.join(TEST_ROOT, 'anisotropy_hole.pdf'))
+    os.remove(os.path.join(TEST_ROOT, 'mobility_hole.pdf'))
 
 
 if __name__ == "__main__":
@@ -60,4 +165,4 @@ if __name__ == "__main__":
         def __init__(self, param):
             self.param = param
 
-    run_simulation(parameters('-tp'))
+    run_simulation(parameters('-s 0.0,1.0'))
