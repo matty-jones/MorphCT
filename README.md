@@ -48,6 +48,7 @@ MorphCT accomplishes this by:
     * Note that MorphCT does not yet support v2.X of HOOMD, due to technical issues concerning the implementation of rigid bodies.
 * In order to perform the quantum chemical calculations, the user will require [orca](https://cec.mpg.de/orcadownload/index.php) to be installed on their system. Orca is available from the above link and is freely available for academic use. Please read and cite the following [paper](https://doi.org/10.1002/wcms.81) when using orca.
     * Support is officially provided for orca v3.X, but orca v4.X also functions correctly.
+    * Note that MorphCT uses distutils to find the orca executable in the path. In the event that the user has multiple orca binaries, this search can be overriden by setting the `ORCA_BIN` environment variable to the quantum chemical suite's binary.
 
 ## Dependencies ##
 
