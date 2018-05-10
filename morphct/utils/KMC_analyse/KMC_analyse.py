@@ -452,15 +452,15 @@ def plot_temperature_progression(temp_data, mobility_data, anisotropy_data, carr
     plt.ylabel('Mobility (cm' + r'$^{2}$ ' + 'V' + r'$^{-1}$' + r's$^{-1}$)')
     plt.semilogy(xvals, yvals, c='k')
     plt.errorbar(xvals, yvals, xerr=0, yerr=yerrs)
-    file_name = './mobility' + carrier_type + '.pdf'
+    file_name = ''.join(['mobility_', carrier_type, '.pdf'])
     plt.savefig(file_name)
     plt.clf()
     print("Figure saved as " + file_name)
 
     plt.plot(temp_data, anisotropy_data, c='r')
-    file_name = './anisotropy' + carrier_type + '.pdf'
     plt.xlabel(x_label)
     plt.ylabel(r'$\kappa$' + ' (Arb. U)')
+    file_name = ''.join(['anisotropy_', carrier_type, '.pdf'])
     plt.savefig(file_name)
     plt.clf()
     print("Figure saved as " + file_name)
