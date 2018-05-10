@@ -2,22 +2,20 @@ import os
 import sys
 import pickle
 import csv
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 import scipy.stats
 from morphct.code import helper_functions as hf
 from collections import OrderedDict
-try:
-    import mpl_toolkits.mplot3d as p3
-except ImportError:
-    print("Could not import 3D plotting engine, calling the plotMolecule3D function will result in an error!")
 import shutil
 import glob
 import re
 import argparse
 import copy
 
+
+plt = None
+p3 = None
 elementary_charge = 1.60217657E-19  # C
 kB = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}
 hbar = 1.05457173E-34  # m^{2} kg s^{-1}
@@ -1122,12 +1120,12 @@ def main():
                               ' Defaults to False.'))
     parser.add_argument("-d", "--cut_off_donor", type=float, default=None, required=False,
                         help=('Specify a manual cut-off for the determination of stacks within the donor material.'
-                              'Connections with separation > cut-off will be classed as inter-stack. If omitted, stack'
-                              'cut-off will be determined automatically as the first minimum of the RDF.'))
+                              ' Connections with separation > cut-off will be classed as inter-stack. If omitted, stack'
+                              ' cut-off will be determined automatically as the first minimum of the RDF.'))
     parser.add_argument("-a", "--cut_off_acceptor", type=float, default=None, required=False,
                         help=('Specify a manual cut-off for the determination of stacks within the acceptor material.'
-                              'Connections with separation > cut-off will be classed as inter-stack. if omitted, stack'
-                              'cut-off will be determined automatically as the first minimum of the RDF.'))
+                              ' Connections with separation > cut-off will be classed as inter-stack. if omitted, stack'
+                              ' cut-off will be determined automatically as the first minimum of the RDF.'))
     parser.add_argument("-s", "--sequence", type=lambda s: [float(item) for item in s.split(',')], default=None,
                         required=False, help=('Create a figure in the current directory that describes the evolution'
                                               ' of the anisotropy/mobility using the specified comma-delimited string'
@@ -1136,8 +1134,23 @@ def main():
                                               ' plotting the mobility evolution.'))
     parser.add_argument("-x", "--xlabel", default="Temperature (Arb. U.)", required=False,
                         help=('Specify an x-label for the combined plot (only used if -s is specified). Default ='
-                              '"Temperature (Arb. U.)"'))
+                              ' "Temperature (Arb. U.)"'))
+    parser.add_argument("-b", "--backend", default=None, required=False,
+                        help=('Specify a backend for matplotlib to use when plotting. Default = user defined in the'
+                              ' .matplotlibrc.'))
     args, directory_list = parser.parse_known_args()
+
+    # Load the matplotlib backend and the plotting subroutines
+    global plt
+    global p3
+    if args.backend is not None:
+        import matplotlib
+        matplotlib.use(args.backend.strip())
+    import matplotlib.pyplot as plt
+    try:
+        import mpl_toolkits.mplot3d as p3
+    except ImportError:
+        print("Could not import 3D plotting engine, calling the plotMolecule3D function will result in an error!")
 
     sys.setrecursionlimit(10000)
     hole_mobility_data = []
