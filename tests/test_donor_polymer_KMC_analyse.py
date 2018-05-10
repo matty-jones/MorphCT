@@ -11,7 +11,7 @@ from morphct.code import helper_functions as hf
 
 @pytest.fixture(scope='module',
                 params=['', '-tp', '-d 0.3', '-x "TEST_OUTPUT"',
-                        '-s 0.0,1.0']
+                        '-s 0.0,1.0', 'COMBINE_KMC']
                 )
 def run_simulation(request):
     flags = request.param
@@ -32,13 +32,21 @@ def run_simulation(request):
                              'donor_polymer_post_calculate_mobility.pickle'),
                 os.path.join(output_dir, 'code', ''.join([output_dir,
                                                           '.pickle'])))
-    shutil.copytree(os.path.join(TEST_ROOT, 'assets', 'donor_polymer', 'MKMC',
-                                 'KMC'),
-                    os.path.join(output_dir, 'KMC'))
-    command = [component for component in ['KMCAnalyse', flags, output_dir] if
-               len(component) > 0]
-    if '-s' in flags:
-        command.append(output_dir)
+    if flags != 'COMBINE_KMC':
+        shutil.copytree(os.path.join(TEST_ROOT, 'assets', 'donor_polymer',
+                                     'MKMC', 'KMC'),
+                        os.path.join(output_dir, 'KMC'))
+        command = [component for component in ['KMCAnalyse', flags,
+                                               output_dir] if
+                   len(component) > 0]
+        if '-s' in flags:
+            command.append(output_dir)
+    else:
+        shutil.copytree(os.path.join(TEST_ROOT, 'assets', 'donor_polymer',
+                                     'MKMC', 'KMC2'),
+                        os.path.join(output_dir, 'KMC'))
+        command = [component for component in ['KMCAnalyse', output_dir] if
+                   len(component) > 0]
     print("Executing command", command)
     subprocess.Popen(command).communicate()
     return flags
@@ -56,7 +64,9 @@ class TestCompareOutputs(TestCommand):
 
     def test_compare_results(self, run_simulation):
         flags = ''
-        if len(run_simulation) > 0:
+        if run_simulation == 'COMBINE_KMC':
+            return True
+        elif len(run_simulation) > 0:
             flags = run_simulation.split()[0]
         with open(os.path.join(TEST_ROOT, 'assets', 'donor_polymer',
                                'KMCA', ''.join(['results',
