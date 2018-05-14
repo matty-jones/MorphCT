@@ -36,18 +36,14 @@ def run_simulation(request):
         shutil.copytree(os.path.join(TEST_ROOT, 'assets', 'donor_polymer',
                                      'MKMC', 'KMC'),
                         os.path.join(output_dir, 'KMC'))
-        command = [component for component in ['KMCAnalyse', flags, '-b AGG',
-                                               output_dir] if
-                   len(component) > 0]
+        command = [component for component in ['KMCAnalyse'] + flags.split() + ['-b', 'AGG'] + [output_dir]]
         if '-s' in flags:
             command.append(output_dir)
     else:
         shutil.copytree(os.path.join(TEST_ROOT, 'assets', 'donor_polymer',
                                      'MKMC', 'KMC2'),
                         os.path.join(output_dir, 'KMC'))
-        command = [component for component in ['KMCAnalyse', '-b AGG',
-                                               output_dir] if
-                   len(component) > 0]
+        command = [component for component in ['KMCAnalyse', '-b AGG', output_dir]]
     print("Executing command", command)
     subprocess.Popen(command).communicate()
     return flags
