@@ -59,4 +59,4 @@ if __name__ == "__main__":
         def __init__(self, param):
             self.param = param
 
-    run_simulation(parameters('-t test'))
+    run_simulation(parameters(''))
