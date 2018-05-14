@@ -1,0 +1,22 @@
+Found 15 jobs to run.
+Found main morphology pickle file at /Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/tests/output_MKMC/donor_polymer/code/donor_polymer.pickle! loading data...
+Main morphology pickle loaded!
+Hole hopped 67 times, over 9.9793603315e-13 seconds, into image [0, 0, 0], for a displacement of 20.2895352279, in 0.2 wall-clock seconds.
+Hole hopped 113 times, over 9.83888169737e-13 seconds, into image [0, -1, 0], for a displacement of 12.6279473979, in 0.1 wall-clock seconds.
+Hole hopped 1085 times, over 9.97833155106e-12 seconds, into image [0, 0, 0], for a displacement of 20.7227347959, in 0.6 wall-clock seconds.
+Hole hopped 14 times, over 9.74203953645e-14 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 133 times, over 9.74123575843e-13 seconds, into image [0, 0, 0], for a displacement of 4.09726146565, in 0.1 wall-clock seconds.
+Hole hopped 109 times, over 9.78143190301e-13 seconds, into image [0, 1, 0], for a displacement of 20.7512868064, in 0.1 wall-clock seconds.
+Hole hopped 19 times, over 9.4115532133e-14 seconds, into image [0, 0, 0], for a displacement of 12.3911095341, in 0.0 wall-clock seconds.
+Hole hopped 120 times, over 9.8645305528e-13 seconds, into image [0, 1, 0], for a displacement of 25.045926775, in 0.1 wall-clock seconds.
+Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 861 times, over 9.98909375742e-12 seconds, into image [0, 0, 0], for a displacement of 4.16244756575, in 0.5 wall-clock seconds.
+Hole hopped 76 times, over 9.88221206066e-13 seconds, into image [0, -1, 0], for a displacement of 24.6952666954, in 0.0 wall-clock seconds.
+Hole hopped 6 times, over 9.79062276186e-14 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 9 times, over 9.62336202474e-14 seconds, into image [0, 0, 0], for a displacement of 4.45990989384, in 0.0 wall-clock seconds.
+Hole hopped 968 times, over 9.97613607865e-12 seconds, into image [0, -1, 0], for a displacement of 33.3140850867, in 0.5 wall-clock seconds.
+Hole hopped 8 times, over 9.56933707434e-14 seconds, into image [0, 0, 0], for a displacement of 16.4747245634, in 0.0 wall-clock seconds.
+All jobs completed in 2.1 seconds.
+Saving the pickle file cleanly before termination...
+Pickle file saved successfully as /Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/tests/output_MKMC/donor_polymer/KMC/KMC_results_00.pickle!
+Exiting normally...

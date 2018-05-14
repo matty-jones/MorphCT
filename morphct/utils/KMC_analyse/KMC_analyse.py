@@ -2,22 +2,20 @@ import os
 import sys
 import pickle
 import csv
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 import scipy.stats
 from morphct.code import helper_functions as hf
 from collections import OrderedDict
-try:
-    import mpl_toolkits.mplot3d as p3
-except ImportError:
-    print("Could not import 3D plotting engine, calling the plotMolecule3D function will result in an error!")
 import shutil
 import glob
 import re
 import argparse
 import copy
 
+
+plt = None
+p3 = None
 elementary_charge = 1.60217657E-19  # C
 kB = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}
 hbar = 1.05457173E-34  # m^{2} kg s^{-1}
@@ -225,10 +223,16 @@ def plot_connections(chromophore_list, sim_dims, carrier_history, directory, car
             c='k', linewidth=1.0)
 
     # Name and save the figure.
-    plt.title(carrier_type.capitalize() + ' Network', y=1.1)
-    file_name = '01_3d' + carrier_type + '.pdf'
-    plt.savefig(directory + '/figures/' + file_name, bbox_inches='tight')
-    print("Figure saved as", directory + "/figures/" + file_name)
+    carrier_types = ['hole', 'electron']
+    materials_types = ['donor', 'acceptor']
+    carrier_index = carrier_types.index(carrier_type)
+    figure_title = ' '.join([materials_types[carrier_index].capitalize(),
+                             ''.join(['(', carrier_type.capitalize(), ')']), 'Network'])
+    plt.title(figure_title, y=1.1)
+    # 01 for donor 3d network, 02 for acceptor 3d network
+    file_name = ''.join(['{:02}_3d_'.format(1 + carrier_index), carrier_type, '.pdf'])
+    plt.savefig(os.path.join(directory, 'figures', file_name), bbox_inches='tight')
+    print("Figure saved as", os.path.join(directory, 'figures', file_name))
     plt.clf()
 
 
@@ -250,6 +254,7 @@ def calc_mobility(lin_fit_X, lin_fit_Y, av_time_error, av_MSD_error):
 
 
 def plot_MSD(times, MSDs, time_standard_errors, MSD_standard_errors, directory, carrier_type):
+    carrier_types = ['hole', 'electron']
     fit_X = np.linspace(np.min(times), np.max(times), 100)
     gradient, intercept, r_val, p_val, std_err = scipy.stats.linregress(times, MSDs)
     print("Standard Error", std_err)
@@ -265,10 +270,11 @@ def plot_MSD(times, MSDs, time_standard_errors, MSD_standard_errors, directory, 
     mobility_string = '%.3e' % mobility
     plt.title(r'$\mu_{0,' + carrier_type[0] + r'}$' + ' = ' + mobility_string + ' cm' + r'$^{2}$/vs' % (mobility),
               y=1.1)
-    file_name = '18_lin_MSD' + carrier_type + '.pdf'
-    plt.savefig(directory + '/figures/' + file_name)
+    # 18 for hole linear MSD, 19 for electron linear MSD
+    file_name = ''.join(['{:02}_lin_MSD_'.format(18 + carrier_types.index(carrier_type)), carrier_type, '.pdf'])
+    plt.savefig(os.path.join(directory, 'figures', file_name))
     plt.clf()
-    print("Figure saved as", directory + "/figures/" + file_name)
+    print("Figure saved as", os.path.join(directory, 'figures', file_name))
     plt.semilogx(times, MSDs)
     plt.errorbar(times, MSDs, xerr=time_standard_errors, yerr=MSD_standard_errors)
     plt.semilogx(fit_X, fit_Y, 'r')
@@ -277,10 +283,11 @@ def plot_MSD(times, MSDs, time_standard_errors, MSD_standard_errors, directory, 
     mobility_string = '%.3e' % mobility
     plt.title(r'$\mu_{0,' + carrier_type[0] + r'}$' + ' = ' + mobility_string + ' cm' + r'$^{2}$/vs' % (mobility),
               y=1.1)
-    file_name = '19_semi_log_MSD' + carrier_type + '.pdf'
-    plt.savefig(directory + '/figures/' + file_name)
+    # 20 for hole semilog MSD, 21 for electron semilog MSD
+    file_name = ''.join(['{:02}_semi_log_MSD_'.format(20 + carrier_types.index(carrier_type)), carrier_type, '.pdf'])
+    plt.savefig(os.path.join(directory, 'figures', file_name))
     plt.clf()
-    print("Figure saved as", directory + "/figures/" + file_name)
+    print("Figure saved as", os.path.join(directory, "figures", file_name))
     plt.plot(times, MSDs)
     plt.errorbar(times, MSDs, xerr=time_standard_errors, yerr=MSD_standard_errors)
     plt.plot(fit_X, fit_Y, 'r')
@@ -291,10 +298,11 @@ def plot_MSD(times, MSDs, time_standard_errors, MSD_standard_errors, directory, 
     mobility_string = '%.3e' % mobility
     plt.title(r'$\mu_{0,' + carrier_type[0] + r'}$' + ' = ' + mobility_string + ' cm' + r'$^{2}$/vs' % (mobility),
               y=1.1)
-    file_name = '20_log_MSD' + carrier_type + '.pdf'
-    plt.savefig(directory + '/figures/' + file_name)
+    # 22 for hole semilog MSD, 23 for electron semilog MSD
+    file_name = ''.join(['{:02}_log_MSD_'.format(22 + carrier_types.index(carrier_type)), carrier_type, '.pdf'])
+    plt.savefig(os.path.join(directory, 'figures', file_name))
     plt.clf()
-    print("Figure saved as", directory + "/figures/" + file_name)
+    print("Figure saved as", os.path.join(directory, "figures", file_name))
     return mobility, mob_error, r_val**2
 
 
@@ -407,12 +415,14 @@ def plot_anisotropy(carrier_data, directory, sim_dims, carrier_type, plot3D_grap
     for tick in ax.xaxis.get_major_ticks() + ax.yaxis.get_major_ticks() + ax.zaxis.get_major_ticks():
         tick.label.set_fontsize(16)
     ax.dist = 11
+    # 08 for hole anisotropy, 09 for electron anisotropy
     if carrier_type == 'hole':
         figure_index = '08'
     elif carrier_type == 'electron':
         figure_index = '09'
     plt.title('Anisotropy (' + carrier_type.capitalize() + ')', y=1.1)
-    file_name = directory + '/figures/' + figure_index + '_anisotropy_' + carrier_type + '.pdf'
+    file_name = os.path.join(directory, 'figures', ''.join([figure_index, '_anisotropy_',
+                                                            carrier_type, '.pdf']))
     plt.savefig(file_name, bbox_inches='tight')
     plt.clf()
     print("Figure saved as", file_name)
@@ -440,15 +450,15 @@ def plot_temperature_progression(temp_data, mobility_data, anisotropy_data, carr
     plt.ylabel('Mobility (cm' + r'$^{2}$ ' + 'V' + r'$^{-1}$' + r's$^{-1}$)')
     plt.semilogy(xvals, yvals, c='k')
     plt.errorbar(xvals, yvals, xerr=0, yerr=yerrs)
-    file_name = './mobility' + carrier_type + '.pdf'
+    file_name = ''.join(['mobility_', carrier_type, '.pdf'])
     plt.savefig(file_name)
     plt.clf()
     print("Figure saved as " + file_name)
 
     plt.plot(temp_data, anisotropy_data, c='r')
-    file_name = './anisotropy' + carrier_type + '.pdf'
     plt.xlabel(x_label)
     plt.ylabel(r'$\kappa$' + ' (Arb. U)')
+    file_name = ''.join(['anisotropy_', carrier_type, '.pdf'])
     plt.savefig(file_name)
     plt.clf()
     print("Figure saved as " + file_name)
@@ -579,10 +589,12 @@ def get_neighbour_cut_off(chromophore_list, morphology_shape, output_dir, period
         plt.axvline(x=cut_off, ls='dashed', c='k')
         plt.xlabel(material[material_type].capitalize() + r' r$_{ij}$' + ' (A)')
         plt.ylabel("Frequency (Arb. U.)")
-        plt.savefig(output_dir + "/03_neighbour_hist_" + material[material_type].lower() + ".pdf")
+        # 04 for donor neighbour hist, 05 for acceptor neighbour hist
+        file_name = ''.join(['{:02}_neighbour_hist_'.format(4 + material_type),
+                               material[material_type].lower(), '.pdf'])
+        plt.savefig(os.path.join(output_dir, file_name))
         plt.close()
-        print("Neighbour histogram figure saved as", output_dir + "/03_neighbourHist_"
-              + material[material_type].lower() + ".pdf")
+        print("Neighbour histogram figure saved as", os.path.join(output_dir, file_name))
     return cut_offs
 
 
@@ -702,9 +714,10 @@ def plot_Stacks3D(output_dir, chromophore_list, stack_dicts, sim_dims):
     ax.set_xlim([sim_dims[0][0], sim_dims[0][1]])
     ax.set_ylim([sim_dims[1][0], sim_dims[1][1]])
     ax.set_zlim([sim_dims[2][0], sim_dims[2][1]])
-    plt.savefig(output_dir + "/02_stacks.pdf", bbox_inches='tight')
+    # 03 for stacks (material agnostic)
+    plt.savefig(os.path.join(output_dir, '03_stacks.pdf'), bbox_inches='tight')
     plt.close()
-    print("3D Stack figure saved as", output_dir + "/02_stacks.pdf")
+    print("3D Stack figure saved as", os.path.join(output_dir, '03_stacks.pdf'))
 
 
 def determine_molecule_IDs(CG_to_AAID_master, AA_morphology_dict, parameter_dict, chromophore_list):
@@ -763,8 +776,9 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
         data_dict['donor_frontier_MO_err'] = HOMO_err
         print("donor HOMO Level =", HOMO_av, "+/-", HOMO_err)
         print("donor Delta E_ij stats: mean =", donor_mean, "+/-", donor_std / np.sqrt(len(donor_delta_E_ij)))
+        # 06 for donor delta Eij
         plot_delta_E_ij(donor_delta_E_ij, donor_bin_edges, donor_fit_args, 'donor',
-                       output_dir + '/05_donor_delta_E_ij.pdf')
+                       output_dir + '/06_donor_delta_E_ij.pdf')
     if len(acceptor_delta_E_ij) > 0:
         acceptor_bin_edges, acceptor_fit_args, acceptor_mean, acceptor_std = gauss_fit(acceptor_delta_E_ij)
         data_dict['acceptor_delta_E_ij_mean'] = acceptor_mean
@@ -779,8 +793,9 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
         print("acceptor LUMO Level =", LUMO_av, "+/-", LUMO_err)
         print("acceptor Delta E_ij stats: mean =", acceptor_mean, "+/-",
               acceptor_std / np.sqrt(len(acceptor_delta_E_ij)))
+        # 07 for acceptor delta Eij
         plot_delta_E_ij(acceptor_delta_E_ij, acceptor_bin_edges, acceptor_fit_args, 'acceptor',
-                       output_dir + '/06_acceptor_delta_E_ij.pdf')
+                       output_dir + '/07_acceptor_delta_E_ij.pdf')
     return data_dict
 
 
@@ -893,7 +908,11 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
                 else:
                     property_lists['inter_mol_rates_donor'].append(rate)
                     property_lists['inter_mol_TIs_donor'].append(T_ij)
-    # donor Stack Plots:
+    # 10 for the donor mol TI, 11 for the acceptor mol TI, 12 for the donor
+    # stack TI, 13 for the acceptor stack TI, 14 for the donor mol kij,
+    # 15 for the acceptor mol kij, 16 for the donor stack kij, 17 for the
+    # acceptor stack kij
+    # Donor Stack Plots:
     if (len(property_lists['intra_stack_rates_donor']) > 0) or (len(property_lists['inter_stack_rates_donor']) > 0):
         print("Mean intra-stack donor rate =", np.mean(property_lists['intra_stack_rates_donor']), "+/-",
               np.std(property_lists['intra_stack_rates_donor'])
@@ -903,11 +922,11 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
               / float(len(property_lists['inter_stack_rates_donor'])))
         plot_stacked_hist_rates(property_lists['intra_stack_rates_donor'], property_lists['inter_stack_rates_donor'],
                                 ['Intra-stack', 'Inter-stack'], 'donor',
-                                output_dir + '/16_donor_hopping_rate_stacks.pdf')
+                                os.path.join(output_dir, '16_donor_hopping_rate_stacks.pdf'))
         plot_stacked_hist_TIs(property_lists['intra_stack_TIs_donor'], property_lists['inter_stack_TIs_donor'],
                               ['Intra-stack', 'Inter-stack'], 'donor',
-                              output_dir + '/12_donor_transfer_integral_stacks.pdf')
-    # acceptor Stack Plots:
+                              os.path.join(output_dir, '12_donor_transfer_integral_stacks.pdf'))
+    # Acceptor Stack Plots:
     if (len(property_lists['intra_stack_rates_acceptor']) > 0)\
        or (len(property_lists['inter_stack_rates_acceptor']) > 0):
         print("Mean intra-stack acceptor rate =", np.mean(property_lists['intra_stack_rates_acceptor']), "+/-",
@@ -918,21 +937,23 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
               / float(len(property_lists['inter_stack_rates_acceptor'])))
         plot_stacked_hist_rates(property_lists['intra_stack_rates_acceptor'],
                                 property_lists['inter_stack_rates_acceptor'], ['Intra-stack', 'Inter-stack'],
-                                'acceptor', output_dir + '/18_acceptor_hopping_rate_stacks.pdf')
+                                'acceptor', os.path.join(output_dir, '17_acceptor_hopping_rate_stacks.pdf'))
         plot_stacked_hist_TIs(property_lists['intra_stack_TIs_acceptor'], property_lists['inter_stack_TIs_acceptor'],
                               ['Intra-stack', 'Inter-stack'], 'acceptor',
-                              output_dir + '/14_acceptor_transfer_integral_stacks.pdf')
-    # donor Mol Plots:
+                              os.path.join(output_dir, '13_acceptor_transfer_integral_stacks.pdf'))
+    # Donor Mol Plots:
     if (len(property_lists['intra_mol_rates_donor']) > 0) or (len(property_lists['inter_mol_rates_donor']) > 0):
         print("Mean intra-molecular donor rate =", np.mean(property_lists['intra_mol_rates_donor']), "+/-",
               np.std(property_lists['intra_mol_rates_donor']) / float(len(property_lists['intra_mol_rates_donor'])))
         print("Mean inter-molecular donor rate =", np.mean(property_lists['inter_mol_rates_donor']), "+/-",
               np.std(property_lists['inter_mol_rates_donor']) / float(len(property_lists['inter_mol_rates_donor'])))
         plot_stacked_hist_rates(property_lists['intra_mol_rates_donor'], property_lists['inter_mol_rates_donor'],
-                                ['Intra-mol', 'Inter-mol'], 'donor', output_dir + '/15_donor_hopping_rate_mols.pdf')
+                                ['Intra-mol', 'Inter-mol'], 'donor', os.path.join(output_dir,
+                                                                                  '14_donor_hopping_rate_mols.pdf'))
         plot_stacked_hist_TIs(property_lists['intra_mol_TIs_donor'], property_lists['inter_mol_TIs_donor'],
-                              ['Intra-mol', 'Inter-mol'], 'donor', output_dir + '/11_donor_transfer_integral_mols.pdf')
-    # acceptor Mol Plots:
+                              ['Intra-mol', 'Inter-mol'], 'donor', os.path.join(output_dir,
+                                                                                '10_donor_transfer_integral_mols.pdf'))
+    # Acceptor Mol Plots:
     if (len(property_lists['intra_mol_rates_acceptor']) > 0) or (len(property_lists['inter_mol_rates_acceptor']) > 0):
         print("Mean intra-molecular acceptor rate =", np.mean(property_lists['intra_mol_rates_acceptor']), "+/-",
               np.std(property_lists['intra_mol_rates_acceptor'])
@@ -942,25 +963,25 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
               / float(len(property_lists['inter_mol_rates_acceptor'])))
         plot_stacked_hist_rates(property_lists['intra_mol_rates_acceptor'], property_lists['inter_mol_rates_acceptor'],
                                 ['Intra-mol', 'Inter-mol'], 'acceptor',
-                                output_dir + '/17_acceptor_hopping_rate_mols.pdf')
+                                os.path.join(output_dir, '15_acceptor_hopping_rate_mols.pdf'))
         plot_stacked_hist_TIs(property_lists['intra_mol_TIs_acceptor'], property_lists['inter_mol_TIs_acceptor'],
                               ['Intra-mol', 'Inter-mol'], 'acceptor',
-                              output_dir + '/13_acceptor_transfer_integral_mols.pdf')
+                              os.path.join(output_dir, '11_acceptor_transfer_integral_mols.pdf'))
     # Update the dataDict
     for material in chromo_species:
         for hop_type in hop_types:
             for hop_target in hop_targets:
-                number_of_hops = len(property_lists[hop_type + '_' + hop_target + '_rates_' + material])
+                number_of_hops = len(property_lists[''.join([hop_type, '_', hop_target, '_rates_', material])])
                 if number_of_hops == 0:
                     continue
                 other_hop_type = hop_types[int((hop_types.index(hop_type) * -1) + 1)]
                 proportion = number_of_hops / (number_of_hops
-                                               + len(property_lists[other_hop_type + '_' + hop_target + '_rates_'
-                                                                    + material]))
-                mean_rate = np.mean(property_lists[hop_type + '_' + hop_target + '_rates_' + material])
-                data_dict[material.lower() + '_' + hop_type + '_' + hop_target.lower() + "_hops"] = number_of_hops
-                data_dict[material.lower() + '_' + hop_type + '_' + hop_target.lower() + "_proportion"] = proportion
-                data_dict[material.lower() + '_' + hop_type + '_' + hop_target.lower() + "_rate_mean"] = mean_rate
+                                               + len(property_lists[''.join([other_hop_type, '_', hop_target, '_rates_',
+                                                                    material])]))
+                mean_rate = np.mean(property_lists[''.join([hop_type, '_', hop_target, '_rates_', material])])
+                data_dict[''.join([material.lower(), '_', hop_type, '_', hop_target.lower(), "_hops"])] = number_of_hops
+                data_dict[''.join([material.lower(), '_', hop_type, '_', hop_target.lower(), "_proportion"])] = proportion
+                data_dict[''.join([material.lower(), '_', hop_type, '_', hop_target.lower(), "_rate_mean"])] = mean_rate
     return data_dict
 
 
@@ -1099,12 +1120,12 @@ def main():
                               ' Defaults to False.'))
     parser.add_argument("-d", "--cut_off_donor", type=float, default=None, required=False,
                         help=('Specify a manual cut-off for the determination of stacks within the donor material.'
-                              'Connections with separation > cut-off will be classed as inter-stack. If omitted, stack'
-                              'cut-off will be determined automatically as the first minimum of the RDF.'))
+                              ' Connections with separation > cut-off will be classed as inter-stack. If omitted, stack'
+                              ' cut-off will be determined automatically as the first minimum of the RDF.'))
     parser.add_argument("-a", "--cut_off_acceptor", type=float, default=None, required=False,
                         help=('Specify a manual cut-off for the determination of stacks within the acceptor material.'
-                              'Connections with separation > cut-off will be classed as inter-stack. if omitted, stack'
-                              'cut-off will be determined automatically as the first minimum of the RDF.'))
+                              ' Connections with separation > cut-off will be classed as inter-stack. if omitted, stack'
+                              ' cut-off will be determined automatically as the first minimum of the RDF.'))
     parser.add_argument("-s", "--sequence", type=lambda s: [float(item) for item in s.split(',')], default=None,
                         required=False, help=('Create a figure in the current directory that describes the evolution'
                                               ' of the anisotropy/mobility using the specified comma-delimited string'
@@ -1113,8 +1134,23 @@ def main():
                                               ' plotting the mobility evolution.'))
     parser.add_argument("-x", "--xlabel", default="Temperature (Arb. U.)", required=False,
                         help=('Specify an x-label for the combined plot (only used if -s is specified). Default ='
-                              '"Temperature (Arb. U.)"'))
+                              ' "Temperature (Arb. U.)"'))
+    parser.add_argument("-b", "--backend", default=None, required=False,
+                        help=('Specify a backend for matplotlib to use when plotting. Default = user defined in the'
+                              ' .matplotlibrc.'))
     args, directory_list = parser.parse_known_args()
+
+    # Load the matplotlib backend and the plotting subroutines
+    global plt
+    global p3
+    if args.backend is not None:
+        import matplotlib
+        matplotlib.use(args.backend.strip())
+    import matplotlib.pyplot as plt
+    try:
+        import mpl_toolkits.mplot3d as p3
+    except ImportError:
+        print("Could not import 3D plotting engine, calling the plotMolecule3D function will result in an error!")
 
     sys.setrecursionlimit(10000)
     hole_mobility_data = []
@@ -1133,7 +1169,10 @@ def main():
         # Now need to split up the carrierData into both electrons and holes
         carrier_data_holes, carrier_data_electrons = split_carriers_by_type(carrier_data)
         print("Loading chromophoreList...")
-        data = hf.load_pickle(directory + '/code/' + directory + '.pickle')
+        pickle_location = os.path.join(directory, 'code',
+                                       ''.join([os.path.split(directory)[1],
+                                                '.pickle']))
+        data = hf.load_pickle(pickle_location)
         AA_morphology_dict = data[0]
         CG_morphology_dict = data[1]
         CG_to_AAID_master = data[2]
@@ -1162,7 +1201,7 @@ def main():
             elif current_carrier_type == 'electron':
                 electron_anisotropy_data.append(anisotropy)
                 electron_mobility_data.append([mobility, mob_error])
-            data_dict['name'] = directory
+            data_dict['name'] = os.path.split(directory)[1]
             data_dict[current_carrier_type.lower() + '_anisotropy'] = anisotropy
             data_dict[current_carrier_type.lower() + '_mobility'] = mobility
             data_dict[current_carrier_type.lower() + '_mobility_r_squared'] = r_squared
@@ -1188,8 +1227,12 @@ def main():
             cut_off_acceptor = calculated_cut_off_acceptor
         else:
             cut_off_acceptor = args.cut_off_acceptor
-        print("Cut off in Angstroems (donor) =", cut_off_donor)
-        print("Cut off in Angstroems (acceptor) =", cut_off_acceptor)
+        if cut_off_donor is not None:
+            print("Cut off in Angstroems (donor) =", cut_off_donor)
+            data_dict['donor_stack_cut_off'] = cut_off_donor
+        if cut_off_acceptor is not None:
+            print("Cut off in Angstroems (acceptor) =", cut_off_acceptor)
+            data_dict['acceptor_stack_cut_off'] = cut_off_acceptor
         stack_dicts = get_stacks(chromophore_list, morphology_shape, cut_off_donor, cut_off_acceptor,
                                  periodic=args.periodic_stacks)
         if args.three_D:
