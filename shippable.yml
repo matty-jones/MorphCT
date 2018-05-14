@@ -22,7 +22,7 @@ build:
     - /opt/conda/envs/morphct/
   pre_ci_boot:
     image_name: cmelab/orca
-    image_tag: 0.0.1
+    image_tag: 0.0.2
     pull: true
   ci:
     - source conda_cache_check.bash

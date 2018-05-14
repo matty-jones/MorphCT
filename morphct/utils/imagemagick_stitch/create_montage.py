@@ -86,7 +86,7 @@ def main():
                               "assigned based on the enclosing directory."))
     args, directories = parser.parse_known_args()
     for directory in directories:
-        morphology_name = directory.split('/')[-1]
+        morphology_name = os.path.split(directory)[1]
         try:
             images_to_stitch = [os.path.join(directory, 'figures', figure) for figure\
                                 in os.listdir(os.path.join(directory, 'figures'))]
