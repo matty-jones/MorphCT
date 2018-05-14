@@ -80,6 +80,16 @@ class TestCompareOutputs(TestCommand):
                   'r') as results_csv:
             reader = csv.reader(results_csv)
             results_dict = {rows[0]: rows[1] for rows in reader}
+        for key in expected_dict:
+            try:
+                expected_dict[key] = float(expected_dict[key])
+            except ValueError:
+                pass
+        for key in results_dict:
+            try:
+                results_dict[key] = float(results_dict[key])
+            except ValueError:
+                pass
         self.compare_equal(expected_dict, response=results_dict)
 
     def test_check_network_figure(self, run_simulation):
