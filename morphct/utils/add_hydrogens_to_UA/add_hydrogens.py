@@ -167,10 +167,9 @@ def find_information(args):
         sigma
     """
 
-    built_ins = {"PCBM": [{
-        'CHA': [[2, 1]],
-        'CH2': [[2, 2]],
-        'CE': [[1, 3]]}, 1.0],
+    built_ins = {"PCBM": [{'CHA': [[2, 1]],
+                           'CH2': [[2, 2]],
+                           'CE': [[1, 3]]}, 1.0],
         "P3HT": [{'CA': [[2, 1]],
                   'CT': [[2, 2], [1, 3]]}, 3.905],
         "DBP": [{'C': [[2, 1]],
@@ -179,6 +178,7 @@ def find_information(args):
         "PERYLENE": [{'C': [[2, 1]]}, 3.8],
         "BDT-TPD": [{'CS': [[2, 1]],
                      'C!': [[2, 1]],
+                     'C*': [[2, 1]],
                      'CT': [[2, 2], [1, 3], [3, 1]],
                      'CP': [[2, 1]]}, 3.55],
         "BDT-TPD/PCBM": [{'CS': [[2, 1]],
@@ -190,8 +190,6 @@ def find_information(args):
                        'CT': [[2, 2], [1, 3]],
                        'FCA': [[2, 1]],
                        'FCT': [[2, 2], [1, 3]]}, 3.905],
-        "mid3HT": [{'C1': [[2, 1]],
-                    'C10':[[2, 1]]}, 1.0]
     }
 
     if args.molecule_source is None:
@@ -229,16 +227,15 @@ def main():
         print("THIS FUNCTION IS SET UP TO USE A DICTIONARY TO DEFINE HOW MANY HYDROGENS TO ADD"
               " TO BONDS OF A SPECIFIC TYPE WITH A CERTAIN NUMBER OF BONDS")
         print(hydrogens_to_add)
-
         print("IF THE ABOVE DICTIONARY DOESN'T LOOK RIGHT, PLEASE TERMINATE NOW AND IGNORE ANY "
               " OUTPUTS UNTIL THE DICTIONARY HAS BEEN RECTIFIED")
         print("Additionally, we're using a sigma value of", sigma_val)
-        morphology_dict = hf.load_morphology_XML(input_file, sigma=sigma_val)
+        morphology_dict = hf.load_morphology_xml(input_file, sigma=sigma_val)
         morphology_dict = hf.add_unwrapped_positions(morphology_dict)
         hydrogen_positions = calculate_hydrogen_positions(morphology_dict, hydrogens_to_add)
         morphology_dict = add_hydrogens_to_morph(morphology_dict, hydrogen_positions)
         morphology_dict = hf.add_wrapped_positions(morphology_dict)
-        hf.write_morphology_XML(morphology_dict, input_file.replace('.xml', '_AA.xml'),
+        hf.write_morphology_xml(morphology_dict, input_file.replace('.xml', '_AA.xml'),
                                 check_wrapped_posns=False)
 
 

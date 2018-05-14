@@ -139,26 +139,26 @@ class TestCompareOutputs(TestCommand):
     def test_check_AA_morphology_dict_len(self, run_simulation):
         for key in run_simulation['expected_AA_morphology_dict']:
             try:
-                self.compare_equal(len(run_simulation['output_AA_morphology_dict'][key]),
-                                   len(run_simulation['expected_AA_morphology_dict'][key]))
+                self.compare_equal(len(run_simulation['expected_AA_morphology_dict'][key]),
+                                   response=len(run_simulation['output_AA_morphology_dict'][key]))
             except TypeError:
-                self.compare_equal(run_simulation['output_AA_morphology_dict'][key],
-                                   run_simulation['expected_AA_morphology_dict'][key])
+                self.compare_equal(run_simulation['expected_AA_morphology_dict'][key],
+                                   response=run_simulation['output_AA_morphology_dict'][key])
 
     @pytest.mark.skipif(sys.platform != 'darwin',
                         reason="Expected output will change on non-OSX platforms.")
     def test_check_AA_morphology_dict_direct(self, run_simulation):
         for key in run_simulation['expected_AA_morphology_dict']:
-            self.compare_equal(run_simulation['output_AA_morphology_dict'][key],
-                               run_simulation['expected_AA_morphology_dict'][key])
+            self.compare_equal(run_simulation['expected_AA_morphology_dict'][key],
+                               response=run_simulation['output_AA_morphology_dict'][key])
 
     def test_check_CG_morphology_dict(self, run_simulation):
-        self.compare_equal(run_simulation['output_CG_morphology_dict'],
-                           run_simulation['expected_CG_morphology_dict'])
+        self.compare_equal(run_simulation['expected_CG_morphology_dict'],
+                           response=run_simulation['output_CG_morphology_dict'])
 
     def test_check_CG_to_AAID_master(self, run_simulation):
-        self.compare_equal(run_simulation['output_CG_to_AAID_master'],
-                           run_simulation['expected_CG_to_AAID_master'])
+        self.compare_equal(run_simulation['expected_CG_to_AAID_master'],
+                           response=run_simulation['output_CG_to_AAID_master'])
 
     def test_check_parameter_dict(self, run_simulation):
         # Pop the system-dependent keys, such as the input and output dirs since this will
@@ -171,11 +171,11 @@ class TestCompareOutputs(TestCommand):
                 continue
             output_pars = run_simulation['output_parameter_dict'][key]
             expected_pars = run_simulation['expected_parameter_dict'][key]
-        self.compare_equal(output_pars, expected_pars)
+        self.compare_equal(expected_pars, response=output_pars)
 
     def test_check_chromophore_list(self, run_simulation):
-        self.compare_equal(run_simulation['output_chromophore_list'],
-                           run_simulation['expected_chromophore_list'])
+        self.compare_equal(run_simulation['expected_chromophore_list'],
+                           response=run_simulation['output_chromophore_list'])
 
     def test_check_morphology_phase0_created(self, run_simulation):
         output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
@@ -224,7 +224,7 @@ class TestCompareOutputs(TestCommand):
         morph_dir = os.path.join(output_morph_dir, os.path.splitext(morphology)[0], 'morphology')
         final_MD_output = hf.load_morphology_xml(os.path.join(morph_dir, 'final_' + morphology))
         self.compare_equal(final_MD_output,
-                           run_simulation['output_AA_morphology_dict'])
+                           response=run_simulation['output_AA_morphology_dict'])
 
 
 def teardown_module():
