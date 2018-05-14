@@ -1169,7 +1169,10 @@ def main():
         # Now need to split up the carrierData into both electrons and holes
         carrier_data_holes, carrier_data_electrons = split_carriers_by_type(carrier_data)
         print("Loading chromophoreList...")
-        data = hf.load_pickle(directory + '/code/' + directory + '.pickle')
+        pickle_location = os.path.join(directory, 'code',
+                                       ''.join([os.path.split(directory)[1],
+                                                '.pickle']))
+        data = hf.load_pickle(pickle_location)
         AA_morphology_dict = data[0]
         CG_morphology_dict = data[1]
         CG_to_AAID_master = data[2]
@@ -1198,7 +1201,7 @@ def main():
             elif current_carrier_type == 'electron':
                 electron_anisotropy_data.append(anisotropy)
                 electron_mobility_data.append([mobility, mob_error])
-            data_dict['name'] = directory
+            data_dict['name'] = os.path.split(directory)[1]
             data_dict[current_carrier_type.lower() + '_anisotropy'] = anisotropy
             data_dict[current_carrier_type.lower() + '_mobility'] = mobility
             data_dict[current_carrier_type.lower() + '_mobility_r_squared'] = r_squared

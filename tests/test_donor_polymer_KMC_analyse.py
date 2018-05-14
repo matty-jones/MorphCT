@@ -20,7 +20,7 @@ def run_simulation(request):
     # ---=============== Setup Prereqs ================---
     # ---==============================================---
 
-    output_dir = 'output_KMCA'
+    output_dir = os.path.join(TEST_ROOT, 'output_KMCA')
 
     try:
         shutil.rmtree(output_dir)
@@ -30,8 +30,8 @@ def run_simulation(request):
     os.makedirs(os.path.join(output_dir, 'figures'))
     shutil.copy(os.path.join(TEST_ROOT, 'assets', 'donor_polymer', 'MKMC',
                              'donor_polymer_post_calculate_mobility.pickle'),
-                os.path.join(output_dir, 'code', ''.join([output_dir,
-                                                          '.pickle'])))
+                os.path.join(output_dir, 'code', ''.join([
+                    os.path.split(output_dir)[1], '.pickle'])))
     if flags != 'COMBINE_KMC':
         shutil.copytree(os.path.join(TEST_ROOT, 'assets', 'donor_polymer',
                                      'MKMC', 'KMC'),
@@ -157,18 +157,18 @@ class TestCompareOutputs(TestCommand):
     def test_check_anisotropy_sequence_figure(self, run_simulation):
         if '-s' in run_simulation:
             self.confirm_file_exists(os.path.join(
-                TEST_ROOT, 'anisotropy_hole.pdf'))
+                os.getcwd(), 'anisotropy_hole.pdf'))
 
     def test_check_mobility_sequence_figure(self, run_simulation):
         if '-s' in run_simulation:
             self.confirm_file_exists(os.path.join(
-                TEST_ROOT, 'mobility_hole.pdf'))
+                os.getcwd(), 'mobility_hole.pdf'))
 
 
 def teardown_module():
     shutil.rmtree(os.path.join(TEST_ROOT, 'output_KMCA'))
-    os.remove(os.path.join(TEST_ROOT, 'anisotropy_hole.pdf'))
-    os.remove(os.path.join(TEST_ROOT, 'mobility_hole.pdf'))
+    os.remove(os.path.join(os.getcwd(), 'anisotropy_hole.pdf'))
+    os.remove(os.path.join(os.getcwd(), 'mobility_hole.pdf'))
 
 
 if __name__ == "__main__":
@@ -176,4 +176,4 @@ if __name__ == "__main__":
         def __init__(self, param):
             self.param = param
 
-    run_simulation(parameters('-s 0.0,1.0'))
+    run_simulation(parameters('-tp'))
