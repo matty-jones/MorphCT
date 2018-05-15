@@ -773,7 +773,7 @@ def calculate_dark_current_injections(device_array, parameter_dict):
                     # record the donor LUMO or the acceptor HOMO)
                     delta_E = elementary_charge * (bandgap - electron_inject_barrier)
                 inject_rate = hf.calculate_miller_abrahams_hop_rate(
-                    parameter_dict['ma_prefactor'], separation, parameter_dict['ma_localisation_radius'],
+                    parameter_dict['MA_prefactor'], separation, parameter_dict['MA_localisation_radius'],
                     delta_E, parameter_dict['system_temperature'])
                 cathode_inject_rates_data.append(inject_rate)
                 # Create inject site object
@@ -808,7 +808,7 @@ def calculate_dark_current_injections(device_array, parameter_dict):
                     # Injecting a hole from the anode (easy)
                     delta_E = elementary_charge * (hole_inject_barrier)
                 inject_rate = hf.calculate_miller_abrahams_hop_rate(
-                    parameter_dict['ma_prefactor'], separation, parameter_dict['ma_localisation_radius'],
+                    parameter_dict['MA_prefactor'], separation, parameter_dict['MA_localisation_radius'],
                     delta_E, parameter_dict['system_temperature'])
                 anode_inject_rates_data.append(inject_rate)
                 # Create inject site object
@@ -1719,7 +1719,7 @@ if __name__ == '__main__':
         [device_array, chromophore_data, morphology_data, parameter_dict] = pickle.load(pickle_file)
     with open(jobs_file_name, 'rb') as pickle_file:
         jobs_to_run = pickle.load(pickle_file)
-    if parameter_dict['output_log_to_STDOUT'] is True:
+    if parameter_dict['output_log_to_stdout'] is True:
         print("Redirecting log to standard out.")
         log_file = 'stdout'
     else:

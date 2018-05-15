@@ -102,7 +102,7 @@ class simulation:
                 parameter_dict = returned_data[3]
                 chromophore_list = returned_data[4]
                 print("---=== IDENTIFICATION COMPLETED ===---")
-            if self.execute_zindo is True:
+            if self.execute_ZINDO is True:
                 print("---=== PERFORMING SEMI-EMPIRICAL ZINDO/S CALCULATIONS... ===---")
                 returned_data = execute_ZINDO.main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master,
                                                    parameter_dict, chromophore_list)
