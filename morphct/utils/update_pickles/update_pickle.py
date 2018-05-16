@@ -140,6 +140,34 @@ def rewrite_parameter_file(new_parameter_dict):
     print("Updated parameter written to", par_file_loc)
 
 
+def convert_chromos(old_chromophore_list, CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict,
+                   sim_dims):
+    new_chromophore_list = []
+    for old_chromo in old_chromophore_list:
+        # Set up an empty chromophore instance using the parameter_dict
+        new_chromo = oc.chromophore(old_chromo.ID, old_chromo.CGIDs, CG_morphology_dict, AA_morphology_dict,
+                                    CG_to_AAID_master, parameter_dict, sim_dims)
+        # Create the new properties (super_cell_positions, super_cell_images)
+        new_chromo = add_supercell_data(new_chromo, sim_dims)
+        # Update the energy levels (HOMO_1, HOMO, LUMO, LUMO_1)
+
+        # Update the neighbours (neighbours, dissociation_neighbours,
+        # neighbours_TI, neighbours_delta_E)
+
+        new_chromophore_list.append(new_chromo)
+        exit()
+    return new_chromophore_list
+
+
+def add_supercell_data(new_chromo, sim_dims):
+    new_chromo.super_cell_images = [np.array([x, y, z])
+                                    for x in range(-1, 2)
+                                    for y in range(-1, 2)
+                                    for z in range(-1, 2)]
+
+
+
+
 if __name__ == "__main__":
     old_pickle_file = './acceptorCrystal.pickle'
     pickle_data = hf.load_pickle(old_pickle_file)
@@ -148,5 +176,10 @@ if __name__ == "__main__":
     CG_to_AAID_master = pickle_data[2]
     old_parameter_dict = pickle_data[3]
     old_chromophore_list = pickle_data[4]
+    sim_dims = [[-AA_morphology_dict['lx'] / 2.0, AA_morphology_dict['lx'] / 2.0],
+                [-AA_morphology_dict['ly'] / 2.0, AA_morphology_dict['ly'] / 2.0],
+                [-AA_morphology_dict['lz'] / 2.0, AA_morphology_dict['lz'] / 2.0]]
 
     new_parameter_dict = convert_params(old_parameter_dict)
+    new_chromophore_list = convert_chromos(old_chromophore_list, CG_morphology_dict, AA_morphology_dict,
+                                           CG_to_AAID_master, new_parameter_dict, sim_dims)
