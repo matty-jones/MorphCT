@@ -1,4 +1,6 @@
+import os
 import re
+import shutil
 from morphct.code import helper_functions as hf
 from morphct.code import obtain_chromophores as oc
 from morphct.templates import par_template
@@ -6,16 +8,22 @@ from morphct.templates import par_template
 
 def convert_params(old_parameter_dict):
     # First, rename all of the variables to the new format
+    print("Updating parameter names to PEP8 format...")
     renamed_parameter_dict = add_underscores(old_parameter_dict)
     # Then, reorganise any redundant parameters (subspecies stuff)
+    print("Reorganising parameters...")
     fixed_parameter_dict = rename_old(renamed_parameter_dict)
     # Remove any redundant parameters from the current dict
+    print("Removing deprecated parameters...")
     modified_parameter_dict = remove_redundant(fixed_parameter_dict)
     # Finally, add any missing parameters from the template
+    print("Setting missing parameters to defaults...")
     added_parameter_dict = add_missing_parameters(modified_parameter_dict)
-    # Rewrite the parameter file?
+    # Rewrite the parameter file
+    print("Rewriting parameter file...")
+    rewrite_parameter_file(added_parameter_dict)
     # Return the parameter dictionary to be repickled
-    exit()
+    return added_parameter_dict
 
 
 def add_underscores(old_parameter_dict):
@@ -39,7 +47,7 @@ def add_underscores(old_parameter_dict):
 def rename_old(old_parameter_dict):
     expected = set([parameter for parameter in dir(par_template) if parameter[0] != '_'])
     response = set(old_parameter_dict.keys())
-    print("In par dict but not template =", response - expected)
+    print("Before: In par dict but not template =", response - expected)
     # Make following changes:
     #   input_morphology_directory -> input_morph_dir
     #   output_morphology_directory -> output_morph_dir
@@ -64,7 +72,7 @@ def rename_old(old_parameter_dict):
     except KeyError:
         pass
     try:
-        old_parameter_dict['input_morph_file'] = old_parameter_dict.pop('input_morphology_file')
+        old_parameter_dict['morphology'] = os.path.split(old_parameter_dict.pop('input_morphology_file'))[1]
     except KeyError:
         pass
     try:
@@ -88,6 +96,8 @@ def rename_old(old_parameter_dict):
                            }
                           }
     old_parameter_dict['chromophore_species'] = chromophore_species
+    expected = set([parameter for parameter in dir(par_template) if parameter[0] != '_'])
+    response = set(old_parameter_dict.keys())
     return old_parameter_dict
 
 
@@ -105,11 +115,29 @@ def add_missing_parameters(old_parameter_dict):
     expected = set([parameter for parameter in dir(par_template) if parameter[0] != '_'])
     response = set(old_parameter_dict.keys())
     missing_params = expected - response
-    print("In template but not par dict =", missing_params)
     for key in missing_params:
         value = eval('.'.join(['par_template', key]))
         old_parameter_dict[key] = value
-    exit()
+    return old_parameter_dict
+
+
+def rewrite_parameter_file(new_parameter_dict):
+    # Then update the empty template with all of the right variables
+    with open('empty_par_template.py', 'r') as empty_file:
+        lines = empty_file.readlines()
+    for line_number, line in enumerate(lines):
+        if ' =\n' not in line:
+            continue
+        split_line = line.split(' =')
+        split_line.insert(1, repr(new_parameter_dict[split_line[0]]))
+        split_line.insert(1, ' = ')
+        lines[line_number] = ''.join(split_line)
+    # Now write that file
+    print(new_parameter_dict['morphology'])
+    par_file_loc = ''.join(['par_', os.path.splitext(new_parameter_dict['morphology'])[0], '.py'])
+    with open(par_file_loc, 'w+') as par_file:
+        par_file.writelines(lines)
+    print("Updated parameter written to", par_file_loc)
 
 
 if __name__ == "__main__":
