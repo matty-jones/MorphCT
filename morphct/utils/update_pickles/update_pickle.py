@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+import numpy as np
 from morphct.code import helper_functions as hf
 from morphct.code import obtain_chromophores as oc
 from morphct.templates import par_template
@@ -141,35 +142,43 @@ def rewrite_parameter_file(new_parameter_dict):
 
 
 def convert_chromos(old_chromophore_list, CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict,
-                   sim_dims):
+                    sim_dims):
     new_chromophore_list = []
     for old_chromo in old_chromophore_list:
         # Set up an empty chromophore instance using the parameter_dict
         new_chromo = oc.chromophore(old_chromo.ID, old_chromo.CGIDs, CG_morphology_dict, AA_morphology_dict,
                                     CG_to_AAID_master, parameter_dict, sim_dims)
-        # Create the new properties (super_cell_positions, super_cell_images)
-        new_chromo = add_supercell_data(new_chromo, sim_dims)
-        # Update the energy levels (HOMO_1, HOMO, LUMO, LUMO_1)
-
-        # Update the neighbours (neighbours, dissociation_neighbours,
-        # neighbours_TI, neighbours_delta_E)
-
+        # Copy over the old_chromophore properties for the following:
+        # super_cell_positions, super_cell_images
+        # Energy levels (HOMO_1, HOMO, LUMO, LUMO_1)
+        # Neighbours (neighbours, dissociation_neighbours, neighbours_TI,
+        # neighbours_delta_E)
+        new_chromo = update_new_chromo(old_chromo, new_chromo)
         new_chromophore_list.append(new_chromo)
-        exit()
     return new_chromophore_list
 
 
-def add_supercell_data(new_chromo, sim_dims):
-    new_chromo.super_cell_images = [np.array([x, y, z])
-                                    for x in range(-1, 2)
-                                    for y in range(-1, 2)
-                                    for z in range(-1, 2)]
-
-
+def update_new_chromo(old_chromo, new_chromo):
+    # Create a properties dict that maps from the old parameter to the new one
+    properties = {'superCellPosns': 'super_cell_posns',
+                  'superCellImages': 'super_cell_images',
+                  'HOMO_1': 'HOMO_1',
+                  'HOMO': 'HOMO',
+                  'LUMO': 'LUMO',
+                  'LUMO_1': 'LUMO_1',
+                  'neighbours': 'neighbours',
+                  'dissociationNeighbours': 'dissociation_neighbours',
+                  'neighboursTI': 'neighbours_TI',
+                  'neighboursDeltaE': 'neighbours_delta_E',
+                 }
+    for old_prop, new_prop in properties.items():
+        new_chromo.__dict__[new_prop] = old_chromo.__dict__[old_prop]
+    return new_chromo
 
 
 if __name__ == "__main__":
     old_pickle_file = './acceptorCrystal.pickle'
+    new_pickle_file = './acceptor_crystal.pickle'
     pickle_data = hf.load_pickle(old_pickle_file)
     AA_morphology_dict = pickle_data[0]
     CG_morphology_dict = pickle_data[1]
@@ -183,3 +192,7 @@ if __name__ == "__main__":
     new_parameter_dict = convert_params(old_parameter_dict)
     new_chromophore_list = convert_chromos(old_chromophore_list, CG_morphology_dict, AA_morphology_dict,
                                            CG_to_AAID_master, new_parameter_dict, sim_dims)
+    # Write out the new data
+    hf.write_pickle([AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, new_parameter_dict,
+                     new_chromophore_list],
+                    new_pickle_file)
