@@ -159,6 +159,7 @@ def convert_chromos(old_chromophore_list, CG_morphology_dict, AA_morphology_dict
         # neighbours_delta_E)
         new_chromo = update_new_chromo(old_chromo, new_chromo)
         new_chromophore_list.append(new_chromo)
+    print()
     return new_chromophore_list
 
 
