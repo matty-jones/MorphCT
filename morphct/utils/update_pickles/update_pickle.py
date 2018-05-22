@@ -23,8 +23,9 @@ def convert_params(old_parameter_dict, file_name):
     print("Setting missing parameters to defaults...")
     new_parameter_dict = add_missing_parameters(new_parameter_dict)
     # Rewrite the parameter file
-    print("Rewriting parameter file...")
-    rewrite_parameter_file(new_parameter_dict, file_name)
+    if file_name is not None:
+        print("Rewriting parameter file...")
+        rewrite_parameter_file(new_parameter_dict, file_name)
     # Return the parameter dictionary to be repickled
     return new_parameter_dict
 
@@ -164,7 +165,7 @@ def convert_chromos(old_chromophore_list, CG_morphology_dict, AA_morphology_dict
     new_chromophore_list = []
     print("Updating the chromophore list (this might take a few minutes)...")
     for old_chromo in old_chromophore_list:
-        print("\rUpdating chromophore", old_chromo.ID, end=' ')
+        print("\rUpdating chromophore", old_chromo.ID + 1, "of", len(old_chromophore_list), end=' ')
         # Set up an empty chromophore instance using the parameter_dict
         new_chromo = oc.chromophore(old_chromo.ID, old_chromo.CGIDs, CG_morphology_dict, AA_morphology_dict,
                                     CG_to_AAID_master, parameter_dict, sim_dims)
@@ -259,24 +260,65 @@ def load_pickle_data(old_pickle_file, directory):
 
 def main():
     parser = argparse.ArgumentParser()
-    args, directory_list = parser.parse_known_args()
-    for raw_dir in directory_list:
-        # Make sure that we're in the code directory of the input morphology
-        if len(raw_dir.split('/code')) == 1:
-            directory = os.path.join(raw_dir, 'code')
-        else:
-            directory = raw_dir
-        # Use the current MorphCT stored in the current directory
-        sys.path.insert(0, os.path.abspath(directory))
-        morphology_name = os.path.dirname(directory).split('/')[-1]
-        print("Considering morphology directory", directory)
-        try:
-            # NOTE: It looks like old_ and new_ are the wrong way around here,
-            # but it will be correct after the shutil.copy has taken place
-            # (we want to move the old pickle to .bak_pickle, and then
+    parser.add_argument("-p", "--pickle_mode", action="store_true", required=False,
+                        help="""When this flag is passed, `pickle mode' is activated
+                        in update_pickles. In this mode, the user does not supply a
+                        morphology or morphology/code directory to operate on, but
+                        instead provides a pickle file.
+                        Note that the correct version of obtainChromophores.py and
+                        helperFunctions.py must also be present within the same
+                        directory as the pickle.
+                        In this mode, the pickle file is still backed up, but the
+                        parameter file is not written out.""")
+    args, input_list = parser.parse_known_args()
+    if args.pickle_mode:
+        print("Update_pickle is running in `pickle mode' (see -h for more details).")
+    else:
+        print("Update_pickle is running in `directory mode' (default).")
+    # Iterate over all input strings (directories or pickles)
+    for input_string in input_list:
+        if args.pickle_mode:
+            # Load the pickle directly, and do not output a parameter file
+            # NOTE: It looks like old_ and new_ are the wrong way around here
+            # and below, but it will be correct after the shutil.copy has taken
+            # place (we want to move the old pickle to .bak_pickle, and then
             # overwrite the .pickle with the new data)
+            old_pickle_file = input_string.replace('.pickle', '.bak_pickle')
+            new_pickle_file = input_string
+            directory = os.path.dirname(os.path.abspath(input_string))
+            new_parameter_file = None
+        else:
+            # Make sure that we're in the code directory of the input morphology
+            if len(input_string.split('/code')) == 1:
+                directory = os.path.join(input_string, 'code')
+            else:
+                directory = input_string
+            morphology_name = os.path.dirname(directory).split('/')[-1]
             old_pickle_file = os.path.join(directory, ''.join([morphology_name, '.bak_pickle']))
             new_pickle_file = os.path.join(directory, ''.join([morphology_name, '.pickle']))
+            # Find the parameter file and back it up
+            parameter_files = get_parameter_file(directory)
+            if (parameter_files is not None) and (len(parameter_files) > 0):
+                parameter_found = False
+                for parameter_file in parameter_files:
+                    # Make a copy of the old parameter_dict
+                    if parameter_found is False:
+                        old_parameter_file = os.path.join(directory, parameter_file.replace('.py', '.bak_par'))
+                        new_parameter_file = os.path.join(directory, parameter_file)
+                        print("Found parameter file at", new_parameter_file)
+                        parameter_found = True
+                    if os.path.isfile(old_parameter_file):
+                        print("Backup parameter file already exists at", old_parameter_file)
+                        print("Skipping creating a new backup...")
+                    else:
+                        print("Backing up", new_parameter_file, "to", old_parameter_file)
+                        shutil.copy(new_parameter_file, old_parameter_file)
+            else:
+                new_parameter_file = os.path.join(directory, ''.join(['par_', morphology_name, '.py']))
+        # Now back up the pickle before we overwrite it with the new data
+        # (both pickle_mode and dir_mode)
+        print("Considering morphology directory", directory)
+        try:
             print("Found pickle at", new_pickle_file)
             # Make a copy of the old pickle
             if os.path.isfile(old_pickle_file):
@@ -285,27 +327,13 @@ def main():
             else:
                 print("Backing up", new_pickle_file, "to", old_pickle_file)
                 shutil.copy(new_pickle_file, old_pickle_file)
-        except:
+        except FileNotFoundError:
+            # This exception can never be raised in pickle_mode (so we don't
+            # need to worry about morphology_name not being defined)
             error_string = ''.join(['Tried to find ', morphology_name, '.pickle in ', directory, " but couldn't."])
             raise SystemError(error_string)
-        parameter_files = get_parameter_file(directory)
-        if (parameter_files is not None) and (len(parameter_files) > 0):
-            parameter_found = False
-            for parameter_file in parameter_files:
-                # Make a copy of the old parameter_dict
-                if parameter_found is False:
-                    old_parameter_file = os.path.join(directory, parameter_file.replace('.py', '.bak_par'))
-                    new_parameter_file = os.path.join(directory, parameter_file)
-                    print("Found parameter file at", new_parameter_file)
-                    parameter_found = True
-                if os.path.isfile(old_parameter_file):
-                    print("Backup parameter file already exists at", old_parameter_file)
-                    print("Skipping creating a new backup...")
-                else:
-                    print("Backing up", new_parameter_file, "to", old_parameter_file)
-                    shutil.copy(new_parameter_file, old_parameter_file)
-        else:
-            new_parameter_file = os.path.join(directory, ''.join(['par_', morphology_name, '.py']))
+        # Use the current MorphCT stored in the current directory
+        sys.path.insert(0, os.path.abspath(directory))
         pickle_data = load_pickle_data(old_pickle_file, directory)
         AA_morphology_dict = pickle_data[0]
         CG_morphology_dict = pickle_data[1]
