@@ -22,7 +22,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.3.0',
+    version='3.0.1',
 
     description='',
     long_description=long_description,
@@ -43,7 +43,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
 
         # Indicate who your project is intended for
         'Intended Audience :: Science/Research',
@@ -57,7 +57,7 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords='KMC MD',
+    keywords='KMC MD organic molecules photovoltaics QCC',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
@@ -104,7 +104,8 @@ setup(
             "orca2xyz=morphct.utils.orca_to_xyz.convert_to_xyz:main",
             "KMCAnalyse=morphct.utils.KMC_analyse.KMC_analyse:main",
             "createMontage=morphct.utils.imagemagick_stitch.create_montage:main",
-            "addHydrogens=morphct.utils.add_hydrogens_to_UA.add_hydrogens:main"
+            "addHydrogens=morphct.utils.add_hydrogens_to_UA.add_hydrogens:main",
+            "updatePickle=morphct.utils.update_pickles.update_pickle:main",
         ],
     },
 )
