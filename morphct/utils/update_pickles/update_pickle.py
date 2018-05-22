@@ -204,6 +204,31 @@ def get_parameter_file(directory):
     return parameter_files
 
 
+def load_pickle_data(old_pickle_file, directory):
+    try:
+        pickle_data = hf.load_pickle(old_pickle_file)
+    except SyntaxError:
+        # This pickle is from a python 2 version of MorphCT. We can inject
+        # a line into the obtainChromophores.py to try and fix the import
+        # error
+        print("Pickle is from Python 2, updating the code so it can be imported...")
+        code_file_names = ['obtainChromophores.py', 'helperFunctions.py']
+        for code_file_name in code_file_names:
+            print("Updating", ''.join([code_file_name, '...']))
+            with open(os.path.join(directory, code_file_name), 'r') as code_file:
+                code_lines = code_file.readlines()
+            for line_number, line in enumerate(code_lines):
+                if 'import cPickle as pickle' in line:
+                    code_lines[line_number] = 'import pickle\n'
+                elif ('#' not in line) and ('print' in line):
+                    n_spaces = len(line) - len(line.lstrip())
+                    code_lines[line_number] = ''.join([' ' * n_spaces, 'print()\n'])
+            with open(os.path.join(directory, code_file_name), 'w+') as code_file:
+                code_file.writelines(code_lines)
+        pickle_data = hf.load_pickle(old_pickle_file)
+    return pickle_data
+
+
 def main():
     parser = argparse.ArgumentParser()
     args, directory_list = parser.parse_known_args()
@@ -236,7 +261,7 @@ def main():
             error_string = ''.join(['Tried to find ', morphology_name, '.pickle in ', directory, " but couldn't."])
             raise SystemError(error_string)
         parameter_files = get_parameter_file(directory)
-        if parameter_files is not None:
+        if (parameter_files is not None) and (len(parameter_files) > 0):
             parameter_found = False
             for parameter_file in parameter_files:
                 # Make a copy of the old parameter_dict
@@ -251,7 +276,9 @@ def main():
                 else:
                     print("Backing up", new_parameter_file, "to", old_parameter_file)
                     shutil.copy(new_parameter_file, old_parameter_file)
-        pickle_data = hf.load_pickle(old_pickle_file)
+        else:
+            new_parameter_file = os.path.join(directory, ''.join(['par_', morphology_name, '.py']))
+        pickle_data = load_pickle_data(old_pickle_file, directory)
         AA_morphology_dict = pickle_data[0]
         CG_morphology_dict = pickle_data[1]
         CG_to_AAID_master = pickle_data[2]
