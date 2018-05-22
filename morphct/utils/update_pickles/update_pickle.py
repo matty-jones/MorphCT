@@ -82,19 +82,35 @@ def rename_old(old_parameter_dict):
     except KeyError:
         pass
     # Do subspecies
+    # Check if this is from when we only had one reorganisation_energy
+    try:
+        old_parameter_dict['reorganisation_energy_donor']
+    except KeyError:
+        old_parameter_dict['reorganisation_energy_donor'] = old_parameter_dict['reorganisation_energy']
+        old_parameter_dict['reorganisation_energy_acceptor'] = 0.0000
+    # Check the CG_site_species to see if the chromophore species are
+    # capitalised or not
+    #if 'Donor' in old_parameter_dict['CG_site_species'].keys():
+    #    donor_species = 'Donor'
+    #else:
+    #    donor_species = 'donor'
+    #if 'Acceptor' in old_parameter_dict['CG_site_species'].keys():
+    #    acceptor_species = 'Acceptor'
+    #else:
+    #    acceptor_species = 'acceptor'
     try:
         chromophore_species = {'Donor':
                                {'target_DOS_std': old_parameter_dict.pop('target_DOS_std_HOMO'),
                                 'literature_MO': old_parameter_dict.pop('literature_HOMO'),
                                 'VRH_delocalisation': 2e-10,
-                                'species': 'donor',
+                                'species': 'donor', # donor_species,
                                 'reorganisation_energy': old_parameter_dict.pop('reorganisation_energy_donor')
                                },
                                'Acceptor':
                                {'target_DOS_std': old_parameter_dict.pop('target_DOS_std_LUMO'),
                                 'literature_MO': old_parameter_dict.pop('literature_LUMO'),
                                 'VRH_delocalisation': 2e-10,
-                                'species': 'acceptor',
+                                'species': 'acceptor', # acceptor_species,
                                 'reorganisation_energy': old_parameter_dict.pop('reorganisation_energy_acceptor')
                                }
                               }
@@ -157,13 +173,13 @@ def convert_chromos(old_chromophore_list, CG_morphology_dict, AA_morphology_dict
         # Energy levels (HOMO_1, HOMO, LUMO, LUMO_1)
         # Neighbours (neighbours, dissociation_neighbours, neighbours_TI,
         # neighbours_delta_E)
-        new_chromo = update_new_chromo(old_chromo, new_chromo)
+        new_chromo = update_new_chromo(old_chromo, new_chromo, sim_dims)
         new_chromophore_list.append(new_chromo)
     print()
     return new_chromophore_list
 
 
-def update_new_chromo(old_chromo, new_chromo):
+def update_new_chromo(old_chromo, new_chromo, sim_dims):
     # Create a properties dict that maps from the old parameter to the new one
     properties = {'superCellPosns': 'super_cell_posns',
                   'superCellImages': 'super_cell_images',
@@ -176,9 +192,21 @@ def update_new_chromo(old_chromo, new_chromo):
                   'neighboursTI': 'neighbours_TI',
                   'neighboursDeltaE': 'neighbours_delta_E',
                  }
+    if ('superCellPosns' not in old_chromo.__dict__) or ('superCellImages' not in old_chromo.__dict__):
+        old_chromo = add_super_cell_data(old_chromo, sim_dims)
+    if ('dissociationNeighbours' not in old_chromo.__dict__):
+        old_chromo.__dict__['dissociationNeighbours'] = []
     for old_prop, new_prop in properties.items():
         new_chromo.__dict__[new_prop] = old_chromo.__dict__[old_prop]
     return new_chromo
+
+
+def add_super_cell_data(chromophore, sim_dims):
+    box = np.array([axis[1] - axis[0] for axis in sim_dims])
+    chromophore.superCellImages = [np.array([x, y, z]) for x in range(-1, 2) for y in range(-1, 2)
+                                   for z in range(-1, 2)]
+    chromophore.superCellPosns = [np.array(chromophore.posn) + (box * image) for image in chromophore.superCellImages]
+    return chromophore
 
 
 def get_parameter_file(directory):
