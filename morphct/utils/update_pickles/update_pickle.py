@@ -6,6 +6,7 @@ import sys
 import numpy as np
 from morphct.code import helper_functions as hf
 from morphct.code import obtain_chromophores as oc
+from morphct.definitions import PROJECT_ROOT
 from morphct.templates import par_template
 
 
@@ -334,7 +335,20 @@ def main():
             raise SystemError(error_string)
         # Use the current MorphCT stored in the current directory
         sys.path.insert(0, os.path.abspath(directory))
-        pickle_data = load_pickle_data(old_pickle_file, directory)
+        try:
+            pickle_data = load_pickle_data(old_pickle_file, directory)
+        except ImportError:
+            # Trying to load a pickle from the MorphCT package pre 3.0
+            print("Importing pickle has failed, most likely a pickle from package-style MorphCT from before"
+                  " the PEP8 changes (v3.0.0). Copying code to help unpickling...")
+            shutil.copy(os.path.join(directory, 'helperFunctions.py'),
+                        os.path.join(PROJECT_ROOT, 'code', 'helperFunctions.py'))
+            shutil.copy(os.path.join(directory, 'obtainChromophores.py'),
+                        os.path.join(PROJECT_ROOT, 'code', 'obtainChromophores.py'))
+            pickle_data = load_pickle_data(old_pickle_file, directory)
+            print("Deleting copied code to keep things tidy...")
+            os.remove(os.path.join(PROJECT_ROOT, 'code', 'helperFunctions.py'))
+            os.remove(os.path.join(PROJECT_ROOT, 'code', 'obtainChromophores.py'))
         AA_morphology_dict = pickle_data[0]
         CG_morphology_dict = pickle_data[1]
         CG_to_AAID_master = pickle_data[2]
