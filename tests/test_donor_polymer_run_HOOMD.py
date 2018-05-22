@@ -38,8 +38,8 @@ def run_simulation():
     execute_fine_graining = False                 # Requires: None
     execute_molecular_dynamics = True            # Requires: fine_graining
     execute_obtain_chromophores = False           # Requires: Atomistic morphology, or molecular_dynamics
-    execute_zindo = False                         # Requires: obtain_chromophores
-    execute_calculate_transfer_integrals = False  # Requires: execute_zindo
+    execute_ZINDO = False                         # Requires: obtain_chromophores
+    execute_calculate_transfer_integrals = False  # Requires: execute_ZINDO
     execute_calculate_mobility = False            # Requires: calculate_transfer_integrals
     execute_device_simulation = False              # Requires: calculate_transfer_integrals for all device_components
 
@@ -57,7 +57,7 @@ def run_simulation():
         'B': 'test_FF.xml',
         'C': 'test_FF.xml',
     }
-    pair_R_cut = 10.0
+    pair_r_cut = 10.0
     pair_dpd_gamma_val = 0.0
 
     # ---==============================================---
