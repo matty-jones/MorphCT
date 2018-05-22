@@ -23,8 +23,6 @@ def convert_params(old_parameter_dict, file_name):
     print("Setting missing parameters to defaults...")
     new_parameter_dict = add_missing_parameters(new_parameter_dict)
     # Rewrite the parameter file
-    print(new_parameter_dict.keys())
-    exit()
     print("Rewriting parameter file...")
     rewrite_parameter_file(new_parameter_dict, file_name)
     # Return the parameter dictionary to be repickled
@@ -227,8 +225,12 @@ def main():
             new_pickle_file = os.path.join(directory, ''.join([morphology_name, '.pickle']))
             print("Found pickle at", new_pickle_file)
             # Make a copy of the old pickle
-            print("Backing up", new_pickle_file, "to", old_pickle_file)
-            shutil.copy(new_pickle_file, old_pickle_file)
+            if os.path.isfile(old_pickle_file):
+                print("Backup pickle already exists at", old_pickle_file)
+                print("Skipping creating a new backup...")
+            else:
+                print("Backing up", new_pickle_file, "to", old_pickle_file)
+                shutil.copy(new_pickle_file, old_pickle_file)
         except:
             error_string = ''.join(['Tried to find ', morphology_name, '.pickle in ', directory, " but couldn't."])
             raise SystemError(error_string)
@@ -242,8 +244,12 @@ def main():
                     new_parameter_file = os.path.join(directory, parameter_file)
                     print("Found parameter file at", new_parameter_file)
                     parameter_found = True
-                shutil.copy(os.path.join(directory, parameter_file), os.path.join(
-                    directory, parameter_file.replace('.py', '.bak_par')))
+                if os.path.isfile(old_parameter_file):
+                    print("Backup parameter file already exists at", old_parameter_file)
+                    print("Skipping creating a new backup...")
+                else:
+                    print("Backing up", new_parameter_file, "to", old_parameter_file)
+                    shutil.copy(new_parameter_file, old_parameter_file)
         pickle_data = hf.load_pickle(old_pickle_file)
         AA_morphology_dict = pickle_data[0]
         CG_morphology_dict = pickle_data[1]
