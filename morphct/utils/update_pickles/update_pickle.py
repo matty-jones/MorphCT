@@ -23,6 +23,8 @@ def convert_params(old_parameter_dict, file_name):
     print("Setting missing parameters to defaults...")
     new_parameter_dict = add_missing_parameters(new_parameter_dict)
     # Rewrite the parameter file
+    print(new_parameter_dict.keys())
+    exit()
     print("Rewriting parameter file...")
     rewrite_parameter_file(new_parameter_dict, file_name)
     # Return the parameter dictionary to be repickled
@@ -82,22 +84,25 @@ def rename_old(old_parameter_dict):
     except KeyError:
         pass
     # Do subspecies
-    chromophore_species = {'Donor':
-                           {'target_DOS_std': old_parameter_dict.pop('target_DOS_std_HOMO'),
-                            'literature_MO': old_parameter_dict.pop('literature_HOMO'),
-                            'VRH_delocalisation': 2e-10,
-                            'species': 'donor',
-                            'reorganisation_energy': old_parameter_dict.pop('reorganisation_energy_donor')
-                           },
-                           'Acceptor':
-                           {'target_DOS_std': old_parameter_dict.pop('target_DOS_std_LUMO'),
-                            'literature_MO': old_parameter_dict.pop('literature_LUMO'),
-                            'VRH_delocalisation': 2e-10,
-                            'species': 'acceptor',
-                            'reorganisation_energy': old_parameter_dict.pop('reorganisation_energy_acceptor')
-                           }
-                          }
-    old_parameter_dict['chromophore_species'] = chromophore_species
+    try:
+        chromophore_species = {'Donor':
+                               {'target_DOS_std': old_parameter_dict.pop('target_DOS_std_HOMO'),
+                                'literature_MO': old_parameter_dict.pop('literature_HOMO'),
+                                'VRH_delocalisation': 2e-10,
+                                'species': 'donor',
+                                'reorganisation_energy': old_parameter_dict.pop('reorganisation_energy_donor')
+                               },
+                               'Acceptor':
+                               {'target_DOS_std': old_parameter_dict.pop('target_DOS_std_LUMO'),
+                                'literature_MO': old_parameter_dict.pop('literature_LUMO'),
+                                'VRH_delocalisation': 2e-10,
+                                'species': 'acceptor',
+                                'reorganisation_energy': old_parameter_dict.pop('reorganisation_energy_acceptor')
+                               }
+                              }
+        old_parameter_dict['chromophore_species'] = chromophore_species
+    except KeyError:
+        pass
     expected = set([parameter for parameter in dir(par_template) if parameter[0] != '_'])
     response = set(old_parameter_dict.keys())
     return old_parameter_dict
