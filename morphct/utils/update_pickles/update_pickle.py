@@ -359,6 +359,14 @@ def main():
                     [-AA_morphology_dict['lz'] / 2.0, AA_morphology_dict['lz'] / 2.0]]
         # Update the parameter dict and pickle files to include the new data
         new_parameter_dict = convert_params(old_parameter_dict, new_parameter_file)
+
+        # #DEBUG
+        # # Temp for Mike jobs
+        # new_parameter_dict['AA_rigid_body_species'] = {'Acceptor': list(range(0, 1970, 2)),
+        #                                                'Donor': list(range(1, 1970, 2))}
+        # print("DANGER: INJECTED HARDCODE TO MAKE BDT-TPD WORK")
+        # #
+
         new_chromophore_list = convert_chromos(old_chromophore_list, CG_morphology_dict, AA_morphology_dict,
                                                CG_to_AAID_master, new_parameter_dict, sim_dims)
         # Write out the new data
