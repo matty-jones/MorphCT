@@ -769,7 +769,7 @@ def load_pickle(pickle_location):
     print("Loading Pickle from", str(pickle_location) + "...")
     try:
         with open(pickle_location, 'rb') as pickle_file:
-                objects = pickle.load(pickle_file)
+            objects = pickle.load(pickle_file)
     except UnicodeDecodeError:  # Python 2/3 fix
         print("Old pickle! Loading it using Python 2...")
         with open(pickle_location, 'rb') as pickle_file:

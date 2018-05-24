@@ -57,8 +57,8 @@ def run_simulation(request):
     execute_fine_graining = False                 # Requires: None
     execute_molecular_dynamics = False            # Requires: fine_graining
     execute_obtain_chromophores = True           # Requires: Atomistic morphology, or molecular_dynamics
-    execute_zindo = False                         # Requires: obtain_chromophores
-    execute_calculate_transfer_integrals = False  # Requires: execute_zindo
+    execute_ZINDO = False                         # Requires: obtain_chromophores
+    execute_calculate_transfer_integrals = False  # Requires: execute_ZINDO
     execute_calculate_mobility = False            # Requires: calculate_transfer_integrals
     execute_device_simulation = False              # Requires: calculate_transfer_integrals for all device_components
 
@@ -205,4 +205,4 @@ if __name__ == "__main__":
         def __init__(self, param):
             self.param = param
 
-    run_simulation(parameters({'voronoi': False, 'hop_range': 10.0, 'transiting': False, 'koopmans': False}))
+    run_simulation(parameters({'voronoi': False, 'hop_range': 10.0, 'transiting': False, 'koopmans': True}))

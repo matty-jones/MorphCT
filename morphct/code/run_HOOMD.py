@@ -209,7 +209,7 @@ class md_phase:
             # Read in the pairTypes, parameters and coefficients and set them
             # for HOOMD
             if self.pair_type.lower() == 'dpd':
-                self.pair_class = pair.dpd(r_cut=self.pair_R_cut * self.s_scale, T=self.temperature)
+                self.pair_class = pair.dpd(r_cut=self.pair_r_cut * self.s_scale, T=self.temperature)
                 # Use the geometric mixing rule for all possible combinations of
                 # the specified forcefield coefficients
                 for atom_index1, atom_type1 in enumerate([coeff[0] for coeff in self.dpd_coeffs]):
@@ -233,7 +233,7 @@ class md_phase:
                     self.pair_class.pair_coeff.set(pair_type.split('-')[0], pair_type.split('-')[1],
                                                    A=0.0, r_cut=0.0, gamma=0.0)
             elif self.pair_type.lower() == 'lj':
-                self.pair_class = pair.lj(r_cut=self.pair_R_cut * self.s_scale)
+                self.pair_class = pair.lj(r_cut=self.pair_r_cut * self.s_scale)
                 self.pair_class.set_params(mode='xplor')
                 for atom_index1, atom_type1 in enumerate([coeff[0] for coeff in self.lj_coeffs]):
                     for atom_index2, atom_type2 in enumerate([coeff[0] for coeff in self.lj_coeffs]):
