@@ -38,8 +38,8 @@ def run_simulation():
     execute_fine_graining = False                 # Requires: None
     execute_molecular_dynamics = False            # Requires: fine_graining
     execute_obtain_chromophores = False           # Requires: Atomistic morphology, or molecular_dynamics
-    execute_zindo = False                         # Requires: obtain_chromophores
-    execute_calculate_transfer_integrals = False  # Requires: execute_zindo
+    execute_ZINDO = False                         # Requires: obtain_chromophores
+    execute_calculate_transfer_integrals = False  # Requires: execute_ZINDO
     execute_calculate_mobility = True            # Requires: calculate_transfer_integrals
     execute_device_simulation = False              # Requires: calculate_transfer_integrals for all device_components
 
@@ -124,16 +124,19 @@ def run_simulation():
 
 class TestCompareOutputs(TestCommand):
     def test_check_AA_morphology_dict(self, run_simulation):
-        self.compare_equal(run_simulation['output_AA_morphology_dict'],
-                           run_simulation['expected_AA_morphology_dict'])
+        self.compare_equal(run_simulation['expected_AA_morphology_dict'],
+                           response=run_simulation[
+                               'output_AA_morphology_dict'])
 
     def test_check_CG_morphology_dict(self, run_simulation):
-        self.compare_equal(run_simulation['output_CG_morphology_dict'],
-                           run_simulation['expected_CG_morphology_dict'])
+        self.compare_equal(run_simulation['expected_CG_morphology_dict'],
+                           response=run_simulation[
+                               'output_CG_morphology_dict'])
 
     def test_check_CG_to_AAID_master(self, run_simulation):
-        self.compare_equal(run_simulation['output_CG_to_AAID_master'],
-                           run_simulation['expected_CG_to_AAID_master'])
+        self.compare_equal(run_simulation['expected_CG_to_AAID_master'],
+                           response=run_simulation[
+                               'output_CG_to_AAID_master'])
 
     def test_check_parameter_dict(self, run_simulation):
         # Pop the system-dependent keys, such as the input and output dirs since this will
@@ -146,11 +149,12 @@ class TestCompareOutputs(TestCommand):
                 continue
             output_pars = run_simulation['output_parameter_dict'][key]
             expected_pars = run_simulation['expected_parameter_dict'][key]
-        self.compare_equal(output_pars, expected_pars)
+        self.compare_equal(expected_pars, response=output_pars)
 
     def test_check_chromophore_list(self, run_simulation):
-        self.compare_equal(run_simulation['output_chromophore_list'],
-                           run_simulation['expected_chromophore_list'])
+        self.compare_equal(run_simulation['expected_chromophore_list'],
+                           response=run_simulation[
+                               'output_chromophore_list'])
 
     def test_check_KMC_outputs_created(self, run_simulation):
         output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
@@ -184,7 +188,8 @@ class TestCompareOutputs(TestCommand):
                         pass
                 # Skip the last float because it's just how long it took,
                 # which will likely vary
-                self.compare_equal(floats_expected[:-1], floats_result[:-1])
+                self.compare_equal(floats_expected[:-1],
+                                   response=floats_result[:-1])
 
     def test_check_KMC_pickle_identical(self, run_simulation):
         output_morph_dir = run_simulation['output_parameter_dict']['output_morph_dir']
@@ -195,7 +200,7 @@ class TestCompareOutputs(TestCommand):
             expected = pickle.load(expected_pickle)
         with open(os.path.join(KMC_dir, 'KMC_results.pickle'), 'rb') as results_pickle:
             results = pickle.load(results_pickle)
-        self.compare_equal(expected, results)
+        self.compare_equal(expected, response=results)
 
 
 def teardown_module():

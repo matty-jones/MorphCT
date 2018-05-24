@@ -37,8 +37,8 @@ def run_simulation():
     execute_fine_graining = False                 # Requires: None
     execute_molecular_dynamics = False            # Requires: fine_graining
     execute_obtain_chromophores = False           # Requires: Atomistic morphology, or molecular_dynamics
-    execute_zindo = False                         # Requires: obtain_chromophores
-    execute_calculate_transfer_integrals = True  # Requires: execute_zindo
+    execute_ZINDO = False                         # Requires: obtain_chromophores
+    execute_calculate_transfer_integrals = True  # Requires: execute_ZINDO
     execute_calculate_mobility = False            # Requires: calculate_transfer_integrals
     execute_device_simulation = False              # Requires: calculate_transfer_integrals for all device_components
 
@@ -110,16 +110,19 @@ def run_simulation():
 
 class TestCompareOutputs(TestCommand):
     def test_check_AA_morphology_dict(self, run_simulation):
-        self.compare_equal(run_simulation['output_AA_morphology_dict'],
-                           run_simulation['expected_AA_morphology_dict'])
+        self.compare_equal(run_simulation['expected_AA_morphology_dict'],
+                           response=run_simulation[
+                               'output_AA_morphology_dict'])
 
     def test_check_CG_morphology_dict(self, run_simulation):
-        self.compare_equal(run_simulation['output_CG_morphology_dict'],
-                           run_simulation['expected_CG_morphology_dict'])
+        self.compare_equal(run_simulation['expected_CG_morphology_dict'],
+                           response=run_simulation[
+                               'output_CG_morphology_dict'])
 
     def test_check_CG_to_AAID_master(self, run_simulation):
-        self.compare_equal(run_simulation['output_CG_to_AAID_master'],
-                           run_simulation['expected_CG_to_AAID_master'])
+        self.compare_equal(run_simulation['expected_CG_to_AAID_master'],
+                           response=run_simulation[
+                               'output_CG_to_AAID_master'])
 
     def test_check_parameter_dict(self, run_simulation):
         # Pop the system-dependent keys, such as the input and output dirs since this will
@@ -132,11 +135,12 @@ class TestCompareOutputs(TestCommand):
                 continue
             output_pars = run_simulation['output_parameter_dict'][key]
             expected_pars = run_simulation['expected_parameter_dict'][key]
-        self.compare_equal(output_pars, expected_pars)
+        self.compare_equal(expected_pars, response=output_pars)
 
     def test_check_chromophore_list(self, run_simulation):
-        self.compare_equal(run_simulation['output_chromophore_list'],
-                           run_simulation['expected_chromophore_list'])
+        self.compare_equal(run_simulation['expected_chromophore_list'],
+                           response=run_simulation[
+                               'output_chromophore_list'])
 
 
 # TODO: Tests for failed singles and failed pairs

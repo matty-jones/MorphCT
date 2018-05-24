@@ -66,7 +66,7 @@ comments after each module describe the prerequisites that must be run first.
 execute_fine_graining = False                 # Requires: None
 execute_molecular_dynamics = False            # Requires: fine_graining
 execute_obtain_chromophores = False           # Requires: Atomistic morphology, or molecular_dynamics
-execute_zindo = False                         # Requires: obtain_chromophores
+execute_ZINDO = False                         # Requires: obtain_chromophores
 execute_calculate_transfer_integrals = False  # Requires: execute_zindo
 execute_calculate_mobility = False            # Requires: calculate_transfer_integrals
 execute_device_simulation = True              # Requires: calculate_transfer_integrals for all device_components
@@ -158,7 +158,7 @@ The following section allows the user to calibrate some parameters for the pair 
 '''
 The cut-off value for pair potentials during execute_molecular_dynamics
 '''
-pair_R_cut = 10.0
+pair_r_cut = 10.0
 
 '''
 The value of the dissipative gamma to use during the DPD phase of execute_molecular_dynamics (unused if no DPD)
@@ -551,12 +551,12 @@ hopping_prefactor = 1E-4
 '''
 The Miller Abrahams prefactor that controls the rate of dark-current injection hops.
 '''
-ma_prefactor = 1E11
+MA_prefactor = 1E11
 
 '''
 The Miller Abrahams localisation radius in units of m.
 '''
-ma_localisation_radius = 1E-9
+MA_localisation_radius = 1E-9
 
 # External Parameters
 '''
@@ -620,7 +620,7 @@ disable_coulombic = True
 Divert log output to the terminal rather than the KMC_log files (useful for testing or when running only one voltage
 on a single core)
 '''
-output_log_to_STDOUT = True
+output_log_to_stdout = True
 
 # ---==============================================---
 # ---================= Begin run ==================---

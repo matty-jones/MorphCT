@@ -404,11 +404,7 @@ def load_morphology_xml(xml_path, sigma=1.0):
                 continue
             # Now we know what the variable is, append it to the dictionary data
             if (record is True):
-                # Mbuild outputs properties that are split by \t, so do a bit of
-                # jiggery pokery to allow us to interpret both
-                split_line = ' '.join(line.split('\t')).split(' ')
-                # Remove the "\n"
-                split_line[-1] = split_line[-1][:-1]
+                split_line = line.split()
                 if (record_type == 'position'):
                     # NOTE: VELOCITIES ARE NOT NORMALISED IN THE MORPHOLOGY
                     # FILE...DO THEY NEED TO BE SCALED BY SIGMA OR NOT?
@@ -773,7 +769,7 @@ def load_pickle(pickle_location):
     print("Loading Pickle from", str(pickle_location) + "...")
     try:
         with open(pickle_location, 'rb') as pickle_file:
-                objects = pickle.load(pickle_file)
+            objects = pickle.load(pickle_file)
     except UnicodeDecodeError:  # Python 2/3 fix
         print("Old pickle! Loading it using Python 2...")
         with open(pickle_location, 'rb') as pickle_file:
