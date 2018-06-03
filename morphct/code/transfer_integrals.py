@@ -17,21 +17,21 @@ class orcaError(Exception):
 
 
 def load_orca_output(file_name):
-    with open(file_name, 'r') as orca_file:
+    with open(file_name, "r") as orca_file:
         data_file = orca_file.readlines()
     record_MO_data = False
     orbital_data = []
     for line in data_file:
-        if 'ORBITAL ENERGIES' in line:
+        if "ORBITAL ENERGIES" in line:
             # Next line begins the MO data
             record_MO_data = True
             continue
         if record_MO_data is True:
-            if 'MOLECULAR ORBITALS' in line:
+            if "MOLECULAR ORBITALS" in line:
                 # Don't need anything else from the output file
                 break
             data_in_line = []
-            for element in line.split(' '):
+            for element in line.split(" "):
                 if len(element) > 1:
                     try:
                         data_in_line.append(float(element))
@@ -57,35 +57,50 @@ def load_orca_output(file_name):
 def modify_orca_files(file_name, failed_file, failed_count, chromophore_list):
     if failed_count == 3:
         # Three lots of reruns without any successes, try to turn off SOSCF
-        print(str(file_name) + ": Three lots of reruns without any success -"
-              " turning off SOSCF to see if that helps...")
+        print(
+            str(file_name) + ": Three lots of reruns without any success -"
+            " turning off SOSCF to see if that helps..."
+        )
         turn_off_soscf(failed_file)
     elif failed_count == 6:
         # Still no joy - increase the number of SCF iterations and see if
         # convergence was just slow
-        print(str(file_name) + ": Six lots of reruns without any success -"
-              " increasing the number of SCF iterations to 500...")
+        print(
+            str(file_name) + ": Six lots of reruns without any success -"
+            " increasing the number of SCF iterations to 500..."
+        )
         increase_iterations(failed_file)
     elif failed_count == 9:
         # Finally, turn down the SCF tolerance
-        print(str(file_name) + ": Nine lots of reruns without any success -"
-              " decreasing SCF tolerance (sloppySCF)...")
+        print(
+            str(file_name) + ": Nine lots of reruns without any success -"
+            " decreasing SCF tolerance (sloppySCF)..."
+        )
         reduce_tolerance(failed_file)
     elif failed_count == 12:
-        print(str(file_name) + ": Failed to rerun orca 12 times, one final thing"
-              " that can be done is to change the numerical accuracy...")
+        print(
+            str(file_name) + ": Failed to rerun orca 12 times, one final thing"
+            " that can be done is to change the numerical accuracy..."
+        )
         revert_orca_files(failed_file)
         increase_grid(failed_file)
     elif failed_count == 15:
-        print(str(file_name) + ": Failed to rerun orca 15 times. Will try high"
-              " numerical accuracy with no SOSCF as a last-ditch effort...")
+        print(
+            str(file_name) + ": Failed to rerun orca 15 times. Will try high"
+            " numerical accuracy with no SOSCF as a last-ditch effort..."
+        )
         increase_grid_no_soscf(failed_file)
     elif failed_count == 18:
         # SERIOUS PROBLEM
-        print(str(file_name) + ": Failed to rerun orca 18 times, even with all"
-              " the input file tweaks. Examine the geometry - it is most likely unreasonable.")
-        file_string = file_name[[index for index, char in enumerate(file_name) if char == '/'][-1] + 1:-4]
-        for chromo_string in file_string.split('-'):
+        print(
+            str(file_name) + ": Failed to rerun orca 18 times, even with all"
+            " the input file tweaks. Examine the geometry - it is most likely"
+            " unreasonable."
+        )
+        file_string = file_name[
+            [index for index, char in enumerate(file_name) if char == "/"][-1] + 1 : -4
+        ]
+        for chromo_string in file_string.split("-"):
             chromo_ID = int(chromo_string)
             print("AAIDs for chromophore", chromo_ID)
             print(chromophoreList[chromoID].AAIDs)
@@ -96,56 +111,56 @@ def modify_orca_files(file_name, failed_file, failed_count, chromophore_list):
 
 
 def turn_off_soscf(input_file):
-    with open(input_file, 'r') as file_name:
+    with open(input_file, "r") as file_name:
         original_lines = file_name.readlines()
-    original_lines[3] = '!ZINDO/S NOSOSCF\n'
-    with open(input_file, 'w+') as file_name:
+    original_lines[3] = "!ZINDO/S NOSOSCF\n"
+    with open(input_file, "w+") as file_name:
         file_name.writelines(original_lines)
 
 
 def reduce_tolerance(input_file):
-    with open(input_file, 'r') as file_name:
+    with open(input_file, "r") as file_name:
         original_lines = file_name.readlines()
-    original_lines[3] = '!ZINDO/S NoSOSCF SloppySCF\n'
-    with open(input_file, 'w+') as file_name:
+    original_lines[3] = "!ZINDO/S NoSOSCF SloppySCF\n"
+    with open(input_file, "w+") as file_name:
         file_name.writelines(original_lines)
 
 
 def increase_iterations(input_file):
-    with open(input_file, 'r') as file_name:
+    with open(input_file, "r") as file_name:
         original_lines = file_name.readlines()
-    original_lines.append('\n%scf MaxIter 500 end')
-    with open(input_file, 'w+') as file_name:
+    original_lines.append("\n%scf MaxIter 500 end")
+    with open(input_file, "w+") as file_name:
         file_name.writelines(original_lines)
 
 
 def increase_grid(input_file):
-    with open(input_file, 'r') as file_name:
+    with open(input_file, "r") as file_name:
         original_lines = file_name.readlines()
-    original_lines[3] = '!ZINDO/S SlowConv Grid7 NoFinalGrid\n'
-    with open(input_file, 'w+') as file_name:
+    original_lines[3] = "!ZINDO/S SlowConv Grid7 NoFinalGrid\n"
+    with open(input_file, "w+") as file_name:
         file_name.writelines(original_lines)
 
 
 def increase_grid_no_soscf(input_file):
-    with open(input_file, 'r') as file_name:
+    with open(input_file, "r") as file_name:
         original_lines = file_name.readlines()
-    original_lines[3] = '!ZINDO/S SlowConv Grid7 NoFinalGrid NoSOSCF SloppySCF\n'
-    original_lines.append('\n%scf MaxIter 500 end')
-    with open(input_file, 'w+') as file_name:
+    original_lines[3] = "!ZINDO/S SlowConv Grid7 NoFinalGrid NoSOSCF SloppySCF\n"
+    original_lines.append("\n%scf MaxIter 500 end")
+    with open(input_file, "w+") as file_name:
         file_name.writelines(original_lines)
 
 
 def revert_orca_files(input_file):
-    with open(input_file, 'r') as file_name:
+    with open(input_file, "r") as file_name:
         original_lines = file_name.readlines()
-    original_lines[3] = '! ZINDO/S\n'
+    original_lines[3] = "! ZINDO/S\n"
     for line_no in range(len(original_lines)):
         # REMOVE THE SCF ITER
         if "%scf MazIter" in original_lines[line_no]:
             original_lines.pop(line_no)
             break
-    with open(input_file, 'w+') as file_name:
+    with open(input_file, "w+") as file_name:
         file_name.writelines(original_lines)
 
 
@@ -153,17 +168,24 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
     print("")
     print(failed_chromo_files)
     print("There were", len(list(failed_chromo_files.keys())), "failed jobs.")
-    proc_IDs = parameter_dict['proc_IDs']
-    output_dir = parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]
+    proc_IDs = parameter_dict["proc_IDs"]
+    output_dir = (
+        parameter_dict["output_morph_dir"] + "/" + parameter_dict["morphology"][:-4]
+    )
     pop_list = []
     permanently_failed = {}
     # Firstly, modify the input files to see if numerical tweaks make orca
     # happier
     for failed_file, failed_data in failed_chromo_files.items():
         failed_count = failed_data[0]
-        error_code = modify_orca_files(failed_file, output_dir + '/chromophores/input_orca/'
-                                       + failed_file.replace('.out', '.inp'), failed_count,
-                                       chromophore_list)
+        error_code = modify_orca_files(
+            failed_file,
+            output_dir
+            + "/chromophores/input_orca/"
+            + failed_file.replace(".out", ".inp"),
+            failed_count,
+            chromophore_list,
+        )
         if error_code == 1:
             # Don't delete the elements from the list here because we're still
             # trying to iterate over this dict and it cannot change length!
@@ -178,24 +200,31 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
         return failed_chromo_files, permanently_failed
     # Otherwise, rerun those failed files.
     # First, find the correct locations of the input Files
-    input_files = [output_dir + '/chromophores/input_orca/' + file_name.replace('.out', '.inp')
-                   for file_name in list(failed_chromo_files.keys())]
+    input_files = [
+        output_dir + "/chromophores/input_orca/" + file_name.replace(".out", ".inp")
+        for file_name in list(failed_chromo_files.keys())
+    ]
     # As before, split the list of reruns based on the number of processors
-    jobs_list = [input_files[i:i + (int(np.ceil(len(input_files) / len(proc_IDs)))) + 1]
-                 for i in range(0, len(input_files),
-                                int(np.ceil(len(input_files) / float(len(proc_IDs)))))]
+    jobs_list = [
+        input_files[i : i + (int(np.ceil(len(input_files) / len(proc_IDs)))) + 1]
+        for i in range(
+            0, len(input_files), int(np.ceil(len(input_files) / float(len(proc_IDs))))
+        )
+    ]
     print(jobs_list)
     # Write the jobs pickle for single_core_run_orca to obtain
-    with open(output_dir + '/chromophores/orca_jobs.pickle', 'wb+') as pickle_file:
+    with open(output_dir + "/chromophores/orca_jobs.pickle", "wb+") as pickle_file:
         pickle.dump(jobs_list, pickle_file)
     # Now rerun orca
     if len(jobs_list) <= len(proc_IDs):
-        proc_IDs = proc_IDs[:len(jobs_list)]
+        proc_IDs = proc_IDs[: len(jobs_list)]
     running_jobs = []
     for CPU_rank in proc_IDs:
         # The final argument here tells orca to ignore the presence of the
         # output file and recalculate
-        running_jobs.append(sp.Popen(['python', SINGLE_ORCA_RUN_FILE, output_dir, str(CPU_rank), '1']))
+        running_jobs.append(
+            sp.Popen(["python", SINGLE_ORCA_RUN_FILE, output_dir, str(CPU_rank), "1"])
+        )
     # Wait for running jobs to finish
     [p.wait() for p in running_jobs]
     # Finally, return the failed files list to the main failure handler to see
@@ -208,20 +237,30 @@ def calculate_delta_E(chromophore_list, chromo1_ID, chromo2_ID):
     chromo2 = chromophore_list[chromo2_ID]
     # NOTE: SANITY CHECK
     if (chromo1.ID != chromo1_ID) or (chromo2.ID != chromo2_ID):
-        print("chromo1.ID (" + str(chromo1.ID) + ") != chromo1_ID (" + str(chromo1_ID) + "), or chromo2.ID"
-              " (" + str(chromo2.ID) + ") != chromo2_ID (" + str(chromo2_ID) + ")! CHECK CODE!")
+        print(
+            "chromo1.ID ("
+            + str(chromo1.ID)
+            + ") != chromo1_ID ("
+            + str(chromo1_ID)
+            + "), or chromo2.ID"
+            " ("
+            + str(chromo2.ID)
+            + ") != chromo2_ID ("
+            + str(chromo2_ID)
+            + ")! CHECK CODE!"
+        )
         exit()
     # END OF SANITY CHECK
-    if chromo1.species.lower() == 'donor':
+    if chromo1.species.lower() == "donor":
         # Hole transporter
         chromo1_E = chromo1.HOMO
-    elif chromo1.species.lower() == 'acceptor':
+    elif chromo1.species.lower() == "acceptor":
         # Electron transporter
         chromo1_E = chromo1.LUMO
-    if chromo2.species.lower() == 'donor':
+    if chromo2.species.lower() == "donor":
         # Hole transporter
         chromo2_E = chromo2.HOMO
-    elif chromo2.species.lower() == 'acceptor':
+    elif chromo2.species.lower() == "acceptor":
         # Electron transporter
         chromo2_E = chromo2.LUMO
     return chromo2_E - chromo1_E
@@ -230,18 +269,22 @@ def calculate_delta_E(chromophore_list, chromo1_ID, chromo2_ID):
 def calculate_TI(orbital_splitting, delta_E):
     # Use the energy splitting in dimer method to calculate the electronic
     # transfer integral in eV
-    if delta_E**2 > orbital_splitting**2:
+    if delta_E ** 2 > orbital_splitting ** 2:
         # Avoid an imaginary TI by returning zero.
         # (Could use KOOPMAN'S APPROXIMATION here if desired)
         TI = 0
     else:
-        TI = 0.5 * np.sqrt((orbital_splitting**2) - (delta_E**2))
+        TI = 0.5 * np.sqrt((orbital_splitting ** 2) - (delta_E ** 2))
     return TI
 
 
 def update_single_chromophore_list(chromophore_list, parameter_dict):
-    orca_output_dir = parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]\
-        + '/chromophores/output_orca/'
+    orca_output_dir = (
+        parameter_dict["output_morph_dir"]
+        + "/"
+        + parameter_dict["morphology"][:-4]
+        + "/chromophores/output_orca/"
+    )
     # NOTE: This can possibly be done by recursively iterating through the
     # neighbourlist of each chromophore, but I imagine Python will whinge about
     # the levels of recursion, so for now I'll just go through every
@@ -252,8 +295,8 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
     # location_in_chromophore_list]}
     failed_single_chromos = {}
     for chromo_location, chromophore in enumerate(chromophore_list):
-        file_name = 'single/%05d.out' % (chromophore.ID)
-        print("\rDetermining energy levels for", file_name, end=' ')
+        file_name = "single/%05d.out" % (chromophore.ID)
+        print("\rDetermining energy levels for", file_name, end=" ")
         if sys.stdout is not None:
             sys.stdout.flush()
         # Update the chromophores in the chromophore_list with their
@@ -270,13 +313,17 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
     print("")
     # Rerun any failed orca jobs
     while len(failed_single_chromos) > 0:
-        failed_single_chromos, permanently_failed = rerun_fails(failed_single_chromos, parameter_dict,
-                                                                chromophore_list)
+        failed_single_chromos, permanently_failed = rerun_fails(
+            failed_single_chromos, parameter_dict, chromophore_list
+        )
         if len(permanently_failed) > 0:
             print(permanentlyFailed)
             print("--== CRITICAL ERROR ==--")
-            print("THE ABOVE SINGLE-CHROMOPHORE SYSTEMS FAILED PERMANENTLY. THESE NEED FIXING/REMOVING"
-                  " FROM THE SYSTEM BEFORE ANY FURTHER DATA CAN BE OBTAINED.")
+            print(
+                "THE ABOVE SINGLE-CHROMOPHORE SYSTEMS FAILED PERMANENTLY. THESE NEED"
+                " FIXING/REMOVING FROM THE SYSTEM BEFORE ANY FURTHER DATA CAN BE"
+                " OBTAINED."
+            )
             raise SystemError("TERMINATING...")
         successful_reruns = []
         # Now check all of the files to see if we can update the
@@ -302,13 +349,15 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
             failed_single_chromos.pop(chromo_name)
     print("")
     # Finally, delete any of the files that need to be deleted.
-    if parameter_dict['remove_orca_inputs'] is True:
+    if parameter_dict["remove_orca_inputs"] is True:
         print("Deleting orca input files...")
-        for file_name in glob.glob(orca_output_dir.replace('output_orca', 'input_orca') + 'single/*.*'):
+        for file_name in glob.glob(
+            orca_output_dir.replace("output_orca", "input_orca") + "single/*.*"
+        ):
             os.remove(file_name)
-    if parameter_dict['remove_orca_outputs'] is True:
+    if parameter_dict["remove_orca_outputs"] is True:
         print("Deleting orca output files...")
-        for file_name in glob.glob(orca_output_dir + 'single/*.*'):
+        for file_name in glob.glob(orca_output_dir + "single/*.*"):
             os.remove(file_name)
     return chromophore_list
 
@@ -318,16 +367,20 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
     # through again and check the neighbours, rerunning the pair file if it
     # failed (which it won't have done because all my chromophores are
     # delicious now).
-    orca_output_dir = parameter_dict['output_morph_dir'] + '/' + parameter_dict['morphology'][:-4]\
-        + '/chromophores/output_orca/'
+    orca_output_dir = (
+        parameter_dict["output_morph_dir"]
+        + "/"
+        + parameter_dict["morphology"][:-4]
+        + "/chromophores/output_orca/"
+    )
     failed_pair_chromos = {}
     for chromo_location, chromophore in enumerate(chromophore_list):
         neighbour_IDs = [neighbour_data[0] for neighbour_data in chromophore.neighbours]
         for neighbour_loc, neighbour_ID in enumerate(neighbour_IDs):
             if chromophore.ID > neighbour_ID:
                 continue
-            file_name = 'pair/%05d-%05d.out' % (chromophore.ID, neighbour_ID)
-            print("\rDetermining energy levels for", file_name, end=' ')
+            file_name = "pair/%05d-%05d.out" % (chromophore.ID, neighbour_ID)
+            print("\rDetermining energy levels for", file_name, end=" ")
             if sys.stdout is not None:
                 sys.stdout.flush()
             try:
@@ -341,63 +394,87 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 continue
             # Calculate the delta_E between the two single chromophores
             try:
-                if parameter_dict['use_koopmans_approximation']:
+                if parameter_dict["use_koopmans_approximation"]:
                     delta_E = 0.0
                 else:
                     # Calculate Delta_E normally
                     raise KeyError
             except KeyError:
-                delta_E = calculate_delta_E(chromophore_list, chromophore.ID, neighbour_ID)
+                delta_E = calculate_delta_E(
+                    chromophore_list, chromophore.ID, neighbour_ID
+                )
             # Check the chromophore species
-            assert(chromophore_list[chromophore.ID].species == chromophore_list[neighbour_ID].species)
+            assert (
+                chromophore_list[chromophore.ID].species
+                == chromophore_list[neighbour_ID].species
+            )
             species = chromophore_list[chromophore.ID].species
             # Calculate the TI using the ESD method
-            if species.lower() == 'donor':
+            if species.lower() == "donor":
                 TI = calculate_TI(dimer_HOMO - dimer_HOMO_1, delta_E)
-            elif species.lower() == 'acceptor':
+            elif species.lower() == "acceptor":
                 TI = calculate_TI(dimer_LUMO - dimer_LUMO_1, delta_E)
             # Get the location of the current chromophore.ID in the neighbour's
             # neighbourList
-            reverse_loc = [neighbour_data[0] for neighbour_data in
-                           chromophore_list[neighbour_ID].neighbours].index(chromophore.ID)
+            reverse_loc = [
+                neighbour_data[0]
+                for neighbour_data in chromophore_list[neighbour_ID].neighbours
+            ].index(chromophore.ID)
             # Update both the current chromophore and the neighbour (for the
             # reverse hop)
             chromophore.neighbours_delta_E[neighbour_loc] = delta_E
-            chromophore_list[neighbour_ID].neighbours_delta_E[reverse_loc] = - delta_E
+            chromophore_list[neighbour_ID].neighbours_delta_E[reverse_loc] = -delta_E
             chromophore.neighbours_TI[neighbour_loc] = TI
             chromophore_list[neighbour_ID].neighbours_TI[reverse_loc] = TI
             # DEBUG ASSERTIONS
             # Check list index corresponds to chromophore ID
-            assert(chromo_location == chromophore_list[chromo_location].ID)
-            assert(chromo_location == chromophore.ID)
+            assert chromo_location == chromophore_list[chromo_location].ID
+            assert chromo_location == chromophore.ID
             # Check the neighbourLoc and reverseLoc give the correct
             # chromophoreIDs
-            assert(chromophore_list[chromophore.ID].neighbours[neighbour_loc][0] ==
-                   chromophore_list[neighbour_ID].ID)
-            assert(chromophore_list[neighbour_ID].neighbours[reverse_loc][0] ==
-                   chromophore_list[chromophore.ID].ID)
+            assert (
+                chromophore_list[chromophore.ID].neighbours[neighbour_loc][0]
+                == chromophore_list[neighbour_ID].ID
+            )
+            assert (
+                chromophore_list[neighbour_ID].neighbours[reverse_loc][0]
+                == chromophore_list[chromophore.ID].ID
+            )
             # Check the chromophoreList has been updated after updating the
             # chromophore instance
-            assert(chromophore_list[chromophore.ID].neighbours_TI[neighbour_loc] ==
-                   chromophore.neighbours_TI[neighbour_loc])
+            assert (
+                chromophore_list[chromophore.ID].neighbours_TI[neighbour_loc]
+                == chromophore.neighbours_TI[neighbour_loc]
+            )
             # Check the TI of the forward and backward hops are the same
-            assert(chromophore_list[chromophore.ID].neighbours_TI[neighbour_loc] ==
-                   chromophore_list[neighbour_ID].neighbours_TI[reverse_loc])
+            assert (
+                chromophore_list[chromophore.ID].neighbours_TI[neighbour_loc]
+                == chromophore_list[neighbour_ID].neighbours_TI[reverse_loc]
+            )
             # Check the chromophoreList has been updated after updating the
             # chromophore instance
-            assert(chromophore_list[chromophore.ID].neighbours_delta_E[neighbour_loc] ==
-                   chromophore.neighbours_delta_E[neighbour_loc])
+            assert (
+                chromophore_list[chromophore.ID].neighbours_delta_E[neighbour_loc]
+                == chromophore.neighbours_delta_E[neighbour_loc]
+            )
             # Check the Delta_E of the forward and backward hops are *= -1
-            assert(chromophore_list[chromophore.ID].neighbours_delta_E[neighbour_loc] ==
-                   -chromophore_list[neighbour_ID].neighbours_delta_E[reverse_loc])
+            assert (
+                chromophore_list[chromophore.ID].neighbours_delta_E[neighbour_loc]
+                == -chromophore_list[neighbour_ID].neighbours_delta_E[reverse_loc]
+            )
             # END DEBUG ASSERTIONS
     print("")
     while len(failed_pair_chromos) > 0:
-        failed_pair_chromos, permanently_failed = rerun_fails(failed_pair_chromos, parameter_dict, chromophore_list)
+        failed_pair_chromos, permanently_failed = rerun_fails(
+            failed_pair_chromos, parameter_dict, chromophore_list
+        )
         if len(permanently_failed) > 0:
             print("--== WARNING ==--")
-            print("The above chromophore-pair systems failed permanently. Setting their transfer"
-                  " integrals to zero, preventing these hops from ever taking place in the KMC.")
+            print(
+                "The above chromophore-pair systems failed permanently. Setting their"
+                " transfer integrals to zero, preventing these hops from ever taking"
+                " place in the KMC."
+            )
             for file_name, chromo_data in permanently_failed.items():
                 chromo1_ID = chromo_data[1]
                 chromo2_ID = chromo_data[2]
@@ -405,15 +482,20 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 delta_E = 0.0
                 # Get the location of the neighbour's ID in the current
                 # chromophores's neighbourList
-                neighbour_loc = [neighbour_data[0] for neighbour_data in
-                                 chromophore_list[chromo1_ID].neighbours].index(chromo2_ID)
+                neighbour_loc = [
+                    neighbour_data[0]
+                    for neighbour_data in chromophore_list[chromo1_ID].neighbours
+                ].index(chromo2_ID)
                 # Get the location of the current chromophore's ID in the
                 # neighbour's neighbourList
-                reverse_loc = [neighbour_data[0] for neighbour_data in
-                               chromophore_list[chromo2_ID].neighbours].index(chromo1_ID)
-                # Update both the current chromophore and the neighbour (for the reverse hop)
+                reverse_loc = [
+                    neighbour_data[0]
+                    for neighbour_data in chromophore_list[chromo2_ID].neighbours
+                ].index(chromo1_ID)
+                # Update both the current chromophore and the neighbour (for the reverse
+                # hop)
                 chromophore_list[chromo1_ID].neighbours_delta_E[neighbour_loc] = delta_E
-                chromophore_list[chromo2_ID].neighbours_delta_E[reverse_loc] = - delta_E
+                chromophore_list[chromo2_ID].neighbours_delta_E[reverse_loc] = -delta_E
                 chromophore_list[chromo1_ID].neighbours_TI[neighbour_loc] = TI
                 chromophore_list[chromo2_ID].neighbours_TI[reverse_loc] = TI
         successful_reruns = []
@@ -434,33 +516,42 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 continue
             # Calculate the delta_E between the two single chromophores
             try:
-                if parameter_dict['use_koopmans_approximation']:
+                if parameter_dict["use_koopmans_approximation"]:
                     delta_E = 0.0
                 else:
                     # Calculate Delta_E normally
                     raise KeyError
             except KeyError:
-                delta_E = calculate_delta_E(chromophore_list, chromophore.ID, neighbour_ID)
+                delta_E = calculate_delta_E(
+                    chromophore_list, chromophore.ID, neighbour_ID
+                )
             # Check the chromophore species
-            assert(chromophore_list[chromophore.ID].species == chromophore_list[neighbour_ID].species)
+            assert (
+                chromophore_list[chromophore.ID].species
+                == chromophore_list[neighbour_ID].species
+            )
             species = chromophore_list[chromophore.ID].species
             # Calculate the TI using the ESD method
-            if species.lower() == 'donor':
+            if species.lower() == "donor":
                 TI = calculate_TI(dimer_HOMO - dimer_HOMO_1, delta_E)
-            elif species.lower() == 'acceptor':
+            elif species.lower() == "acceptor":
                 TI = calculate_TI(dimer_LUMO - dimer_LUMO_1, delta_E)
             # Get the location of the neighbour's ID in the current
             # chromophores's neighbourList
-            neighbour_loc = [neighbour_data[0] for neighbour_data in
-                             chromophore_list[chromo1_ID].neighbours].index(chromo2_ID)
+            neighbour_loc = [
+                neighbour_data[0]
+                for neighbour_data in chromophore_list[chromo1_ID].neighbours
+            ].index(chromo2_ID)
             # Get the location of the current chromophore's ID in the
             # neighbour's neighbourList
-            reverse_loc = [neighbour_data[0] for neighbour_data in
-                           chromophore_list[chromo2_ID].neighbours].index(chromo1_ID)
+            reverse_loc = [
+                neighbour_data[0]
+                for neighbour_data in chromophore_list[chromo2_ID].neighbours
+            ].index(chromo1_ID)
             # Update both the current chromophore and the neighbour (for the
             # reverse hop)
             chromophore_list[chromo1_ID].neighbours_delta_E[neighbour_loc] = delta_E
-            chromophore_list[chromo2_ID].neighbours_delta_E[reverse_loc] = - delta_E
+            chromophore_list[chromo2_ID].neighbours_delta_E[reverse_loc] = -delta_E
             chromophore_list[chromo1_ID].neighbours_TI[neighbour_loc] = TI
             chromophore_list[chromo2_ID].neighbours_TI[reverse_loc] = TI
             # This rerun was successful so remove this chromophore from the
@@ -470,26 +561,38 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
             # DEBUG ASSERTIONS
             # Check the neighbourLoc and reverseLoc give the correct
             # chromophoreIDs
-            assert(chromophore_list[chromo1_ID].neighbours[neighbour_loc][0] == chromophore_list[chromo2_ID].ID)
-            assert(chromophore_list[chromo2_ID].neighbours[reverse_loc][0] == chromophore_list[chromo1_ID].ID)
+            assert (
+                chromophore_list[chromo1_ID].neighbours[neighbour_loc][0]
+                == chromophore_list[chromo2_ID].ID
+            )
+            assert (
+                chromophore_list[chromo2_ID].neighbours[reverse_loc][0]
+                == chromophore_list[chromo1_ID].ID
+            )
             # Check the TI of the forward and backward hops are the same
-            assert(chromophore_list[chromo1_ID].neighbours_TI[neighbour_loc] ==
-                   chromophore_list[chromo2_ID].neighbours_TI[reverse_loc])
+            assert (
+                chromophore_list[chromo1_ID].neighbours_TI[neighbour_loc]
+                == chromophore_list[chromo2_ID].neighbours_TI[reverse_loc]
+            )
             # Check the Delta_E of the forward and backward hops are *= -1
-            assert(chromophore_list[chromo1_ID].neighbours_delta_E[neighbour_loc] ==
-                   -chromophore_list[chromo2_ID].neighbours_delta_E[reverse_loc])
+            assert (
+                chromophore_list[chromo1_ID].neighbours_delta_E[neighbour_loc]
+                == -chromophore_list[chromo2_ID].neighbours_delta_E[reverse_loc]
+            )
             # END DEBUG ASSERTIONS
         for file_name in successful_reruns:
             failed_pair_chromos.pop(file_name)
     print("")
     # Finally, delete any of the files that need to be deleted.
-    if parameter_dict['remove_orca_inputs'] is True:
+    if parameter_dict["remove_orca_inputs"] is True:
         print("Deleting orca input files...")
-        for file_name in glob.glob(orca_output_dir.replace('output_orca', 'input_orca') + 'pair/*.*'):
+        for file_name in glob.glob(
+            orca_output_dir.replace("output_orca", "input_orca") + "pair/*.*"
+        ):
             os.remove(file_name)
-    if parameter_dict['remove_orca_outputs'] is True:
+    if parameter_dict["remove_orca_outputs"] is True:
         print("Deleting orca output files...")
-        for file_name in glob.glob(orca_output_dir + 'pair/*.*'):
+        for file_name in glob.glob(orca_output_dir + "pair/*.*"):
             os.remove(file_name)
     return chromophore_list
 
@@ -506,12 +609,16 @@ def scale_energies(chromophore_list, parameter_dict):
         chromophore_species[chromo.sub_species].append(chromo.get_MO_energy())
 
     for sub_species, chromo_energy in chromophore_species.items():
-        lit_DOS_std = parameter_dict["chromophore_species"][sub_species]["target_DOS_std"]
+        lit_DOS_std = parameter_dict["chromophore_species"][sub_species][
+            "target_DOS_std"
+        ]
         lit_MO = parameter_dict["chromophore_species"][sub_species]["literature_MO"]
         chromophore_MO_info[sub_species]["target_DOS_std"] = lit_DOS_std
         chromophore_MO_info[sub_species]["av_MO"] = np.average(chromo_energy)
         chromophore_MO_info[sub_species]["std_MO"] = np.std(chromo_energy)
-        chromophore_MO_info[sub_species]["E_shift"] = lit_MO - chromophore_MO_info[sub_species]["av_MO"]
+        chromophore_MO_info[sub_species]["E_shift"] = (
+            lit_MO - chromophore_MO_info[sub_species]["av_MO"]
+        )
 
     for chromo in chromophore_list:
         E_shift = chromophore_MO_info[chromo.sub_species]["E_shift"]
@@ -541,12 +648,22 @@ def scale_energies(chromophore_list, parameter_dict):
     return chromophore_list
 
 
-def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list):
-    pickle_name = os.path.join(parameter_dict['output_morph_dir'], parameter_dict['morphology'][:-4],
-                               'code', ''.join([parameter_dict['morphology'][:-4], '.pickle']))
+def main(
+    AA_morphology_dict,
+    CG_morphology_dict,
+    CG_to_AAID_master,
+    parameter_dict,
+    chromophore_list,
+):
+    pickle_name = os.path.join(
+        parameter_dict["output_morph_dir"],
+        parameter_dict["morphology"][:-4],
+        "code",
+        "".join([parameter_dict["morphology"][:-4], ".pickle"]),
+    )
     # First, check that we need to examine the single chromophores
     run_singles = False
-    if parameter_dict['overwrite_current_data'] is False:
+    if parameter_dict["overwrite_current_data"] is False:
         # Only perform this check if the user hasn't already specified to
         # overwrite the data (in which case it runs anyway)
         # Run all singles if any of the single's data is missing (i.e. the
@@ -555,9 +672,11 @@ def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_di
         for chromophore in chromophore_list:
             if chromophore.HOMO is None:
                 run_singles = True
-    if (run_singles is True) or (parameter_dict['overwrite_current_data'] is True):
+    if (run_singles is True) or (parameter_dict["overwrite_current_data"] is True):
         print("Beginning analysis of single chromophores...")
-        chromophore_list = update_single_chromophore_list(chromophore_list, parameter_dict)
+        chromophore_list = update_single_chromophore_list(
+            chromophore_list, parameter_dict
+        )
         # Now include any scaling to narrow the DoS or modulate the mean to
         # match the literature HOMO/LUMO levels (which helps to negate the
         # effect of short chromophores with additional hydrogens/terminating
@@ -565,22 +684,32 @@ def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_di
         print("Scaling energies...")
         chromophore_list = scale_energies(chromophore_list, parameter_dict)
         print("Single chromophore calculations completed. Saving...")
-        hf.write_pickle((AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master,
-                         parameter_dict, chromophore_list), pickle_name)
+        hf.write_pickle(
+            (
+                AA_morphology_dict,
+                CG_morphology_dict,
+                CG_to_AAID_master,
+                parameter_dict,
+                chromophore_list,
+            ),
+            pickle_name,
+        )
     else:
         print("All single chromophore calculations already performed. Skipping...")
     # Then, check the pairs
     run_pairs = False
-    if parameter_dict['overwrite_current_data'] is False:
+    if parameter_dict["overwrite_current_data"] is False:
         for chromophore in chromophore_list:
             # Just check the first neighbour for each chromophore
             for neighbour in chromophore.neighbours_TI:
                 if neighbour is None:
                     run_pairs = True
                     break
-    if (run_pairs is True) or (parameter_dict['overwrite_current_data'] is True):
+    if (run_pairs is True) or (parameter_dict["overwrite_current_data"] is True):
         print("Beginning analysis of chromophore pairs...")
-        chromophore_list = update_pair_chromophore_list(chromophore_list, parameter_dict)
+        chromophore_list = update_pair_chromophore_list(
+            chromophore_list, parameter_dict
+        )
         # DEBUG Testing - you can remove these as the assertions in
         # update_pair_chromophore_list should already cover them, however they
         # are fast and will ensure that there are no errors in the
@@ -591,11 +720,25 @@ def main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_di
             raise SystemError("assertions failed, please address in code.")
         # END OF DEBUG Testing
         print("Pair chromophore calculations completed. Saving...")
-        hf.write_pickle((AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master,
-                         parameter_dict, chromophore_list), pickle_name)
+        hf.write_pickle(
+            (
+                AA_morphology_dict,
+                CG_morphology_dict,
+                CG_to_AAID_master,
+                parameter_dict,
+                chromophore_list,
+            ),
+            pickle_name,
+        )
     else:
         print("All pair chromophore calculations already performed. Skipping...")
-    return AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list
+    return (
+        AA_morphology_dict,
+        CG_morphology_dict,
+        CG_to_AAID_master,
+        parameter_dict,
+        chromophore_list,
+    )
 
 
 def check_forward_backward_hop_T_ij(chromophore_list):
@@ -608,7 +751,7 @@ def check_forward_backward_hop_T_ij(chromophore_list):
             chromo2_ID = chromo2_details[0]
             chromo1_to_2_TI = chromo1.neighbours_TI[neighbour_index]
             # Sanity check
-            assert(chromo2_ID == chromophore_list[chromo2_ID].ID)
+            assert chromo2_ID == chromophore_list[chromo2_ID].ID
             chromo2 = chromophore_list[chromo2_ID]
             neighbour2_index = 0
             for neighbour2_index, chromo1_details in enumerate(chromo2.neighbours):
@@ -616,27 +759,55 @@ def check_forward_backward_hop_T_ij(chromophore_list):
                     continue
                 chromo2_to_1_TI = chromo2.neighbours_TI[neighbour2_index]
                 break
-            assert(chromo1.species == chromo2.species)
+            assert chromo1.species == chromo2.species
             try:
-                assert(chromo1_to_2_TI == chromo2_to_1_TI)
+                assert chromo1_to_2_TI == chromo2_to_1_TI
                 # Put other assertions in here
             except AssertionError:
                 print("\n<ERROR FOUND>")
                 print("1 to 2", chromo1_to_2_TI)
                 print("2 to 1", chromo2_to_1_TI)
                 print("Chromo 1 ID =", chromo1_ID, "Chromo 2 ID =", chromo2_ID)
-                print("Chromo1 Neighbours: Look for index =", neighbour_index, "in", chromo1.neighbours)
-                print("Chromo2 Neighbours: Look for index =", neighbour2_index, "in", chromo2.neighbours)
-                print("Chromo1 TIs: Look for index =", neighbour_index, "in", chromo1.neighboursTI)
-                print("Chromo2 TIs: Look for index =", neighbour2_index, "in", chromo2.neighboursTI)
-                if chromo1.species.lower() == 'donor':
+                print(
+                    "Chromo1 Neighbours: Look for index =",
+                    neighbour_index,
+                    "in",
+                    chromo1.neighbours,
+                )
+                print(
+                    "Chromo2 Neighbours: Look for index =",
+                    neighbour2_index,
+                    "in",
+                    chromo2.neighbours,
+                )
+                print(
+                    "Chromo1 TIs: Look for index =",
+                    neighbour_index,
+                    "in",
+                    chromo1.neighboursTI,
+                )
+                print(
+                    "Chromo2 TIs: Look for index =",
+                    neighbour2_index,
+                    "in",
+                    chromo2.neighboursTI,
+                )
+                if chromo1.species.lower() == "donor":
                     donor_errors += 1
-                elif chromo1.species.lower() == 'acceptor':
+                elif chromo1.species.lower() == "acceptor":
                     acceptor_errors += 1
     if (donor_errors > 0) or (acceptor_errors > 0):
         print("--== CRITICAL ERROR ==--")
-        print("\nThere were", donor_errors, "cases where T_ij != T_ji in the donor chromophores.")
-        print("\nThere were", acceptor_errors, "cases where T_ij != T_ji in the acceptor chromophores.")
+        print(
+            "\nThere were",
+            donor_errors,
+            "cases where T_ij != T_ji in the donor chromophores.",
+        )
+        print(
+            "\nThere were",
+            acceptor_errors,
+            "cases where T_ij != T_ji in the acceptor chromophores.",
+        )
         return 1
     return 0
 
@@ -649,50 +820,91 @@ def check_forward_backward_hop_E_ij(chromophore_list):
         chromo_ID = chromophore.ID
         for neighbour_loc, neighbour_deets in enumerate(chromophore.neighbours):
             neighbour_ID = neighbour_deets[0]
-            assert(chromo_ID == chromophore_list[chromo_ID].ID)
-            assert(neighbour_ID == chromophore_list[neighbour_ID].ID)
+            assert chromo_ID == chromophore_list[chromo_ID].ID
+            assert neighbour_ID == chromophore_list[neighbour_ID].ID
             # Get the location of the current chromophore.ID in the neighbour's
             # neighbourList
-            reverse_loc = [neighbour_data[0] for neighbour_data in
-                           chromophore_list[neighbour_ID].neighbours].index(chromophore.ID)
-            assert(neighbour_ID == chromophore_list[chromo_ID].neighbours[neighbour_loc][0])
-            assert(chromo_ID == chromophore_list[neighbour_ID].neighbours[reverse_loc][0])
+            reverse_loc = [
+                neighbour_data[0]
+                for neighbour_data in chromophore_list[neighbour_ID].neighbours
+            ].index(chromophore.ID)
+            assert (
+                neighbour_ID == chromophore_list[chromo_ID].neighbours[neighbour_loc][0]
+            )
+            assert (
+                chromo_ID == chromophore_list[neighbour_ID].neighbours[reverse_loc][0]
+            )
             # Update both the current chromophore and the neighbour (for the
             # reverse hop)
             try:
-                assert(chromophore_list[chromo_ID].neighbours_delta_E[neighbour_loc] ==
-                       -chromophore_list[neighbour_ID].neighbours_delta_E[reverse_loc])
+                assert (
+                    chromophore_list[chromo_ID].neighbours_delta_E[neighbour_loc]
+                    == -chromophore_list[neighbour_ID].neighbours_delta_E[reverse_loc]
+                )
             except AssertionError:
                 print("\nHOP FROM", chromo_ID, "TO", neighbour_ID)
-                print(neighbour_ID, "should be here", chromophore.neighbours[neighbour_loc])
-                print(chromo_ID, "should be here", chromophore_list[neighbour_ID].neighbours[reverse_loc])
+                print(
+                    neighbour_ID,
+                    "should be here",
+                    chromophore.neighbours[neighbour_loc],
+                )
+                print(
+                    chromo_ID,
+                    "should be here",
+                    chromophore_list[neighbour_ID].neighbours[reverse_loc],
+                )
                 print("--== Transfer Integrals ==--")
-                print("FORWARD:", chromophore_list[chromo_ID].neighbours_TI[neighbour_loc],
-                      "backward:", chromophore_list[neighbour_ID].neighbours_TI[reverse_loc])
+                print(
+                    "FORWARD:",
+                    chromophore_list[chromo_ID].neighbours_TI[neighbour_loc],
+                    "backward:",
+                    chromophore_list[neighbour_ID].neighbours_TI[reverse_loc],
+                )
                 print("--== Delta E_ij ==--")
-                print("FORWARD:", chromophore_list[chromo_ID].neighbours_delta_E[neighbour_loc],
-                      "backward:", chromophore_list[neighbour_ID].neighbours_delta_E[reverse_loc])
-                if chromophore.species.lower() == 'donor':
+                print(
+                    "FORWARD:",
+                    chromophore_list[chromo_ID].neighbours_delta_E[neighbour_loc],
+                    "backward:",
+                    chromophore_list[neighbour_ID].neighbours_delta_E[reverse_loc],
+                )
+                if chromophore.species.lower() == "donor":
                     donor_errors += 1
-                elif chromophore.species.lower() == 'acceptor':
+                elif chromophore.species.lower() == "acceptor":
                     acceptor_errors += 1
     if (donor_errors > 0) or (acceptor_errors > 0):
         print("--== CRITICAL ERROR ==--")
-        print("\nThere were", donor_errors, "cases where E_ij != -E_ji in the donor chromophores.")
-        print("\nThere were", acceptor_errors, "cases where E_ij != -E_ji in the acceptor chromophores.")
+        print(
+            "\nThere were",
+            donor_errors,
+            "cases where E_ij != -E_ji in the donor chromophores.",
+        )
+        print(
+            "\nThere were",
+            acceptor_errors,
+            "cases where E_ij != -E_ji in the acceptor chromophores.",
+        )
         return 1
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         pickle_file = sys.argv[1]
     except NameError:
-        print("Please specify the pickle file to load to continue the pipeline from this point.")
+        print(
+            "Please specify the pickle file to load to continue the pipeline from this"
+            " point."
+        )
     pickle_data = hf.load_pickle(pickle_file)
     AA_morphology_dict = pickle_data[0]
     CG_morphology_dict = pickle_data[1]
     CG_to_AAID_master = pickle_data[2]
     parameter_dict = pickle_data[3]
     chromophore_list = pickle_data[4]
-    main(AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, parameter_dict, chromophore_list)
+    main(
+        AA_morphology_dict,
+        CG_morphology_dict,
+        CG_to_AAID_master,
+        parameter_dict,
+        chromophore_list,
+    )
