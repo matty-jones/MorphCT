@@ -135,7 +135,12 @@ def remove_adjacent_terminators(group1, group2):
                 pop_list[1].append(index2)
     for group_no, group in enumerate(pop_list):
         for index in sorted(group, reverse=True):
-            [group1, group2][group_no].pop(index)
+            try:
+                [group1, group2][group_no].pop(index)
+            except IndexError:
+                raise SystemError("Tried to pop a termination group that does"
+                                  " not exist...are you sure this is an"
+                                  " atomistic morphology?")
     return group1, group2
 
 
