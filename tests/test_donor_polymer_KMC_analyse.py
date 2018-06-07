@@ -182,4 +182,4 @@ if __name__ == "__main__":
         def __init__(self, param):
             self.param = param
 
-    run_simulation(parameters('-tp'))
+    run_simulation(parameters('COMBINE_KMC'))
