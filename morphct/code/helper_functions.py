@@ -14,6 +14,9 @@ k_B = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}
 hbar = 1.05457173E-34  # m^{2} kg s^{-1}
 
 
+sys.setrecursionlimit(10000)
+
+
 def find_index(string, character):
     """
     This function returns the locations of an inputted character in an inputted string

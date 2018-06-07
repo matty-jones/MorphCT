@@ -838,7 +838,7 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
             mol2ID = CG_to_mol_ID[chromo2.CGIDs[0]]
             delta_E = chromo.neighbours_delta_E[index]
             if chromo.sub_species == chromo2.sub_species:
-                lambda_ij = chromo.reorganisation_energy * elementary_charge
+                lambda_ij = chromo.reorganisation_energy
             else:
                 lambda_ij = (chromo.reorganisation_energy + chromo2.reorganisation_energy)/2
             # Now take into account the various behaviours we can have from the parameter file
@@ -1151,8 +1151,6 @@ def main():
         import mpl_toolkits.mplot3d as p3
     except ImportError:
         print("Could not import 3D plotting engine, calling the plotMolecule3D function will result in an error!")
-
-    sys.setrecursionlimit(10000)
     hole_mobility_data = []
     hole_anisotropy_data = []
     electron_mobility_data = []
