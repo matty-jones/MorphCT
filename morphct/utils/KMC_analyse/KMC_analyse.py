@@ -1151,8 +1151,6 @@ def main():
         import mpl_toolkits.mplot3d as p3
     except ImportError:
         print("Could not import 3D plotting engine, calling the plotMolecule3D function will result in an error!")
-
-    sys.setrecursionlimit(10000)
     hole_mobility_data = []
     hole_anisotropy_data = []
     electron_mobility_data = []
