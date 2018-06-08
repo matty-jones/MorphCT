@@ -541,7 +541,7 @@ def update_molecule(atom_ID, molecule_list, bonded_atoms):
     return molecule_list
 
 
-def get_neighbour_cut_off(chromophore_list, morphology_shape, output_dir, periodic=True, specified_cut_off_donor=None,
+def get_neighbour_cut_off(chromophore_list, CG_to_mol_ID, morphology_shape, output_dir, periodic=True, specified_cut_off_donor=None,
                           specified_cut_off_acceptor=None):
     specified_cut_offs = {'donor': specified_cut_off_donor, 'acceptor': specified_cut_off_acceptor}
     separation_dist_donor = []
@@ -553,6 +553,9 @@ def get_neighbour_cut_off(chromophore_list, morphology_shape, output_dir, period
                or (chromo1.ID == chromophore_list[chromo2_details[0]].ID):
                 continue
             chromo2 = chromophore_list[chromo2_details[0]]
+            # Skip any chromophores that are part of the same molecule
+            if CG_to_mol_ID[chromo1.CGIDs[0]] == CG_to_mol_ID[chromo2.CGIDs[0]]:
+                continue
             separation = np.linalg.norm((np.array(chromo2.posn) + (np.array(chromo2_details[1])
                                                                    * np.array(morphology_shape))) - chromo1.posn)
             if chromo1.species == 'donor':
@@ -1212,7 +1215,7 @@ def main():
         print("Finding the relevant stack cut off as the midpoint between the first maxmimum and the first minimum",
               "of the neighbour distance distribution...")
         print("Considering periodic neighbours is", args.periodic_stacks)
-        cut_offs = get_neighbour_cut_off(chromophore_list, morphology_shape, temp_dir, periodic=args.periodic_stacks,
+        cut_offs = get_neighbour_cut_off(chromophore_list, CG_to_mol_ID, morphology_shape, temp_dir, periodic=args.periodic_stacks,
                                          specified_cut_off_donor=args.cut_off_donor,
                                          specified_cut_off_acceptor=args.cut_off_acceptor)
         calculated_cut_off_donor = cut_offs[0]
