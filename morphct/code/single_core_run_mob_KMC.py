@@ -533,7 +533,7 @@ if __name__ == "__main__":
                     ],
                 )
                 save_pickle(
-                    save_data, pickle_file_name.replace("data", save_slot + "results")
+                    save_data, pickle_file_name.replace("data", save_slot + "_results")
                 )
                 if save_slot.lower() == "slot1":
                     save_slot = "slot2"
