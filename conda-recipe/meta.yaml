@@ -10,21 +10,23 @@ requirements:
     - cmelab
   build:
     - python 3.5.4
-    - hoomd_dybond
+    - hoomd 1.3.3
     - scipy 0.19.1
     - matplotlib 2.0.2
+    - cython
     - pytest
     - pytest-cov
-    - PyYAML
+    - pyyaml
     - coveralls
   run:
     - python 3.5.4
-    - hoomd_dybond
+    - hoomd 1.3.3
     - scipy 0.19.1
     - matplotlib 2.0.2
+    - cython
     - pytest
     - pytest-cov
-    - PyYAML
+    - pyyaml
     - coveralls
 test:
   imports:
