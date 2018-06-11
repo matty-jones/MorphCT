@@ -28,9 +28,6 @@ requirements:
     - pytest-cov
     - pyyaml
     - coveralls
-test:
-  imports:
-    - morphct
 
 about:
   home: https://bitbucket.org/cmelab/morphct
