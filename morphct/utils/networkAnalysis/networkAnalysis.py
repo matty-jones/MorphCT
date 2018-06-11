@@ -314,7 +314,6 @@ def loadData(morphologyFile, outputDir, figSaveDir):
 
 
 if __name__ == '__main__':
-    sys.setrecursionlimit(10000) # If I use the 01mon system, I hit the recursion limit even though the program is working fine.
     R.seed(32)
     morphologyDir = '../../outputFiles'
 

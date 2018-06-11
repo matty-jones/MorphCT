@@ -1,5 +1,6 @@
 import argparse
 import os
+import pickle
 import re
 import shutil
 import sys
@@ -259,6 +260,94 @@ def load_pickle_data(old_pickle_file, directory):
     return pickle_data
 
 
+def convert_KMC(morphology_directory):
+    KMC_data = load_KMC_results_pickle(morphology_directory)
+    print("Updating KMC result keys to PEP8 format...")
+    KMC_data = add_underscores(KMC_data)
+    print("Rewriting KMC results file...")
+    new_file_name = os.path.join(morphology_directory, 'KMC', 'KMC_results.pickle')
+    with open(new_file_name, 'wb+') as pickle_file:
+        pickle.dump(KMC_data, pickle_file)
+    print("Updated KMC results file written to", new_file_name)
+
+
+def load_KMC_results_pickle(directory):
+    try:
+        with open(directory + '/KMC/KMCResults.pickle', 'rb') as pickle_file:
+            carrier_data = pickle.load(pickle_file)
+    except FileNotFoundError:
+        print("No final KMC_results.pickle found. Creating it from incomplete parts...")
+        create_results_pickle(directory)
+        with open(directory + '/KMC/KMC_results.pickle', 'rb') as pickle_file:
+            carrier_data = pickle.load(pickle_file)
+    except UnicodeDecodeError:
+        with open(directory + '/KMC/KMCResults.pickle', 'rb') as pickle_file:
+            carrier_data = pickle.load(pickle_file, encoding='latin1')
+    return carrier_data
+
+
+def create_results_pickle(directory):
+    cores_list = []
+    for file_name in glob.glob(directory + '/KMC/*'):
+        try:
+            cores_list.append(re.findall("([_])(..)([\.])", file_name)[0][1])
+        except IndexError:
+            pass
+    cores_list = sorted(list(set(cores_list)))
+    results_pickles_list = []
+    keep_list = []
+    for core in cores_list:
+        # Check if there is already a finished KMC_results pickle
+        main = directory + '/KMC/KMCResults_%02d.pickle' % (int(core))
+        if os.path.exists(main):
+            results_pickles_list.append(main)
+            keep_list.append(None)
+            continue
+        # If not, find the slot1 and slot2 pickle that is most recent
+        slot1 = directory + '/KMC/KMCSlot1Results_%02d.pickle' % (int(core))
+        slot2 = directory + '/KMC/KMCSlot2Results_%02d.pickle' % (int(core))
+        if (os.path.exists(slot1) and not os.path.exists(slot2)):
+            keep_list.append(slot1)
+        elif (os.path.exists(slot2) and not os.path.exists(slot1)):
+            keep_list.append(slot2)
+        elif os.path.getsize(slot1) >= os.path.getsize(slot2):
+            keep_list.append(slot1)
+        else:
+            keep_list.append(slot2)
+    print("%d pickle files found to combine!" % (len(keep_list)))
+    print("Combining", keep_list)
+    for keeper in zip(cores_list, keep_list):
+        # Skip this core if we already have a finished KMC_results for it
+        if keeper[1] is None:
+            continue
+        new_name = directory + '/KMC/KMC_results_' + str(keeper[0]) + '.pickle'
+        shutil.copyfile(str(keeper[1]), new_name)
+        results_pickles_list.append(new_name)
+    combine_results_pickles(directory, results_pickles_list)
+
+
+def combine_results_pickles(directory, pickle_files):
+    combined_data = {}
+    pickle_files = sorted(pickle_files)
+    for file_name in pickle_files:
+        # The pickle was repeatedly dumped to, in order to save time.
+        # Each dump stream is self-contained, so iteratively unpickle to add the new data.
+        with open(file_name, 'rb') as pickle_file:
+            pickled_data = pickle.load(pickle_file)
+            for key, val in pickled_data.items():
+                if val is None:
+                    continue
+                if key not in combined_data:
+                    combined_data[key] = val
+                else:
+                    combined_data[key] += val
+    # Write out the combined data
+    print("Writing out the combined pickle file...")
+    with open(directory + '/KMC/KMC_results.pickle', 'wb+') as pickle_file:
+        pickle.dump(combined_data, pickle_file)
+    print("Complete data written to", directory + "/KMC_results.pickle.")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", "--pickle_mode", action="store_true", required=False,
@@ -318,7 +407,7 @@ def main():
                 new_parameter_file = os.path.join(directory, ''.join(['par_', morphology_name, '.py']))
         # Now back up the pickle before we overwrite it with the new data
         # (both pickle_mode and dir_mode)
-        print("Considering morphology directory", directory)
+        print("Considering morphology", directory)
         try:
             print("Found pickle at", new_pickle_file)
             # Make a copy of the old pickle
@@ -357,6 +446,7 @@ def main():
         sim_dims = [[-AA_morphology_dict['lx'] / 2.0, AA_morphology_dict['lx'] / 2.0],
                     [-AA_morphology_dict['ly'] / 2.0, AA_morphology_dict['ly'] / 2.0],
                     [-AA_morphology_dict['lz'] / 2.0, AA_morphology_dict['lz'] / 2.0]]
+
         # Update the parameter dict and pickle files to include the new data
         new_parameter_dict = convert_params(old_parameter_dict, new_parameter_file)
 
@@ -373,6 +463,12 @@ def main():
         hf.write_pickle([AA_morphology_dict, CG_morphology_dict, CG_to_AAID_master, new_parameter_dict,
                          new_chromophore_list],
                         new_pickle_file)
+
+        # Update the KMC data
+        if args.pickle_mode is False:
+            morphology_directory = directory.replace('/code', '')
+            convert_KMC(morphology_directory)
+
         # Remove the current directory from the path, ready for the next
         # directory
         sys.path.pop(0)
