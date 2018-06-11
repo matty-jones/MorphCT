@@ -1,0 +1,36 @@
+package:
+  name: morphct
+  version: 3.0.1
+
+source:
+  path: ../ 
+
+requirements:
+  channels:
+    - cmelab
+  build:
+    - python 3.5.4
+    - hoomd_dybond
+    - scipy 0.19.1
+    - matplotlib 2.0.2
+    - pytest
+    - pytest-cov
+    - PyYAML
+    - coveralls
+  run:
+    - python 3.5.4
+    - hoomd_dybond
+    - scipy 0.19.1
+    - matplotlib 2.0.2
+    - pytest
+    - pytest-cov
+    - PyYAML
+    - coveralls
+test:
+  imports:
+    - morphct
+
+about:
+  home: https://bitbucket.org/cmelab/morphct
+  license: GPLv3 
+  license_file: LICENSE
