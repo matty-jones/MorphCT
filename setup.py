@@ -24,7 +24,7 @@ setup(
     # https://packaging.python.org/en/latest/single_source_version.html
     version='3.0.1',
 
-    description='',
+    description='A multi-scale (1A to 1um, 1fs to 1us) organic solar cell simulation suite - from molecules to efficiencies',
     long_description=long_description,
 
     # The project's main homepage.
@@ -101,12 +101,12 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
         'console_scripts': [
-            "fixImages=morphct.utils.fix_images.fix_images:main",
-            "orca2xyz=morphct.utils.orca_to_xyz.convert_to_xyz:main",
-            "KMCAnalyse=morphct.utils.KMC_analyse.KMC_analyse:main",
-            "createMontage=morphct.utils.imagemagick_stitch.create_montage:main",
-            "addHydrogens=morphct.utils.add_hydrogens_to_UA.add_hydrogens:main",
-            "updatePickle=morphct.utils.update_pickles.update_pickle:main",
+            "fixImages=morphct.utils.fix_images:main",
+            "orca2xyz=morphct.utils.convert_to_xyz:main",
+            "KMCAnalyse=morphct.utilsKMC_analyse:main",
+            "createMontage=morphct.utils.create_montage:main",
+            "addHydrogens=morphct.utils.add_hydrogens:main",
+            "updatePickle=morphct.utils.update_pickle:main",
         ],
     },
 )
