@@ -28,7 +28,7 @@ setup(
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://bitbucket.org/cmelab/morphct/overview',
+    url='https://bitbucket.org/cmelab/morphct/src/master',
 
     # Author details
     author='Matty Jones',
@@ -62,6 +62,7 @@ setup(
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
+    package_dir={'morphct': 'morphct'},
 
     # Alternatively, if you want to distribute just a my_module.py, uncomment
     # this:
