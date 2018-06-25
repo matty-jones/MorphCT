@@ -103,7 +103,7 @@ setup(
         'console_scripts': [
             "fixImages=morphct.utils.fix_images:main",
             "orca2xyz=morphct.utils.convert_to_xyz:main",
-            "KMCAnalyse=morphct.utilsKMC_analyse:main",
+            "KMCAnalyse=morphct.utils.KMC_analyse:main",
             "createMontage=morphct.utils.create_montage:main",
             "addHydrogens=morphct.utils.add_hydrogens:main",
             "updatePickle=morphct.utils.update_pickle:main",
