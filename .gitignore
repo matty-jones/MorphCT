@@ -1,7 +1,7 @@
+record.txt
 .pytest_cache/
 codecoverage/
-utils/drawDevice/*/
-utils/*/storage
+morphct/utils/*
 *temp*
 *.hoomdxml
 *ipynb*

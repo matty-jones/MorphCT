@@ -7,9 +7,9 @@ dependencies:
 - hoomd=1.3
 - scipy=0.19.1
 - matplotlib=2.0.2
+- cython
 # Tests
 - pytest
 - pytest-cov
 - PyYAML
-- pip:
-  - coveralls
+- coveralls
