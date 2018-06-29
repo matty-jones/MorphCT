@@ -1030,8 +1030,10 @@ def write_CSV(data_dict, directory):
 def create_results_pickle(directory):
     cores_list = []
     for file_name in glob.glob(directory + '/KMC/*'):
+        if 'log' not in file_name:
+            continue
         try:
-            cores_list.append(re.findall("([_])(..)([\.])", file_name)[0][1])
+            cores_list.append(os.path.split(file_name)[1].split('.')[0].split('_')[-1])
         except IndexError:
             pass
     cores_list = sorted(list(set(cores_list)))
