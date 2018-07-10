@@ -4,6 +4,7 @@ import pickle
 import re
 import shutil
 import sys
+import glob
 import numpy as np
 from morphct.code import helper_functions as hf
 from morphct.code import obtain_chromophores as oc
