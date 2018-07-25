@@ -585,7 +585,11 @@ def get_neighbour_cut_off(chromophore_list, CG_to_mol_ID, morphology_shape, outp
             previous_value = val
         # Minimum is half way between the first maximum and the first minimum of the distribution
         if specified_cut_offs[material[material_type]] is None:
-            cut_off = (bins[maxima_indices[0]] + bins[minima_indices[0]]) / 2.0
+            try:
+                cut_off = (bins[maxima_indices[0]] + bins[minima_indices[0]]) / 2.0
+            except IndexError:
+                print("No minimum found - setting cut-off to default = 4A")
+                cut_off = 4.0
         else:
             cut_off = specified_cut_offs[material[material_type]]
         cut_offs.append(cut_off)
