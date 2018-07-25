@@ -108,11 +108,13 @@ def plot_data(data, title, xlabel = "Order-Semi-Disorder"):
         os.makedirs('output')
     fig, ax = plt.subplots()
 
+    x_data, y_data, y_error = zip(*sorted(zip(data[:,0], data[:,1], data[:,2])))
     #Plot the errors
-    plt.errorbar(data[:,0], data[:,1], yerr=data[:,2])
-    plt.ylabel(r"$\mu_0$ cm$^2$/Vs")
+    plt.errorbar(x_data, y_data, yerr=y_error)
+    plt.yscale('log')
+    plt.ylabel(r"Mobility (cm$^{2}$V$^{-1}$s$^{-1}$)")
     plt.xlabel(xlabel)
-    plt.title(title)
+    #plt.title(title)
     plt.savefig("output/{}.pdf".format(title))
 
 def save_mean_data_to_csv(data):
@@ -135,7 +137,7 @@ def save_mean_data_to_csv(data):
     with open("output/data.csv", 'w') as f:
         f.writelines(text)
 
-def calc_mean_and_dev(combine_list, properties = ['hole_mobility']):
+def calc_mean_and_dev(combine_list, x_label, properties = ['hole_mobility']):
     """
     Iterate through the dictionary of lists to get the
     information from the appropriate csv files, then calculate 
@@ -181,7 +183,7 @@ def calc_mean_and_dev(combine_list, properties = ['hole_mobility']):
             except:
                 property_list.append([keys_list.index(key), p_mean, p_error])
         #Plot the data
-        plot_data(np.array(property_list), prop)
+        plot_data(np.array(property_list), prop, xlabel=x_label)
     #Write all the data into a single file
     save_mean_data_to_csv(data_list)
 
@@ -198,5 +200,7 @@ if __name__ == "__main__":
                             ...'cryst-frame-N', 'large_p3ht_ordered']
                             'Function will look for result.csv files for mobility if they exist.'
                             '''))
+    parser.add_argument("-x", "--x_label", default=None, required=True,
+                        help=('''Set an x label for the final plot'''))
     args, directory_list = parser.parse_known_args()
-    calc_mean_and_dev(args.combine)
+    calc_mean_and_dev(args.combine, args.x_label)
