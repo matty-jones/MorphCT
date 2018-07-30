@@ -1499,10 +1499,10 @@ def main():
         #print("DEBUG LINE, 3D IGNORED FOR cluster PLOT")
         #plot_clusters3D(temp_dir, chromophore_list, cluster_dicts, sim_dims)
         if args.three_D:
+            print("Plotting 3D cluster location plot...")
             plot_clusters3D(temp_dir, chromophore_list, cluster_dicts, sim_dims)
         data_dict = plot_mixed_hopping_rates(temp_dir, chromophore_list, parameter_dict, cluster_dicts, CG_to_mol_ID,
                                              data_dict, AA_morphology_dict)
-        print("\n")
         print("Writing CSV Output File...")
         write_CSV(data_dict, directory)
     print("Plotting Mobility and Anisotropy progressions...")
