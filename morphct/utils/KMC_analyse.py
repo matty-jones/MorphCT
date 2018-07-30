@@ -1376,25 +1376,25 @@ def main():
                                               " as the sequence of x values. For instance -s '1.5,1.75,2.0,2.25,2.5'"
                                               " will assign each of the 5 following directories these x-values when"
                                               " plotting the mobility evolution."))
-    parser.add_argument("-od", "--ocut_donor", default=None, required=False,
+    parser.add_argument("-od", "--ocut_donor", default=None, required=False, type=float,
                         help=("Specify the orientation cut-off (in degrees) for the donor material for determining"
                               " which chromophores belong to the same cluster. Chromophores with angle between normal"
                               " vectors > ocut_donor will be considered as different crystals. Default = None (if no"
                               " cut-offs are specified, then the entire chromophore neighbourlist will be considered"
                               " in the same crystal (likely identifying a single crystal in the morphology)."))
-    parser.add_argument("-oa", "--ocut_acceptor", default=None, required=False,
+    parser.add_argument("-oa", "--ocut_acceptor", default=None, required=False, type=float,
                         help=("Specify the orientation cut-off (in degrees) for the acceptor material for determining"
                               " which chromophores belong to the same cluster. Chromophores with angle between normal"
                               " vectors > ocut_acceptor will be considered as different crystals. Default = None (if no"
                               " cut-offs are specified, then the entire chromophore neighbourlist will be considered"
                               " in the same crystal (likely identifying a single crystal in the morphology)."))
-    parser.add_argument("-tid", "--ticut_donor", default=None, required=False,
+    parser.add_argument("-tid", "--ticut_donor", default=None, required=False, type=float,
                         help=("Specify the transfer integral cut-off (in radians) for the donor material for determining"
                               " which chromophores belong to the same cluster. Chromophores with hopping transfer"
                               " integral < ticut_donor will be considered as different crystals. Default = None (if no"
                               " cut-offs are specified, then the entire chromophore neighbourlist will be considered"
                               " in the same crystal (likely identifying a single crystal in the morphology)."))
-    parser.add_argument("-tia", "--ticut_acceptor", default=None, required=False,
+    parser.add_argument("-tia", "--ticut_acceptor", default=None, required=False, type=float,
                         help=("Specify the transfer integral cut-off (in radians) for the acceptor material for determining"
                               " which chromophores belong to the same cluster. Chromophores with hopping transfer"
                               " integral < ticut_acceptor will be considered as different crystals. Default = None (if no"
