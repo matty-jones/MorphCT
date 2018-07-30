@@ -588,7 +588,7 @@ def plot_neighbour_hist(chromophore_list, CG_to_mol_ID, morphology_shape, output
         print("Neighbour histogram figure saved as", os.path.join(output_dir, file_name))
 
 
-def get_stacks(chromophore_list, morphology_shape, ocut_off_donor,
+def get_clusters(chromophore_list, morphology_shape, ocut_off_donor,
                ocut_off_acceptor, ticut_off_donor, ticut_off_acceptor,
                CG_morphology_dict, AA_morphology_dict,
                CG_to_AAID_master, parameter_dict):
@@ -882,44 +882,44 @@ def create_neighbour_list(chromophore_list, morphology_shape, cut_off, periodic,
     return neighbour_dict
 
 
-def update_stack(atom_ID, cluster_list, neighbour_dict):
+def update_cluster(atom_ID, cluster_list, neighbour_dict):
     try:
         for neighbour in neighbour_dict[atom_ID]:
             if cluster_list[neighbour] > cluster_list[atom_ID]:
                 cluster_list[neighbour] = cluster_list[atom_ID]
-                cluster_list = update_stack(neighbour, cluster_list, neighbour_dict)
+                cluster_list = update_cluster(neighbour, cluster_list, neighbour_dict)
             elif cluster_list[neighbour] < cluster_list[atom_ID]:
                 cluster_list[atom_ID] = cluster_list[neighbour]
-                cluster_list = update_stack(neighbour, cluster_list, neighbour_dict)
+                cluster_list = update_cluster(neighbour, cluster_list, neighbour_dict)
     except KeyError:
         pass
     return cluster_list
 
 
-def plot_Stacks3D(output_dir, chromophore_list, stack_dicts, sim_dims):
+def plot_clusters3D(output_dir, chromophore_list, cluster_dicts, sim_dims):
     fig = plt.figure()
     ax = p3.Axes3D(fig)
     colours = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
     large_cluster = 30
     alphas = [0, 0.6]
-    stack_dict = {}
-    for dictionary in stack_dicts:
+    cluster_dict = {}
+    for dictionary in cluster_dicts:
         if dictionary is not None:
-            stack_dict.update(dictionary)
-    stack_lookup = {}
-    for chromo_ID, stack_ID in stack_dict.items():
-        if stack_ID not in stack_lookup.keys():
-            stack_lookup[stack_ID] = []
+            cluster_dict.update(dictionary)
+    cluster_lookup = {}
+    for chromo_ID, cluster_ID in cluster_dict.items():
+        if cluster_ID not in cluster_lookup.keys():
+            cluster_lookup[cluster_ID] = []
         else:
-            stack_lookup[stack_ID].append(chromophore_list[chromo_ID])
-    for stack_ID, chromos in stack_lookup.items():
+            cluster_lookup[cluster_ID].append(chromophore_list[chromo_ID])
+    for cluster_ID, chromos in cluster_lookup.items():
         for chromo in chromos:
             if chromo.species == 'donor':
                 ax.scatter(chromo.posn[0], chromo.posn[1], chromo.posn[2], facecolors='w',
-                           edgecolors=colours[stack_ID % 7], alpha=alphas[len(stack_lookup[stack_ID]) > large_cluster], s=40)
+                           edgecolors=colours[cluster_ID % 7], alpha=alphas[len(cluster_lookup[cluster_ID]) > large_cluster], s=40)
             elif chromo.species == 'acceptor':
-                ax.scatter(chromo.posn[0], chromo.posn[1], chromo.posn[2], c=colours[stack_ID % 7],
-                           edgecolors=None, alpha=alphas[len(stack_lookup[stack_ID]) > large_cluster], s=40)
+                ax.scatter(chromo.posn[0], chromo.posn[1], chromo.posn[2], c=colours[cluster_ID % 7],
+                           edgecolors=None, alpha=alphas[len(cluster_lookup[cluster_ID]) > large_cluster], s=40)
     # Draw boxlines
     # Varying X
     ax.plot([sim_dims[0][0], sim_dims[0][1]], [sim_dims[1][0], sim_dims[1][0]], [sim_dims[2][0], sim_dims[2][0]],
@@ -951,10 +951,10 @@ def plot_Stacks3D(output_dir, chromophore_list, stack_dicts, sim_dims):
     ax.set_xlim([sim_dims[0][0], sim_dims[0][1]])
     ax.set_ylim([sim_dims[1][0], sim_dims[1][1]])
     ax.set_zlim([sim_dims[2][0], sim_dims[2][1]])
-    # 03 for stacks (material agnostic)
-    plt.savefig(os.path.join(output_dir, '03_stacks.pdf'), bbox_inches='tight')
+    # 03 for clusters (material agnostic)
+    plt.savefig(os.path.join(output_dir, '03_clusters.pdf'), bbox_inches='tight')
     plt.close()
-    print("3D Stack figure saved as", os.path.join(output_dir, '03_stacks.pdf'))
+    print("3D cluster figure saved as", os.path.join(output_dir, '03_clusters.pdf'))
 
 
 def determine_molecule_IDs(CG_to_AAID_master, AA_morphology_dict, parameter_dict, chromophore_list):
@@ -1053,11 +1053,11 @@ def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name):
     print("Figure saved as", file_name)
 
 
-def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack_dicts, CG_to_mol_ID, data_dict,
+def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, cluster_dicts, CG_to_mol_ID, data_dict,
                              AA_morphology_dict):
     # Create all the empty lists we need
     hop_types = ['intra', 'inter']
-    hop_targets = ['stack', 'mol']
+    hop_targets = ['cluster', 'mol']
     hop_properties = ['rates', 'TIs']
     chromo_species = ['donor', 'acceptor']
     property_lists = {}
@@ -1115,21 +1115,21 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
                                                      delta_E * elementary_charge, prefactor, T, boltz_pen=boltz_pen)
             if chromo2.ID < chromo.ID:
                 continue
-            # Do intra- / inter- stacks
+            # Do intra- / inter- clusters
             if chromo.species == 'acceptor':
-                if stack_dicts[1][chromo.ID] == stack_dicts[1][chromo.neighbours[index][0]]:
-                    property_lists['intra_stack_rates_acceptor'].append(rate)
-                    property_lists['intra_stack_TIs_acceptor'].append(T_ij)
+                if cluster_dicts[1][chromo.ID] == cluster_dicts[1][chromo.neighbours[index][0]]:
+                    property_lists['intra_cluster_rates_acceptor'].append(rate)
+                    property_lists['intra_cluster_TIs_acceptor'].append(T_ij)
                 else:
-                    property_lists['inter_stack_rates_acceptor'].append(rate)
-                    property_lists['inter_stack_TIs_acceptor'].append(T_ij)
+                    property_lists['inter_cluster_rates_acceptor'].append(rate)
+                    property_lists['inter_cluster_TIs_acceptor'].append(T_ij)
             else:
-                if stack_dicts[0][chromo.ID] == stack_dicts[0][chromo.neighbours[index][0]]:
-                    property_lists['intra_stack_rates_donor'].append(rate)
-                    property_lists['intra_stack_TIs_donor'].append(T_ij)
+                if cluster_dicts[0][chromo.ID] == cluster_dicts[0][chromo.neighbours[index][0]]:
+                    property_lists['intra_cluster_rates_donor'].append(rate)
+                    property_lists['intra_cluster_TIs_donor'].append(T_ij)
                 else:
-                    property_lists['inter_stack_rates_donor'].append(rate)
-                    property_lists['inter_stack_TIs_donor'].append(T_ij)
+                    property_lists['inter_cluster_rates_donor'].append(rate)
+                    property_lists['inter_cluster_TIs_donor'].append(T_ij)
             # Now do intra- / inter- molecules
             if mol1ID == mol2ID:
                 if chromo.species == 'acceptor':
@@ -1146,48 +1146,48 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
                     property_lists['inter_mol_rates_donor'].append(rate)
                     property_lists['inter_mol_TIs_donor'].append(T_ij)
     # 10 for the donor mol TI, 11 for the acceptor mol TI, 12 for the donor
-    # stack TI, 13 for the acceptor stack TI, 14 for the donor mol kij,
-    # 15 for the acceptor mol kij, 16 for the donor stack kij, 17 for the
-    # acceptor stack kij
-    # Donor Stack Plots:
-    if (len(property_lists['intra_stack_rates_donor']) > 0) or (len(property_lists['inter_stack_rates_donor']) > 0):
-        print("Mean intra-stack donor rate =", np.mean(property_lists['intra_stack_rates_donor']), "+/-",
-              np.std(property_lists['intra_stack_rates_donor'])
-              / float(len(property_lists['intra_stack_rates_donor'])))
-        print("Mean inter-stack donor rate =", np.mean(property_lists['inter_stack_rates_donor']), "+/-",
-              np.std(property_lists['inter_stack_rates_donor'])
-              / float(len(property_lists['inter_stack_rates_donor'])))
-        plot_stacked_hist_rates(property_lists['intra_stack_rates_donor'], property_lists['inter_stack_rates_donor'],
-                                ['Intra-stack', 'Inter-stack'], 'donor',
-                                os.path.join(output_dir, '16_donor_hopping_rate_stacks.pdf'))
-        plot_stacked_hist_TIs(property_lists['intra_stack_TIs_donor'], property_lists['inter_stack_TIs_donor'],
-                              ['Intra-stack', 'Inter-stack'], 'donor',
-                              os.path.join(output_dir, '12_donor_transfer_integral_stacks.pdf'))
-    # Acceptor Stack Plots:
-    if (len(property_lists['intra_stack_rates_acceptor']) > 0)\
-       or (len(property_lists['inter_stack_rates_acceptor']) > 0):
-        print("Mean intra-stack acceptor rate =", np.mean(property_lists['intra_stack_rates_acceptor']), "+/-",
-              np.std(property_lists['intra_stack_rates_acceptor'])
-              / float(len(property_lists['intra_stack_rates_acceptor'])))
-        print("Mean inter-stack acceptor rate =", np.mean(property_lists['inter_stack_rates_acceptor']), "+/-",
-              np.std(property_lists['inter_stack_rates_acceptor'])
-              / float(len(property_lists['inter_stack_rates_acceptor'])))
-        plot_stacked_hist_rates(property_lists['intra_stack_rates_acceptor'],
-                                property_lists['inter_stack_rates_acceptor'], ['Intra-stack', 'Inter-stack'],
-                                'acceptor', os.path.join(output_dir, '17_acceptor_hopping_rate_stacks.pdf'))
-        plot_stacked_hist_TIs(property_lists['intra_stack_TIs_acceptor'], property_lists['inter_stack_TIs_acceptor'],
-                              ['Intra-stack', 'Inter-stack'], 'acceptor',
-                              os.path.join(output_dir, '13_acceptor_transfer_integral_stacks.pdf'))
+    # cluster TI, 13 for the acceptor cluster TI, 14 for the donor mol kij,
+    # 15 for the acceptor mol kij, 16 for the donor cluster kij, 17 for the
+    # acceptor cluster kij
+    # Donor cluster Plots:
+    if (len(property_lists['intra_cluster_rates_donor']) > 0) or (len(property_lists['inter_cluster_rates_donor']) > 0):
+        print("Mean intra-cluster donor rate =", np.mean(property_lists['intra_cluster_rates_donor']), "+/-",
+              np.std(property_lists['intra_cluster_rates_donor'])
+              / float(len(property_lists['intra_cluster_rates_donor'])))
+        print("Mean inter-cluster donor rate =", np.mean(property_lists['inter_cluster_rates_donor']), "+/-",
+              np.std(property_lists['inter_cluster_rates_donor'])
+              / float(len(property_lists['inter_cluster_rates_donor'])))
+        plot_clustered_hist_rates(property_lists['intra_cluster_rates_donor'], property_lists['inter_cluster_rates_donor'],
+                                ['Intra-cluster', 'Inter-cluster'], 'donor',
+                                os.path.join(output_dir, '16_donor_hopping_rate_clusters.pdf'))
+        plot_clustered_hist_TIs(property_lists['intra_cluster_TIs_donor'], property_lists['inter_cluster_TIs_donor'],
+                              ['Intra-cluster', 'Inter-cluster'], 'donor',
+                              os.path.join(output_dir, '12_donor_transfer_integral_clusters.pdf'))
+    # Acceptor cluster Plots:
+    if (len(property_lists['intra_cluster_rates_acceptor']) > 0)\
+       or (len(property_lists['inter_cluster_rates_acceptor']) > 0):
+        print("Mean intra-cluster acceptor rate =", np.mean(property_lists['intra_cluster_rates_acceptor']), "+/-",
+              np.std(property_lists['intra_cluster_rates_acceptor'])
+              / float(len(property_lists['intra_cluster_rates_acceptor'])))
+        print("Mean inter-cluster acceptor rate =", np.mean(property_lists['inter_cluster_rates_acceptor']), "+/-",
+              np.std(property_lists['inter_cluster_rates_acceptor'])
+              / float(len(property_lists['inter_cluster_rates_acceptor'])))
+        plot_clustered_hist_rates(property_lists['intra_cluster_rates_acceptor'],
+                                property_lists['inter_cluster_rates_acceptor'], ['Intra-cluster', 'Inter-cluster'],
+                                'acceptor', os.path.join(output_dir, '17_acceptor_hopping_rate_clusters.pdf'))
+        plot_clustered_hist_TIs(property_lists['intra_cluster_TIs_acceptor'], property_lists['inter_cluster_TIs_acceptor'],
+                              ['Intra-cluster', 'Inter-cluster'], 'acceptor',
+                              os.path.join(output_dir, '13_acceptor_transfer_integral_clusters.pdf'))
     # Donor Mol Plots:
     if (len(property_lists['intra_mol_rates_donor']) > 0) or (len(property_lists['inter_mol_rates_donor']) > 0):
         print("Mean intra-molecular donor rate =", np.mean(property_lists['intra_mol_rates_donor']), "+/-",
               np.std(property_lists['intra_mol_rates_donor']) / float(len(property_lists['intra_mol_rates_donor'])))
         print("Mean inter-molecular donor rate =", np.mean(property_lists['inter_mol_rates_donor']), "+/-",
               np.std(property_lists['inter_mol_rates_donor']) / float(len(property_lists['inter_mol_rates_donor'])))
-        plot_stacked_hist_rates(property_lists['intra_mol_rates_donor'], property_lists['inter_mol_rates_donor'],
+        plot_clustered_hist_rates(property_lists['intra_mol_rates_donor'], property_lists['inter_mol_rates_donor'],
                                 ['Intra-mol', 'Inter-mol'], 'donor', os.path.join(output_dir,
                                                                                   '14_donor_hopping_rate_mols.pdf'))
-        plot_stacked_hist_TIs(property_lists['intra_mol_TIs_donor'], property_lists['inter_mol_TIs_donor'],
+        plot_clustered_hist_TIs(property_lists['intra_mol_TIs_donor'], property_lists['inter_mol_TIs_donor'],
                               ['Intra-mol', 'Inter-mol'], 'donor', os.path.join(output_dir,
                                                                                 '10_donor_transfer_integral_mols.pdf'))
     # Acceptor Mol Plots:
@@ -1198,10 +1198,10 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
         print("Mean inter-molecular acceptor rate =", np.mean(property_lists['inter_mol_rates_acceptor']), "+/-",
               np.std(property_lists['inter_mol_rates_acceptor'])
               / float(len(property_lists['inter_mol_rates_acceptor'])))
-        plot_stacked_hist_rates(property_lists['intra_mol_rates_acceptor'], property_lists['inter_mol_rates_acceptor'],
+        plot_clustered_hist_rates(property_lists['intra_mol_rates_acceptor'], property_lists['inter_mol_rates_acceptor'],
                                 ['Intra-mol', 'Inter-mol'], 'acceptor',
                                 os.path.join(output_dir, '15_acceptor_hopping_rate_mols.pdf'))
-        plot_stacked_hist_TIs(property_lists['intra_mol_TIs_acceptor'], property_lists['inter_mol_TIs_acceptor'],
+        plot_clustered_hist_TIs(property_lists['intra_mol_TIs_acceptor'], property_lists['inter_mol_TIs_acceptor'],
                               ['Intra-mol', 'Inter-mol'], 'acceptor',
                               os.path.join(output_dir, '11_acceptor_transfer_integral_mols.pdf'))
     # Update the dataDict
@@ -1222,7 +1222,7 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, stack
     return data_dict
 
 
-def plot_stacked_hist_rates(data1, data2, labels, data_type, file_name):
+def plot_clustered_hist_rates(data1, data2, labels, data_type, file_name):
     plt.figure()
     (n, bins, patches) = plt.hist([data1, data2], bins=np.logspace(1, 18, 40), stacked=True, color=['r', 'b'],
                                   label=labels)
@@ -1238,7 +1238,7 @@ def plot_stacked_hist_rates(data1, data2, labels, data_type, file_name):
     print("Figure saved as", file_name)
 
 
-def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name):
+def plot_clustered_hist_TIs(data1, data2, labels, data_type, file_name):
     plt.figure()
     (n, bins, patches) = plt.hist([data1, data2], bins=np.linspace(0, 1.2, 20), stacked=True, color=['r', 'b'],
                                   label=labels)
@@ -1367,7 +1367,7 @@ def calculate_mobility(directory, current_carrier_type, times, MSDs, time_standa
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--three_D", action="store_true", required=False,
-                        help=("If present, use matplotlib to plot the 3D graphs (3D network, anisotropy and stack"
+                        help=("If present, use matplotlib to plot the 3D graphs (3D network, anisotropy and cluster"
                               " positions. This takes a while (usually a couple of minutes) to plot."
                               " Default = False"))
     parser.add_argument("-s", "--sequence", type=lambda s: [float(item) for item in s.split(',')], default=None,
@@ -1495,12 +1495,12 @@ def main():
         #args.ticut_acceptor = 0.25
         ###
 
-        stack_dicts = get_stacks(chromophore_list, morphology_shape, args.ocut_donor, args.ocut_acceptor, args.ticut_donor, args.ticut_acceptor, CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict)
-        #print("DEBUG LINE, 3D IGNORED FOR STACK PLOT")
-        #plot_Stacks3D(temp_dir, chromophore_list, stack_dicts, sim_dims)
+        cluster_dicts = get_clusters(chromophore_list, morphology_shape, args.ocut_donor, args.ocut_acceptor, args.ticut_donor, args.ticut_acceptor, CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict)
+        #print("DEBUG LINE, 3D IGNORED FOR cluster PLOT")
+        #plot_clusters3D(temp_dir, chromophore_list, cluster_dicts, sim_dims)
         if args.three_D:
-            plot_Stacks3D(temp_dir, chromophore_list, stack_dicts, sim_dims)
-        data_dict = plot_mixed_hopping_rates(temp_dir, chromophore_list, parameter_dict, stack_dicts, CG_to_mol_ID,
+            plot_clusters3D(temp_dir, chromophore_list, cluster_dicts, sim_dims)
+        data_dict = plot_mixed_hopping_rates(temp_dir, chromophore_list, parameter_dict, cluster_dicts, CG_to_mol_ID,
                                              data_dict, AA_morphology_dict)
         print("\n")
         print("Writing CSV Output File...")
