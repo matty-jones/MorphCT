@@ -143,7 +143,8 @@ def create_array_for_plot_connections(chromophore_list, carrier_history, sim_dim
 
                 # Append the array if the net times travelled is greater than 0
                 if times_travelled > 0:
-                    datum = np.hstack((chromo.posn, vector, np.array([np.log10(times_travelled)])))
+                    datum = np.hstack((chromo.posn, vector, np.array(times_travelled)))
+                    #datum = np.hstack((chromo.posn, vector, np.array([np.log10(times_travelled)])))
                     connections_array = np.vstack((connections_array, datum))
     return connections_array[1:]  # Return the array excluding the zeros first line.
 
@@ -190,8 +191,9 @@ def plot_connections(chromophore_list, sim_dims, carrier_history, directory, car
 
     # Plot the color bar
     scalar_map.set_array(connections_array[:, 6])
-    tick_location = np.arange(0, int(vmax) + 1, 1)
-    fig.colorbar(scalar_map, ticks=tick_location, shrink=0.8, aspect=20)
+    tick_location = np.arange(0, np.ceil(int(np.log10(vmax))) + 1, 1)
+    cbar = fig.colorbar(scalar_map, ticks=tick_location, shrink=0.8, aspect=20)
+    cbar.ax.set_yticklabels([r'10$^{{{}}}$'.format(int(x)) for x in tick_location])
 
     # Draw boxlines
     # Varying X
@@ -618,7 +620,9 @@ def get_stacks(chromophore_list, morphology_shape, ocut_off_donor,
         cluster_freq = {}
         for cluster_ID in set(clusters_list):
             cluster_freq[cluster_ID] = clusters_list.count(cluster_ID)
-        print("Detected", len([key for key, val in cluster_freq.items() if val > 30]), "clusters in total with size > 30.")
+        print("----------====================----------")
+        print("Detected", len([key for key, val in cluster_freq.items() if val > 30]), material_type, "clusters in total with size > 30.")
+        print("----------====================----------")
         cluster_dicts.append(cluster_dict)
     return cluster_dicts
 
@@ -1321,13 +1325,30 @@ def combine_results_pickles(directory, pickle_files):
     print("Complete data written to", directory + "/KMC_results.pickle.")
 
 
-def plot_frequency_dist(carrier_history):
+def plot_frequency_dist(directory, carrier_type, carrier_history):
+    carrier_types = ['hole', 'electron']
     non_zero_indices = carrier_history.nonzero()
-    frequencies = [carrier_history[coords] for coords in list(zip(non_zero_indices[0], non_zero_indices[1]))]
+    coordinates = list(zip(non_zero_indices[0], non_zero_indices[1]))
+    frequencies = []
+    for coords in coordinates:
+        frequency = np.abs(carrier_history[coords] - carrier_history[coords[::-1]])
+        if frequency > 10:
+            frequencies.append(np.log10(frequency))
+    print(np.max(frequencies))
     plt.figure()
-    plt.hist(frequencies)
-    plt.show()
-    exit()
+    plt.hist(frequencies, bins=100, color='b')
+    plt.xlabel("".join(["Net ", carrier_type, "hops (Arb. U.)"]))
+    ax = plt.gca()
+    tick_labels = np.arange(1, np.ceil(np.max(frequencies)) + 1, 1)
+    print(tick_labels)
+    plt.xlim([1, np.ceil(np.max(frequencies))])
+    plt.xticks(tick_labels, [r'10$^{{{}}}$'.format(int(x)) for x in tick_labels])
+    plt.ylabel("Frequency (Arb. U.)")
+    # 24 for hole hop frequency dist, 25 for electron hop frequency dist
+    file_name = ''.join(['{:02}_hop_freq_'.format(24 + carrier_types.index(carrier_type)), carrier_type, '.pdf'])
+    plt.savefig(os.path.join(directory, 'figures', file_name))
+    plt.clf()
+    print("Figure saved as", os.path.join(directory, "figures", file_name))
 
 
 def calculate_mobility(directory, current_carrier_type, times, MSDs, time_standard_errors, MSD_standard_errors):
@@ -1442,13 +1463,12 @@ def main():
             print("Considering the transport of", current_carrier_type + "...")
             print("Obtaining mean squared displacements...")
             carrier_history, times, MSDs, time_standard_errors, MSD_standard_errors = get_carrier_data(carrier_data)
-            ## TESTING
-            plot_frequency_dist(carrier_history)
-            ###
             print("Calculating Mobility...")
             mobility, mob_error, r_squared = calculate_mobility(directory, current_carrier_type, times, MSDs, time_standard_errors, MSD_standard_errors)
             print("Calculating carrier trajectory anisotropy...")
             anisotropy = plot_anisotropy(carrier_data, directory, sim_dims, current_carrier_type, args.three_D)
+            print("Plotting carrier hop frequency distribution...")
+            plot_frequency_dist(directory, current_carrier_type, carrier_history)
             if (carrier_history is not None) and args.three_D:
                 print("Determining carrier hopping connections (network graph)...")
                 plot_connections(chromophore_list, sim_dims, carrier_history, directory, current_carrier_type)
