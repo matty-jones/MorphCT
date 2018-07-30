@@ -861,28 +861,6 @@ def obtain_electronic_species(chromophore_CG_sites, CG_site_types, CG_to_species
     return electronically_active_sites, current_chromophore_species
 
 
-
-def create_neighbour_list(chromophore_list, morphology_shape, cut_off, periodic, material_type):
-    neighbour_dict = {}
-    for chromo1 in chromophore_list:
-        for [chromo2ID, rel_image] in chromo1.neighbours:
-            if periodic is False:
-                if not np.array_equal(rel_image, [0, 0, 0]):
-                    continue
-            if chromo1.species != material_type:
-                continue
-            chromo1posn = chromo1.posn
-            chromo2posn = np.array(chromophore_list[chromo2ID].posn)\
-                + (np.array(rel_image) * np.array(morphology_shape))
-            separation = np.linalg.norm(chromo2posn - chromo1posn)
-            if separation < cut_off:
-                if chromo1.ID in neighbour_dict.keys():
-                    neighbour_dict[chromo1.ID].append(chromo2ID)
-                else:
-                    neighbour_dict[chromo1.ID] = [chromo2ID]
-    return neighbour_dict
-
-
 def update_cluster(atom_ID, cluster_list, neighbour_dict):
     try:
         for neighbour in neighbour_dict[atom_ID]:
@@ -1335,13 +1313,11 @@ def plot_frequency_dist(directory, carrier_type, carrier_history):
         frequency = np.abs(carrier_history[coords] - carrier_history[coords[::-1]])
         if frequency > 10:
             frequencies.append(np.log10(frequency))
-    print(np.max(frequencies))
     plt.figure()
     plt.hist(frequencies, bins=100, color='b')
     plt.xlabel("".join(["Net ", carrier_type, "hops (Arb. U.)"]))
     ax = plt.gca()
     tick_labels = np.arange(1, np.ceil(np.max(frequencies)) + 1, 1)
-    print(tick_labels)
     plt.xlim([1, np.ceil(np.max(frequencies))])
     plt.xticks(tick_labels, [r'10$^{{{}}}$'.format(int(x)) for x in tick_labels])
     plt.ylabel("Frequency (Arb. U.)")
