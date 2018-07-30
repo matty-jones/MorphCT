@@ -143,8 +143,7 @@ def create_array_for_plot_connections(chromophore_list, carrier_history, sim_dim
 
                 # Append the array if the net times travelled is greater than 0
                 if times_travelled > 0:
-                    datum = np.hstack((chromo.posn, vector, np.array(times_travelled)))
-                    #datum = np.hstack((chromo.posn, vector, np.array([np.log10(times_travelled)])))
+                    datum = np.hstack((chromo.posn, vector, np.array([np.log10(times_travelled)])))
                     connections_array = np.vstack((connections_array, datum))
     return connections_array[1:]  # Return the array excluding the zeros first line.
 
@@ -170,9 +169,9 @@ def plot_connections(chromophore_list, sim_dims, carrier_history, directory, car
     vmax = np.max(np.array(connections_array)[:, 6])
 
     # Set up the color bar.
-    plasma = plt.get_cmap('plasma')
-    c_norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
-    scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=plasma)
+    colour_map = plt.get_cmap('inferno')
+    c_norm = matplotlib.colors.Normalize(vmin=np.floor(vmin), vmax=np.ceil(vmax))
+    scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=colour_map)
     hopcolors = scalar_map.to_rgba(connections_array[:, 6])
 
     # Set up the intensity for the hops so more travelled paths are more intense
@@ -191,7 +190,7 @@ def plot_connections(chromophore_list, sim_dims, carrier_history, directory, car
 
     # Plot the color bar
     scalar_map.set_array(connections_array[:, 6])
-    tick_location = np.arange(0, np.ceil(int(np.log10(vmax))) + 1, 1)
+    tick_location = np.arange(0, int(np.ceil(vmax)) + 1, 1)
     cbar = fig.colorbar(scalar_map, ticks=tick_location, shrink=0.8, aspect=20)
     cbar.ax.set_yticklabels([r'10$^{{{}}}$'.format(int(x)) for x in tick_location])
 
@@ -596,6 +595,8 @@ def get_clusters(chromophore_list, morphology_shape, ocut_off_donor,
     ticut_offs = [ticut_off_donor, ticut_off_acceptor]
     materials_to_check = ['donor', 'acceptor']
     cluster_dicts = []
+    clusters_total = [0, 0]
+    clusters_large = [0, 0]
     for type_index, material_type in enumerate(materials_to_check):
         print("Examining the", material_type, "material...")
         positions = np.array([chromo.posn for chromo in chromophore_list
@@ -620,11 +621,13 @@ def get_clusters(chromophore_list, morphology_shape, ocut_off_donor,
         cluster_freq = {}
         for cluster_ID in set(clusters_list):
             cluster_freq[cluster_ID] = clusters_list.count(cluster_ID)
+        clusters_total[index] = len([key for key, val in cluster_freq.items()])
+        clusters_large[index] = len([key for key, val in cluster_freq.items() if val > 30])
         print("----------====================----------")
         print("Detected", len([key for key, val in cluster_freq.items() if val > 30]), material_type, "clusters in total with size > 30.")
         print("----------====================----------")
         cluster_dicts.append(cluster_dict)
-    return cluster_dicts
+    return cluster_dicts, clusters_total, clusters_large
 
 
 def make_clusters(n_list):
@@ -638,11 +641,9 @@ def make_clusters(n_list):
         c_list - cluster list
     """
     sys.setrecursionlimit(int(5e4))
-    print("Creating Clusters.")
     c_list = [i for i in range(len(n_list))]
     for i in range(len(c_list)):
         n_list, c_list = update_neighbors(i, c_list, n_list)
-    print("Done.")
     return c_list
 
 
@@ -896,7 +897,7 @@ def update_cluster(atom_ID, cluster_list, neighbour_dict):
     return cluster_list
 
 
-def plot_clusters3D(output_dir, chromophore_list, cluster_dicts, sim_dims):
+def plot_clusters_3D(output_dir, chromophore_list, cluster_dicts, sim_dims):
     fig = plt.figure()
     ax = p3.Axes3D(fig)
     colours = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
@@ -1487,20 +1488,14 @@ def main():
         CG_to_mol_ID = determine_molecule_IDs(CG_to_AAID_master, AA_morphology_dict, parameter_dict, chromophore_list)
         data_dict = plot_energy_levels(temp_dir, chromophore_list, data_dict)
         plot_neighbour_hist(chromophore_list, CG_to_mol_ID, morphology_shape, temp_dir)
-
-        ### TEMP DEBUG
-        #args.ocut_donor = 30
-        #args.ocut_acceptor = 30
-        #args.ticut_donor = 0.25
-        #args.ticut_acceptor = 0.25
-        ###
-
-        cluster_dicts = get_clusters(chromophore_list, morphology_shape, args.ocut_donor, args.ocut_acceptor, args.ticut_donor, args.ticut_acceptor, CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict)
-        #print("DEBUG LINE, 3D IGNORED FOR cluster PLOT")
-        #plot_clusters3D(temp_dir, chromophore_list, cluster_dicts, sim_dims)
+        cluster_dicts, clusters_total, clusters_large = get_clusters(chromophore_list, morphology_shape, args.ocut_donor, args.ocut_acceptor, args.ticut_donor, args.ticut_acceptor, CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict)
+        data_dict["total_donor_clusters"] = clusters_total[0]
+        data_dict["total_acceptor_clusters"] = clusters_total[1]
+        data_dict["large_donor_clusters"] = clusters_large[0]
+        data_dict["large_acceptor_clusters"] = clusters_large[1]
         if args.three_D:
             print("Plotting 3D cluster location plot...")
-            plot_clusters3D(temp_dir, chromophore_list, cluster_dicts, sim_dims)
+            plot_clusters_3D(temp_dir, chromophore_list, cluster_dicts, sim_dims)
         data_dict = plot_mixed_hopping_rates(temp_dir, chromophore_list, parameter_dict, cluster_dicts, CG_to_mol_ID,
                                              data_dict, AA_morphology_dict)
         print("Writing CSV Output File...")
