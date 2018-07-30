@@ -1321,26 +1321,26 @@ def combine_results_pickles(directory, pickle_files):
     print("Complete data written to", directory + "/KMC_results.pickle.")
 
 
-def calculate_mobility(directory, current_carrier_type, carrier_data, sim_dims, plot3D_graphs, chromophore_list):
-    print("Considering the transport of", current_carrier_type + "...")
-    print("Obtaining mean squared displacements...")
-    carrier_history, times, MSDs, time_standard_errors, MSD_standard_errors = get_carrier_data(carrier_data)
-    print("MSDs obtained")
+def plot_frequency_dist(carrier_history):
+    non_zero_indices = carrier_history.nonzero()
+    frequencies = [carrier_history[coords] for coords in list(zip(non_zero_indices[0], non_zero_indices[1]))]
+    plt.figure()
+    plt.hist(frequencies)
+    plt.show()
+    exit()
+
+
+def calculate_mobility(directory, current_carrier_type, times, MSDs, time_standard_errors, MSD_standard_errors):
     # Create the first figure that will be replotted each time
     plt.figure()
-    anisotropy = plot_anisotropy(carrier_data, directory, sim_dims, current_carrier_type, plot3D_graphs)
-    if (carrier_history is not None) and plot3D_graphs:
-        print("Determining carrier hopping connections...")
-        plot_connections(chromophore_list, sim_dims, carrier_history, directory, current_carrier_type)
     times, MSDs = hf.parallel_sort(times, MSDs)
-    print("Calculating MSD...")
     mobility, mob_error, r_squared = plot_MSD(times, MSDs, time_standard_errors, MSD_standard_errors, directory,
                                               current_carrier_type)
     print("----------====================----------")
     print(current_carrier_type.capitalize(), "mobility for", directory,
           "= %.2E +- %.2E cm^{2} V^{-1} s^{-1}" % (mobility, mob_error))
     print("----------====================----------")
-    return mobility, mob_error, r_squared, anisotropy
+    return mobility, mob_error, r_squared
 
 
 def main():
@@ -1439,9 +1439,19 @@ def main():
             complete_carrier_data.append(carrier_data_electrons)
         for carrier_type_index, carrier_data in enumerate(complete_carrier_data):
             current_carrier_type = complete_carrier_types[carrier_type_index]
-            mobility, mob_error, r_squared, anisotropy = calculate_mobility(directory, current_carrier_type,
-                                                                            carrier_data, sim_dims, args.three_D,
-                                                                            chromophore_list)
+            print("Considering the transport of", current_carrier_type + "...")
+            print("Obtaining mean squared displacements...")
+            carrier_history, times, MSDs, time_standard_errors, MSD_standard_errors = get_carrier_data(carrier_data)
+            ## TESTING
+            plot_frequency_dist(carrier_history)
+            ###
+            print("Calculating Mobility...")
+            mobility, mob_error, r_squared = calculate_mobility(directory, current_carrier_type, times, MSDs, time_standard_errors, MSD_standard_errors)
+            print("Calculating carrier trajectory anisotropy...")
+            anisotropy = plot_anisotropy(carrier_data, directory, sim_dims, current_carrier_type, args.three_D)
+            if (carrier_history is not None) and args.three_D:
+                print("Determining carrier hopping connections (network graph)...")
+                plot_connections(chromophore_list, sim_dims, carrier_history, directory, current_carrier_type)
             if current_carrier_type == 'hole':
                 hole_anisotropy_data.append(anisotropy)
                 hole_mobility_data.append([mobility, mob_error])
@@ -1461,13 +1471,13 @@ def main():
         ### TEMP DEBUG
         #args.ocut_donor = 30
         #args.ocut_acceptor = 30
-        args.ticut_donor = 0.25
-        args.ticut_acceptor = 0.25
+        #args.ticut_donor = 0.25
+        #args.ticut_acceptor = 0.25
         ###
 
         stack_dicts = get_stacks(chromophore_list, morphology_shape, args.ocut_donor, args.ocut_acceptor, args.ticut_donor, args.ticut_acceptor, CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict)
-        print("DEBUG LINE, 3D IGNORED FOR STACK PLOT")
-        plot_Stacks3D(temp_dir, chromophore_list, stack_dicts, sim_dims)
+        #print("DEBUG LINE, 3D IGNORED FOR STACK PLOT")
+        #plot_Stacks3D(temp_dir, chromophore_list, stack_dicts, sim_dims)
         if args.three_D:
             plot_Stacks3D(temp_dir, chromophore_list, stack_dicts, sim_dims)
         data_dict = plot_mixed_hopping_rates(temp_dir, chromophore_list, parameter_dict, stack_dicts, CG_to_mol_ID,
