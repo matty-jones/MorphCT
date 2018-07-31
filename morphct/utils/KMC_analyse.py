@@ -95,6 +95,9 @@ def get_carrier_data(carrier_data):
         # Also keep track of whether each carrier is a hole or an electron
         total_data_points_averaged_over += 1
         total_data_points += 1
+    if total_data_points > total_data_points_averaged_over:
+        print("Notice: The data from", total_data_points - total_data_points_averaged_over, "carriers was discarded"
+              "due to the carrier lifetime being more than double (or less than half of) the specified carrier lifetime.")
     times = []
     MSDs = []
     time_standard_errors = []
@@ -105,6 +108,17 @@ def get_carrier_data(carrier_data):
         MSDs.append(np.average(disps))
         MSD_standard_errors.append(np.std(disps) / len(disps))
     return carrier_history, times, MSDs, time_standard_errors, MSD_standard_errors
+
+
+def plot_displacement_dist(carrier_data, directory, carrier_type):
+    carrier_types = ['hole', 'electron']
+    plt.figure()
+    plt.hist(np.array(carrier_data['displacement']) * 0.1, bins=60, color='b')
+    plt.xlabel("Displacement (nm)")
+    plt.ylabel("Frequency (Arb. U.)")
+    # 26 for hole displacement dist, 27 for electron displacement dist
+    file_name = ''.join(['{:02}_'.format(26 + carrier_types.index(carrier_type)), carrier_type, '_displacement_dist.pdf'])
+    plt.savefig(os.path.join(directory, 'figures', file_name))
 
 
 def create_array_for_plot_connections(chromophore_list, carrier_history, sim_dims):
@@ -621,8 +635,8 @@ def get_clusters(chromophore_list, morphology_shape, ocut_off_donor,
         cluster_freq = {}
         for cluster_ID in set(clusters_list):
             cluster_freq[cluster_ID] = clusters_list.count(cluster_ID)
-        clusters_total[index] = len([key for key, val in cluster_freq.items()])
-        clusters_large[index] = len([key for key, val in cluster_freq.items() if val > 30])
+        clusters_total[type_index] = len([key for key, val in cluster_freq.items()])
+        clusters_large[type_index] = len([key for key, val in cluster_freq.items() if val > 30])
         print("----------====================----------")
         print("Detected", len([key for key, val in cluster_freq.items() if val > 30]), material_type, "clusters in total with size > 30.")
         print("----------====================----------")
@@ -1314,7 +1328,7 @@ def plot_frequency_dist(directory, carrier_type, carrier_history):
         if frequency > 10:
             frequencies.append(np.log10(frequency))
     plt.figure()
-    plt.hist(frequencies, bins=100, color='b')
+    plt.hist(frequencies, bins=60, color='b')
     plt.xlabel("".join(["Net ", carrier_type, "hops (Arb. U.)"]))
     ax = plt.gca()
     tick_labels = np.arange(1, np.ceil(np.max(frequencies)) + 1, 1)
@@ -1403,7 +1417,7 @@ def main():
     for directory in directory_list:
         # Create the figures directory if it doesn't already exist
         os.makedirs(directory + '/figures', exist_ok=True)
-        # Now create the data dictionary
+        # Load in all the required data
         data_dict = {}
         print("\n")
         print("Getting carrier data...")
@@ -1426,6 +1440,7 @@ def main():
         print("Chromophore_list obtained")
         morphology_shape = np.array([AA_morphology_dict[axis] for axis in ['lx', 'ly', 'lz']])
         sim_dims = [[-AA_morphology_dict[axis] / 2.0, AA_morphology_dict[axis] / 2.0] for axis in ['lx', 'ly', 'lz']]
+
         # Calculate the mobilities
         complete_carrier_types = []
         complete_carrier_data = []
@@ -1440,7 +1455,10 @@ def main():
             print("Considering the transport of", current_carrier_type + "...")
             print("Obtaining mean squared displacements...")
             carrier_history, times, MSDs, time_standard_errors, MSD_standard_errors = get_carrier_data(carrier_data)
-            print("Calculating Mobility...")
+            print("Plotting distribution of carrier displacements")
+            plot_displacement_dist(carrier_data, directory, current_carrier_type)
+
+            print("Calculating mobility...")
             mobility, mob_error, r_squared = calculate_mobility(directory, current_carrier_type, times, MSDs, time_standard_errors, MSD_standard_errors)
             print("Calculating carrier trajectory anisotropy...")
             anisotropy = plot_anisotropy(carrier_data, directory, sim_dims, current_carrier_type, args.three_D)
