@@ -1,3 +1,4 @@
+import copy
 import os
 import sys
 import pickle
@@ -12,6 +13,8 @@ import glob
 import re
 import argparse
 import copy
+from scipy.signal import argrelextrema
+from scipy.ndimage import gaussian_filter
 
 
 plt = None
@@ -120,6 +123,28 @@ def plot_displacement_dist(carrier_data, directory, carrier_type):
     file_name = ''.join(['{:02}_'.format(30 + carrier_types.index(carrier_type)), carrier_type, '_displacement_dist.pdf'])
     plt.savefig(os.path.join(directory, 'figures', file_name))
     print("Figure saved as", os.path.join(directory, "figures", file_name))
+
+
+def plot_cluster_size_dist(cluster_freqs, directory):
+    carrier_types = ['hole', 'electron']
+    for carrier_type_index, carrier_type in enumerate(carrier_types):
+        try:
+            sizes = list(cluster_freqs[carrier_type_index].values())
+            sizes = [np.log10(size) for size in sizes if size > 5]
+        except IndexError:
+            return
+        plt.figure()
+        plt.hist(sizes, bins=np.logspace(0, np.ceil(np.max(sizes)), 20), color='b')
+        plt.xlabel("Cluster Size (Arb. U.)")
+        plt.ylabel("Frequency (Arb. U.)")
+        plt.xscale("log")
+        # tick_labels = np.arange(0, np.ceil(np.max(sizes)) + 1, 1)
+        plt.xlim([0, 10**(np.ceil(np.max(sizes)))])
+        # plt.xticks(tick_labels, [r'10$^{{{}}}$'.format(int(x)) for x in tick_labels])
+        # 32 for hole cluster size dist, 33 for electron cluster size dist
+        file_name = ''.join(['{:02}_'.format(32 + carrier_types.index(carrier_type)), carrier_type, '_cluster_dist.pdf'])
+        plt.savefig(os.path.join(directory, 'figures', file_name))
+        print("Figure saved as", os.path.join(directory, "figures", file_name))
 
 
 def create_array_for_plot_connections(chromophore_list, carrier_history, sim_dims):
@@ -234,7 +259,8 @@ def plot_connections(chromophore_list, sim_dims, carrier_history, directory, car
 
     # Make the colour bar
     scalar_map.set_array(connections_array[:, 6])
-    tick_location = np.arange(0, int(np.ceil(vmax)) + 1, 1)
+    #tick_location = np.arange(0, int(np.ceil(vmax)) + 1, 1)
+    tick_location = np.arange(0, vmax, 1)
     # Plot the colour bar
     cbar = plt.colorbar(scalar_map, ticks=tick_location, shrink=0.8, aspect=20)#, fraction=0.046, pad=0.04)
     cbar.ax.set_yticklabels([r'10$^{{{}}}$'.format(int(x)) for x in tick_location])
@@ -613,6 +639,7 @@ def get_clusters(chromophore_list, carrier_history_dict, morphology_shape, o_cut
     hop_cut_offs = [hop_cut_off_donor, hop_cut_off_acceptor]
     materials_to_check = ['donor', 'acceptor']
     carriers_to_check = ['hole', 'electron']
+    cluster_freqs = []
     cluster_dicts = []
     clusters_total = [0, 0]
     clusters_large = [0, 0]
@@ -645,10 +672,13 @@ def get_clusters(chromophore_list, carrier_history_dict, morphology_shape, o_cut
         clusters_total[type_index] = len([key for key, val in cluster_freq.items()])
         clusters_large[type_index] = len([key for key, val in cluster_freq.items() if val > 30])
         print("----------====================----------")
-        print("Detected", len([key for key, val in cluster_freq.items() if val > 30]), material_type, "clusters in total with size > 30.")
+        print("Detected", clusters_total[type_index], material_type, "clusters in total.")
+        print("Detected", clusters_large[type_index], material_type, "clusters with size > 30.")
+        print("Largest cluster size =", np.max(list(cluster_freq.values())), "chromophores.")
         print("----------====================----------")
         cluster_dicts.append(cluster_dict)
-    return cluster_dicts, clusters_total, clusters_large
+        cluster_freqs.append(cluster_freq)
+    return cluster_dicts, cluster_freqs, clusters_total, clusters_large
 
 
 def make_clusters(n_list):
@@ -1331,7 +1361,7 @@ def combine_results_pickles(directory, pickle_files):
     print("Complete data written to", directory + "/KMC_results.pickle.")
 
 
-def plot_frequency_dist(directory, carrier_type, carrier_history):
+def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
     carrier_types = ['hole', 'electron']
     non_zero_indices = carrier_history.nonzero()
     coordinates = list(zip(non_zero_indices[0], non_zero_indices[1]))
@@ -1343,7 +1373,21 @@ def plot_frequency_dist(directory, carrier_type, carrier_history):
         frequency = carrier_history[coords]
         frequencies.append(np.log10(frequency))
     plt.figure()
-    plt.hist(frequencies, bins=60, color='b')
+    n, bin_edges, _ = plt.hist(frequencies, bins=60, color='b')
+    bin_centres = (bin_edges[1:] + bin_edges[:-1]) / 2.0
+    smoothed_n = gaussian_filter(n, 1.0)
+    plt.plot(bin_centres, smoothed_n, color='r')
+    if cut_off is None:
+        try:
+            minima = argrelextrema(smoothed_n, np.less)[0]
+            final_minimum = minima[-1]
+            cut_off = 10**bin_centres[final_minimum]
+            print("Cluster cut-off based on hop frequency set to", cut_off)
+        except IndexError:
+            print("EXCEPTION: No minima found in frequency distribution. Setting cut_off to None.")
+            cut_off = None
+    if cut_off is not None:
+        plt.axvline(np.log10(cut_off), c='k')
     plt.xlabel("".join(["Total ", carrier_type, " hops (Arb. U.)"]))
     ax = plt.gca()
     tick_labels = np.arange(0, np.ceil(np.max(frequencies)) + 1, 1)
@@ -1355,6 +1399,7 @@ def plot_frequency_dist(directory, carrier_type, carrier_history):
     plt.savefig(os.path.join(directory, 'figures', file_name))
     plt.clf()
     print("Figure saved as", os.path.join(directory, "figures", file_name))
+    return cut_off
 
 
 def plot_net_frequency_dist(directory, carrier_type, carrier_history):
@@ -1478,14 +1523,12 @@ def main():
                         help=("Specify the hopping frequency cut-off for the donor material for determining"
                               " which chromophores belong to the same cluster. Chromophores connected by fewer than"
                               " hop_cut_donor total hops in the KMC simulation will be considered as different crystals. Default"
-                              " = None (if no cut-offs are specified, then the entire chromophore neighbourlist will be"
-                              " considered in the same crystal (likely identifying a single crystal in the morphology)."))
+                              " = final minimum of the total hop frequency distribution"))
     parser.add_argument("-cha", "--hop_cut_acceptor", default=None, required=False, type=float,
                         help=("Specify the hopping frequency cut-off for the acceptor material for determining"
                               " which chromophores belong to the same cluster. Chromophores connected by fewer than"
                               " hop_cut_acceptor total hops in the KMC simulation will be considered as different crystals. Default"
-                              " = None (if no cut-offs are specified, then the entire chromophore neighbourlist will be"
-                              " considered in the same crystal (likely identifying a single crystal in the morphology)."))
+                              " = final minimum of the total hop frequency distribution"))
     # parser.add_argument("-crd", "--sep_cut_donor", default=None, required=False, type=float,
     #                     help=("Specify the separation cut-off (in sigma) for the donor material for determining"
     #                           " which chromophores belong to the same cluster. Chromophores with separation"
@@ -1558,6 +1601,8 @@ def main():
             complete_carrier_types.append('electron')
             complete_carrier_data.append(carrier_data_electrons)
         carrier_history_dict = {}
+        freq_cut_off_donor = args.hop_cut_donor
+        freq_cut_off_acceptor = args.hop_cut_acceptor
         for carrier_type_index, carrier_data in enumerate(complete_carrier_data):
             current_carrier_type = complete_carrier_types[carrier_type_index]
             print("Considering the transport of", current_carrier_type + "...")
@@ -1572,7 +1617,10 @@ def main():
             print("Calculating carrier trajectory anisotropy...")
             anisotropy = plot_anisotropy(carrier_data, directory, sim_dims, current_carrier_type, args.three_D)
             print("Plotting carrier hop frequency distribution...")
-            plot_frequency_dist(directory, current_carrier_type, carrier_history)
+            if current_carrier_type == "hole":
+                freq_cut_off_donor = plot_frequency_dist(directory, current_carrier_type, carrier_history, freq_cut_off_donor)
+            else:
+                freq_cut_off_acceptor = plot_frequency_dist(directory, current_carrier_type, carrier_history, freq_cut_off_acceptor)
             print("Plotting carrier net hop frequency distribution...")
             plot_net_frequency_dist(directory, current_carrier_type, carrier_history)
             print("Plotting ((total hops) - (net hops)) discrepancy distribution...")
@@ -1595,7 +1643,7 @@ def main():
         CG_to_mol_ID = determine_molecule_IDs(CG_to_AAID_master, AA_morphology_dict, parameter_dict, chromophore_list)
         data_dict = plot_energy_levels(temp_dir, chromophore_list, data_dict)
         plot_neighbour_hist(chromophore_list, CG_to_mol_ID, morphology_shape, temp_dir)
-        cluster_dicts, clusters_total, clusters_large = get_clusters(chromophore_list, carrier_history_dict, morphology_shape, args.o_cut_donor, args.o_cut_acceptor, args.ti_cut_donor, args.ti_cut_acceptor, args.hop_cut_donor, args.hop_cut_acceptor, CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict)
+        cluster_dicts, cluster_freqs, clusters_total, clusters_large = get_clusters(chromophore_list, carrier_history_dict, morphology_shape, args.o_cut_donor, args.o_cut_acceptor, args.ti_cut_donor, args.ti_cut_acceptor, freq_cut_off_donor, freq_cut_off_acceptor, CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict)
         data_dict["total_donor_clusters"] = clusters_total[0]
         data_dict["total_acceptor_clusters"] = clusters_total[1]
         data_dict["large_donor_clusters"] = clusters_large[0]
@@ -1605,6 +1653,8 @@ def main():
             plot_clusters_3D(temp_dir, chromophore_list, cluster_dicts, sim_dims)
         data_dict = plot_mixed_hopping_rates(temp_dir, chromophore_list, parameter_dict, cluster_dicts, CG_to_mol_ID,
                                              data_dict, AA_morphology_dict)
+        print("Plotting cluster size distribution...")
+        plot_cluster_size_dist(cluster_freqs, directory)
         print("Writing CSV Output File...")
         write_CSV(data_dict, directory)
     print("Plotting Mobility and Anisotropy progressions...")
