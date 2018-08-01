@@ -643,6 +643,8 @@ def get_clusters(chromophore_list, carrier_history_dict, morphology_shape, o_cut
     cluster_dicts = []
     clusters_total = [0, 0]
     clusters_large = [0, 0]
+    clusters_biggest = [0, 0]
+    clusters_cutoffs = [[], []]
     for type_index, material_type in enumerate(materials_to_check):
         print("Examining the", material_type, "material...")
         positions = np.array([chromo.posn for chromo in chromophore_list
@@ -671,14 +673,16 @@ def get_clusters(chromophore_list, carrier_history_dict, morphology_shape, o_cut
             cluster_freq[cluster_ID] = clusters_list.count(cluster_ID)
         clusters_total[type_index] = len([key for key, val in cluster_freq.items()])
         clusters_large[type_index] = len([key for key, val in cluster_freq.items() if val > 30])
+        clusters_biggest[type_index] = np.max(list(cluster_freq.values()))
+        clusters_cutoffs[type_index] = [o_cut_offs[type_index], ti_cut_offs[type_index], hop_cut_offs[type_index]]
         print("----------====================----------")
         print("Detected", clusters_total[type_index], material_type, "clusters in total.")
         print("Detected", clusters_large[type_index], material_type, "clusters with size > 30.")
-        print("Largest cluster size =", np.max(list(cluster_freq.values())), "chromophores.")
+        print("Largest cluster size =", clusters_biggest[type_index], "chromophores.")
         print("----------====================----------")
         cluster_dicts.append(cluster_dict)
         cluster_freqs.append(cluster_freq)
-    return cluster_dicts, cluster_freqs, clusters_total, clusters_large
+    return cluster_dicts, cluster_freqs, clusters_total, clusters_large, clusters_biggest, clusters_cutoffs
 
 
 def make_clusters(n_list):
@@ -1643,11 +1647,27 @@ def main():
         CG_to_mol_ID = determine_molecule_IDs(CG_to_AAID_master, AA_morphology_dict, parameter_dict, chromophore_list)
         data_dict = plot_energy_levels(temp_dir, chromophore_list, data_dict)
         plot_neighbour_hist(chromophore_list, CG_to_mol_ID, morphology_shape, temp_dir)
-        cluster_dicts, cluster_freqs, clusters_total, clusters_large = get_clusters(chromophore_list, carrier_history_dict, morphology_shape, args.o_cut_donor, args.o_cut_acceptor, args.ti_cut_donor, args.ti_cut_acceptor, freq_cut_off_donor, freq_cut_off_acceptor, CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict)
-        data_dict["total_donor_clusters"] = clusters_total[0]
-        data_dict["total_acceptor_clusters"] = clusters_total[1]
-        data_dict["large_donor_clusters"] = clusters_large[0]
-        data_dict["large_acceptor_clusters"] = clusters_large[1]
+        cluster_dicts, cluster_freqs, clusters_total, clusters_large, clusters_biggest, clusters_cutoffs = get_clusters(chromophore_list, carrier_history_dict, morphology_shape, args.o_cut_donor, args.o_cut_acceptor, args.ti_cut_donor, args.ti_cut_acceptor, freq_cut_off_donor, freq_cut_off_acceptor, CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict)
+        if clusters_total[0] > 0:
+            data_dict["donor_clusters_total"] = clusters_total[0]
+            data_dict["donor_clusters_large"] = clusters_large[0]
+            data_dict["donor_clusters_biggest"] = clusters_biggest[0]
+            if clusters_cutoffs[0][0] is not None:
+                data_dict['donor_clusters_orientation_cut'] = clusters_cutoffs[0][0]
+            if clusters_cutoffs[0][1] is not None:
+                data_dict['donor_clusters_transfer_integral_cut'] = clusters_cutoffs[0][1]
+            if clusters_cutoffs[0][2] is not None:
+                data_dict['donor_clusters_hop_freq_cut'] = clusters_cutoffs[0][2]
+        if clusters_total[1] > 0:
+            data_dict["acceptor_clusters_total"] = clusters_total[1]
+            data_dict["acceptor_clusters_large"] = clusters_large[1]
+            data_dict["acceptor_clusters_biggest"] = clusters_biggest[1]
+            if clusters_cutoffs[0][0] is not None:
+                data_dict['acceptor_clusters_orientation_cut'] = clusters_cutoffs[0][0]
+            if clusters_cutoffs[0][1] is not None:
+                data_dict['acceptor_clusters_transfer_integral_cut'] = clusters_cutoffs[0][1]
+            if clusters_cutoffs[0][2] is not None:
+                data_dict['acceptor_clusters_hop_freq_cut'] = clusters_cutoffs[0][2]
         if args.three_D:
             print("Plotting 3D cluster location plot...")
             plot_clusters_3D(temp_dir, chromophore_list, cluster_dicts, sim_dims)
