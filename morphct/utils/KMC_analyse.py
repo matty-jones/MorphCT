@@ -1195,10 +1195,10 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, clust
         print("Mean inter-cluster donor rate =", np.mean(property_lists['inter_cluster_rates_donor']), "+/-",
               np.std(property_lists['inter_cluster_rates_donor'])
               / float(len(property_lists['inter_cluster_rates_donor'])))
-        plot_clustered_hist_rates(property_lists['intra_cluster_rates_donor'], property_lists['inter_cluster_rates_donor'],
+        plot_stacked_hist_rates(property_lists['intra_cluster_rates_donor'], property_lists['inter_cluster_rates_donor'],
                                 ['Intra-cluster', 'Inter-cluster'], 'donor',
                                 os.path.join(output_dir, '16_donor_hopping_rate_clusters.pdf'))
-        plot_clustered_hist_TIs(property_lists['intra_cluster_TIs_donor'], property_lists['inter_cluster_TIs_donor'],
+        plot_stacked_hist_TIs(property_lists['intra_cluster_TIs_donor'], property_lists['inter_cluster_TIs_donor'],
                               ['Intra-cluster', 'Inter-cluster'], 'donor',
                               os.path.join(output_dir, '12_donor_transfer_integral_clusters.pdf'))
     # Acceptor cluster Plots:
@@ -1210,10 +1210,10 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, clust
         print("Mean inter-cluster acceptor rate =", np.mean(property_lists['inter_cluster_rates_acceptor']), "+/-",
               np.std(property_lists['inter_cluster_rates_acceptor'])
               / float(len(property_lists['inter_cluster_rates_acceptor'])))
-        plot_clustered_hist_rates(property_lists['intra_cluster_rates_acceptor'],
+        plot_stacked_hist_rates(property_lists['intra_cluster_rates_acceptor'],
                                 property_lists['inter_cluster_rates_acceptor'], ['Intra-cluster', 'Inter-cluster'],
                                 'acceptor', os.path.join(output_dir, '17_acceptor_hopping_rate_clusters.pdf'))
-        plot_clustered_hist_TIs(property_lists['intra_cluster_TIs_acceptor'], property_lists['inter_cluster_TIs_acceptor'],
+        plot_stacked_hist_TIs(property_lists['intra_cluster_TIs_acceptor'], property_lists['inter_cluster_TIs_acceptor'],
                               ['Intra-cluster', 'Inter-cluster'], 'acceptor',
                               os.path.join(output_dir, '13_acceptor_transfer_integral_clusters.pdf'))
     # Donor Mol Plots:
@@ -1222,10 +1222,10 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, clust
               np.std(property_lists['intra_mol_rates_donor']) / float(len(property_lists['intra_mol_rates_donor'])))
         print("Mean inter-molecular donor rate =", np.mean(property_lists['inter_mol_rates_donor']), "+/-",
               np.std(property_lists['inter_mol_rates_donor']) / float(len(property_lists['inter_mol_rates_donor'])))
-        plot_clustered_hist_rates(property_lists['intra_mol_rates_donor'], property_lists['inter_mol_rates_donor'],
+        plot_stacked_hist_rates(property_lists['intra_mol_rates_donor'], property_lists['inter_mol_rates_donor'],
                                 ['Intra-mol', 'Inter-mol'], 'donor', os.path.join(output_dir,
                                                                                   '14_donor_hopping_rate_mols.pdf'))
-        plot_clustered_hist_TIs(property_lists['intra_mol_TIs_donor'], property_lists['inter_mol_TIs_donor'],
+        plot_stacked_hist_TIs(property_lists['intra_mol_TIs_donor'], property_lists['inter_mol_TIs_donor'],
                               ['Intra-mol', 'Inter-mol'], 'donor', os.path.join(output_dir,
                                                                                 '10_donor_transfer_integral_mols.pdf'))
     # Acceptor Mol Plots:
@@ -1236,10 +1236,10 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, clust
         print("Mean inter-molecular acceptor rate =", np.mean(property_lists['inter_mol_rates_acceptor']), "+/-",
               np.std(property_lists['inter_mol_rates_acceptor'])
               / float(len(property_lists['inter_mol_rates_acceptor'])))
-        plot_clustered_hist_rates(property_lists['intra_mol_rates_acceptor'], property_lists['inter_mol_rates_acceptor'],
+        plot_stacked_hist_rates(property_lists['intra_mol_rates_acceptor'], property_lists['inter_mol_rates_acceptor'],
                                 ['Intra-mol', 'Inter-mol'], 'acceptor',
                                 os.path.join(output_dir, '15_acceptor_hopping_rate_mols.pdf'))
-        plot_clustered_hist_TIs(property_lists['intra_mol_TIs_acceptor'], property_lists['inter_mol_TIs_acceptor'],
+        plot_stacked_hist_TIs(property_lists['intra_mol_TIs_acceptor'], property_lists['inter_mol_TIs_acceptor'],
                               ['Intra-mol', 'Inter-mol'], 'acceptor',
                               os.path.join(output_dir, '11_acceptor_transfer_integral_mols.pdf'))
     # Update the dataDict
@@ -1262,7 +1262,7 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, clust
     return data_dict
 
 
-def plot_clustered_hist_rates(data1, data2, labels, data_type, file_name):
+def plot_stacked_hist_rates(data1, data2, labels, data_type, file_name):
     plt.figure()
     (n, bins, patches) = plt.hist([data1, data2], bins=np.logspace(1, 18, 40), stacked=True, color=['r', 'b'],
                                   label=labels)
@@ -1270,15 +1270,16 @@ def plot_clustered_hist_rates(data1, data2, labels, data_type, file_name):
     plt.xlabel(data_type.capitalize() + r' k$_{ij}$ (s' + r'$^{-1}$' + ')')
     plt.xlim([1, 1E18])
     plt.xticks([1E0, 1E3, 1E6, 1E9, 1E12, 1E15, 1E18])
-    plt.ylim([0, np.max(n) * 1.02])
-    plt.legend(loc=0, prop={'size': 18})
+    plt.ylim([0, 14000])
+    #plt.ylim([0, np.max(n) * 1.02])
+    plt.legend(loc=2, prop={'size': 18})
     plt.gca().set_xscale('log')
     plt.savefig(file_name)
     plt.close()
     print("Figure saved as", file_name)
 
 
-def plot_clustered_hist_TIs(data1, data2, labels, data_type, file_name):
+def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name):
     plt.figure()
     (n, bins, patches) = plt.hist([data1, data2], bins=np.linspace(0, 1.2, 20), stacked=True, color=['r', 'b'],
                                   label=labels)
@@ -1384,8 +1385,15 @@ def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
     if cut_off is None:
         try:
             minima = argrelextrema(smoothed_n, np.less)[0]
-            final_minimum = minima[-1]
-            cut_off = 10**bin_centres[final_minimum]
+            minimum_index = -1
+            # Sometimes a tiny minimum at super RHS breaks this
+            cut_off = 1E99
+            while True:
+                final_minimum = minima[minimum_index]
+                cut_off = 10**bin_centres[final_minimum]
+                if smoothed_n[final_minimum] > 100:
+                    break
+                minimum_index -= 1
             print("Cluster cut-off based on hop frequency set to", cut_off)
         except IndexError:
             print("EXCEPTION: No minima found in frequency distribution. Setting cut_off to None.")
