@@ -120,6 +120,7 @@ def plot_data(data, title, xlabel = "Order-Semi-Disorder"):
     plt.xlabel(xlabel)
     #plt.title(title)
     plt.savefig("output/{}.pdf".format(title))
+    print("Figure saved as output/{}.pdf".format(title))
 
 def save_mean_data_to_csv(data, prop):
     """
