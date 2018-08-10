@@ -748,21 +748,24 @@ def get_n_list(chromophore_list, carrier_history, separations, r_cut, orientatio
                 if printing is True:
                     print("Adding", neighbour_ID, "to remove list as TI =", ti)
                     print("Remove list now =", remove_list)
+                continue
             # Simple hop_frequency cutoff lookup in the carrier history
-            elif (freq_cut is not None) and (carrier_history is not None):
+            if (freq_cut is not None) and (carrier_history is not None):
                 total_hops = carrier_history[chromo_ID, neighbour_ID] + carrier_history[neighbour_ID, chromo_ID]
                 if total_hops < freq_cut:
                     remove_list.append(neighbour_ID)
+                continue
             # Separation cutoff lookup in the separations matrix depends on the chromo_IDs
-            elif (r_cut is not None) and (separations is not None):
+            if (r_cut is not None) and (separations is not None):
                 if chromo_ID < neighbour_ID:
                     separation = separations[chromo_ID, neighbour_ID]
                 else:
                     separation = separations[neighbour_ID, chromo_ID]
                 if separation > r_cut:
                     remove_list.append(neighbour_ID)
+                continue
             # Some dot product manipulation is required to get the orientations right
-            elif (o_cut is not None) and (orientations is not None):
+            if (o_cut is not None) and (orientations is not None):
                 chromo1_normal = orientations[chromo_ID]
                 chromo2_normal = orientations[neighbour_ID]
                 rotation_dot_product = abs(np.dot(chromo1_normal,
@@ -772,6 +775,7 @@ def get_n_list(chromophore_list, carrier_history, separations, r_cut, orientatio
                     if printing is True:
                         print("Adding", neighbour_ID, "to remove list as dot_product =", rotation_dot_product)
                         print("Remove list now =", remove_list)
+                continue
         if printing is True:
             print("n_list_current =", n_list[chromo_ID])
             print("Remove list final =", remove_list)
@@ -794,7 +798,7 @@ def get_orientations(chromophore_list, CG_morphology_dict, AA_morphology_dict, C
         # but on the time crunch I didn't have time to learn how to implement
         # it properly. Check https://goo.gl/jxuhvJ for more details.
         plane = calculate_plane(positions)
-        orientations.append(plane)
+        orientations.append(np.array(plane) / np.linalg.norm(plane))
 
         #colours = {"S": "y", "CA": "r", "H1": "b"}
         #for i in range(len(positions)):
@@ -1596,6 +1600,13 @@ def main():
                               ' .matplotlibrc.'))
     args, directory_list = parser.parse_known_args()
 
+    cut_off_dict = {"separation": [args.sep_cut_donor, args.sep_cut_acceptor],
+                    "orientation": [args.o_cut_donor, args.o_cut_acceptor],
+                    "TI": [args.ti_cut_donor, args.ti_cut_acceptor],
+                    "freq": [args.hop_cut_donor, args.hop_cut_acceptor],
+                   }
+    print("Cut-offs specified (value format: [donor, acceptor]) =", cut_off_dict)
+
     # Load the matplotlib backend and the plotting subroutines
     global plt
     global p3
@@ -1683,11 +1694,6 @@ def main():
             data_dict[current_carrier_type.lower() + "_anisotropy"] = anisotropy
             data_dict[current_carrier_type.lower() + "_mobility"] = mobility
             data_dict[current_carrier_type.lower() + "_mobility_r_squared"] = r_squared
-        cut_off_dict = {"separation": [args.sep_cut_donor, args.sep_cut_acceptor],
-                        "orientation": [args.o_cut_donor, args.o_cut_acceptor],
-                        "TI": [args.ti_cut_donor, args.ti_cut_acceptor],
-                        "freq": [args.hop_cut_donor, args.hop_cut_acceptor],
-                       }
         # Now plot the distributions!
         temp_dir = directory + "/figures"
         CG_to_mol_ID = determine_molecule_IDs(CG_to_AAID_master, AA_morphology_dict, parameter_dict, chromophore_list)
@@ -1698,18 +1704,18 @@ def main():
             data_dict["donor_clusters_total"] = clusters_total[0]
             data_dict["donor_clusters_large"] = clusters_large[0]
             data_dict["donor_clusters_biggest"] = clusters_biggest[0]
-            data_dict["donor_clusters_separation_cut"] = clusters_cutoffs[0][0]
-            data_dict["donor_clusters_orientation_cut"] = clusters_cutoffs[0][1]
-            data_dict["donor_clusters_transfer_integral_cut"] = clusters_cutoffs[0][2]
-            data_dict["donor_clusters_hop_freq_cut"] = clusters_cutoffs[0][3]
+            data_dict["donor_clusters_separation_cut"] = repr(clusters_cutoffs[0][0])
+            data_dict["donor_clusters_orientation_cut"] = repr(clusters_cutoffs[0][1])
+            data_dict["donor_clusters_transfer_integral_cut"] = repr(clusters_cutoffs[0][2])
+            data_dict["donor_clusters_hop_freq_cut"] = repr(clusters_cutoffs[0][3])
         if clusters_total[1] > 0:
             data_dict["acceptor_clusters_total"] = clusters_total[1]
             data_dict["acceptor_clusters_large"] = clusters_large[1]
             data_dict["acceptor_clusters_biggest"] = clusters_biggest[1]
-            data_dict["acceptor_clusters_separation_cut"] = clusters_cutoffs[1][0]
-            data_dict["acceptor_clusters_orientation_cut"] = clusters_cutoffs[1][1]
-            data_dict["acceptor_clusters_transfer_integral_cut"] = clusters_cutoffs[1][2]
-            data_dict["acceptor_clusters_hop_freq_cut"] = clusters_cutoffs[1][3]
+            data_dict["acceptor_clusters_separation_cut"] = repr(clusters_cutoffs[1][0])
+            data_dict["acceptor_clusters_orientation_cut"] = repr(clusters_cutoffs[1][1])
+            data_dict["acceptor_clusters_transfer_integral_cut"] = repr(clusters_cutoffs[1][2])
+            data_dict["acceptor_clusters_hop_freq_cut"] = repr(clusters_cutoffs[1][3])
         if args.three_D:
             print("Plotting 3D cluster location plot...")
             plot_clusters_3D(temp_dir, chromophore_list, cluster_dicts, sim_dims)
