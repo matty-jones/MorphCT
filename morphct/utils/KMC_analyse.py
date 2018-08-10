@@ -632,6 +632,7 @@ def plot_neighbour_hist(chromophore_list, CG_to_mol_ID, morphology_shape, output
 
 def get_clusters(chromophore_list, carrier_history_dict, morphology_shape, cut_off_dict,
                  CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict):
+    freud_box = [[AA_morphology_dict[coord] for coord in ['lx', 'ly', 'lz']]]
     materials_to_check = ['donor', 'acceptor']
     carriers_to_check = ['hole', 'electron']
     cluster_freqs = []
@@ -660,14 +661,17 @@ def get_clusters(chromophore_list, carrier_history_dict, morphology_shape, cut_o
         else:
             orientations = None
         print("Calculating clusters...")
-        n_list = get_n_list(chromophore_list,
-                            carrier_history_dict[carriers_to_check[type_index]],
-                            separations=separations,
-                            r_cut=cut_off_dict["separation"][type_index],
-                            orientations=orientations,
-                            o_cut=cut_off_dict["orientation"][type_index],
-                            ti_cut=cut_off_dict["TI"][type_index],
-                            freq_cut=cut_off_dict["freq"][type_index])
+        n_list = get_n_list(
+            chromophore_list,
+            carrier_history_dict[carriers_to_check[type_index]],
+            separations=separations,
+            r_cut=cut_off_dict["separation"][type_index],
+            orientations=orientations,
+            o_cut=cut_off_dict["orientation"][type_index],
+            ti_cut=cut_off_dict["TI"][type_index],
+            freq_cut=cut_off_dict["freq"][type_index],
+            sim_dims=freud_box
+        )
         clusters_list = make_clusters(n_list)
         cluster_dict = {}
         for chromo_ID, cluster_ID in enumerate(clusters_list):
@@ -718,13 +722,15 @@ def update_neighbors(particle, cluster_list, neighbor_list):
     return neighbor_list, cluster_list
 
 
-def get_n_list(chromophore_list, carrier_history, separations, r_cut, orientations, o_cut, ti_cut, freq_cut):
-    n_list = []
+def get_n_list(chromophore_list, carrier_history, separations, r_cut, orientations, o_cut, ti_cut, freq_cut,
+              sim_dims,
+              ):
     if o_cut is not None:
         # o_cut is currently an angle in degrees.
         # Need to calculate the corresponding dot-product cut off for this
         # angle
         dotcut = np.cos(o_cut * np.pi / 180)
+    n_list = []
     for chromophore in chromophore_list:
         n_list.append([neighbour[0] for neighbour in chromophore.neighbours])
     printing = False
@@ -754,7 +760,7 @@ def get_n_list(chromophore_list, carrier_history, separations, r_cut, orientatio
                 total_hops = carrier_history[chromo_ID, neighbour_ID] + carrier_history[neighbour_ID, chromo_ID]
                 if total_hops < freq_cut:
                     remove_list.append(neighbour_ID)
-                continue
+                    continue
             # Separation cutoff lookup in the separations matrix depends on the chromo_IDs
             if (r_cut is not None) and (separations is not None):
                 if chromo_ID < neighbour_ID:
@@ -763,7 +769,7 @@ def get_n_list(chromophore_list, carrier_history, separations, r_cut, orientatio
                     separation = separations[neighbour_ID, chromo_ID]
                 if separation > r_cut:
                     remove_list.append(neighbour_ID)
-                continue
+                    continue
             # Some dot product manipulation is required to get the orientations right
             if (o_cut is not None) and (orientations is not None):
                 chromo1_normal = orientations[chromo_ID]
@@ -775,7 +781,7 @@ def get_n_list(chromophore_list, carrier_history, separations, r_cut, orientatio
                     if printing is True:
                         print("Adding", neighbour_ID, "to remove list as dot_product =", rotation_dot_product)
                         print("Remove list now =", remove_list)
-                continue
+                    continue
         if printing is True:
             print("n_list_current =", n_list[chromo_ID])
             print("Remove list final =", remove_list)
