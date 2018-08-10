@@ -585,7 +585,7 @@ def update_molecule(atom_ID, molecule_list, bonded_atoms):
     return molecule_list
 
 
-def plot_neighbour_hist(chromophore_list, CG_to_mol_ID, morphology_shape, output_dir):
+def plot_neighbour_hist(chromophore_list, CG_to_mol_ID, morphology_shape, output_dir, sep_cut_donor, sep_cut_acceptor):
     separation_dist_donor = []
     separation_dist_acceptor = []
     for chromo1 in chromophore_list:
@@ -604,22 +604,23 @@ def plot_neighbour_hist(chromophore_list, CG_to_mol_ID, morphology_shape, output
             elif chromo1.species == 'acceptor':
                 separation_dist_acceptor.append(separation)
     material = ['donor', 'acceptor']
+    sep_cuts = [sep_cut_donor, sep_cut_acceptor]
     for material_type, separation_dist in enumerate([separation_dist_donor, separation_dist_acceptor]):
+        if len(separation_dist) == 0:
+            continue
         plt.figure()
-        (n, bin_edges, patches) = plt.hist(separation_dist, bins=20, color='b')
-        bins = 0.5 * (bin_edges[1:] + bin_edges[:-1])
-        bins = np.insert(bins, 0, 0)
+        n, bin_edges, _ = plt.hist(separation_dist, bins=40, color='b')
+        bin_centres = (bin_edges[1:] + bin_edges[:-1]) / 2.0
+        bin_centres = np.insert(bin_centres, 0, 0)
         n = np.insert(n, 0, 0)
-        dn = np.diff(n)
-        minima_indices = []
-        maxima_indices = []
-        previous_value = 1E99
-        for index, val in enumerate(dn):
-            if (previous_value <= 0) and (val > 0):
-                minima_indices.append(index)
-            if (previous_value >= 0) and (val < 0):
-                maxima_indices.append(index)
-            previous_value = val
+        smoothed_n = gaussian_filter(n, 1.0)
+        plt.plot(bin_centres, smoothed_n, color="r")
+        if (sep_cuts[material_type] is not None) and (sep_cuts[material_type].lower() == "auto"):
+            sep_cuts[material_type] = calculate_cut_off_from_dist(bin_centres, smoothed_n, minimum_index=0, value_at_least=100, logarithmic=False)
+        if sep_cuts[material_type] is not None:
+            sep_cuts[material_type] = float(sep_cuts[material_type])
+            print("Cluster cut-off based on", material[material_type], "chromophore separation set to", sep_cuts[material_type])
+            plt.axvline(sep_cuts[material_type], c='k')
         plt.xlabel(material[material_type].capitalize() + r' r$_{ij}$' + ' (A)')
         plt.ylabel("Frequency (Arb. U.)")
         # 04 for donor neighbour hist, 05 for acceptor neighbour hist
@@ -628,6 +629,23 @@ def plot_neighbour_hist(chromophore_list, CG_to_mol_ID, morphology_shape, output
         plt.savefig(os.path.join(output_dir, file_name))
         plt.close()
         print("Neighbour histogram figure saved as", os.path.join(output_dir, file_name))
+    return sep_cuts[0], sep_cuts[1]
+
+
+def create_cut_off_dict(sep_cut_donor, sep_cut_acceptor, o_cut_donor, o_cut_acceptor, ti_cut_donor, ti_cut_acceptor, freq_cut_donor, freq_cut_acceptor):
+        cut_off_dict = {"separation": [sep_cut_donor, sep_cut_acceptor],
+                        "orientation": [o_cut_donor, o_cut_acceptor],
+                        "TI": [ti_cut_donor, ti_cut_acceptor],
+                        "freq": [freq_cut_donor, freq_cut_acceptor],
+                       }
+        # Convert all cuts to floats (leaving NoneType intact)
+        for cut_type, cuts in cut_off_dict.items():
+            for material_index, cut in enumerate(cuts):
+                try:
+                    cut_off_dict[cut_type][material_index] = float(cut)
+                except TypeError:
+                    pass
+        return cut_off_dict
 
 
 def get_clusters(chromophore_list, carrier_history_dict, morphology_shape, cut_off_dict,
@@ -1407,6 +1425,35 @@ def combine_results_pickles(directory, pickle_files):
     print("Complete data written to", directory + "/KMC_results.pickle.")
 
 
+def calculate_cut_off_from_dist(bin_centres, frequencies, minimum_index=-1, value_at_least=100, logarithmic=False):
+    try:
+        minima = argrelextrema(frequencies, np.less)[0]
+        if minimum_index < 0:
+            # Sometimes a tiny minimum at super RHS breaks this
+            cut_off = 0.0
+            while True:
+                selected_minimum = minima[minimum_index]
+                cut_off = bin_centres[selected_minimum]
+                if frequencies[selected_minimum] > value_at_least:
+                    break
+                minimum_index -= 1
+        else: 
+            # Sometimes a tiny maximum at super LHS breaks this
+            cut_off = 0.0
+            while True:
+                selected_minimum = minima[minimum_index]
+                cut_off = bin_centres[selected_minimum]
+                if frequencies[selected_minimum] > value_at_least:
+                    break
+                minimum_index += 1
+        if logarithmic is True:
+            cut_off = 10**cut_off
+        return cut_off
+    except IndexError:
+        print("EXCEPTION: No minima found in frequency distribution. Setting cut_off to None.")
+        return None
+
+
 def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
     carrier_types = ['hole', 'electron']
     non_zero_indices = carrier_history.nonzero()
@@ -1422,24 +1469,12 @@ def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
     n, bin_edges, _ = plt.hist(frequencies, bins=60, color='b')
     bin_centres = (bin_edges[1:] + bin_edges[:-1]) / 2.0
     smoothed_n = gaussian_filter(n, 1.0)
-    plt.plot(bin_centres, smoothed_n, color='r')
-    if (cut_off is not None) and (cut_off.lower() is "auto"):
-        try:
-            minima = argrelextrema(smoothed_n, np.less)[0]
-            minimum_index = -1
-            # Sometimes a tiny minimum at super RHS breaks this
-            cut_off = 1E99
-            while True:
-                final_minimum = minima[minimum_index]
-                cut_off = 10**bin_centres[final_minimum]
-                if smoothed_n[final_minimum] > 100:
-                    break
-                minimum_index -= 1
-            print("Cluster cut-off based on hop frequency set to", cut_off)
-        except IndexError:
-            print("EXCEPTION: No minima found in frequency distribution. Setting cut_off to None.")
-            cut_off = None
+    plt.plot(bin_centres, smoothed_n, color="r")
+    if (cut_off is not None) and (cut_off.lower() == "auto"):
+        cut_off = calculate_cut_off_from_dist(bin_centres, smoothed_n, minimum_index=-1, value_at_least=100, logarithmic=True)
     if cut_off is not None:
+        cut_off = float(cut_off)
+        print("Cluster cut-off based on hop frequency set to", cut_off)
         plt.axvline(np.log10(cut_off), c='k')
     plt.xlabel("".join(["Total ", carrier_type, " hops (Arb. U.)"]))
     ax = plt.gca()
@@ -1548,51 +1583,51 @@ def main():
                                               " as the sequence of x values. For instance -s '1.5,1.75,2.0,2.25,2.5'"
                                               " will assign each of the 5 following directories these x-values when"
                                               " plotting the mobility evolution."))
-    parser.add_argument("-cod", "--o_cut_donor", default=None, required=False, type=float,
+    parser.add_argument("-cod", "--o_cut_donor", default=None, required=False, type=str,
                         help=("Specify the orientation cut-off (in degrees) for the donor material for determining"
                               " which chromophores belong to the same cluster. Chromophores with angle between normal"
                               " vectors > o_cut_donor will be considered as different crystals. Default = None (Note: if all"
                               " cut-offs are specified as None, then the entire morphology will be considered"
                               " as a single crystal)."))
-    parser.add_argument("-coa", "--o_cut_acceptor", default=None, required=False, type=float,
+    parser.add_argument("-coa", "--o_cut_acceptor", default=None, required=False, type=str,
                         help=("Specify the orientation cut-off (in degrees) for the acceptor material for determining"
                               " which chromophores belong to the same cluster. Chromophores with angle between normal"
                               " vectors > o_cut_acceptor will be considered as different crystals. Default = None (Note: if all"
                               " cut-offs are specified as None, then the entire morphology will be considered"
                               " as a single crystal)."))
-    parser.add_argument("-ctd", "--ti_cut_donor", default=None, required=False, type=float,
+    parser.add_argument("-ctd", "--ti_cut_donor", default=None, required=False, type=str,
                         help=("Specify the transfer integral cut-off (in eV) for the donor material for determining"
                               " which chromophores belong to the same cluster. Chromophores with hopping transfer"
                               " integral < ti_cut_donor will be considered as different crystals. Default = None (Note: if all"
                               " cut-offs are specified as None, then the entire morphology will be considered"
                               " as a single crystal)."))
-    parser.add_argument("-cta", "--ti_cut_acceptor", default=None, required=False, type=float,
+    parser.add_argument("-cta", "--ti_cut_acceptor", default=None, required=False, type=str,
                         help=("Specify the transfer integral cut-off (in eV) for the acceptor material for determining"
                               " which chromophores belong to the same cluster. Chromophores with hopping transfer"
                               " integral < ti_cut_acceptor will be considered as different crystals. Default = None (Note: if all"
                               " cut-offs are specified as None, then the entire morphology will be considered"
                               " as a single crystal."))
-    parser.add_argument("-chd", "--hop_cut_donor", default=None, required=False, type=float,
+    parser.add_argument("-cfd", "--freq_cut_donor", default=None, required=False, type=str,
                         help=("Specify the hopping frequency cut-off for the donor material for determining"
                               " which chromophores belong to the same cluster. Chromophores connected by fewer than"
-                              " hop_cut_donor total hops in the KMC simulation will be considered as different crystals."
+                              " freq_cut_donor total hops in the KMC simulation will be considered as different crystals."
                               " Use 'auto' to have KMCAnalyse set the cut-off to the final minimum of the frequency distribution."
                               " Default = None (Note: if all cut-offs are specified as None, then the entire morphology will"
                               " be considered as a single crystal."))
-    parser.add_argument("-cha", "--hop_cut_acceptor", default=None, required=False, type=float,
+    parser.add_argument("-cfa", "--freq_cut_acceptor", default=None, required=False, type=str,
                         help=("Specify the hopping frequency cut-off for the acceptor material for determining"
                               " which chromophores belong to the same cluster. Chromophores connected by fewer than"
-                              " hop_cut_acceptor total hops in the KMC simulation will be considered as different crystals."
+                              " freq_cut_acceptor total hops in the KMC simulation will be considered as different crystals."
                               " Use 'auto' to have KMCAnalyse set the cut-off to the final minimum of the frequency distribution."
                               " Default = None (Note: if all cut-offs are specified as None, then the entire morphology will"
                               " be considered as a single crystal."))
-    parser.add_argument("-crd", "--sep_cut_donor", default=None, required=False, type=float,
+    parser.add_argument("-crd", "--sep_cut_donor", default=None, required=False, type=str,
                         help=("Specify the separation cut-off (in sigma) for the donor material for determining"
                               " which chromophores belong to the same cluster. Chromophores with separation"
                               " r > sep_cut_donor will be considered as different crystals. Default = None (Note: if all"
                               " cut-offs are specified as None, then the entire morphology will be considered"
                               " as a single crystal)."))
-    parser.add_argument("-cra", "--sep_cut_acceptor", default=None, required=False, type=float,
+    parser.add_argument("-cra", "--sep_cut_acceptor", default=None, required=False, type=str,
                         help=("Specify the separation cut-off (in sigma) for the acceptor material for determining"
                               " which chromophores belong to the same cluster. Chromophores with separation"
                               " r > sep_cut_acceptor will be considered as different crystals. Default = None (Note: if all"
@@ -1606,12 +1641,6 @@ def main():
                               ' .matplotlibrc.'))
     args, directory_list = parser.parse_known_args()
 
-    cut_off_dict = {"separation": [args.sep_cut_donor, args.sep_cut_acceptor],
-                    "orientation": [args.o_cut_donor, args.o_cut_acceptor],
-                    "TI": [args.ti_cut_donor, args.ti_cut_acceptor],
-                    "freq": [args.hop_cut_donor, args.hop_cut_acceptor],
-                   }
-    print("Cut-offs specified (value format: [donor, acceptor]) =", cut_off_dict)
 
     # Load the matplotlib backend and the plotting subroutines
     global plt
@@ -1680,9 +1709,9 @@ def main():
             anisotropy = plot_anisotropy(carrier_data, directory, sim_dims, current_carrier_type, args.three_D)
             print("Plotting carrier hop frequency distribution...")
             if current_carrier_type == "hole":
-                args.hop_cut_donor = plot_frequency_dist(directory, current_carrier_type, carrier_history, args.hop_cut_donor)
+                args.freq_cut_donor = plot_frequency_dist(directory, current_carrier_type, carrier_history, args.freq_cut_donor)
             else:
-                args.hop_cut_acceptor = plot_frequency_dist(directory, current_carrier_type, carrier_history, args.hop_cut_acceptor)
+                args.freq_cut_acceptor = plot_frequency_dist(directory, current_carrier_type, carrier_history, args.freq_cut_acceptor)
             print("Plotting carrier net hop frequency distribution...")
             plot_net_frequency_dist(directory, current_carrier_type, carrier_history)
             print("Plotting ((total hops) - (net hops)) discrepancy distribution...")
@@ -1704,7 +1733,9 @@ def main():
         temp_dir = directory + "/figures"
         CG_to_mol_ID = determine_molecule_IDs(CG_to_AAID_master, AA_morphology_dict, parameter_dict, chromophore_list)
         data_dict = plot_energy_levels(temp_dir, chromophore_list, data_dict)
-        plot_neighbour_hist(chromophore_list, CG_to_mol_ID, morphology_shape, temp_dir)
+        args.sep_cut_donor, args.sep_cut_acceptor = plot_neighbour_hist(chromophore_list, CG_to_mol_ID, morphology_shape, temp_dir, args.sep_cut_donor, args.sep_cut_acceptor)
+        cut_off_dict = create_cut_off_dict(args.sep_cut_donor, args.sep_cut_acceptor, args.o_cut_donor, args.o_cut_acceptor, args.ti_cut_donor, args.ti_cut_acceptor, args.freq_cut_donor, args.freq_cut_acceptor)
+        print("Cut-offs specified (value format: [donor, acceptor]) =", cut_off_dict)
         cluster_dicts, cluster_freqs, clusters_total, clusters_large, clusters_biggest, clusters_cutoffs = get_clusters(chromophore_list, carrier_history_dict, morphology_shape, cut_off_dict, CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict)
         if clusters_total[0] > 0:
             data_dict["donor_clusters_total"] = clusters_total[0]
