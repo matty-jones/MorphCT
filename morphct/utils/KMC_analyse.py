@@ -15,6 +15,7 @@ import argparse
 import copy
 from scipy.signal import argrelextrema
 from scipy.ndimage import gaussian_filter
+from scipy.sparse import lil_matrix
 
 
 plt = None
@@ -629,14 +630,8 @@ def plot_neighbour_hist(chromophore_list, CG_to_mol_ID, morphology_shape, output
         print("Neighbour histogram figure saved as", os.path.join(output_dir, file_name))
 
 
-def get_clusters(chromophore_list, carrier_history_dict, morphology_shape, o_cut_off_donor,
-                 o_cut_off_acceptor, ti_cut_off_donor, ti_cut_off_acceptor,
-                 hop_cut_off_donor, hop_cut_off_acceptor,
-                 CG_morphology_dict, AA_morphology_dict,
-                 CG_to_AAID_master, parameter_dict):
-    o_cut_offs = [o_cut_off_donor, o_cut_off_acceptor]
-    ti_cut_offs = [ti_cut_off_donor, ti_cut_off_acceptor]
-    hop_cut_offs = [hop_cut_off_donor, hop_cut_off_acceptor]
+def get_clusters(chromophore_list, carrier_history_dict, morphology_shape, cut_off_dict,
+                 CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict):
     materials_to_check = ['donor', 'acceptor']
     carriers_to_check = ['hole', 'electron']
     cluster_freqs = []
@@ -645,6 +640,10 @@ def get_clusters(chromophore_list, carrier_history_dict, morphology_shape, o_cut
     clusters_large = [0, 0]
     clusters_biggest = [0, 0]
     clusters_cutoffs = [[], []]
+    if any(cut is not None for cut in cut_off_dict["separation"]):
+        separations = get_separations(chromophore_list, AA_morphology_dict)
+    else:
+        separations = None
     for type_index, material_type in enumerate(materials_to_check):
         print("Examining the", material_type, "material...")
         positions = np.array([chromo.posn for chromo in chromophore_list
@@ -653,17 +652,22 @@ def get_clusters(chromophore_list, carrier_history_dict, morphology_shape, o_cut
             print("No material found. Continuing...")
             continue
         print("Obtaining orientations of each chromophore...")
-        orientations = get_orientations([chromo for chromo in chromophore_list
-                                         if chromo.species == material_type],
-                                        CG_morphology_dict, AA_morphology_dict,
-                                        CG_to_AAID_master, parameter_dict)
+        if cut_off_dict["orientation"][type_index] is not None:
+            orientations = get_orientations([chromo for chromo in chromophore_list
+                                             if chromo.species == material_type],
+                                            CG_morphology_dict, AA_morphology_dict,
+                                            CG_to_AAID_master, parameter_dict)
+        else:
+            orientations = None
         print("Calculating clusters...")
         n_list = get_n_list(chromophore_list,
                             carrier_history_dict[carriers_to_check[type_index]],
+                            separations=separations,
+                            r_cut=cut_off_dict["separation"][type_index],
                             orientations=orientations,
-                            o_cut=o_cut_offs[type_index],
-                            ti_cut=ti_cut_offs[type_index],
-                            hop_cut=hop_cut_offs[type_index])
+                            o_cut=cut_off_dict["orientation"][type_index],
+                            ti_cut=cut_off_dict["TI"][type_index],
+                            freq_cut=cut_off_dict["freq"][type_index])
         clusters_list = make_clusters(n_list)
         cluster_dict = {}
         for chromo_ID, cluster_ID in enumerate(clusters_list):
@@ -672,12 +676,12 @@ def get_clusters(chromophore_list, carrier_history_dict, morphology_shape, o_cut
         for cluster_ID in set(clusters_list):
             cluster_freq[cluster_ID] = clusters_list.count(cluster_ID)
         clusters_total[type_index] = len([key for key, val in cluster_freq.items()])
-        clusters_large[type_index] = len([key for key, val in cluster_freq.items() if val > 30])
+        clusters_large[type_index] = len([key for key, val in cluster_freq.items() if val > 6])
         clusters_biggest[type_index] = np.max(list(cluster_freq.values()))
-        clusters_cutoffs[type_index] = [o_cut_offs[type_index], ti_cut_offs[type_index], hop_cut_offs[type_index]]
+        clusters_cutoffs[type_index] = [cut_off_dict[cut_type][type_index] for cut_type in ["separation", "orientation", "TI", "freq"]]
         print("----------====================----------")
         print("Detected", clusters_total[type_index], material_type, "clusters in total.")
-        print("Detected", clusters_large[type_index], material_type, "clusters with size > 30.")
+        print("Detected", clusters_large[type_index], material_type, "clusters with size > 6.")
         print("Largest cluster size =", clusters_biggest[type_index], "chromophores.")
         print("----------====================----------")
         cluster_dicts.append(cluster_dict)
@@ -714,7 +718,7 @@ def update_neighbors(particle, cluster_list, neighbor_list):
     return neighbor_list, cluster_list
 
 
-def get_n_list(chromophore_list, carrier_history, orientations=None, o_cut=None, ti_cut=None, hop_cut=None):
+def get_n_list(chromophore_list, carrier_history, separations, r_cut, orientations, o_cut, ti_cut, freq_cut):
     n_list = []
     if o_cut is not None:
         # o_cut is currently an angle in degrees.
@@ -737,15 +741,27 @@ def get_n_list(chromophore_list, carrier_history, orientations=None, o_cut=None,
             if printing is True:
                 print("Examining neighbour_index", neighbour_index, "which corresponds to chromo ID", neighbour_ID)
                 print("TI =", ti)
+            # Check the cut_offs in order of ease of calculation
+            # Simple TI lookup first
             if (ti_cut is not None) and (ti < ti_cut):
                 remove_list.append(neighbour_ID)
                 if printing is True:
                     print("Adding", neighbour_ID, "to remove list as TI =", ti)
                     print("Remove list now =", remove_list)
-            elif (hop_cut is not None) and (carrier_history is not None):
+            # Simple hop_frequency cutoff lookup in the carrier history
+            elif (freq_cut is not None) and (carrier_history is not None):
                 total_hops = carrier_history[chromo_ID, neighbour_ID] + carrier_history[neighbour_ID, chromo_ID]
-                if total_hops < hop_cut:
+                if total_hops < freq_cut:
                     remove_list.append(neighbour_ID)
+            # Separation cutoff lookup in the separations matrix depends on the chromo_IDs
+            elif (r_cut is not None) and (separations is not None):
+                if chromo_ID < neighbour_ID:
+                    separation = separations[chromo_ID, neighbour_ID]
+                else:
+                    separation = separations[neighbour_ID, chromo_ID]
+                if separation > r_cut:
+                    remove_list.append(neighbour_ID)
+            # Some dot product manipulation is required to get the orientations right
             elif (o_cut is not None) and (orientations is not None):
                 chromo1_normal = orientations[chromo_ID]
                 chromo2_normal = orientations[neighbour_ID]
@@ -825,6 +841,21 @@ def calculate_plane(positions):
     return np.cross(vec1, vec2)
 
 
+def get_separations(chromophore_list, AA_morphology_dict):
+    box_dims = [AA_morphology_dict[axis] for axis in ['lx', 'ly', 'lz']]
+    separations = lil_matrix((len(chromophore_list), len(chromophore_list)), dtype=float)
+    for chromo_ID, chromophore in enumerate(chromophore_list):
+        for neighbour_details in chromophore.neighbours:
+            neighbour_ID = neighbour_details[0]
+            relative_image = neighbour_details[1]
+            neighbour_posn = chromophore_list[neighbour_ID].posn
+            neighbour_chromo_posn = neighbour_posn + (np.array(relative_image) * np.array(box_dims))
+            separation = hf.calculate_separation(chromophore.posn, neighbour_chromo_posn)
+            if chromo_ID < neighbour_ID:
+                separations[chromo_ID, neighbour_ID] = separation
+            else:
+                separations[neighbour_ID, chromo_ID] = separation
+    return separations
 
 
 def get_electronic_atom_positions(chromophore, CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict):
@@ -938,7 +969,7 @@ def plot_clusters_3D(output_dir, chromophore_list, cluster_dicts, sim_dims):
     fig = plt.figure()
     ax = p3.Axes3D(fig)
     colours = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
-    large_cluster = 30
+    large_cluster = 6
     alphas = [0, 0.6]
     cluster_dict = {}
     for dictionary in cluster_dicts:
@@ -1049,8 +1080,8 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
         data_dict['donor_frontier_MO_mean'] = HOMO_av
         data_dict['donor_frontier_MO_std'] = HOMO_std
         data_dict['donor_frontier_MO_err'] = HOMO_err
-        print("donor HOMO Level =", HOMO_av, "+/-", HOMO_err)
-        print("donor Delta E_ij stats: mean =", donor_mean, "+/-", donor_std / np.sqrt(len(donor_delta_E_ij)))
+        print("Donor HOMO Level =", HOMO_av, "+/-", HOMO_err)
+        print("Donor Delta E_ij stats: mean =", donor_mean, "+/-", donor_std / np.sqrt(len(donor_delta_E_ij)))
         # 06 for donor delta Eij
         plot_delta_E_ij(donor_delta_E_ij, donor_bin_edges, donor_fit_args, 'donor',
                        output_dir + '/06_donor_delta_E_ij.pdf')
@@ -1065,8 +1096,8 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
         data_dict['acceptor_frontier_MO_mean'] = LUMO_av
         data_dict['acceptor_frontier_MO_std'] = LUMO_std
         data_dict['acceptor_frontier_MO_err'] = LUMO_err
-        print("acceptor LUMO Level =", LUMO_av, "+/-", LUMO_err)
-        print("acceptor Delta E_ij stats: mean =", acceptor_mean, "+/-",
+        print("Acceptor LUMO Level =", LUMO_av, "+/-", LUMO_err)
+        print("Acceptor Delta E_ij stats: mean =", acceptor_mean, "+/-",
               acceptor_std / np.sqrt(len(acceptor_delta_E_ij)))
         # 07 for acceptor delta Eij
         plot_delta_E_ij(acceptor_delta_E_ij, acceptor_bin_edges, acceptor_fit_args, 'acceptor',
@@ -1382,7 +1413,7 @@ def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
     bin_centres = (bin_edges[1:] + bin_edges[:-1]) / 2.0
     smoothed_n = gaussian_filter(n, 1.0)
     plt.plot(bin_centres, smoothed_n, color='r')
-    if cut_off is None:
+    if (cut_off is not None) and (cut_off.lower() is "auto"):
         try:
             minima = argrelextrema(smoothed_n, np.less)[0]
             minimum_index = -1
@@ -1510,49 +1541,53 @@ def main():
     parser.add_argument("-cod", "--o_cut_donor", default=None, required=False, type=float,
                         help=("Specify the orientation cut-off (in degrees) for the donor material for determining"
                               " which chromophores belong to the same cluster. Chromophores with angle between normal"
-                              " vectors > o_cut_donor will be considered as different crystals. Default = None (if no"
-                              " cut-offs are specified, then the entire chromophore neighbourlist will be considered"
-                              " in the same crystal (likely identifying a single crystal in the morphology)."))
+                              " vectors > o_cut_donor will be considered as different crystals. Default = None (Note: if all"
+                              " cut-offs are specified as None, then the entire morphology will be considered"
+                              " as a single crystal)."))
     parser.add_argument("-coa", "--o_cut_acceptor", default=None, required=False, type=float,
                         help=("Specify the orientation cut-off (in degrees) for the acceptor material for determining"
                               " which chromophores belong to the same cluster. Chromophores with angle between normal"
-                              " vectors > o_cut_acceptor will be considered as different crystals. Default = None (if no"
-                              " cut-offs are specified, then the entire chromophore neighbourlist will be considered"
-                              " in the same crystal (likely identifying a single crystal in the morphology)."))
+                              " vectors > o_cut_acceptor will be considered as different crystals. Default = None (Note: if all"
+                              " cut-offs are specified as None, then the entire morphology will be considered"
+                              " as a single crystal)."))
     parser.add_argument("-ctd", "--ti_cut_donor", default=None, required=False, type=float,
-                        help=("Specify the transfer integral cut-off (in radians) for the donor material for determining"
+                        help=("Specify the transfer integral cut-off (in eV) for the donor material for determining"
                               " which chromophores belong to the same cluster. Chromophores with hopping transfer"
-                              " integral < ti_cut_donor will be considered as different crystals. Default = None (if no"
-                              " cut-offs are specified, then the entire chromophore neighbourlist will be considered"
-                              " in the same crystal (likely identifying a single crystal in the morphology)."))
+                              " integral < ti_cut_donor will be considered as different crystals. Default = None (Note: if all"
+                              " cut-offs are specified as None, then the entire morphology will be considered"
+                              " as a single crystal)."))
     parser.add_argument("-cta", "--ti_cut_acceptor", default=None, required=False, type=float,
-                        help=("Specify the transfer integral cut-off (in radians) for the acceptor material for determining"
+                        help=("Specify the transfer integral cut-off (in eV) for the acceptor material for determining"
                               " which chromophores belong to the same cluster. Chromophores with hopping transfer"
-                              " integral < ti_cut_acceptor will be considered as different crystals. Default = None (if no"
-                              " cut-offs are specified, then the entire chromophore neighbourlist will be considered"
-                              " in the same crystal (likely identifying a single crystal in the morphology)."))
+                              " integral < ti_cut_acceptor will be considered as different crystals. Default = None (Note: if all"
+                              " cut-offs are specified as None, then the entire morphology will be considered"
+                              " as a single crystal."))
     parser.add_argument("-chd", "--hop_cut_donor", default=None, required=False, type=float,
                         help=("Specify the hopping frequency cut-off for the donor material for determining"
                               " which chromophores belong to the same cluster. Chromophores connected by fewer than"
-                              " hop_cut_donor total hops in the KMC simulation will be considered as different crystals. Default"
-                              " = final minimum of the total hop frequency distribution"))
+                              " hop_cut_donor total hops in the KMC simulation will be considered as different crystals."
+                              " Use 'auto' to have KMCAnalyse set the cut-off to the final minimum of the frequency distribution."
+                              " Default = None (Note: if all cut-offs are specified as None, then the entire morphology will"
+                              " be considered as a single crystal."))
     parser.add_argument("-cha", "--hop_cut_acceptor", default=None, required=False, type=float,
                         help=("Specify the hopping frequency cut-off for the acceptor material for determining"
                               " which chromophores belong to the same cluster. Chromophores connected by fewer than"
-                              " hop_cut_acceptor total hops in the KMC simulation will be considered as different crystals. Default"
-                              " = final minimum of the total hop frequency distribution"))
-    # parser.add_argument("-crd", "--sep_cut_donor", default=None, required=False, type=float,
-    #                     help=("Specify the separation cut-off (in sigma) for the donor material for determining"
-    #                           " which chromophores belong to the same cluster. Chromophores with separation"
-    #                           " r > sep_cut_donor will be considered as different crystals. Default = None (if no"
-    #                           " cut-offs are specified, then the entire chromophore neighbourlist will be considered"
-    #                           " in the same crystal (likely identifying a single crystal in the morphology)."))
-    # parser.add_argument("-cra", "--sep_cut_acceptor", default=None, required=False, type=float,
-    #                     help=("Specify the separation cut-off (in sigma) for the acceptor material for determining"
-    #                           " which chromophores belong to the same cluster. Chromophores with separation"
-    #                           " r > sep_cut_acceptor will be considered as different crystals. Default = None (if no"
-    #                           " cut-offs are specified, then the entire chromophore neighbourlist will be considered"
-    #                           " in the same crystal (likely identifying a single crystal in the morphology)."))
+                              " hop_cut_acceptor total hops in the KMC simulation will be considered as different crystals."
+                              " Use 'auto' to have KMCAnalyse set the cut-off to the final minimum of the frequency distribution."
+                              " Default = None (Note: if all cut-offs are specified as None, then the entire morphology will"
+                              " be considered as a single crystal."))
+    parser.add_argument("-crd", "--sep_cut_donor", default=None, required=False, type=float,
+                        help=("Specify the separation cut-off (in sigma) for the donor material for determining"
+                              " which chromophores belong to the same cluster. Chromophores with separation"
+                              " r > sep_cut_donor will be considered as different crystals. Default = None (Note: if all"
+                              " cut-offs are specified as None, then the entire morphology will be considered"
+                              " as a single crystal)."))
+    parser.add_argument("-cra", "--sep_cut_acceptor", default=None, required=False, type=float,
+                        help=("Specify the separation cut-off (in sigma) for the acceptor material for determining"
+                              " which chromophores belong to the same cluster. Chromophores with separation"
+                              " r > sep_cut_acceptor will be considered as different crystals. Default = None (Note: if all"
+                              " cut-offs are specified as None, then the entire morphology will be considered"
+                              " as a single crystal)."))
     parser.add_argument("-x", "--xlabel", default="Temperature (Arb. U.)", required=False,
                         help=('Specify an x-label for the combined plot (only used if -s is specified). Default ='
                               ' "Temperature (Arb. U.)"'))
@@ -1613,8 +1648,6 @@ def main():
             complete_carrier_types.append('electron')
             complete_carrier_data.append(carrier_data_electrons)
         carrier_history_dict = {}
-        freq_cut_off_donor = args.hop_cut_donor
-        freq_cut_off_acceptor = args.hop_cut_acceptor
         for carrier_type_index, carrier_data in enumerate(complete_carrier_data):
             current_carrier_type = complete_carrier_types[carrier_type_index]
             print("Considering the transport of", current_carrier_type + "...")
@@ -1630,9 +1663,9 @@ def main():
             anisotropy = plot_anisotropy(carrier_data, directory, sim_dims, current_carrier_type, args.three_D)
             print("Plotting carrier hop frequency distribution...")
             if current_carrier_type == "hole":
-                freq_cut_off_donor = plot_frequency_dist(directory, current_carrier_type, carrier_history, freq_cut_off_donor)
+                args.hop_cut_donor = plot_frequency_dist(directory, current_carrier_type, carrier_history, args.hop_cut_donor)
             else:
-                freq_cut_off_acceptor = plot_frequency_dist(directory, current_carrier_type, carrier_history, freq_cut_off_acceptor)
+                args.hop_cut_acceptor = plot_frequency_dist(directory, current_carrier_type, carrier_history, args.hop_cut_acceptor)
             print("Plotting carrier net hop frequency distribution...")
             plot_net_frequency_dist(directory, current_carrier_type, carrier_history)
             print("Plotting ((total hops) - (net hops)) discrepancy distribution...")
@@ -1640,42 +1673,43 @@ def main():
             if (carrier_history is not None) and args.three_D:
                 print("Determining carrier hopping connections (network graph)...")
                 plot_connections(chromophore_list, sim_dims, carrier_history, directory, current_carrier_type)
-            if current_carrier_type == 'hole':
+            if current_carrier_type == "hole":
                 hole_anisotropy_data.append(anisotropy)
                 hole_mobility_data.append([mobility, mob_error])
-            elif current_carrier_type == 'electron':
+            elif current_carrier_type == "electron":
                 electron_anisotropy_data.append(anisotropy)
                 electron_mobility_data.append([mobility, mob_error])
-            data_dict['name'] = os.path.split(directory)[1]
-            data_dict[current_carrier_type.lower() + '_anisotropy'] = anisotropy
-            data_dict[current_carrier_type.lower() + '_mobility'] = mobility
-            data_dict[current_carrier_type.lower() + '_mobility_r_squared'] = r_squared
+            data_dict["name"] = os.path.split(directory)[1]
+            data_dict[current_carrier_type.lower() + "_anisotropy"] = anisotropy
+            data_dict[current_carrier_type.lower() + "_mobility"] = mobility
+            data_dict[current_carrier_type.lower() + "_mobility_r_squared"] = r_squared
+        cut_off_dict = {"separation": [args.sep_cut_donor, args.sep_cut_acceptor],
+                        "orientation": [args.o_cut_donor, args.o_cut_acceptor],
+                        "TI": [args.ti_cut_donor, args.ti_cut_acceptor],
+                        "freq": [args.hop_cut_donor, args.hop_cut_acceptor],
+                       }
         # Now plot the distributions!
-        temp_dir = directory + '/figures'
+        temp_dir = directory + "/figures"
         CG_to_mol_ID = determine_molecule_IDs(CG_to_AAID_master, AA_morphology_dict, parameter_dict, chromophore_list)
         data_dict = plot_energy_levels(temp_dir, chromophore_list, data_dict)
         plot_neighbour_hist(chromophore_list, CG_to_mol_ID, morphology_shape, temp_dir)
-        cluster_dicts, cluster_freqs, clusters_total, clusters_large, clusters_biggest, clusters_cutoffs = get_clusters(chromophore_list, carrier_history_dict, morphology_shape, args.o_cut_donor, args.o_cut_acceptor, args.ti_cut_donor, args.ti_cut_acceptor, freq_cut_off_donor, freq_cut_off_acceptor, CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict)
+        cluster_dicts, cluster_freqs, clusters_total, clusters_large, clusters_biggest, clusters_cutoffs = get_clusters(chromophore_list, carrier_history_dict, morphology_shape, cut_off_dict, CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict)
         if clusters_total[0] > 0:
             data_dict["donor_clusters_total"] = clusters_total[0]
             data_dict["donor_clusters_large"] = clusters_large[0]
             data_dict["donor_clusters_biggest"] = clusters_biggest[0]
-            if clusters_cutoffs[0][0] is not None:
-                data_dict['donor_clusters_orientation_cut'] = clusters_cutoffs[0][0]
-            if clusters_cutoffs[0][1] is not None:
-                data_dict['donor_clusters_transfer_integral_cut'] = clusters_cutoffs[0][1]
-            if clusters_cutoffs[0][2] is not None:
-                data_dict['donor_clusters_hop_freq_cut'] = clusters_cutoffs[0][2]
+            data_dict["donor_clusters_separation_cut"] = clusters_cutoffs[0][0]
+            data_dict["donor_clusters_orientation_cut"] = clusters_cutoffs[0][1]
+            data_dict["donor_clusters_transfer_integral_cut"] = clusters_cutoffs[0][2]
+            data_dict["donor_clusters_hop_freq_cut"] = clusters_cutoffs[0][3]
         if clusters_total[1] > 0:
             data_dict["acceptor_clusters_total"] = clusters_total[1]
             data_dict["acceptor_clusters_large"] = clusters_large[1]
             data_dict["acceptor_clusters_biggest"] = clusters_biggest[1]
-            if clusters_cutoffs[0][0] is not None:
-                data_dict['acceptor_clusters_orientation_cut'] = clusters_cutoffs[0][0]
-            if clusters_cutoffs[0][1] is not None:
-                data_dict['acceptor_clusters_transfer_integral_cut'] = clusters_cutoffs[0][1]
-            if clusters_cutoffs[0][2] is not None:
-                data_dict['acceptor_clusters_hop_freq_cut'] = clusters_cutoffs[0][2]
+            data_dict["acceptor_clusters_separation_cut"] = clusters_cutoffs[1][0]
+            data_dict["acceptor_clusters_orientation_cut"] = clusters_cutoffs[1][1]
+            data_dict["acceptor_clusters_transfer_integral_cut"] = clusters_cutoffs[1][2]
+            data_dict["acceptor_clusters_hop_freq_cut"] = clusters_cutoffs[1][3]
         if args.three_D:
             print("Plotting 3D cluster location plot...")
             plot_clusters_3D(temp_dir, chromophore_list, cluster_dicts, sim_dims)
