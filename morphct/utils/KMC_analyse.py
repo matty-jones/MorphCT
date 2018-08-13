@@ -632,6 +632,57 @@ def plot_neighbour_hist(chromophore_list, CG_to_mol_ID, morphology_shape, output
     return sep_cuts[0], sep_cuts[1]
 
 
+def plot_orientation_hist(chromophore_list, CG_to_mol_ID, orientations_data, output_dir, o_cut_donor, o_cut_acceptor):
+    orientation_dist_donor = []
+    orientation_dist_acceptor = []
+    for chromo1 in chromophore_list:
+        orientation_1 = orientations_data[chromo1.ID]
+        for chromo2_details in chromo1.neighbours:
+            if (chromo2_details is None)\
+               or (chromo1.ID == chromophore_list[chromo2_details[0]].ID):
+                continue
+            chromo2 = chromophore_list[chromo2_details[0]]
+            # Skip any chromophores that are part of the same molecule
+            if CG_to_mol_ID[chromo1.CGIDs[0]] == CG_to_mol_ID[chromo2.CGIDs[0]]:
+                continue
+            orientation_2 = orientations_data[chromo2_details[0]]
+            dot_product = np.dot(orientation_1, orientation_2)
+            separation_angle = abs(np.arccos(dot_product) * 180 / np.pi)
+            if chromo1.species == 'donor':
+                orientation_dist_donor.append(separation_angle)
+            elif chromo1.species == 'acceptor':
+                orientation_dist_acceptor.append(separation_angle)
+    material = ['donor', 'acceptor']
+    o_cuts = [o_cut_donor, o_cut_acceptor]
+    for material_type, orientation_dist in enumerate([orientation_dist_donor, orientation_dist_acceptor]):
+        if len(orientation_dist) == 0:
+            continue
+        plt.figure()
+        n, bin_edges, _ = plt.hist(orientation_dist, bins=40, color='b')
+        bin_centres = (bin_edges[1:] + bin_edges[:-1]) / 2.0
+        bin_centres = np.insert(bin_centres, 0, 0)
+        n = np.insert(n, 0, 0)
+        smoothed_n = gaussian_filter(n, 1.0)
+        plt.plot(bin_centres, smoothed_n, color="r")
+        if (o_cuts[material_type] is not None) and (o_cuts[material_type].lower() == "auto"):
+            o_cuts[material_type] = calculate_cut_off_from_dist(bin_centres, smoothed_n, maximum_index=0, value_at_least=100, logarithmic=False)
+        if o_cuts[material_type] is not None:
+            o_cuts[material_type] = float(o_cuts[material_type])
+            print("Cluster cut-off based on", material[material_type], "relative chromophore orientations set to", o_cuts[material_type])
+            plt.axvline(o_cuts[material_type], c='k')
+        plt.xlabel(material[material_type].capitalize() + r' orientations' + ' (Deg)')
+        plt.xlim([0, 90])
+        plt.xticks(np.arange(0, 91, 15))
+        plt.ylabel("Frequency (Arb. U.)")
+        # 34 for donor neighbour hist, 35 for acceptor neighbour hist
+        file_name = ''.join(['{:02}_orientation_hist_'.format(34 + material_type),
+                               material[material_type].lower(), '.pdf'])
+        plt.savefig(os.path.join(output_dir, file_name))
+        plt.close()
+        print("Orientation histogram figure saved as", os.path.join(output_dir, file_name))
+    return o_cuts[0], o_cuts[1]
+
+
 def create_cut_off_dict(sep_cut_donor, sep_cut_acceptor, o_cut_donor, o_cut_acceptor, ti_cut_donor, ti_cut_acceptor, freq_cut_donor, freq_cut_acceptor):
         cut_off_dict = {"separation": [sep_cut_donor, sep_cut_acceptor],
                         "orientation": [o_cut_donor, o_cut_acceptor],
@@ -648,8 +699,8 @@ def create_cut_off_dict(sep_cut_donor, sep_cut_acceptor, o_cut_donor, o_cut_acce
         return cut_off_dict
 
 
-def get_clusters(chromophore_list, carrier_history_dict, morphology_shape, cut_off_dict,
-                 CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict):
+def get_clusters(chromophore_list, carrier_history_dict, orientations_all, cut_off_dict,
+                 AA_morphology_dict):
     freud_box = [[AA_morphology_dict[coord] for coord in ['lx', 'ly', 'lz']]]
     materials_to_check = ['donor', 'acceptor']
     carriers_to_check = ['hole', 'electron']
@@ -664,18 +715,15 @@ def get_clusters(chromophore_list, carrier_history_dict, morphology_shape, cut_o
     else:
         separations = None
     for type_index, material_type in enumerate(materials_to_check):
+        material_chromos = [chromo for chromo in chromophore_list if chromo.species == material_type]
         print("Examining the", material_type, "material...")
-        positions = np.array([chromo.posn for chromo in chromophore_list
-                     if chromo.species == material_type])
+        positions = np.array([chromo.posn for chromo in material_chromos])
         if len(positions) == 0:
             print("No material found. Continuing...")
             continue
         print("Obtaining orientations of each chromophore...")
         if cut_off_dict["orientation"][type_index] is not None:
-            orientations = get_orientations([chromo for chromo in chromophore_list
-                                             if chromo.species == material_type],
-                                            CG_morphology_dict, AA_morphology_dict,
-                                            CG_to_AAID_master, parameter_dict)
+            orientations = [orientations_all[chromo.ID] for chromo in material_chromos]
         else:
             orientations = None
         print("Calculating clusters...")
@@ -1425,27 +1473,50 @@ def combine_results_pickles(directory, pickle_files):
     print("Complete data written to", directory + "/KMC_results.pickle.")
 
 
-def calculate_cut_off_from_dist(bin_centres, frequencies, minimum_index=-1, value_at_least=100, logarithmic=False):
+def calculate_cut_off_from_dist(bin_centres, frequencies, minimum_index=None, maximum_index=None, value_at_least=100, logarithmic=False):
     try:
-        minima = argrelextrema(frequencies, np.less)[0]
-        if minimum_index < 0:
-            # Sometimes a tiny minimum at super RHS breaks this
-            cut_off = 0.0
-            while True:
-                selected_minimum = minima[minimum_index]
-                cut_off = bin_centres[selected_minimum]
-                if frequencies[selected_minimum] > value_at_least:
-                    break
-                minimum_index -= 1
-        else: 
-            # Sometimes a tiny maximum at super LHS breaks this
-            cut_off = 0.0
-            while True:
-                selected_minimum = minima[minimum_index]
-                cut_off = bin_centres[selected_minimum]
-                if frequencies[selected_minimum] > value_at_least:
-                    break
-                minimum_index += 1
+        if minimum_index is not None:
+            # Looking for minima
+            minima = argrelextrema(frequencies, np.less)[0]
+            if minimum_index < 0:
+                # Sometimes a tiny minimum at super RHS breaks this
+                cut_off = 0.0
+                while True:
+                    selected_minimum = minima[minimum_index]
+                    cut_off = bin_centres[selected_minimum]
+                    if frequencies[selected_minimum] > value_at_least:
+                        break
+                    minimum_index -= 1
+            else:
+                # Sometimes a tiny maximum at super LHS breaks this
+                cut_off = 0.0
+                while True:
+                    selected_minimum = minima[minimum_index]
+                    cut_off = bin_centres[selected_minimum]
+                    if frequencies[selected_minimum] > value_at_least:
+                        break
+                    minimum_index += 1
+        elif maximum_index is not None:
+            # Looking for maxima
+            maxima = argrelextrema(frequencies, np.greater)[0]
+            if maximum_index < 0:
+                # Sometimes a tiny maximum at super RHS breaks this
+                cut_off = 0.0
+                while True:
+                    selected_maximum = maxima[maximum_index]
+                    cut_off = bin_centres[selected_maximum]
+                    if frequencies[selected_maximum] > value_at_least:
+                        break
+                    maximum_index -= 1
+            else:
+                # Sometimes a tiny maximum at super LHS breaks this
+                cut_off = 0.0
+                while True:
+                    selected_maximum = maxima[maximum_index]
+                    cut_off = bin_centres[selected_maximum]
+                    if frequencies[selected_maximum] > value_at_least:
+                        break
+                    maximum_index += 1
         if logarithmic is True:
             cut_off = 10**cut_off
         return cut_off
@@ -1733,10 +1804,14 @@ def main():
         temp_dir = directory + "/figures"
         CG_to_mol_ID = determine_molecule_IDs(CG_to_AAID_master, AA_morphology_dict, parameter_dict, chromophore_list)
         data_dict = plot_energy_levels(temp_dir, chromophore_list, data_dict)
+        orientations = get_orientations(chromophore_list,
+                                        CG_morphology_dict, AA_morphology_dict,
+                                        CG_to_AAID_master, parameter_dict)
         args.sep_cut_donor, args.sep_cut_acceptor = plot_neighbour_hist(chromophore_list, CG_to_mol_ID, morphology_shape, temp_dir, args.sep_cut_donor, args.sep_cut_acceptor)
+        args.o_cut_donor, args.o_cut_acceptor = plot_orientation_hist(chromophore_list, CG_to_mol_ID, orientations, temp_dir, args.o_cut_donor, args.o_cut_acceptor)
         cut_off_dict = create_cut_off_dict(args.sep_cut_donor, args.sep_cut_acceptor, args.o_cut_donor, args.o_cut_acceptor, args.ti_cut_donor, args.ti_cut_acceptor, args.freq_cut_donor, args.freq_cut_acceptor)
         print("Cut-offs specified (value format: [donor, acceptor]) =", cut_off_dict)
-        cluster_dicts, cluster_freqs, clusters_total, clusters_large, clusters_biggest, clusters_cutoffs = get_clusters(chromophore_list, carrier_history_dict, morphology_shape, cut_off_dict, CG_morphology_dict, AA_morphology_dict, CG_to_AAID_master, parameter_dict)
+        cluster_dicts, cluster_freqs, clusters_total, clusters_large, clusters_biggest, clusters_cutoffs = get_clusters(chromophore_list, carrier_history_dict, orientations, cut_off_dict, AA_morphology_dict)
         if clusters_total[0] > 0:
             data_dict["donor_clusters_total"] = clusters_total[0]
             data_dict["donor_clusters_large"] = clusters_large[0]
