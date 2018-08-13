@@ -618,9 +618,8 @@ def plot_neighbour_hist(chromophore_list, CG_to_mol_ID, morphology_shape, output
         if (sep_cuts[material_type] is not None) and (sep_cuts[material_type].lower() == "auto"):
             sep_cuts[material_type] = calculate_cut_off_from_dist(bin_centres, smoothed_n, minimum_index=0, value_at_least=100, logarithmic=False)
         if sep_cuts[material_type] is not None:
-            sep_cuts[material_type] = float(sep_cuts[material_type])
             print("Cluster cut-off based on", material[material_type], "chromophore separation set to", sep_cuts[material_type])
-            plt.axvline(sep_cuts[material_type], c='k')
+            plt.axvline(float(sep_cuts[material_type]), c='k')
         plt.xlabel(material[material_type].capitalize() + r' r$_{ij}$' + ' (A)')
         plt.ylabel("Frequency (Arb. U.)")
         # 04 for donor neighbour hist, 05 for acceptor neighbour hist
@@ -667,9 +666,8 @@ def plot_orientation_hist(chromophore_list, CG_to_mol_ID, orientations_data, out
         if (o_cuts[material_type] is not None) and (o_cuts[material_type].lower() == "auto"):
             o_cuts[material_type] = calculate_cut_off_from_dist(bin_centres, smoothed_n, maximum_index=0, value_at_least=100, logarithmic=False)
         if o_cuts[material_type] is not None:
-            o_cuts[material_type] = float(o_cuts[material_type])
             print("Cluster cut-off based on", material[material_type], "relative chromophore orientations set to", o_cuts[material_type])
-            plt.axvline(o_cuts[material_type], c='k')
+            plt.axvline(float(o_cuts[material_type]), c='k')
         plt.xlabel(material[material_type].capitalize() + r' orientations' + ' (Deg)')
         plt.xlim([0, 90])
         plt.xticks(np.arange(0, 91, 15))
@@ -1519,7 +1517,8 @@ def calculate_cut_off_from_dist(bin_centres, frequencies, minimum_index=None, ma
                     maximum_index += 1
         if logarithmic is True:
             cut_off = 10**cut_off
-        return cut_off
+        # Return as string, as it will be converted to a float later
+        return str(cut_off)
     except IndexError:
         print("EXCEPTION: No minima found in frequency distribution. Setting cut_off to None.")
         return None
@@ -1544,9 +1543,8 @@ def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
     if (cut_off is not None) and (cut_off.lower() == "auto"):
         cut_off = calculate_cut_off_from_dist(bin_centres, smoothed_n, minimum_index=-1, value_at_least=100, logarithmic=True)
     if cut_off is not None:
-        cut_off = float(cut_off)
         print("Cluster cut-off based on hop frequency set to", cut_off)
-        plt.axvline(np.log10(cut_off), c='k')
+        plt.axvline(np.log10(float(cut_off)), c='k')
     plt.xlabel("".join(["Total ", carrier_type, " hops (Arb. U.)"]))
     ax = plt.gca()
     tick_labels = np.arange(0, np.ceil(np.max(frequencies)) + 1, 1)
@@ -1711,7 +1709,6 @@ def main():
                         help=('Specify a backend for matplotlib to use when plotting. Default = user defined in the'
                               ' .matplotlibrc.'))
     args, directory_list = parser.parse_known_args()
-
 
     # Load the matplotlib backend and the plotting subroutines
     global plt
