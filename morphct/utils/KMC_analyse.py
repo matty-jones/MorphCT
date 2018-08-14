@@ -1197,7 +1197,7 @@ def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name):
 
 
 def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, cluster_dicts, CG_to_mol_ID, data_dict,
-                             AA_morphology_dict):
+                             AA_morphology_dict, cut_off_dict):
     # Create all the empty lists we need
     hop_types = ['intra', 'inter']
     hop_targets = ['cluster', 'mol']
@@ -1305,7 +1305,8 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, clust
                                 os.path.join(output_dir, '16_donor_hopping_rate_clusters.pdf'))
         plot_stacked_hist_TIs(property_lists['intra_cluster_TIs_donor'], property_lists['inter_cluster_TIs_donor'],
                               ['Intra-cluster', 'Inter-cluster'], 'donor',
-                              os.path.join(output_dir, '12_donor_transfer_integral_clusters.pdf'))
+                              os.path.join(output_dir, '12_donor_transfer_integral_clusters.pdf'),
+                             cut_off_dict["TI"][0])
     # Acceptor cluster Plots:
     if (len(property_lists['intra_cluster_rates_acceptor']) > 0)\
        or (len(property_lists['inter_cluster_rates_acceptor']) > 0):
@@ -1320,7 +1321,8 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, clust
                                 'acceptor', os.path.join(output_dir, '17_acceptor_hopping_rate_clusters.pdf'))
         plot_stacked_hist_TIs(property_lists['intra_cluster_TIs_acceptor'], property_lists['inter_cluster_TIs_acceptor'],
                               ['Intra-cluster', 'Inter-cluster'], 'acceptor',
-                              os.path.join(output_dir, '13_acceptor_transfer_integral_clusters.pdf'))
+                              os.path.join(output_dir, '13_acceptor_transfer_integral_clusters.pdf'),
+                             cut_off_dict["TI"][1])
     # Donor Mol Plots:
     if (len(property_lists['intra_mol_rates_donor']) > 0) or (len(property_lists['inter_mol_rates_donor']) > 0):
         print("Mean intra-molecular donor rate =", np.mean(property_lists['intra_mol_rates_donor']), "+/-",
@@ -1332,7 +1334,8 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, clust
                                                                                   '14_donor_hopping_rate_mols.pdf'))
         plot_stacked_hist_TIs(property_lists['intra_mol_TIs_donor'], property_lists['inter_mol_TIs_donor'],
                               ['Intra-mol', 'Inter-mol'], 'donor', os.path.join(output_dir,
-                                                                                '10_donor_transfer_integral_mols.pdf'))
+                                                                                '10_donor_transfer_integral_mols.pdf'),
+                             cut_off_dict["TI"][0])
     # Acceptor Mol Plots:
     if (len(property_lists['intra_mol_rates_acceptor']) > 0) or (len(property_lists['inter_mol_rates_acceptor']) > 0):
         print("Mean intra-molecular acceptor rate =", np.mean(property_lists['intra_mol_rates_acceptor']), "+/-",
@@ -1346,7 +1349,8 @@ def plot_mixed_hopping_rates(output_dir, chromophore_list, parameter_dict, clust
                                 os.path.join(output_dir, '15_acceptor_hopping_rate_mols.pdf'))
         plot_stacked_hist_TIs(property_lists['intra_mol_TIs_acceptor'], property_lists['inter_mol_TIs_acceptor'],
                               ['Intra-mol', 'Inter-mol'], 'acceptor',
-                              os.path.join(output_dir, '11_acceptor_transfer_integral_mols.pdf'))
+                              os.path.join(output_dir, '11_acceptor_transfer_integral_mols.pdf'),
+                             cut_off_dict["TI"][1])
     # Update the dataDict
     for material in chromo_species:
         for hop_type in hop_types:
@@ -1384,7 +1388,7 @@ def plot_stacked_hist_rates(data1, data2, labels, data_type, file_name):
     print("Figure saved as", file_name)
 
 
-def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name):
+def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name, cut_off):
     plt.figure()
     (n, bins, patches) = plt.hist([data1, data2], bins=np.linspace(0, 1.2, 20), stacked=True, color=['r', 'b'],
                                   label=labels)
@@ -1392,6 +1396,8 @@ def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name):
     plt.xlabel(data_type.capitalize() + r' T$_{ij}$ (eV)')
     plt.xlim([0, 1.2])
     plt.ylim([0, np.max(n) * 1.02])
+    if cut_off is not None:
+        plt.axvline(float(cut_off), c='k')
     plt.legend(loc=0, prop={'size': 18})
     plt.savefig(file_name)
     plt.close()
@@ -1829,7 +1835,7 @@ def main():
             print("Plotting 3D cluster location plot...")
             plot_clusters_3D(temp_dir, chromophore_list, cluster_dicts, sim_dims)
         data_dict = plot_mixed_hopping_rates(temp_dir, chromophore_list, parameter_dict, cluster_dicts, CG_to_mol_ID,
-                                             data_dict, AA_morphology_dict)
+                                             data_dict, AA_morphology_dict, cut_off_dict)
         print("Plotting cluster size distribution...")
         plot_cluster_size_dist(cluster_freqs, directory)
         print("Writing CSV Output File...")
