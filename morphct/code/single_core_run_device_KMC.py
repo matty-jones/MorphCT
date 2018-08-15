@@ -316,9 +316,7 @@ class exciton:
             new_chromo = global_chromophore_data.return_closest_chromophore_to_position(
                 target_device_posn, destination_position
             )
-            if (new_chromo.lower() == "top") or (
-                new_chromo.lower() == "bottom"
-            ):
+            if (new_chromo.lower() == "top") or (new_chromo.lower() == "bottom"):
                 # This exciton is hopping out of the active layer and into the
                 # contacts.
                 # Ensure it doesn't get queued up again
@@ -1347,7 +1345,9 @@ def plot3D_trajectory(
                 log_file,
                 [
                     "Something has gone wrong while plotting. This carrier has no"
-                    " history:", repr(carrier.__dict__), "Continuing...",
+                    " history:",
+                    repr(carrier.__dict__),
+                    "Continuing...",
                 ],
             )
             continue
