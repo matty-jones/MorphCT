@@ -32,12 +32,19 @@ class TestCommand(object):
             return cmd()
 
     def compare_lt(self, object1, object2):
-        assert object2 > object1, ''.join([
-            'Expected object1 (', repr(object1), ') to be less than object2 (',
-            repr(object2), ').'])
+        assert object2 > object1, "".join(
+            [
+                "Expected object1 (",
+                repr(object1),
+                ") to be less than object2 (",
+                repr(object2),
+                ").",
+            ]
+        )
 
-    def compare_equal(self, expected, response=None, function=None,
-                      posn_args=None, kw_args=None):
+    def compare_equal(
+        self, expected, response=None, function=None, posn_args=None, kw_args=None
+    ):
         if function is not None:
             response = self.fn_response(function, posn_args, kw_args)
         if isinstance(expected, (float, int)):
@@ -57,14 +64,20 @@ class TestCommand(object):
 
     def check_scalar(self, response, expected):
         # Check that the answer is within 1E-4% of expected
-        assert np.isclose(response, expected, 1E-6), ''.join([
-            'Expected ', repr(expected), ' but got ', repr(response),
-            ', which is more than 1E-4% from expected.'])
+        assert np.isclose(response, expected, 1E-6), "".join(
+            [
+                "Expected ",
+                repr(expected),
+                " but got ",
+                repr(response),
+                ", which is more than 1E-4% from expected.",
+            ]
+        )
 
     def check_identical(self, response, expected):
-        assert response == expected, ' '.join([
-            'Expected', repr(expected), 'but got', repr(response),
-            'instead.'])
+        assert response == expected, " ".join(
+            ["Expected", repr(expected), "but got", repr(response), "instead."]
+        )
 
     def check_array(self, response, expected):
         for expected_index, expected_value in enumerate(expected):
@@ -73,27 +86,35 @@ class TestCommand(object):
     def check_matrix(self, response, expected):
         for expected_row_id in range(expected.shape[0]):
             for expected_col_id in range(expected.shape[1]):
-                self.compare_equal(response[expected_row_id, expected_col_id],
-                                    expected[expected_row_id, expected_col_id])
+                self.compare_equal(
+                    response[expected_row_id, expected_col_id],
+                    expected[expected_row_id, expected_col_id],
+                )
 
     def check_dictionary(self, response, expected):
         for expected_key, expected_val in expected.items():
-            print(''.join(['Checking key ', str(expected_key), '...']))
+            print("".join(["Checking key ", str(expected_key), "..."]))
             self.compare_equal(response[expected_key], expected_val)
 
-    def confirm_file_exists(self, expected, response=None, function=None,
-                            posn_args=None, kw_args=None, negate=False):
+    def confirm_file_exists(
+        self,
+        expected,
+        response=None,
+        function=None,
+        posn_args=None,
+        kw_args=None,
+        negate=False,
+    ):
         if function is not None:
             _ = self.fn_response(function, posn_args, kw_args)
-        directory = '/'.join(expected.split('/')[:-1])
-        file_name = expected.split('/')[-1]
+        directory = "/".join(expected.split("/")[:-1])
+        file_name = expected.split("/")[-1]
         files = os.listdir(directory)
         if negate is False:
-            assert file_name in files, ' '.join([
-                'Expected the file', str(file_name),
-                "to exist, but it doesn't."])
+            assert file_name in files, " ".join(
+                ["Expected the file", str(file_name), "to exist, but it doesn't."]
+            )
         else:
-            assert file_name not in files, ' '.join([
-                'Expected the file', str(file_name),
-                "to not exist, but it does."])
-
+            assert file_name not in files, " ".join(
+                ["Expected the file", str(file_name), "to not exist, but it does."]
+            )
