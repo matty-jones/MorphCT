@@ -10,8 +10,10 @@ from morphct.code import helper_functions as hf
 
 
 @pytest.fixture(scope='module',
-                params=['', '-tp', '-d 0.3', '-x "TEST_OUTPUT"',
-                        '-s 0.0,1.0', 'COMBINE_KMC']
+                params=['', '-t', '-d 0.3', '-x "TEST_OUTPUT"',
+                        '-s 0.0,1.0', 'COMBINE_KMC',
+                        '-crd auto -cod auto -cfd auto',
+                        '-ctd 0.1']
                 )
 def run_simulation(request):
     flags = request.param
@@ -100,10 +102,10 @@ class TestCompareOutputs(TestCommand):
     def test_check_stack_figure(self, run_simulation):
         if '-t' in run_simulation:
             self.confirm_file_exists(os.path.join(
-                TEST_ROOT, 'output_KMCA', 'figures', '03_stacks.pdf'))
+                TEST_ROOT, 'output_KMCA', 'figures', '03_clusters.pdf'))
         else:
             self.confirm_file_exists(os.path.join(
-                TEST_ROOT, 'output_KMCA', 'figures', '03_stacks.pdf'),
+                TEST_ROOT, 'output_KMCA', 'figures', '03_clusters.pdf'),
                 negate=True)
 
     def test_check_neighbour_hist_figure(self, run_simulation):
@@ -182,4 +184,4 @@ if __name__ == "__main__":
         def __init__(self, param):
             self.param = param
 
-    run_simulation(parameters('COMBINE_KMC'))
+    run_simulation(parameters('-t'))
