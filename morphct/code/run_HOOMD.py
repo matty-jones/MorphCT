@@ -368,7 +368,7 @@ class md_phase:
         # Real bonds
         if self.bond_type.lower() == "harmonic":
             if len(self.bond_coeffs) > 0:
-                self.log_quantites.append("bond_" + self.bond_type + "_energy")
+                self.log_quantities.append("bond_" + self.bond_type + "_energy")
             self.bond_class = bond.harmonic()
             for bond_coeff in self.bond_coeffs:
                 # [k] = kcal mol^{-1} \AA^{-2} * episilon/sigma^{2}, [r0] =
