@@ -135,7 +135,7 @@ class TestCompareOutputs(TestCommand):
     def test_check_transfer_integral_stacks_figure(self, run_simulation):
         self.confirm_file_exists(os.path.join(
             TEST_ROOT, 'output_KMCA', 'figures',
-            '12_donor_transfer_integral_stacks.pdf'))
+            '12_donor_transfer_integral_clusters.pdf'))
 
     def test_check_hopping_rate_mols_figure(self, run_simulation):
         self.confirm_file_exists(os.path.join(
@@ -145,7 +145,7 @@ class TestCompareOutputs(TestCommand):
     def test_check_hopping_rate_stacks_figure(self, run_simulation):
         self.confirm_file_exists(os.path.join(
             TEST_ROOT, 'output_KMCA', 'figures',
-            '16_donor_hopping_rate_stacks.pdf'))
+            '16_donor_hopping_rate_clusters.pdf'))
 
     def test_check_lin_MSD_figure(self, run_simulation):
         self.confirm_file_exists(os.path.join(
@@ -161,6 +161,36 @@ class TestCompareOutputs(TestCommand):
         self.confirm_file_exists(os.path.join(
             TEST_ROOT, 'output_KMCA', 'figures',
             '22_log_MSD_hole.pdf'))
+
+    def test_check_log_MSD_figure(self, run_simulation):
+        self.confirm_file_exists(os.path.join(
+            TEST_ROOT, 'output_KMCA', 'figures',
+            '24_total_hop_freq_hole.pdf'))
+
+    def test_check_log_MSD_figure(self, run_simulation):
+        self.confirm_file_exists(os.path.join(
+            TEST_ROOT, 'output_KMCA', 'figures',
+            '26_net_hop_freq_hole.pdf'))
+
+    def test_check_log_MSD_figure(self, run_simulation):
+        self.confirm_file_exists(os.path.join(
+            TEST_ROOT, 'output_KMCA', 'figures',
+            '28_hop_discrepancy_hole.pdf'))
+
+    def test_check_log_MSD_figure(self, run_simulation):
+        self.confirm_file_exists(os.path.join(
+            TEST_ROOT, 'output_KMCA', 'figures',
+            '30_hole_displacement_dist.pdf'))
+
+    def test_check_log_MSD_figure(self, run_simulation):
+        self.confirm_file_exists(os.path.join(
+            TEST_ROOT, 'output_KMCA', 'figures',
+            '32_hole_cluster_dist.pdf'))
+
+    def test_check_log_MSD_figure(self, run_simulation):
+        self.confirm_file_exists(os.path.join(
+            TEST_ROOT, 'output_KMCA', 'figures',
+            '34_orientation_hist_donor.pdf'))
 
     def test_check_anisotropy_sequence_figure(self, run_simulation):
         if '-s' in run_simulation:
@@ -184,4 +214,4 @@ if __name__ == "__main__":
         def __init__(self, param):
             self.param = param
 
-    run_simulation(parameters('-t'))
+    run_simulation(parameters(''))
