@@ -681,8 +681,8 @@ def write_morphology_xml(
             print("Checking wrapped positions before writing xml...")
             input_dictionary = check_wrapped_positions(input_dictionary)
     # Need to add natoms if it doesn't exist already
-    if 'natoms' not in input_dictionary.keys():
-        input_dictionary['natoms'] = len(input_dictionary['position'])
+    if "natoms" not in input_dictionary.keys():
+        input_dictionary["natoms"] = len(input_dictionary["position"])
     # Add Boiler Plate first
     lines_to_write = [
         '<?xml version="1.0" encoding="UTF-8"?>\n',

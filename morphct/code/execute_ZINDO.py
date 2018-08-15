@@ -94,8 +94,7 @@ def create_input_files(chromophore_list, AA_morphology_dict, parameter_dict):
                     [0, 0, 0] for i in range(len(term_group_posns1))
                 ]
                 terminating_group_images2 = [
-                    chromophore2_transformation
-                    for i in range(len(term_group_posns2))
+                    chromophore2_transformation for i in range(len(term_group_posns2))
                 ]
                 # Write the dimer input file
                 write_orca_inp(
@@ -138,9 +137,11 @@ def remove_adjacent_terminators(group1, group2):
             try:
                 [group1, group2][group_no].pop(index)
             except IndexError:
-                raise SystemError("Tried to pop a termination group that does"
-                                  " not exist...are you sure this is an"
-                                  " atomistic morphology?")
+                raise SystemError(
+                    "Tried to pop a termination group that does"
+                    " not exist...are you sure this is an"
+                    " atomistic morphology?"
+                )
     return group1, group2
 
 
