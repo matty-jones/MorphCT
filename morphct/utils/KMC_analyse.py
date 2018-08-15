@@ -186,7 +186,12 @@ def plot_cluster_size_dist(cluster_freqs, directory):
         except IndexError:
             return
         plt.figure()
-        plt.hist(sizes, bins=np.logspace(0, np.ceil(np.max(sizes)), 20), color="b")
+        try:
+            plt.hist(sizes, bins=np.logspace(0, np.ceil(np.max(sizes)), 20), color="b")
+        except ValueError:
+            print(
+                "EXCEPTION: No clusters found. Are you sure the cluster criteria are correct?"
+            )
         plt.xlabel("Cluster Size (Arb. U.)")
         plt.ylabel("Frequency (Arb. U.)")
         plt.xscale("log")
