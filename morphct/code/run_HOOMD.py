@@ -87,9 +87,6 @@ class md_phase:
             "volume",
             "potential_energy",
             "kinetic_energy",
-            "bond_" + self.bond_type + "_energy",
-            "angle_" + self.angle_type + "_energy",
-            "dihedral_" + self.dihedral_type + "_energy",
         ]
         # Set the bond coefficients
         self.get_FF_coeffs()
@@ -370,6 +367,8 @@ class md_phase:
         # Set Bond Coeffs
         # Real bonds
         if self.bond_type.lower() == "harmonic":
+            if len(self.bond_coeffs) > 0:
+                self.log_quantites.append("bond_" + self.bond_type + "_energy")
             self.bond_class = bond.harmonic()
             for bond_coeff in self.bond_coeffs:
                 # [k] = kcal mol^{-1} \AA^{-2} * episilon/sigma^{2}, [r0] =
@@ -418,6 +417,7 @@ class md_phase:
         # Set Angle Coeffs
         self.angle_class = None
         if len(self.angle_coeffs) > 0:
+            self.log_quantities.append("angle_" + self.angle_type + "_energy")
             if self.angle_type.lower() == "harmonic":
                 self.angle_class = angle.harmonic()
                 for angle_coeff in self.angle_coeffs:
@@ -437,6 +437,7 @@ class md_phase:
         # Set Dihedral Coeffs
         self.dihedral_class = None
         if len(self.dihedral_coeffs) > 0:
+            self.log_quantities.append("dihedral_" + self.dihedral_type + "_energy")
             if self.dihedral_type.lower() == "table":
                 self.dihedral_class = dihedral.table(width=1000)
                 for dihedral_coeff in self.dihedral_coeffs:
