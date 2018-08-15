@@ -1356,7 +1356,7 @@ def get_electronic_atom_positions(
     if CG_morphology_dict is not None:
         # Normal operation
         CG_types = sorted(
-            list(set([CG_morphology_dict["type"][CGID] for CGID in self.CGIDs]))
+            list(set([CG_morphology_dict["type"][CGID] for CGID in chromophore.CGIDs]))
         )
         active_CG_sites, _ = obtain_electronic_species(
             chromophore.CGIDs,
