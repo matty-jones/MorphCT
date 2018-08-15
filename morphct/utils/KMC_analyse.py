@@ -646,7 +646,7 @@ def plot_orientation_hist(chromophore_list, CG_to_mol_ID, orientations_data, out
                 continue
             orientation_2 = orientations_data[chromo2_details[0]]
             dot_product = np.dot(orientation_1, orientation_2)
-            separation_angle = abs(np.arccos(dot_product) * 180 / np.pi)
+            separation_angle = np.arccos(np.abs(dot_product)) * 180 / np.pi
             if chromo1.species == 'donor':
                 orientation_dist_donor.append(separation_angle)
             elif chromo1.species == 'acceptor':
