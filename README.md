@@ -64,6 +64,7 @@ MorphCT accomplishes this by:
     * Pytest-Cov
     * PyYAML
     * Coveralls
+    * ImageMagick
 
 ## Running Tests ##
 
