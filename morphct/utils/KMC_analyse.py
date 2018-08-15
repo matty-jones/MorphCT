@@ -188,16 +188,16 @@ def plot_cluster_size_dist(cluster_freqs, directory):
         plt.figure()
         try:
             plt.hist(sizes, bins=np.logspace(0, np.ceil(np.max(sizes)), 20), color="b")
+            plt.xscale("log")
+            # tick_labels = np.arange(0, np.ceil(np.max(sizes)) + 1, 1)
+            plt.xlim([0, 10 ** (np.ceil(np.max(sizes)))])
+            # plt.xticks(tick_labels, [r'10$^{{{}}}$'.format(int(x)) for x in tick_labels])
         except ValueError:
             print(
                 "EXCEPTION: No clusters found. Are you sure the cluster criteria are correct?"
             )
         plt.xlabel("Cluster Size (Arb. U.)")
         plt.ylabel("Frequency (Arb. U.)")
-        plt.xscale("log")
-        # tick_labels = np.arange(0, np.ceil(np.max(sizes)) + 1, 1)
-        plt.xlim([0, 10 ** (np.ceil(np.max(sizes)))])
-        # plt.xticks(tick_labels, [r'10$^{{{}}}$'.format(int(x)) for x in tick_labels])
         # 32 for hole cluster size dist, 33 for electron cluster size dist
         file_name = "".join(
             [
