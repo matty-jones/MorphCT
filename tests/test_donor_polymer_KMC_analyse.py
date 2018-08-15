@@ -10,10 +10,11 @@ from morphct.code import helper_functions as hf
 
 
 @pytest.fixture(scope='module',
-                params=['', '-t', '-d 0.3', '-x "TEST_OUTPUT"',
+                params=['', '-t', '-x "TEST_OUTPUT"',
                         '-s 0.0,1.0', 'COMBINE_KMC',
                         '-crd auto -cod auto -cfd auto',
-                        '-ctd 0.1']
+                        '-ctd 0.1 -crd 1.0 -cod 10.0',
+                       ]
                 )
 def run_simulation(request):
     flags = request.param
@@ -214,4 +215,4 @@ if __name__ == "__main__":
         def __init__(self, param):
             self.param = param
 
-    run_simulation(parameters(''))
+    run_simulation(parameters('-ctd 0.1 -crd 1.0 -cod 10.0'))
