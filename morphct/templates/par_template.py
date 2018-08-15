@@ -269,9 +269,10 @@ For AA_rigid_body_species and CG_site_species there are 3 modes of operation:
    3) len(AA_rigid_body_species) > 0:
       This is the operation for a more complex atomistic morphology, where multiple species
       may be present (e.g. block copolymer, or small molecule blend). MorphCT uses the HOOMD
-      rigid bodies to decide which chromophores are which species. Note that non-numpy
+      rigid bodies to decide which chromophores are which species. Note that the names need
+      to be consistent with the chromophore_species key names defined below. Non-numpy
       ranges work too. For example,
-      AA_rigid_body_species = {'donor': range(0,100), 'acceptor': range(100,200)}
+      AA_rigid_body_species = {'d1': range(0,100), 'a2': range(100,200)}
 '''
 AA_rigid_body_species = {
 }
