@@ -329,7 +329,7 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
         # Now check all of the files to see if we can update the
         # chromophore_list
         for chromo_name, chromo_data in failed_single_chromos.items():
-            print("Checking previously failed", chromoName)
+            print("Checking previously failed", chromo_name)
             chromo_ID = chromo_data[1]
             try:
                 # Update the chromophore data in the chromophore_list

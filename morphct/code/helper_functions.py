@@ -14,6 +14,9 @@ k_B = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}
 hbar = 1.05457173E-34  # m^{2} kg s^{-1}
 
 
+sys.setrecursionlimit(10000)
+
+
 def find_index(string, character):
     """
     This function returns the locations of an inputted character in an inputted string
@@ -52,26 +55,38 @@ def calc_COM(list_of_positions, list_of_atom_types=None, list_of_atom_masses=Non
             # Masses obtained from nist.gov, for the atoms we are likely to
             # simulate the most.
             # Add in new atoms here if your molecule requires it!
-            if atom_type.lower()[:2] == "br":
-                print(
-                    "Br 79 being used as the preferred isotope, change in"
-                    " helper_functions.calc_COM if not!"
-                )
-                list_of_atom_masses.append(78.918338)
-            elif atom_type.lower()[:2] == "si":
+            if atom_type.lower()[:2] == "si":
                 list_of_atom_masses.append(27.976926)
             elif atom_type.lower()[0] == "c":
                 list_of_atom_masses.append(12.000000)
             elif atom_type.lower()[0] == "h":
-                list_of_atom_masses.append(1.007825)
+                list_of_atom_masses.append(1.0078250)
             elif atom_type.lower()[0] == "s":
                 list_of_atom_masses.append(31.972071)
             elif atom_type.lower()[0] == "o":
                 list_of_atom_masses.append(15.994914)
             elif atom_type.lower()[0] == "n":
                 list_of_atom_masses.append(14.003074)
-            elif (atom_type.lower()[0] == "d") or (atom_type.lower()[0] == "a"):
-                list_of_atom_masses.append(1.0)
+            elif atom_type.lower()[:2] == "mo":
+                list_of_atom_masses.append(95.960000)
+            elif atom_type.lower()[:2] == "nb":
+                list_of_atom_masses.append(92.906380)
+            elif atom_type.lower()[:2] == "te":
+                list_of_atom_masses.append(127.60000)
+            elif atom_type.lower()[:2] == "v":
+                list_of_atom_masses.append(50.941500)
+            elif atom_type.lower()[:2] == "ni":
+                list_of_atom_masses.append(140.91120)
+            elif atom_type.lower()[:2] == "ga":
+                list_of_atom_masses.append(69.723000)
+            elif atom_type.lower()[:2] == "mn":
+                list_of_atom_masses.append(54.938045)
+            elif atom_type.lower()[:2] == "cu":
+                list_of_atom_masses.append(63.546000)
+            elif atom_type.lower()[:2] == "ag":
+                list_of_atom_masses.append(107.86820)
+            elif atom_type.lower()[:2] == "au":
+                list_of_atom_masses.append(196.96657)
             else:
                 raise SystemError(
                     "Unknown atomic mass " + str(atom_type) + ". Please hardcode"
@@ -677,6 +692,9 @@ def write_morphology_xml(
         else:
             print("Checking wrapped positions before writing xml...")
             input_dictionary = check_wrapped_positions(input_dictionary)
+    # Need to add natoms if it doesn't exist already
+    if "natoms" not in input_dictionary.keys():
+        input_dictionary["natoms"] = len(input_dictionary["position"])
     # Add Boiler Plate first
     lines_to_write = [
         '<?xml version="1.0" encoding="UTF-8"?>\n',

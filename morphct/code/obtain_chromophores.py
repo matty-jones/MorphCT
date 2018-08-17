@@ -70,8 +70,7 @@ class chromophore:
             electronically_active_AAIDs = [
                 AAID
                 for AAIDs in [
-                    flattened_CG_to_AAID_master[CGID]
-                    for CGID in active_CG_sites
+                    flattened_CG_to_AAID_master[CGID] for CGID in active_CG_sites
                 ]
                 for AAID in AAIDs
             ]
@@ -105,17 +104,12 @@ class chromophore:
                 for AAID in chromophore_CG_sites:
                     if AA_morphology_dict["body"][AAID] != -1:
                         electronically_active_AAIDs.append(AAID)
-                active_CG_sites = copy.deepcopy(
-                    electronically_active_AAIDs
-                )
+                active_CG_sites = copy.deepcopy(electronically_active_AAIDs)
                 # Now work out what the species is:
                 for sub_species, rigid_bodies in parameter_dict[
                     "AA_rigid_body_species"
                 ].items():
-                    if (
-                        AA_morphology_dict["body"][active_CG_sites[0]]
-                        in rigid_bodies
-                    ):
+                    if AA_morphology_dict["body"][active_CG_sites[0]] in rigid_bodies:
                         self.sub_species = sub_species
                         self.species = parameter_dict["chromophore_species"][
                             self.sub_species
