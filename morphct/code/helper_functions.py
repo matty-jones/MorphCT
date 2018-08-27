@@ -57,24 +57,12 @@ def calc_COM(list_of_positions, list_of_atom_types=None, list_of_atom_masses=Non
             # Add in new atoms here if your molecule requires it!
             if atom_type.lower()[:2] == "si":
                 list_of_atom_masses.append(27.976926)
-            elif atom_type.lower()[0] == "c":
-                list_of_atom_masses.append(12.000000)
-            elif atom_type.lower()[0] == "h":
-                list_of_atom_masses.append(1.0078250)
-            elif atom_type.lower()[0] == "s":
-                list_of_atom_masses.append(31.972071)
-            elif atom_type.lower()[0] == "o":
-                list_of_atom_masses.append(15.994914)
-            elif atom_type.lower()[0] == "n":
-                list_of_atom_masses.append(14.003074)
             elif atom_type.lower()[:2] == "mo":
                 list_of_atom_masses.append(95.960000)
             elif atom_type.lower()[:2] == "nb":
                 list_of_atom_masses.append(92.906380)
             elif atom_type.lower()[:2] == "te":
                 list_of_atom_masses.append(127.60000)
-            elif atom_type.lower()[:2] == "v":
-                list_of_atom_masses.append(50.941500)
             elif atom_type.lower()[:2] == "ni":
                 list_of_atom_masses.append(140.91120)
             elif atom_type.lower()[:2] == "ga":
@@ -87,6 +75,18 @@ def calc_COM(list_of_positions, list_of_atom_types=None, list_of_atom_masses=Non
                 list_of_atom_masses.append(107.86820)
             elif atom_type.lower()[:2] == "au":
                 list_of_atom_masses.append(196.96657)
+            elif atom_type.lower()[0] == "c":
+                list_of_atom_masses.append(12.000000)
+            elif atom_type.lower()[0] == "h":
+                list_of_atom_masses.append(1.0078250)
+            elif atom_type.lower()[0] == "s":
+                list_of_atom_masses.append(31.972071)
+            elif atom_type.lower()[0] == "o":
+                list_of_atom_masses.append(15.994914)
+            elif atom_type.lower()[0] == "n":
+                list_of_atom_masses.append(14.003074)
+            elif atom_type.lower()[0] == "v":
+                list_of_atom_masses.append(50.941500)
             else:
                 raise SystemError(
                     "Unknown atomic mass " + str(atom_type) + ". Please hardcode"
