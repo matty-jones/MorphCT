@@ -1506,8 +1506,7 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
             count += 1
 
     tcl_file_path = os.path.join(
-        output_dir.replace("figures", "morphology"),
-        "cluster_colors.tcl",
+        output_dir.replace("figures", "morphology"), "cluster_colors.tcl"
     )
     with open(tcl_file_path, "w+") as tcl_file:
         tcl_file.writelines("".join(tcl_text))
@@ -2323,11 +2322,7 @@ def calculate_cut_off_from_dist(
 
 
 def plot_TI_hist(
-    chromophore_list,
-    chromo_to_mol_ID,
-    output_dir,
-    TI_cut_donor,
-    TI_cut_acceptor,
+    chromophore_list, chromo_to_mol_ID, output_dir, TI_cut_donor, TI_cut_acceptor
 ):
     # TI_dist [[DONOR], [ACCEPTOR]]
     TI_dist_intra = [[], []]
@@ -2342,32 +2337,49 @@ def plot_TI_hist(
                 if (chromo2_details is None) or (chromo1.ID >= chromo2.ID):
                     continue
                 if chromo_to_mol_ID[chromo1.ID] == chromo_to_mol_ID[chromo2.ID]:
-                    TI_dist_intra[material_index].append(chromo1.neighbours_TI[neighbour_index])
+                    TI_dist_intra[material_index].append(
+                        chromo1.neighbours_TI[neighbour_index]
+                    )
                 else:
-                    TI_dist_inter[material_index].append(chromo1.neighbours_TI[neighbour_index])
-        if (len(TI_dist_intra[material_index]) == 0) and (len(TI_dist_inter[material_index])):
+                    TI_dist_inter[material_index].append(
+                        chromo1.neighbours_TI[neighbour_index]
+                    )
+        if (len(TI_dist_intra[material_index]) == 0) and (
+            len(TI_dist_inter[material_index])
+        ):
             continue
         plt.figure()
-        n, bin_edges, _ = plt.hist([TI_dist_intra[material_index], TI_dist_inter[material_index]],
-                                   bins=np.linspace(0, np.max(TI_dist_intra[material_index] + TI_dist_inter[material_index]), 20),
-                                   color=["r", "b"], stacked=True, label=labels)
+        n, bin_edges, _ = plt.hist(
+            [TI_dist_intra[material_index], TI_dist_inter[material_index]],
+            bins=np.linspace(
+                0,
+                np.max(TI_dist_intra[material_index] + TI_dist_inter[material_index]),
+                20,
+            ),
+            color=["r", "b"],
+            stacked=True,
+            label=labels,
+        )
         bin_centres = (bin_edges[1:] + bin_edges[:-1]) / 2.0
         smoothed_n = gaussian_filter(n[0] + n[1], 1.0)
         plt.plot(bin_centres, smoothed_n, color="r")
-        if (TI_cuts[material_index] is not None) and (TI_cuts[material_index].lower() == "auto"):
+        if (TI_cuts[material_index] is not None) and (
+            TI_cuts[material_index].lower() == "auto"
+        ):
             TI_cuts[material_index] = calculate_cut_off_from_dist(
-                bin_centres,
-                smoothed_n,
-                minimum_index=-1,
-                value_at_least=100,
+                bin_centres, smoothed_n, minimum_index=-1, value_at_least=100
             )
         if TI_cuts[material_index] is not None:
-            print("Cluster cut-off based on",
-                  material[material_index],
-                  "transfer integrals set to",
-                  TI_cuts[material_index])
+            print(
+                "Cluster cut-off based on",
+                material[material_index],
+                "transfer integrals set to",
+                TI_cuts[material_index],
+            )
             plt.axvline(float(TI_cuts[material_index]), c="k")
-        plt.xlim([0, np.max(TI_dist_intra[material_index] + TI_dist_inter[material_index])])
+        plt.xlim(
+            [0, np.max(TI_dist_intra[material_index] + TI_dist_inter[material_index])]
+        )
         plt.ylim([0, np.max(n) * 1.02])
         plt.ylabel("Frequency (Arb. U.)")
         plt.xlabel(material_type.capitalize() + r" J$_{ij}$ (eV)")
