@@ -2249,6 +2249,68 @@ def calculate_cut_off_from_dist(
         return None
 
 
+def plot_TI_hist(
+    chromophore_list,
+    CG_to_mol_ID,
+    output_dir,
+    TI_cut_donor,
+    TI_cut_acceptor,
+):
+    # TI_dist [[DONOR], [ACCEPTOR]]
+    TI_dist_intra = [[], []]
+    TI_dist_inter = [[], []]
+    material = ["donor", "acceptor"]
+    TI_cuts = [TI_cut_donor, TI_cut_acceptor]
+    for material_index, material_type in material:
+        for chromo1 in chromophore_list:
+            for neighbour_index, chromo2_details in enumerate(chromo1.neighbours):
+                chromo2 = chromophore_list[chromo2_details[0]]
+                if (chromo2_details is None) or (chromo1.ID >= chromo2.ID):
+                    continue
+                if CG_to_mol_ID[chromo1.CGIDs[0]] == CG_to_mol_ID[chromo2.CGIDs[0]]:
+                    TI_dist_intra[material_index].append(chromo1.neighboursTI[neighbour_index])
+                else:
+                    TI_dist_inter[material_index].append(chromo1.neighboursTI[neighbour_index])
+        label = ["Intra-mol", "Inter-mol"]
+        plt.figure()
+        n, bin_edges, _ = plt.hist([TI_dist_intra[material_index], TI_dist_inter[material_index]],
+                                   bins=np.linspace(0, np.max(TI_dist_intra[material_index] + TI_dist_inter[material_index]), 20),
+                                   color=["r", "b"], stacked=True, label=labels)
+        bin_centres = (bin_edges[1:] + bin_edges[:-1]) / 2.0
+        smoothed_n = gaussian_filter(n, 1.0)
+        plt.plot(bin_centres, smoothed_n, color="r")
+        if (TI_cuts[material_type] is not None) and (TI_cuts[material_type].lower() == "auto"):
+            TI_cuts[material_type] = calculate_cut_off_from_dist(
+                bin_centres,
+                smoothed_n,
+                minimum_index=-1,
+                value_at_least=100,
+            )
+        if TI_cuts[material_type] is not None:
+            print("Cluster cut-off based on",
+                  material[material_type],
+                  "transfer integrals set to",
+                  TI_cuts[material_type])
+            plt.axvline(float(TI_cuts[material_type]), c="k")
+        plt.xlim([0, np.max(TI_dist_intra_donor + TI_dist_inter_donor)])
+        plt.ylim([0, np.max(n) * 1.02])
+        plt.ylabel("Frequency (Arb. U.)")
+        plt.xlabel(data_type.capitalize() + r" T$_{ij}$ (eV)")
+        # 10 for donor TI mols dist, 11 for acceptor TI mols dist
+        file_name = "".join(
+            [
+                "{:02}_".format(10 + material_index),
+                material_type,
+                "_transfer_integral_mols",
+                ".pdf",
+            ]
+        )
+        plt.savefig(os.path.join(directory, "figures", file_name))
+        plt.clf()
+        print("Figure saved as", os.path.join(directory, "figures", file_name))
+    return TI_cuts[0], TI_cuts[1]
+
+
 def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
     carrier_types = ["hole", "electron"]
     non_zero_indices = carrier_history.nonzero()
@@ -2705,7 +2767,7 @@ def main():
             data_dict[current_carrier_type.lower() + "_mobility_r_squared"] = r_squared
         # Now plot the distributions!
         temp_dir = directory + "/figures"
-        CG_to_mol_ID = determine_molecule_IDs(
+        chromo_to_mol_ID = determine_molecule_IDs(
             CG_to_AAID_master, AA_morphology_dict, parameter_dict, chromophore_list
         )
         data_dict = plot_energy_levels(temp_dir, chromophore_list, data_dict)
@@ -2731,6 +2793,13 @@ def main():
             temp_dir,
             args.o_cut_donor,
             args.o_cut_acceptor,
+        )
+        args.ti_cut_donor, args.ti_cut_acceptor = plot_TI_hist(
+            chromophore_list,
+            CG_to_mol_ID,
+            temp_dir,
+            args.ti_cut_donor,
+            args.ti_cut_acceptor,
         )
         cut_off_dict = create_cut_off_dict(
             args.sep_cut_donor,
