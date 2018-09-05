@@ -1505,7 +1505,10 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
             tcl_text += ["mol addrep 0;"]
             count += 1
 
-    tcl_file_path = os.path.join(output_dir, "cluster_colors.tcl")
+    tcl_file_path = os.path.join(
+        output_dir.replace("figures", "morphology"),
+        "cluster_colors.tcl",
+    )
     with open(tcl_file_path, "w+") as tcl_file:
         tcl_file.writelines("".join(tcl_text))
     print("Clusters coloring written to {}".format(tcl_file_path))
