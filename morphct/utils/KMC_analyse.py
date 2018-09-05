@@ -1471,12 +1471,12 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
     colors = list(range(int(1e6)))
     count = 0
 
-    tcl_text = ["mol delrep 0 0\n"]
-    tcl_text += ["pbc wrap -center origin\n"]
-    tcl_text += ["pbc box -color black -center origin -width 4\n"]
-    tcl_text += ["display resetview\n"]
-    tcl_text += ["color change rgb 9 1.0 0.29 0.5\n"]
-    tcl_text += ["color change rgb 16 0.25 0.25 0.25\n"]
+    tcl_text = ["mol delrep 0 0;"]
+    tcl_text += ["pbc wrap -center origin;"]
+    tcl_text += ["pbc box -color black -center origin -width 4;"]
+    tcl_text += ["display resetview;"]
+    tcl_text += ["color change rgb 9 1.0 0.29 0.5;"]
+    tcl_text += ["color change rgb 16 0.25 0.25 0.25;"]
 
     for cluster_ID, chromos in cluster_lookup.items():
 
@@ -1485,12 +1485,12 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
             inclust = ""
             for chromo in chromo_IDs:
                 inclust += "{} ".format(chromo)
-            tcl_text += ["mol material AOEdgy\n"]  # Use AOEdgy if donor
-            tcl_text += ["mol color ColorID {}\n".format(colors[count % 32])]
+            tcl_text += ["mol material AOEdgy;"]  # Use AOEdgy if donor
+            tcl_text += ["mol color ColorID {};".format(colors[count % 32])]
             # VMD has 32 unique colors
-            tcl_text += ["mol representation VDW 4.0 8.0\n"]
-            tcl_text += ["mol selection resid {}\n".format(inclust)]
-            tcl_text += ["mol addrep 0\n"]
+            tcl_text += ["mol representation VDW 4.0 8.0;"]
+            tcl_text += ["mol selection resid {};".format(inclust)]
+            tcl_text += ["mol addrep 0;"]
             count += 1
 
         chromo_IDs = [chromo.ID for chromo in chromos if chromo.species == "acceptor"]
@@ -1498,16 +1498,16 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
             inclust = ""
             for chromo in chromo_IDs:
                 inclust += "{} ".format(chromo)
-            tcl_text += ["mol material Glass2\n"]  # Use Glass2 if acceptor
-            tcl_text += ["mol color ColorID {}\n".format(colors[count % 32])]
-            tcl_text += ["mol representation VDW 4.0 8.0\n"]
-            tcl_text += ["mol selection resid {}\n".format(inclust)]
-            tcl_text += ["mol addrep 0\n"]
+            tcl_text += ["mol material Glass2;"]  # Use Glass2 if acceptor
+            tcl_text += ["mol color ColorID {};".format(colors[count % 32])]
+            tcl_text += ["mol representation VDW 4.0 8.0;"]
+            tcl_text += ["mol selection resid {};".format(inclust)]
+            tcl_text += ["mol addrep 0;"]
             count += 1
 
     tcl_file_path = os.path.join(output_dir, "cluster_colors.tcl")
-    with open(tcl_file_path, "w") as tcl_file:
-        tcl_file.writelines(tcl_text)
+    with open(tcl_file_path, "w+") as tcl_file:
+        tcl_file.writelines("".join(tcl_text))
     print("Clusters coloring written to {}".format(tcl_file_path))
 
 
@@ -2173,7 +2173,7 @@ def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name, cut_off):
         label=labels,
     )
     plt.ylabel("Frequency (Arb. U.)")
-    plt.xlabel(data_type.capitalize() + r" T$_{ij}$ (eV)")
+    plt.xlabel(data_type.capitalize() + r" J$_{ij}$ (eV)")
     plt.xlim([0, 1.2])
     plt.ylim([0, np.max(n) * 1.02])
     if cut_off is not None:
@@ -2342,6 +2342,8 @@ def plot_TI_hist(
                     TI_dist_intra[material_index].append(chromo1.neighbours_TI[neighbour_index])
                 else:
                     TI_dist_inter[material_index].append(chromo1.neighbours_TI[neighbour_index])
+        if (len(TI_dist_intra[material_index]) == 0) and (len(TI_dist_inter[material_index])):
+            continue
         plt.figure()
         n, bin_edges, _ = plt.hist([TI_dist_intra[material_index], TI_dist_inter[material_index]],
                                    bins=np.linspace(0, np.max(TI_dist_intra[material_index] + TI_dist_inter[material_index]), 20),
@@ -2365,7 +2367,8 @@ def plot_TI_hist(
         plt.xlim([0, np.max(TI_dist_intra[material_index] + TI_dist_inter[material_index])])
         plt.ylim([0, np.max(n) * 1.02])
         plt.ylabel("Frequency (Arb. U.)")
-        plt.xlabel(material_type.capitalize() + r" T$_{ij}$ (eV)")
+        plt.xlabel(material_type.capitalize() + r" J$_{ij}$ (eV)")
+        plt.legend(loc=1, prop={"size": 18})
         # 10 for donor TI mols dist, 11 for acceptor TI mols dist,
         file_name = "".join(
             [
