@@ -258,7 +258,7 @@ def create_array_for_plot_connections(chromophore_list, carrier_history, sim_dim
 
 
 def plot_connections(
-    chromophore_list, sim_dims, carrier_history, directory, carrier_type
+    chromophore_list, sim_dims, carrier_history, directory, carrier_type, save_png
 ):
     # A complicated function that shows connections between carriers in 3D that carriers prefer to hop between.
     # Connections that are frequently used are highlighted in black, whereas rarely used connections are more white.
@@ -419,6 +419,14 @@ def plot_connections(
     file_name = "".join(["{:02}_3d_".format(1 + carrier_index), carrier_type, ".pdf"])
     plt.savefig(os.path.join(directory, "figures", file_name), bbox_inches="tight")
     print("Figure saved as", os.path.join(directory, "figures", file_name))
+
+    if save_png:
+        file_name = "".join(
+            ["{:02}_3d_".format(1 + carrier_index), carrier_type, ".png"]
+        )
+        plt.savefig(os.path.join(directory, "figures", file_name), bbox_inches="tight")
+        print("Figure also saved as", os.path.join(directory, "figures", file_name))
+
     plt.clf()
 
 
@@ -1456,12 +1464,96 @@ def update_cluster(atom_ID, cluster_list, neighbour_dict):
     return cluster_list
 
 
-def plot_clusters_3D(output_dir, chromophore_list, cluster_dicts, sim_dims):
+def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
+    """
+    Create a tcl script for each identified cluster.
+    """
+    colors = list(range(int(1e6)))
+    count = 0
+
+    tcl_text = ["mol delrep 0 0\n"]
+    tcl_text += ["pbc wrap -center origin\n"]
+    tcl_text += ["pbc box -color black -center origin -width 4\n"]
+    tcl_text += ["display resetview\n"]
+    tcl_text += ["color change rgb 9 1.0 0.29 0.5\n"]
+    tcl_text += ["color change rgb 16 0.25 0.25 0.25\n"]
+
+    for cluster_ID, chromos in cluster_lookup.items():
+
+        chromo_IDs = [chromo.ID for chromo in chromos if chromo.species == "donor"]
+        if len(chromo_IDs) > large_cluster:  # Only make clusters that are ``large''
+            inclust = ""
+            for chromo in chromo_IDs:
+                inclust += "{} ".format(chromo)
+            tcl_text += ["mol material AOEdgy\n"]  # Use AOEdgy if donor
+            tcl_text += ["mol color ColorID {}\n".format(colors[count % 32])]
+            # VMD has 32 unique colors
+            tcl_text += ["mol representation VDW 4.0 8.0\n"]
+            tcl_text += ["mol selection resid {}\n".format(inclust)]
+            tcl_text += ["mol addrep 0\n"]
+            count += 1
+
+        chromo_IDs = [chromo.ID for chromo in chromos if chromo.species == "acceptor"]
+        if len(chromo_IDs) > large_cluster:
+            inclust = ""
+            for chromo in chromo_IDs:
+                inclust += "{} ".format(chromo)
+            tcl_text += ["mol material Glass2\n"]  # Use Glass2 if acceptor
+            tcl_text += ["mol color ColorID {}\n".format(colors[count % 32])]
+            tcl_text += ["mol representation VDW 4.0 8.0\n"]
+            tcl_text += ["mol selection resid {}\n".format(inclust)]
+            tcl_text += ["mol addrep 0\n"]
+            count += 1
+
+    tcl_file_path = os.path.join(output_dir, "cluster_colors.tcl")
+    with open(tcl_file_path, "w") as tcl_file:
+        tcl_file.writelines(tcl_text)
+    print("Clusters coloring written to {}".format(tcl_file_path))
+
+
+def generate_lists_for_3d_clusters(cluster_lookup, colours, large_cluster):
+    data = []
+    for cluster_ID, chromos in cluster_lookup.items():
+        if len(chromos) > large_cluster:
+            for chromo in chromos:
+                if chromo.species == "donor":
+                    data.append(
+                        [
+                            chromo.posn[0],
+                            chromo.posn[1],
+                            chromo.posn[2],
+                            "w",
+                            colours[cluster_ID % 7],
+                        ]
+                    )
+                if chromo.species == "acceptor":
+                    data.append(
+                        [
+                            chromo.posn[0],
+                            chromo.posn[1],
+                            chromo.posn[2],
+                            colours[cluster_ID % 7],
+                            "none",
+                        ]
+                    )
+    # Needs a sort so that final image is layered properly
+    data = list(sorted(data, key=lambda x: x[0]))
+    # Split up list into sublists
+    xs = [row[0] for row in data]
+    ys = [row[1] for row in data]
+    zs = [row[2] for row in data]
+    face_colors = [row[3] for row in data]
+    edge_colors = [row[4] for row in data]
+    return xs, ys, zs, face_colors, edge_colors
+
+
+def plot_clusters_3D(
+    output_dir, chromophore_list, cluster_dicts, sim_dims, generate_tcl, save_png
+):
     fig = plt.figure()
     ax = p3.Axes3D(fig)
     colours = ["r", "g", "b", "c", "m", "y", "k"]
     large_cluster = 6
-    alphas = [0, 0.6]
     cluster_dict = {}
     for dictionary in cluster_dicts:
         if dictionary is not None:
@@ -1472,28 +1564,15 @@ def plot_clusters_3D(output_dir, chromophore_list, cluster_dicts, sim_dims):
             cluster_lookup[cluster_ID] = []
         else:
             cluster_lookup[cluster_ID].append(chromophore_list[chromo_ID])
-    for cluster_ID, chromos in cluster_lookup.items():
-        for chromo in chromos:
-            if chromo.species == "donor":
-                ax.scatter(
-                    chromo.posn[0],
-                    chromo.posn[1],
-                    chromo.posn[2],
-                    facecolors="w",
-                    edgecolors=colours[cluster_ID % 7],
-                    alpha=alphas[len(cluster_lookup[cluster_ID]) > large_cluster],
-                    s=40,
-                )
-            elif chromo.species == "acceptor":
-                ax.scatter(
-                    chromo.posn[0],
-                    chromo.posn[1],
-                    chromo.posn[2],
-                    c=colours[cluster_ID % 7],
-                    edgecolors=None,
-                    alpha=alphas[len(cluster_lookup[cluster_ID]) > large_cluster],
-                    s=40,
-                )
+    if generate_tcl:
+        write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster)
+
+    xs, ys, zs, face_colors, edge_colors = generate_lists_for_3d_clusters(
+        cluster_lookup, colours, large_cluster
+    )
+    ax.scatter(
+        xs, ys, zs, facecolors=face_colors, edgecolors=edge_colors, alpha=0.6, s=40
+    )
     # Draw boxlines
     # Varying X
     ax.plot(
@@ -1587,8 +1666,11 @@ def plot_clusters_3D(output_dir, chromophore_list, cluster_dicts, sim_dims):
     ax.set_zlim([sim_dims[2][0], sim_dims[2][1]])
     # 03 for clusters (material agnostic)
     plt.savefig(os.path.join(output_dir, "03_clusters.pdf"), bbox_inches="tight")
-    plt.close()
     print("3D cluster figure saved as", os.path.join(output_dir, "03_clusters.pdf"))
+    if save_png:
+        plt.savefig(os.path.join(output_dir, "03_clusters.png"), bbox_inches="tight")
+        print("Figure also saved as", os.path.join(output_dir, "03_clusters.png"))
+    plt.clf()
 
 
 def determine_molecule_IDs(
@@ -2572,6 +2654,27 @@ def main():
             " .matplotlibrc."
         ),
     )
+    parser.add_argument(
+        "-tcl",
+        "--generate_tcl",
+        action="store_true",
+        required=False,
+        help=(
+            "Specify to create a tcl file to use with VMD in which each resid is colored"
+            'based off of its cluster. Only functions when used in conjunction with the "-t"'
+            "flag. Default = False"
+        ),
+    )
+    parser.add_argument(
+        "-png",
+        "--save_png",
+        action="store_true",
+        required=False,
+        help=(
+            "Specify to save the 3D clusters and Network plots as png files in addition"
+            "to pdf files. Default = False"
+        ),
+    )
     args, directory_list = parser.parse_known_args()
 
     # Load the matplotlib backend and the plotting subroutines
@@ -2692,6 +2795,7 @@ def main():
                     carrier_history,
                     directory,
                     current_carrier_type,
+                    args.save_png,
                 )
             if current_carrier_type == "hole":
                 hole_anisotropy_data.append(anisotropy)
@@ -2774,7 +2878,14 @@ def main():
             data_dict["acceptor_clusters_hop_freq_cut"] = repr(clusters_cutoffs[1][3])
         if args.three_D:
             print("Plotting 3D cluster location plot...")
-            plot_clusters_3D(temp_dir, chromophore_list, cluster_dicts, sim_dims)
+            plot_clusters_3D(
+                temp_dir,
+                chromophore_list,
+                cluster_dicts,
+                sim_dims,
+                args.generate_tcl,
+                args.save_png,
+            )
         data_dict = plot_mixed_hopping_rates(
             temp_dir,
             chromophore_list,
