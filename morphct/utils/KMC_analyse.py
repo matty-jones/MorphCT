@@ -1512,9 +1512,7 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
 
 
 def generate_lists_for_3d_clusters(cluster_lookup, colours, large_cluster):
-
     data = []
-
     for cluster_ID, chromos in cluster_lookup.items():
         if len(chromos) > large_cluster:
             for chromo in chromos:
@@ -1540,14 +1538,12 @@ def generate_lists_for_3d_clusters(cluster_lookup, colours, large_cluster):
                     )
     # Needs a sort so that final image is layered properly
     data = list(sorted(data, key=lambda x: x[0]))
-
     # Split up list into sublists
     xs = [row[0] for row in data]
     ys = [row[1] for row in data]
     zs = [row[2] for row in data]
     face_colors = [row[3] for row in data]
     edge_colors = [row[4] for row in data]
-
     return xs, ys, zs, face_colors, edge_colors
 
 
@@ -1559,7 +1555,6 @@ def plot_clusters_3D(
     colours = ["r", "g", "b", "c", "m", "y", "k"]
     large_cluster = 6
     cluster_dict = {}
-
     for dictionary in cluster_dicts:
         if dictionary is not None:
             cluster_dict.update(dictionary)
@@ -1569,18 +1564,15 @@ def plot_clusters_3D(
             cluster_lookup[cluster_ID] = []
         else:
             cluster_lookup[cluster_ID].append(chromophore_list[chromo_ID])
-
     if generate_tcl:
         write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster)
 
     xs, ys, zs, face_colors, edge_colors = generate_lists_for_3d_clusters(
         cluster_lookup, colours, large_cluster
     )
-
     ax.scatter(
         xs, ys, zs, facecolors=face_colors, edgecolors=edge_colors, alpha=0.6, s=40
     )
-
     # Draw boxlines
     # Varying X
     ax.plot(
@@ -1672,15 +1664,12 @@ def plot_clusters_3D(
     ax.set_xlim([sim_dims[0][0], sim_dims[0][1]])
     ax.set_ylim([sim_dims[1][0], sim_dims[1][1]])
     ax.set_zlim([sim_dims[2][0], sim_dims[2][1]])
-
     # 03 for clusters (material agnostic)
     plt.savefig(os.path.join(output_dir, "03_clusters.pdf"), bbox_inches="tight")
     print("3D cluster figure saved as", os.path.join(output_dir, "03_clusters.pdf"))
-
     if save_png:
         plt.savefig(os.path.join(output_dir, "03_clusters.png"), bbox_inches="tight")
         print("Figure also saved as", os.path.join(output_dir, "03_clusters.png"))
-
     plt.clf()
 
 
