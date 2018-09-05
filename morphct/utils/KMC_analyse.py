@@ -2175,7 +2175,7 @@ def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name, cut_off):
         label=labels,
     )
     plt.ylabel("Frequency (Arb. U.)")
-    plt.xlabel(data_type.capitalize() + r" J$_{ij}$ (eV)")
+    plt.xlabel(data_type.capitalize() + r" J$_{i,j}$ (eV)")
     plt.xlim([0, 1.2])
     plt.ylim([0, np.max(n) * 1.02])
     if cut_off is not None:
@@ -2382,7 +2382,7 @@ def plot_TI_hist(
         )
         plt.ylim([0, np.max(n) * 1.02])
         plt.ylabel("Frequency (Arb. U.)")
-        plt.xlabel(material_type.capitalize() + r" J$_{ij}$ (eV)")
+        plt.xlabel(material_type.capitalize() + r" J$_{i,j}$ (eV)")
         plt.legend(loc=1, prop={"size": 18})
         # 10 for donor TI mols dist, 11 for acceptor TI mols dist,
         file_name = "".join(
