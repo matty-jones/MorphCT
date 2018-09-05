@@ -858,7 +858,7 @@ def update_molecule(atom_ID, molecule_list, bonded_atoms):
 
 def plot_neighbour_hist(
     chromophore_list,
-    CG_to_mol_ID,
+    chromo_to_mol_ID,
     morphology_shape,
     output_dir,
     sep_cut_donor,
@@ -874,7 +874,7 @@ def plot_neighbour_hist(
                 continue
             chromo2 = chromophore_list[chromo2_details[0]]
             # Skip any chromophores that are part of the same molecule
-            if CG_to_mol_ID[chromo1.CGIDs[0]] == CG_to_mol_ID[chromo2.CGIDs[0]]:
+            if chromo_to_mol_ID[chromo1.ID] == chromo_to_mol_ID[chromo2.ID]:
                 continue
             separation = np.linalg.norm(
                 (
@@ -939,7 +939,7 @@ def plot_neighbour_hist(
 
 def plot_orientation_hist(
     chromophore_list,
-    CG_to_mol_ID,
+    chromo_to_mol_ID,
     orientations_data,
     output_dir,
     o_cut_donor,
@@ -956,7 +956,7 @@ def plot_orientation_hist(
                 continue
             chromo2 = chromophore_list[chromo2_details[0]]
             # Skip any chromophores that are part of the same molecule
-            if CG_to_mol_ID[chromo1.CGIDs[0]] == CG_to_mol_ID[chromo2.CGIDs[0]]:
+            if chromo_to_mol_ID[chromo1.ID] == chromo_to_mol_ID[chromo2.ID]:
                 continue
             orientation_2 = orientations_data[chromo2_details[0]]
             dot_product = np.dot(orientation_1, orientation_2)
@@ -1622,7 +1622,12 @@ def determine_molecule_IDs(
         for index, molecule_AAID_list in enumerate(molecule_AAIDs):
             for AAID in molecule_AAID_list:
                 CGID_to_mol_ID[AAID] = index
-    return CGID_to_mol_ID
+    # Convert to chromo_to_mol_ID
+    chromo_to_mol_ID = {}
+    for chromophore in chromophore_list:
+        first_CGID = chromophore.CGIDs[0]
+        chromo_to_mol_ID[chromophore.ID] = CGID_to_mol_ID[first_CGID]
+    return chromo_to_mol_ID
 
 
 def plot_energy_levels(output_dir, chromophore_list, data_dict):
@@ -1728,7 +1733,7 @@ def plot_mixed_hopping_rates(
     chromophore_list,
     parameter_dict,
     cluster_dicts,
-    CG_to_mol_ID,
+    chromo_to_mol_ID,
     data_dict,
     AA_morphology_dict,
     cut_off_dict,
@@ -1749,12 +1754,12 @@ def plot_mixed_hopping_rates(
         property_lists[property_name] = []
     T = 290
     for chromo in chromophore_list:
-        mol1ID = CG_to_mol_ID[chromo.CGIDs[0]]
+        mol1ID = chromo_to_mol_ID[chromo.ID]
         for index, T_ij in enumerate(chromo.neighbours_TI):
             if (T_ij is None) or (T_ij == 0):
                 continue
             chromo2 = chromophore_list[chromo.neighbours[index][0]]
-            mol2ID = CG_to_mol_ID[chromo2.CGIDs[0]]
+            mol2ID = chromo_to_mol_ID[chromo2.ID]
             delta_E = chromo.neighbours_delta_E[index]
             if chromo.sub_species == chromo2.sub_species:
                 lambda_ij = chromo.reorganisation_energy
@@ -1852,10 +1857,9 @@ def plot_mixed_hopping_rates(
                 else:
                     property_lists["inter_mol_rates_donor"].append(rate)
                     property_lists["inter_mol_TIs_donor"].append(T_ij)
-    # 10 for the donor mol TI, 11 for the acceptor mol TI, 12 for the donor
-    # cluster TI, 13 for the acceptor cluster TI, 14 for the donor mol kij,
-    # 15 for the acceptor mol kij, 16 for the donor cluster kij, 17 for the
-    # acceptor cluster kij
+    # 12 for the donor cluster TI, 13 for the acceptor cluster TI, 14 for
+    # the donor mol kij, 15 for the acceptor mol kij, 16 for the donor
+    # cluster kij, 17 for the acceptor cluster kij
     # Donor cluster Plots:
     if (len(property_lists["intra_cluster_rates_donor"]) > 0) or (
         len(property_lists["inter_cluster_rates_donor"]) > 0
@@ -1947,14 +1951,6 @@ def plot_mixed_hopping_rates(
             "donor",
             os.path.join(output_dir, "14_donor_hopping_rate_mols.pdf"),
         )
-        plot_stacked_hist_TIs(
-            property_lists["intra_mol_TIs_donor"],
-            property_lists["inter_mol_TIs_donor"],
-            ["Intra-mol", "Inter-mol"],
-            "donor",
-            os.path.join(output_dir, "10_donor_transfer_integral_mols.pdf"),
-            cut_off_dict["TI"][0],
-        )
     # Acceptor Mol Plots:
     if (len(property_lists["intra_mol_rates_acceptor"]) > 0) or (
         len(property_lists["inter_mol_rates_acceptor"]) > 0
@@ -1979,14 +1975,6 @@ def plot_mixed_hopping_rates(
             ["Intra-mol", "Inter-mol"],
             "acceptor",
             os.path.join(output_dir, "15_acceptor_hopping_rate_mols.pdf"),
-        )
-        plot_stacked_hist_TIs(
-            property_lists["intra_mol_TIs_acceptor"],
-            property_lists["inter_mol_TIs_acceptor"],
-            ["Intra-mol", "Inter-mol"],
-            "acceptor",
-            os.path.join(output_dir, "11_acceptor_transfer_integral_mols.pdf"),
-            cut_off_dict["TI"][1],
         )
     # Update the dataDict
     for material in chromo_species:
@@ -2251,7 +2239,7 @@ def calculate_cut_off_from_dist(
 
 def plot_TI_hist(
     chromophore_list,
-    CG_to_mol_ID,
+    chromo_to_mol_ID,
     output_dir,
     TI_cut_donor,
     TI_cut_acceptor,
@@ -2260,43 +2248,43 @@ def plot_TI_hist(
     TI_dist_intra = [[], []]
     TI_dist_inter = [[], []]
     material = ["donor", "acceptor"]
+    labels = ["Intra-mol", "Inter-mol"]
     TI_cuts = [TI_cut_donor, TI_cut_acceptor]
-    for material_index, material_type in material:
+    for material_index, material_type in enumerate(material):
         for chromo1 in chromophore_list:
             for neighbour_index, chromo2_details in enumerate(chromo1.neighbours):
                 chromo2 = chromophore_list[chromo2_details[0]]
                 if (chromo2_details is None) or (chromo1.ID >= chromo2.ID):
                     continue
-                if CG_to_mol_ID[chromo1.CGIDs[0]] == CG_to_mol_ID[chromo2.CGIDs[0]]:
-                    TI_dist_intra[material_index].append(chromo1.neighboursTI[neighbour_index])
+                if chromo_to_mol_ID[chromo1.ID] == chromo_to_mol_ID[chromo2.ID]:
+                    TI_dist_intra[material_index].append(chromo1.neighbours_TI[neighbour_index])
                 else:
-                    TI_dist_inter[material_index].append(chromo1.neighboursTI[neighbour_index])
-        label = ["Intra-mol", "Inter-mol"]
+                    TI_dist_inter[material_index].append(chromo1.neighbours_TI[neighbour_index])
         plt.figure()
         n, bin_edges, _ = plt.hist([TI_dist_intra[material_index], TI_dist_inter[material_index]],
                                    bins=np.linspace(0, np.max(TI_dist_intra[material_index] + TI_dist_inter[material_index]), 20),
                                    color=["r", "b"], stacked=True, label=labels)
         bin_centres = (bin_edges[1:] + bin_edges[:-1]) / 2.0
-        smoothed_n = gaussian_filter(n, 1.0)
+        smoothed_n = gaussian_filter(n[0] + n[1], 1.0)
         plt.plot(bin_centres, smoothed_n, color="r")
-        if (TI_cuts[material_type] is not None) and (TI_cuts[material_type].lower() == "auto"):
-            TI_cuts[material_type] = calculate_cut_off_from_dist(
+        if (TI_cuts[material_index] is not None) and (TI_cuts[material_index].lower() == "auto"):
+            TI_cuts[material_index] = calculate_cut_off_from_dist(
                 bin_centres,
                 smoothed_n,
                 minimum_index=-1,
                 value_at_least=100,
             )
-        if TI_cuts[material_type] is not None:
+        if TI_cuts[material_index] is not None:
             print("Cluster cut-off based on",
-                  material[material_type],
+                  material[material_index],
                   "transfer integrals set to",
-                  TI_cuts[material_type])
-            plt.axvline(float(TI_cuts[material_type]), c="k")
-        plt.xlim([0, np.max(TI_dist_intra_donor + TI_dist_inter_donor)])
+                  TI_cuts[material_index])
+            plt.axvline(float(TI_cuts[material_index]), c="k")
+        plt.xlim([0, np.max(TI_dist_intra[material_index] + TI_dist_inter[material_index])])
         plt.ylim([0, np.max(n) * 1.02])
         plt.ylabel("Frequency (Arb. U.)")
-        plt.xlabel(data_type.capitalize() + r" T$_{ij}$ (eV)")
-        # 10 for donor TI mols dist, 11 for acceptor TI mols dist
+        plt.xlabel(material_type.capitalize() + r" T$_{ij}$ (eV)")
+        # 10 for donor TI mols dist, 11 for acceptor TI mols dist,
         file_name = "".join(
             [
                 "{:02}_".format(10 + material_index),
@@ -2305,9 +2293,9 @@ def plot_TI_hist(
                 ".pdf",
             ]
         )
-        plt.savefig(os.path.join(directory, "figures", file_name))
+        plt.savefig(os.path.join(output_dir, file_name))
         plt.clf()
-        print("Figure saved as", os.path.join(directory, "figures", file_name))
+        print("Figure saved as", os.path.join(output_dir, file_name))
     return TI_cuts[0], TI_cuts[1]
 
 
@@ -2780,7 +2768,7 @@ def main():
         )
         args.sep_cut_donor, args.sep_cut_acceptor = plot_neighbour_hist(
             chromophore_list,
-            CG_to_mol_ID,
+            chromo_to_mol_ID,
             morphology_shape,
             temp_dir,
             args.sep_cut_donor,
@@ -2788,7 +2776,7 @@ def main():
         )
         args.o_cut_donor, args.o_cut_acceptor = plot_orientation_hist(
             chromophore_list,
-            CG_to_mol_ID,
+            chromo_to_mol_ID,
             orientations,
             temp_dir,
             args.o_cut_donor,
@@ -2796,7 +2784,7 @@ def main():
         )
         args.ti_cut_donor, args.ti_cut_acceptor = plot_TI_hist(
             chromophore_list,
-            CG_to_mol_ID,
+            chromo_to_mol_ID,
             temp_dir,
             args.ti_cut_donor,
             args.ti_cut_acceptor,
@@ -2849,7 +2837,7 @@ def main():
             chromophore_list,
             parameter_dict,
             cluster_dicts,
-            CG_to_mol_ID,
+            chromo_to_mol_ID,
             data_dict,
             AA_morphology_dict,
             cut_off_dict,
