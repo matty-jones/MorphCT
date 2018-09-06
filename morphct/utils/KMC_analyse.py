@@ -1468,6 +1468,8 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
     """
     Create a tcl script for each identified cluster.
     """
+    # Obtain the IDs of the cluster sizes, sorted by largest first
+    cluster_order = list(zip(*sorted(zip([len(val) for val in cluster_lookup.values()], cluster_lookup.keys()), reverse=True)))[1]
     colors = list(range(int(1e6)))
     count = 0
 
@@ -1478,33 +1480,35 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
     tcl_text += ["color change rgb 9 1.0 0.29 0.5;"]
     tcl_text += ["color change rgb 16 0.25 0.25 0.25;"]
 
-    for cluster_ID, chromos in cluster_lookup.items():
-
+    for cluster_ID in cluster_order:
+        chromos = cluster_lookup[cluster_ID]
         chromo_IDs = [chromo.ID for chromo in chromos if chromo.species == "donor"]
         if len(chromo_IDs) > large_cluster:  # Only make clusters that are ``large''
             inclust = ""
             for chromo in chromo_IDs:
                 inclust += "{} ".format(chromo)
             tcl_text += ["mol material AOEdgy;"]  # Use AOEdgy if donor
-            tcl_text += ["mol color ColorID {};".format(colors[count % 32])]
+            # The +1 makes the largest cluster red rather than blue (looks better
+            # with AO, DoF, shadows)
+            tcl_text += ["mol color ColorID {};".format(colors[count + 1 % 32])]
             # VMD has 32 unique colors
             tcl_text += ["mol representation VDW 4.0 8.0;"]
             tcl_text += ["mol selection resid {};".format(inclust)]
             tcl_text += ["mol addrep 0;"]
             count += 1
-
         chromo_IDs = [chromo.ID for chromo in chromos if chromo.species == "acceptor"]
         if len(chromo_IDs) > large_cluster:
             inclust = ""
             for chromo in chromo_IDs:
                 inclust += "{} ".format(chromo)
             tcl_text += ["mol material Glass2;"]  # Use Glass2 if acceptor
-            tcl_text += ["mol color ColorID {};".format(colors[count % 32])]
+            # The +1 makes the largest cluster red rather than blue (looks better
+            # with AO, DoF, shadows)
+            tcl_text += ["mol color ColorID {};".format(colors[count + 1 % 32])]
             tcl_text += ["mol representation VDW 4.0 8.0;"]
             tcl_text += ["mol selection resid {};".format(inclust)]
             tcl_text += ["mol addrep 0;"]
             count += 1
-
     tcl_file_path = os.path.join(
         output_dir.replace("figures", "morphology"), "cluster_colors.tcl"
     )
@@ -2428,6 +2432,8 @@ def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
         plt.axvline(np.log10(float(cut_off)), c="k")
     plt.xlabel("".join(["Total ", carrier_type, " hops (Arb. U.)"]))
     ax = plt.gca()
+    # tick_labels = np.arange(0, 7, 1)
+    # plt.xlim([0, 6])
     tick_labels = np.arange(0, np.ceil(np.max(frequencies)) + 1, 1)
     plt.xlim([0, np.ceil(np.max(frequencies))])
     plt.xticks(tick_labels, [r"10$^{{{}}}$".format(int(x)) for x in tick_labels])
