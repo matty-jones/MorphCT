@@ -1469,7 +1469,16 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
     Create a tcl script for each identified cluster.
     """
     # Obtain the IDs of the cluster sizes, sorted by largest first
-    cluster_order = list(zip(*sorted(zip([len(val) for val in cluster_lookup.values()], cluster_lookup.keys()), reverse=True)))[1]
+    cluster_order = list(
+        zip(
+            *sorted(
+                zip(
+                    [len(val) for val in cluster_lookup.values()], cluster_lookup.keys()
+                ),
+                reverse=True,
+            )
+        )
+    )[1]
     colors = list(range(int(1e6)))
     count = 0
 
