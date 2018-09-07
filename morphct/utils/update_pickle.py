@@ -458,6 +458,7 @@ def main():
         print("Update_pickle is running in `directory mode' (default).")
     # Iterate over all input strings (directories or pickles)
     for input_string in input_list:
+        print()
         if args.pickle_mode:
             # Load the pickle directly, and do not output a parameter file
             # NOTE: It looks like old_ and new_ are the wrong way around here
