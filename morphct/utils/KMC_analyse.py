@@ -1129,7 +1129,7 @@ def get_clusters(
         )
         print("Largest cluster size =", clusters_biggest[type_index], "chromophores.")
         print(
-            'Ratio of chromophores in "large" clusters (ψ): {:.3f}'.format(
+            u'Ratio of chromophores in "large" clusters (\u03c8): {:.3f}'.format(
                 species_psi[type_index]
             )
         )
@@ -2705,7 +2705,7 @@ def main():
         required=False,
         type=str,
         help=(
-            "Specify the separation cut-off (in Å) for the donor material for determining"
+            "Specify the separation cut-off (in Angstroms) for the donor material for determining"
             " which chromophores belong to the same cluster. Chromophores with separation"
             " r > sep_cut_donor will be considered as different crystals. Default = None (Note: if all"
             " cut-offs are specified as None, then the entire morphology will be considered"
@@ -2719,7 +2719,7 @@ def main():
         required=False,
         type=str,
         help=(
-            "Specify the separation cut-off (in Å) for the acceptor material for determining"
+            "Specify the separation cut-off (in Angstroms) for the acceptor material for determining"
             " which chromophores belong to the same cluster. Chromophores with separation"
             " r > sep_cut_acceptor will be considered as different crystals. Default = None (Note: if all"
             " cut-offs are specified as None, then the entire morphology will be considered"
