@@ -1468,46 +1468,61 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
     """
     Create a tcl script for each identified cluster.
     """
+    # Obtain the IDs of the cluster sizes, sorted by largest first
+    cluster_order = list(
+        zip(
+            *sorted(
+                zip(
+                    [len(val) for val in cluster_lookup.values()], cluster_lookup.keys()
+                ),
+                reverse=True,
+            )
+        )
+    )[1]
     colors = list(range(int(1e6)))
     count = 0
 
-    tcl_text = ["mol delrep 0 0\n"]
-    tcl_text += ["pbc wrap -center origin\n"]
-    tcl_text += ["pbc box -color black -center origin -width 4\n"]
-    tcl_text += ["display resetview\n"]
-    tcl_text += ["color change rgb 9 1.0 0.29 0.5\n"]
-    tcl_text += ["color change rgb 16 0.25 0.25 0.25\n"]
+    tcl_text = ["mol delrep 0 0;"]
+    tcl_text += ["pbc wrap -center origin;"]
+    tcl_text += ["pbc box -color black -center origin -width 4;"]
+    tcl_text += ["display resetview;"]
+    tcl_text += ["color change rgb 9 1.0 0.29 0.5;"]
+    tcl_text += ["color change rgb 16 0.25 0.25 0.25;"]
 
-    for cluster_ID, chromos in cluster_lookup.items():
-
+    for cluster_ID in cluster_order:
+        chromos = cluster_lookup[cluster_ID]
         chromo_IDs = [chromo.ID for chromo in chromos if chromo.species == "donor"]
         if len(chromo_IDs) > large_cluster:  # Only make clusters that are ``large''
             inclust = ""
             for chromo in chromo_IDs:
                 inclust += "{} ".format(chromo)
-            tcl_text += ["mol material AOEdgy\n"]  # Use AOEdgy if donor
-            tcl_text += ["mol color ColorID {}\n".format(colors[count % 32])]
+            tcl_text += ["mol material AOEdgy;"]  # Use AOEdgy if donor
+            # The +1 makes the largest cluster red rather than blue (looks better
+            # with AO, DoF, shadows)
+            tcl_text += ["mol color ColorID {};".format(colors[count + 1 % 32])]
             # VMD has 32 unique colors
-            tcl_text += ["mol representation VDW 4.0 8.0\n"]
-            tcl_text += ["mol selection resid {}\n".format(inclust)]
-            tcl_text += ["mol addrep 0\n"]
+            tcl_text += ["mol representation VDW 4.0 8.0;"]
+            tcl_text += ["mol selection resid {};".format(inclust)]
+            tcl_text += ["mol addrep 0;"]
             count += 1
-
         chromo_IDs = [chromo.ID for chromo in chromos if chromo.species == "acceptor"]
         if len(chromo_IDs) > large_cluster:
             inclust = ""
             for chromo in chromo_IDs:
                 inclust += "{} ".format(chromo)
-            tcl_text += ["mol material Glass2\n"]  # Use Glass2 if acceptor
-            tcl_text += ["mol color ColorID {}\n".format(colors[count % 32])]
-            tcl_text += ["mol representation VDW 4.0 8.0\n"]
-            tcl_text += ["mol selection resid {}\n".format(inclust)]
-            tcl_text += ["mol addrep 0\n"]
+            tcl_text += ["mol material Glass2;"]  # Use Glass2 if acceptor
+            # The +1 makes the largest cluster red rather than blue (looks better
+            # with AO, DoF, shadows)
+            tcl_text += ["mol color ColorID {};".format(colors[count + 1 % 32])]
+            tcl_text += ["mol representation VDW 4.0 8.0;"]
+            tcl_text += ["mol selection resid {};".format(inclust)]
+            tcl_text += ["mol addrep 0;"]
             count += 1
-
-    tcl_file_path = os.path.join(output_dir, "cluster_colors.tcl")
-    with open(tcl_file_path, "w") as tcl_file:
-        tcl_file.writelines(tcl_text)
+    tcl_file_path = os.path.join(
+        output_dir.replace("figures", "morphology"), "cluster_colors.tcl"
+    )
+    with open(tcl_file_path, "w+") as tcl_file:
+        tcl_file.writelines("".join(tcl_text))
     print("Clusters coloring written to {}".format(tcl_file_path))
 
 
@@ -2173,7 +2188,7 @@ def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name, cut_off):
         label=labels,
     )
     plt.ylabel("Frequency (Arb. U.)")
-    plt.xlabel(data_type.capitalize() + r" T$_{ij}$ (eV)")
+    plt.xlabel(data_type.capitalize() + r" J$_{i,j}$ (eV)")
     plt.xlim([0, 1.2])
     plt.ylim([0, np.max(n) * 1.02])
     if cut_off is not None:
@@ -2320,11 +2335,7 @@ def calculate_cut_off_from_dist(
 
 
 def plot_TI_hist(
-    chromophore_list,
-    chromo_to_mol_ID,
-    output_dir,
-    TI_cut_donor,
-    TI_cut_acceptor,
+    chromophore_list, chromo_to_mol_ID, output_dir, TI_cut_donor, TI_cut_acceptor
 ):
     # TI_dist [[DONOR], [ACCEPTOR]]
     TI_dist_intra = [[], []]
@@ -2339,33 +2350,53 @@ def plot_TI_hist(
                 if (chromo2_details is None) or (chromo1.ID >= chromo2.ID):
                     continue
                 if chromo_to_mol_ID[chromo1.ID] == chromo_to_mol_ID[chromo2.ID]:
-                    TI_dist_intra[material_index].append(chromo1.neighbours_TI[neighbour_index])
+                    TI_dist_intra[material_index].append(
+                        chromo1.neighbours_TI[neighbour_index]
+                    )
                 else:
-                    TI_dist_inter[material_index].append(chromo1.neighbours_TI[neighbour_index])
+                    TI_dist_inter[material_index].append(
+                        chromo1.neighbours_TI[neighbour_index]
+                    )
+        if (len(TI_dist_intra[material_index]) == 0) and (
+            len(TI_dist_inter[material_index])
+        ):
+            continue
         plt.figure()
-        n, bin_edges, _ = plt.hist([TI_dist_intra[material_index], TI_dist_inter[material_index]],
-                                   bins=np.linspace(0, np.max(TI_dist_intra[material_index] + TI_dist_inter[material_index]), 20),
-                                   color=["r", "b"], stacked=True, label=labels)
+        n, bin_edges, _ = plt.hist(
+            [TI_dist_intra[material_index], TI_dist_inter[material_index]],
+            bins=np.linspace(
+                0,
+                np.max(TI_dist_intra[material_index] + TI_dist_inter[material_index]),
+                20,
+            ),
+            color=["r", "b"],
+            stacked=True,
+            label=labels,
+        )
         bin_centres = (bin_edges[1:] + bin_edges[:-1]) / 2.0
         smoothed_n = gaussian_filter(n[0] + n[1], 1.0)
         plt.plot(bin_centres, smoothed_n, color="r")
-        if (TI_cuts[material_index] is not None) and (TI_cuts[material_index].lower() == "auto"):
+        if (TI_cuts[material_index] is not None) and (
+            TI_cuts[material_index].lower() == "auto"
+        ):
             TI_cuts[material_index] = calculate_cut_off_from_dist(
-                bin_centres,
-                smoothed_n,
-                minimum_index=-1,
-                value_at_least=100,
+                bin_centres, smoothed_n, minimum_index=-1, value_at_least=100
             )
         if TI_cuts[material_index] is not None:
-            print("Cluster cut-off based on",
-                  material[material_index],
-                  "transfer integrals set to",
-                  TI_cuts[material_index])
+            print(
+                "Cluster cut-off based on",
+                material[material_index],
+                "transfer integrals set to",
+                TI_cuts[material_index],
+            )
             plt.axvline(float(TI_cuts[material_index]), c="k")
-        plt.xlim([0, np.max(TI_dist_intra[material_index] + TI_dist_inter[material_index])])
+        plt.xlim(
+            [0, np.max(TI_dist_intra[material_index] + TI_dist_inter[material_index])]
+        )
         plt.ylim([0, np.max(n) * 1.02])
         plt.ylabel("Frequency (Arb. U.)")
-        plt.xlabel(material_type.capitalize() + r" T$_{ij}$ (eV)")
+        plt.xlabel(material_type.capitalize() + r" J$_{i,j}$ (eV)")
+        plt.legend(loc=1, prop={"size": 18})
         # 10 for donor TI mols dist, 11 for acceptor TI mols dist,
         file_name = "".join(
             [
@@ -2410,6 +2441,8 @@ def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
         plt.axvline(np.log10(float(cut_off)), c="k")
     plt.xlabel("".join(["Total ", carrier_type, " hops (Arb. U.)"]))
     ax = plt.gca()
+    # tick_labels = np.arange(0, 7, 1)
+    # plt.xlim([0, 6])
     tick_labels = np.arange(0, np.ceil(np.max(frequencies)) + 1, 1)
     plt.xlim([0, np.ceil(np.max(frequencies))])
     plt.xticks(tick_labels, [r"10$^{{{}}}$".format(int(x)) for x in tick_labels])
