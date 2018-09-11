@@ -1129,7 +1129,7 @@ def get_clusters(
         )
         print("Largest cluster size =", clusters_biggest[type_index], "chromophores.")
         print(
-            u'Ratio of chromophores in "large" clusters (\u03c8): {:.3f}'.format(
+            'Ratio of chromophores in "large" clusters (psi): {:.3f}'.format(
                 species_psi[type_index]
             )
         )
