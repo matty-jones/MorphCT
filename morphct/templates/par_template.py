@@ -376,14 +376,6 @@ will permit the user to only consider the effect of morphology on charge transpo
 '''
 use_koopmans_approximation = False
 
-'''
-When Koopmans' approximation is active, this hopping prefactor (which is dependent on energetic disorder) will be
-applied, which can be tuned to obtain better agreement with experimental mobilities. Note: This hopping prefactor
-is only considered in the mobility simulations. For device simulations, only the hopping_prefactor parameter is
-used (look in the device KMC parameters section).
-'''
-koopmans_hopping_prefactor = 1E-3
-
 # ---==============================================---
 # ---=== General Kinetic Monte Carlo Parameters ===---
 # ---==============================================---
@@ -421,6 +413,13 @@ Include an explicit consideration of hop distance into the hopping rate equation
 decay is entirely determined by the transfer integral)
 '''
 use_VRH = True
+'''
+A multiplicative hopping prefactor for the carrier (and exciton in the case of device simulations) rate
+calculations. This brings their rates more in keeping with the other event types (recommended 1E-4 in device
+simulations, otherwise the order of magnitude time discrepancy is way too high and nothing actually happens
+in the device).
+'''
+hopping_prefactor = 1.0
 
 
 # ---=== Mobility Specific KMC Parameters ===---
@@ -541,13 +540,6 @@ exciton_lifetime = 0.5E-9
 The Forster radius for the exciton in units of m
 '''
 forster_radius = 4.3E-9
-
-'''
-A multiplicative hopping prefactor that slows down all carrier and exciton hops to bring their rates more in keeping
-with the other event types (otherwise the order of magnitude time discrepancy is way too high and nothing actually
-happens in the device).
-'''
-hopping_prefactor = 1E-4
 
 '''
 The Miller Abrahams prefactor that controls the rate of dark-current injection hops.
