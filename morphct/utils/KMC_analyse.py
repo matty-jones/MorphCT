@@ -1066,6 +1066,7 @@ def get_clusters(
     clusters_total = [0, 0]
     clusters_large = [0, 0]
     clusters_biggest = [0, 0]
+    species_psi = [0, 0]
     clusters_cutoffs = [[], []]
     if any(cut is not None for cut in cut_off_dict["separation"]):
         separations = get_separations(chromophore_list, AA_morphology_dict)
@@ -1104,6 +1105,9 @@ def get_clusters(
         cluster_freq = {}
         for cluster_ID in set(clusters_list):
             cluster_freq[cluster_ID] = clusters_list.count(cluster_ID)
+        species_psi[type_index] = sum(
+            [pair for key, pair in cluster_freq.items() if pair > 6]
+        ) / len(clusters_list)
         clusters_total[type_index] = len([key for key, val in cluster_freq.items()])
         clusters_large[type_index] = len(
             [key for key, val in cluster_freq.items() if val > 6]
@@ -1124,6 +1128,11 @@ def get_clusters(
             "clusters with size > 6.",
         )
         print("Largest cluster size =", clusters_biggest[type_index], "chromophores.")
+        print(
+            'Ratio of chromophores in "large" clusters (psi): {:.3f}'.format(
+                species_psi[type_index]
+            )
+        )
         print("----------====================----------")
         cluster_dicts.append(cluster_dict)
         cluster_freqs.append(cluster_freq)
@@ -2696,7 +2705,7 @@ def main():
         required=False,
         type=str,
         help=(
-            "Specify the separation cut-off (in sigma) for the donor material for determining"
+            "Specify the separation cut-off (in Angstroms) for the donor material for determining"
             " which chromophores belong to the same cluster. Chromophores with separation"
             " r > sep_cut_donor will be considered as different crystals. Default = None (Note: if all"
             " cut-offs are specified as None, then the entire morphology will be considered"
@@ -2710,7 +2719,7 @@ def main():
         required=False,
         type=str,
         help=(
-            "Specify the separation cut-off (in sigma) for the acceptor material for determining"
+            "Specify the separation cut-off (in Angstroms) for the acceptor material for determining"
             " which chromophores belong to the same cluster. Chromophores with separation"
             " r > sep_cut_acceptor will be considered as different crystals. Default = None (Note: if all"
             " cut-offs are specified as None, then the entire morphology will be considered"
