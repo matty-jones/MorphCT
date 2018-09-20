@@ -767,8 +767,8 @@ def plot_temperature_progression(
     yerrs = list(np.array(mobility_data)[:, 1])
     plt.xlabel(x_label)
     plt.ylabel("Mobility (cm" + r"$^{2}$ " + "V" + r"$^{-1}$" + r"s$^{-1}$)")
-    plt.semilogy(xvals, yvals, c="k")
     plt.errorbar(xvals, yvals, xerr=0, yerr=yerrs)
+    plt.yscale("log")
     file_name = "".join(["mobility_", carrier_type, ".pdf"])
     plt.savefig(file_name)
     plt.clf()
@@ -2166,7 +2166,7 @@ def plot_stacked_hist_rates(data1, data2, labels, data_type, file_name):
         label=labels,
     )
     plt.ylabel("Frequency (Arb. U.)")
-    plt.xlabel(data_type.capitalize() + r" k$_{ij}$ (s" + r"$^{-1}$" + ")")
+    plt.xlabel(data_type.capitalize() + r" k$_{i,j}$ (s" + r"$^{-1}$" + ")")
     plt.xlim([1, 1E18])
     plt.xticks([1E0, 1E3, 1E6, 1E9, 1E12, 1E15, 1E18])
     # plt.ylim([0, 14000])
