@@ -40,7 +40,7 @@ def split_argument_into_dictionary(argument):
         # Split the list based off commas
         for subitems in items.split(","):
             # Run a glob on the items in the list (remove quotes from around string)
-            runs = glob.glob(subitems[1:-1])
+            runs = glob.glob(subitems)
             # Add the items in the glob to the sublist
             for run in runs:
                 sublist.append(run)
