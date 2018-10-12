@@ -66,11 +66,11 @@ def split_carriers_by_type(carrier_data):
             carrier_data_holes[list_var] = []
             carrier_data_electrons[list_var] = []
             for carrier_index, charge_type in enumerate(carrier_data["carrier_type"]):
-                if charge_type == "hole":
+                if charge_type.lower() == "hole":
                     carrier_data_holes[list_var].append(
                         carrier_data[list_var][carrier_index]
                     )
-                elif charge_type == "electron":
+                elif charge_type.lower() == "electron":
                     carrier_data_electrons[list_var].append(
                         carrier_data[list_var][carrier_index]
                     )
