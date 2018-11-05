@@ -8,21 +8,22 @@ from morphct.code import helper_functions as hf
 
 
 if __name__ == "__main__":
-    morphology_file = sys.argv[1]
-    CPU_rank = int(sys.argv[2])
+    morph_orca_dir = sys.argv[1]
+    morph_output_dir = sys.argv[2]
+    CPU_rank = int(sys.argv[3])
     overwrite = False
     try:
-        overwrite = bool(sys.argv[3])
+        overwrite = bool(sys.argv[4])
     except:
         pass
-    morphology_name = morphology_file[hf.find_index(morphology_file, "/")[-1] + 1 :]
+    morphology_name = morph_orca_dir[hf.find_index(morph_orca_dir, "/")[-1] + 1 :]
     try:
         orca_path = os.environ["ORCA_BIN"]
     except KeyError:
         orca_path = distutils.spawn.find_executable("orca")
-    input_dir = morphology_file + "/chromophores/input_orca"
-    log_file = input_dir.replace("/input_orca", "/orca_log_" + str(CPU_rank) + ".log")
-    output_dir = morphology_file + "/chromophores/output_orca"
+    input_dir = morph_orca_dir + "/chromophores/input_orca"
+    log_file = morph_output_dir + "/chromophores/orca_log_" + str(CPU_rank) + ".log"
+    output_dir = morph_orca_dir + "/chromophores/output_orca"
     pickle_file_name = input_dir.replace("input_orca", "orca_jobs.pickle")
     with open(pickle_file_name, "rb") as pickle_file:
         jobs_list = pickle.load(pickle_file)

@@ -380,6 +380,9 @@ def main(
                         parameter_dict["output_orca_dir"]
                         + "/"
                         + parameter_dict["morphology"][:-4],
+                        parameter_dict["output_morph_dir"]
+                        + "/"
+                        + parameter_dict["morphology"][:-4],
                         str(CPU_rank),
                         str(int(parameter_dict["overwrite_current_data"])),
                     ]
