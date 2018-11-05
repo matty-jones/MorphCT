@@ -74,12 +74,6 @@ class carrier:
             self.use_koopmans_approximation = parameter_dict[
                 "use_koopmans_approximation"
             ]
-            if self.use_koopmans_approximation:
-                self.koopmans_hopping_prefactor = parameter_dict[
-                    "koopmans_hopping_prefactor"
-                ]
-            else:
-                self.koopmans_hopping_prefactor = 1.0
         except KeyError:
             self.use_koopmans_approximation = False
         # Are we using a simple Boltzmann penalty?
@@ -96,6 +90,10 @@ class carrier:
             self.use_VRH = False
         if self.use_VRH is True:
             self.VRH_delocalisation = self.current_chromophore.VRH_delocalisation
+        try:
+            self.hopping_prefactor = parameter_dict["hopping_prefactor"]
+        except KeyError:
+            self.hopping_prefactor = 1.0
 
     def calculate_hop(self, chromophore_list):
         # Terminate if the next hop would be more than the termination limit
@@ -133,11 +131,8 @@ class carrier:
                 delta_E_ij = self.current_chromophore.neighbours_delta_E[
                     neighbour_index
                 ]
-                # Create a hopping prefactor that can be modified if we're
-                # using Koopmans' approximation
-                prefactor = 1.0
-                if self.use_koopmans_approximation:
-                    prefactor *= self.koopmans_hopping_prefactor
+                # Load the specified hopping prefactor
+                prefactor = self.hopping_prefactor
                 # Get the relative image so we can update the carrier image
                 # after the hop
                 relative_image = self.current_chromophore.neighbours[neighbour_index][1]

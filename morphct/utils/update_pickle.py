@@ -168,7 +168,8 @@ def rename_old(old_parameter_dict):
 
 
 def remove_redundant(old_parameter_dict):
-    remove_these_keys = ["electrical_field", "execute_extract_molecules"]
+    remove_these_keys = ["electrical_field", "execute_extract_molecules",
+                         "koopmans_hopping_prefactor"]
     for key in remove_these_keys:
         try:
             old_parameter_dict.pop(key)

@@ -398,12 +398,6 @@ class carrier:
             self.use_koopmans_approximation = parameter_dict[
                 "use_koopmans_approximation"
             ]
-            if self.use_koopmans_approximation:
-                self.koopmans_hopping_prefactor = parameter_dict[
-                    "koopmans_hopping_prefactor"
-                ]
-            else:
-                self.koopmans_hopping_prefactor = 1.0
         except KeyError:
             self.use_koopmans_approximation = False
         # Are we using a simple Boltzmann penalty?
@@ -508,10 +502,6 @@ class carrier:
                 neighbour_relative_image,
                 self.current_chromophore.neighbours_delta_E[neighbour_index],
             )
-            # Create a hopping prefactor that can be modified if we're using
-            # Koopmans' approximation
-            if self.use_koopmans_approximation:
-                self.prefactor *= self.koopmans_hopping_prefactor
             # All of the energies (EXCEPT EIJ WHICH IS ALREADY IN J) are in eV
             # currently, so convert them to J
             if self.use_VRH is True:
