@@ -35,9 +35,7 @@ class simulation:
                     self.output_orca_dir, self.morphology[:-4]
                 )
             else:
-                self.output_orca_directory = os.path.join(
-                    self.output_morph_dir, self.morphology[:-4]
-                )
+                self.output_orca_directory = self.output_morphology_directory
         if self.device_morphology is not None:
             self.input_device_file = os.path.join(
                 self.input_device_dir, self.device_morphology
