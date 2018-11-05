@@ -631,20 +631,20 @@ def scale_energies(chromophore_list, parameter_dict):
         chromo.LUMO += E_shift
         chromo.LUMO_1 += E_shift
 
-        # if target_DOS_std > std_MO:
-        #     # Determine how many sigmas away from the mean this datapoint is
-        #     sigma = (chromo.get_MO_energy() - av_MO) / std_MO
-        #     # Calculate the new deviation from the mean based on the target
-        #     # STD and sigma
-        #     newDeviation = target_DOS_std * sigma
-        #     # Work out the change in energy to be applied to meet this target
-        #     # energy level
-        #     delta_E = (av_MO + newDeviation) - chromo.get_MO_energy()
-        #     # Apply the energy level displacement
-        #     chromo.HOMO_1 += delta_E
-        #     chromo.HOMO += delta_E
-        #     chromo.LUMO += delta_E
-        #     chromo.LUMO_1 += delta_E
+        if (target_DOS_std is not None) and (target_DOS_std > std_MO):
+            # Determine how many sigmas away from the mean this datapoint is
+            sigma = (chromo.get_MO_energy() - av_MO) / std_MO
+            # Calculate the new deviation from the mean based on the target
+            # STD and sigma
+            newDeviation = target_DOS_std * sigma
+            # Work out the change in energy to be applied to meet this target
+            # energy level
+            delta_E = (av_MO + newDeviation) - chromo.get_MO_energy()
+            # Apply the energy level displacement
+            chromo.HOMO_1 += delta_E
+            chromo.HOMO += delta_E
+            chromo.LUMO += delta_E
+            chromo.LUMO_1 += delta_E
     return chromophore_list
 
 

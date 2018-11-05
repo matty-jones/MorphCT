@@ -5,7 +5,7 @@ import glob
 import argparse
 
 
-def stitch_images(montage_dims, images_to_stitch, morphology_name, title):
+def stitch_images(montage_dims, images_to_stitch, morphology_name, title, save_file):
     # First delete previous output to prevent ImageMagick issue
     if title is None:
         title = morphology_name
@@ -101,6 +101,8 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title):
         stdout=sp.PIPE,
     )
     print("Exporting montage...")
+    if save_file is None:
+        save_file = "".join([directory, "/", title.replace(" ", "_"), ".png"])
     convert = sp.call(
         [
             "convert",
@@ -122,7 +124,7 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title):
             "-annotate",
             "0",
             title,
-            directory + "/" + title.replace(" ", "_") + ".png",
+            save_file,
         ],
         stdin=montage.stdout,
     )
@@ -132,13 +134,7 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title):
         directory + "/*_crop.png"
     ):
         os.remove(file_name)
-    print(
-        "Montage created and saved at "
-        + directory
-        + "/"
-        + title.replace(" ", "_")
-        + ".png"
-    )
+    print("Montage created and saved at ", save_file)
 
 
 def main():
@@ -167,19 +163,44 @@ def main():
             "assigned based on the enclosing directory."
         ),
     )
+    parser.add_argument(
+        "-s",
+        "--save_as",
+        default=None,
+        required=False,
+        help=(
+            "Location and name of the output montage. Default is based on"
+            "the title in the first directory above the morphology directories"
+            "(might be ../ from cwd)."
+        ),
+    )
+    parser.add_argument(
+        "-f",
+        "--files",
+        action="store_true",
+        required=False,
+        help=(
+            "Operate create_montage in file mode, which does not look for"
+            "the standard MorphCT operating file structure."
+        ),
+    )
     args, directories = parser.parse_known_args()
-    for directory in directories:
-        morphology_name = os.path.split(directory)[1]
-        try:
-            images_to_stitch = [
-                os.path.join(directory, "figures", figure)
-                for figure in os.listdir(os.path.join(directory, "figures"))
-            ]
-            if len(images_to_stitch) == 0:
-                raise FileNotFoundError
-        except FileNotFoundError:
-            continue
-        stitch_images(args.dimensions, images_to_stitch, morphology_name, args.title)
+    if args.files:
+        images_to_stitch = [os.path.join(os.getcwd(), directory) for directory in directories]
+        stitch_images(args.dimensions, images_to_stitch, "Montage", args.title, args.save_as)
+    else:
+        for directory in directories:
+            morphology_name = os.path.split(directory)[1]
+            try:
+                images_to_stitch = [
+                    os.path.join(directory, "figures", figure)
+                    for figure in os.listdir(os.path.join(directory, "figures"))
+                ]
+                if len(images_to_stitch) == 0:
+                    raise FileNotFoundError
+            except FileNotFoundError:
+                continue
+            stitch_images(args.dimensions, images_to_stitch, morphology_name, args.title, args.save_as)
 
 
 if __name__ == "__main__":

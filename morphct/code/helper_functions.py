@@ -87,6 +87,8 @@ def calc_COM(list_of_positions, list_of_atom_types=None, list_of_atom_masses=Non
                 list_of_atom_masses.append(14.003074)
             elif atom_type.lower()[0] == "v":
                 list_of_atom_masses.append(50.941500)
+            elif atom_type.lower()[0] == "f":
+                list_of_atom_masses.append(18.998403)
             else:
                 raise SystemError(
                     "Unknown atomic mass " + str(atom_type) + ". Please hardcode"
