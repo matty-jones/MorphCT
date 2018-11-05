@@ -896,8 +896,7 @@ def main(
     # Now we have updated the chromophore_list, rewrite the pickle with this new
     # information.
     pickle_name = os.path.join(
-        parameter_dict["output_morph_dir"],
-        parameter_dict["morphology"][:-4],
+        parameter_dict["output_morphology_directory"],
         "code/",
         "".join([parameter_dict["morphology"][:-4], ".pickle"]),
     )

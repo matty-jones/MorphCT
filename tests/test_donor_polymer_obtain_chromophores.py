@@ -37,6 +37,7 @@ def run_simulation(request):
 
     input_morph_dir = TEST_ROOT + "/assets/donor_polymer"
     output_morph_dir = TEST_ROOT + "/output_OC"
+    output_orca_dir = None
     input_device_dir = TEST_ROOT + "/assets/donor_polymer"
     output_device_dir = TEST_ROOT + "/output_OC"
 

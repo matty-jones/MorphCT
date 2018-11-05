@@ -30,6 +30,12 @@ class simulation:
             self.output_morphology_directory = os.path.join(
                 self.output_morph_dir, self.morphology[:-4]
             )
+            if (self.output_orca_dir is not None) and len(self.output_orca_dir) > 0:
+                self.output_orca_directory = os.path.join(
+                    self.output_orca_dir, self.morphology[:-4]
+                )
+            else:
+                self.output_orca_directory = self.output_morphology_directory
         if self.device_morphology is not None:
             self.input_device_file = os.path.join(
                 self.input_device_dir, self.device_morphology
@@ -243,14 +249,11 @@ class simulation:
         # Then, make sure that all the required directories are in place
         if self.morphology is not None:
             for directory_to_make in [
-                "chromophores/input_orca/single",
-                "chromophores/input_orca/pair",
-                "chromophores/output_orca/single",
-                "chromophores/output_orca/pair",
                 "KMC",
                 "molecules",
                 "morphology",
                 "code",
+                "chromophores",
             ]:
                 print(
                     "mkdir -p",
@@ -261,6 +264,22 @@ class simulation:
                     os.path.join(self.output_morphology_directory, directory_to_make),
                     exist_ok=True,
                 )
+            for temp_directory_to_make in [
+                "chromophores/input_orca/single",
+                "chromophores/input_orca/pair",
+                "chromophores/output_orca/single",
+                "chromophores/output_orca/pair",
+            ]:
+                print(
+                    "mkdir -p",
+                    os.path.join(self.output_orca_directory, temp_directory_to_make),
+                )
+                # Make sure that the mkdir command has finished before moving on
+                os.makedirs(
+                    os.path.join(self.output_orca_directory, temp_directory_to_make),
+                    exist_ok=True,
+                )
+
         elif self.device_morphology is not None:
             if self.overwrite_current_data is True:
                 print("rm -r " + self.outputDeviceDirectory)
