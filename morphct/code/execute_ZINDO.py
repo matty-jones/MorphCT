@@ -242,8 +242,6 @@ def write_orca_inp(
     # Insert the linesToWrite
     inp_file_lines[-1:-1] = lines_to_write
     # Write the orca input file
-    print(input_name)
-    input("PAUSE...")
     with open(input_name, "w+") as orca_file:
         orca_file.writelines(inp_file_lines)
     print(
