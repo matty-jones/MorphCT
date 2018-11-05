@@ -12,6 +12,11 @@ integrations:
       recipients:
         - "#3712501"
 
+branches:
+  only:
+    - master
+    - dev
+
 env:
   global:
   - TRAVIS=False
