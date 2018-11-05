@@ -6,9 +6,14 @@
 The following parameters describe the location of the required input and
 eventual output files. Note that morph directories must be specified, even
 for device files to ensure the correct device components are loaded.
+A seperate orca directory can be specified for the QCCs. It is recommended
+that /dev/shm or similar shared-memory directory be used to dramatically
+improve the speed of orca calculations. Otherwise, setting the output_orca_dir
+to None will use the output_morph_dir instead.
 '''
 input_morph_dir =
 output_morph_dir =
+output_orca_dir =
 input_device_dir =
 output_device_dir =
 
