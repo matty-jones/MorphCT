@@ -170,7 +170,7 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
     print("There were", len(list(failed_chromo_files.keys())), "failed jobs.")
     proc_IDs = parameter_dict["proc_IDs"]
     output_dir = (
-        parameter_dict["output_morph_dir"] + "/" + parameter_dict["morphology"][:-4]
+        parameter_dict["output_morphology_directory"]
     )
     pop_list = []
     permanently_failed = {}
@@ -656,8 +656,7 @@ def main(
     chromophore_list,
 ):
     pickle_name = os.path.join(
-        parameter_dict["output_morph_dir"],
-        parameter_dict["morphology"][:-4],
+        parameter_dict["output_morphology_directory"],
         "code",
         "".join([parameter_dict["morphology"][:-4], ".pickle"]),
     )

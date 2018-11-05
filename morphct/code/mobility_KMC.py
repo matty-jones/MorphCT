@@ -55,9 +55,7 @@ def main(
     np.random.shuffle(carrier_list)
     proc_IDs = parameter_dict["proc_IDs"]
     output_dir = (
-        parameter_dict["output_morph_dir"]
-        + "/"
-        + parameter_dict["morphology"][:-4]
+        parameter_dict["output_morphology_directory"]
         + "/KMC"
     )
     jobs_list = [

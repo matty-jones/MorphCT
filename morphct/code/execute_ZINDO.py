@@ -29,9 +29,7 @@ def create_input_files(chromophore_list, AA_morphology_dict, parameter_dict):
             [chromophore.image] * len(chromophore.AAIDs),
             terminating_group_positions,
             terminating_group_images,
-            parameter_dict["output_orca_dir"]
-            + "/"
-            + parameter_dict["morphology"][:-4]
+            parameter_dict["output_orca_directory"]
             + chromophore.orca_input,
         )
     print("")
@@ -103,9 +101,7 @@ def create_input_files(chromophore_list, AA_morphology_dict, parameter_dict):
                     images,
                     term_group_posns1 + term_group_posns2,
                     terminating_group_images1 + terminating_group_images2,
-                    parameter_dict["output_orca_dir"]
-                    + "/"
-                    + parameter_dict["morphology"][:-4]
+                    parameter_dict["output_orca_directory"]
                     + input_name,
                 )
             else:
@@ -116,9 +112,7 @@ def create_input_files(chromophore_list, AA_morphology_dict, parameter_dict):
                     images,
                     None,
                     None,
-                    parameter_dict["output_orca_dir"]
-                    + "/"
-                    + parameter_dict["morphology"][:-4]
+                    parameter_dict["output_orca_directory"]
                     + input_name,
                 )
     print("")
@@ -349,9 +343,7 @@ def main(
     np.random.seed(hf.obtain_random_seed())
     create_input_files(chromophore_list, AA_morphology_dict, parameter_dict)
     input_dir = (
-        parameter_dict["output_orca_dir"]
-        + "/"
-        + parameter_dict["morphology"][:-4]
+        parameter_dict["output_orca_directory"]
         + "/chromophores/input_orca"
     )
     proc_IDs = parameter_dict["proc_IDs"]
@@ -377,12 +369,8 @@ def main(
                     [
                         "python",
                         SINGLE_ORCA_RUN_FILE,
-                        parameter_dict["output_orca_dir"]
-                        + "/"
-                        + parameter_dict["morphology"][:-4],
-                        parameter_dict["output_morph_dir"]
-                        + "/"
-                        + parameter_dict["morphology"][:-4],
+                        parameter_dict["output_orca_directory"],
+                        parameter_dict["output_morphology_directory"],
                         str(CPU_rank),
                         str(int(parameter_dict["overwrite_current_data"])),
                     ]
