@@ -274,11 +274,11 @@ class simulation:
             ]:
                 print(
                     "mkdir -p",
-                    os.path.join(self.output_orca_directory, directory_to_make),
+                    os.path.join(self.output_orca_directory, temp_directory_to_make),
                 )
                 # Make sure that the mkdir command has finished before moving on
                 os.makedirs(
-                    os.path.join(self.output_orca_directory, directory_to_make),
+                    os.path.join(self.output_orca_directory, temp_directory_to_make),
                     exist_ok=True,
                 )
 
