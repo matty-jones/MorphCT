@@ -280,9 +280,7 @@ def calculate_TI(orbital_splitting, delta_E):
 
 def update_single_chromophore_list(chromophore_list, parameter_dict):
     orca_output_dir = (
-        parameter_dict["output_orca_dir"]
-        + "/"
-        + parameter_dict["morphology"][:-4]
+        parameter_dict["output_orca_directory"]
         + "/chromophores/output_orca/"
     )
     # NOTE: This can possibly be done by recursively iterating through the
@@ -368,9 +366,7 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
     # failed (which it won't have done because all my chromophores are
     # delicious now).
     orca_output_dir = (
-        parameter_dict["output_orca_dir"]
-        + "/"
-        + parameter_dict["morphology"][:-4]
+        parameter_dict["output_orca_directory"]
         + "/chromophores/output_orca/"
     )
     failed_pair_chromos = {}
