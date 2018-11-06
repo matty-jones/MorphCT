@@ -244,7 +244,10 @@ class simulation:
         # Delete the ORCA information if the user has asked to
         if self.overwrite_current_data is True:
             print("OVERWRITE CURRENT DATA IS TRUE...EMPTYING ORCA DIR")
-            shutil.rmtree(self.output_orca_directory)
+            try:
+                shutil.rmtree(self.output_orca_directory)
+            except FileNotFoundError:
+                print("Directory already empty. Continuing...")
         # NOTE: Don't delete the morphology directory - sometimes we just want to
         # update and recalculate things, not start the whole pipeline again.
         # Delete any previous data if the user asked to
