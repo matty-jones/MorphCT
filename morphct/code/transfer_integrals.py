@@ -169,9 +169,6 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
     print(failed_chromo_files)
     print("There were", len(list(failed_chromo_files.keys())), "failed jobs.")
     proc_IDs = parameter_dict["proc_IDs"]
-    output_dir = (
-        parameter_dict["output_morphology_directory"]
-    )
     pop_list = []
     permanently_failed = {}
     # Firstly, modify the input files to see if numerical tweaks make orca
@@ -180,7 +177,7 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
         failed_count = failed_data[0]
         error_code = modify_orca_files(
             failed_file,
-            output_dir
+            parameter_dict["output_orca_directory"]
             + "/chromophores/input_orca/"
             + failed_file.replace(".out", ".inp"),
             failed_count,
@@ -201,7 +198,8 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
     # Otherwise, rerun those failed files.
     # First, find the correct locations of the input Files
     input_files = [
-        output_dir + "/chromophores/input_orca/" + file_name.replace(".out", ".inp")
+        parameter_dict["output_orca_directory"] + "/chromophores/input_orca/"
+        + file_name.replace(".out", ".inp")
         for file_name in list(failed_chromo_files.keys())
     ]
     # As before, split the list of reruns based on the number of processors
@@ -213,7 +211,8 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
     ]
     print(jobs_list)
     # Write the jobs pickle for single_core_run_orca to obtain
-    with open(output_dir + "/chromophores/orca_jobs.pickle", "wb+") as pickle_file:
+    with open(parameter_dict["output_orca_directory"]
+              + "/chromophores/orca_jobs.pickle", "wb+") as pickle_file:
         pickle.dump(jobs_list, pickle_file)
     # Now rerun orca
     if len(jobs_list) <= len(proc_IDs):
@@ -223,7 +222,10 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
         # The final argument here tells orca to ignore the presence of the
         # output file and recalculate
         running_jobs.append(
-            sp.Popen(["python", SINGLE_ORCA_RUN_FILE, output_dir, str(CPU_rank), "1"])
+            sp.Popen(["python", SINGLE_ORCA_RUN_FILE,
+                      parameter_dict["output_orca_directory"],
+                      parameter_dict["output_morphology_directory"],
+                      str(CPU_rank), "1"])
         )
     # Wait for running jobs to finish
     [p.wait() for p in running_jobs]
@@ -305,6 +307,14 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
             chromophore.HOMO = energy_levels[1]
             chromophore.LUMO = energy_levels[2]
             chromophore.LUMO_1 = energy_levels[3]
+            # If we got this far, then we can delete the input file
+            if parameter_dict["remove_orca_inputs"] is True:
+                os.remove(os.path.join(
+                    orca_output_dir.replace("output_orca", "input_orca"),
+                    file_name.replace(".out", ".inp")
+                ))
+            if parameter_dict["remove_orca_outputs"] is True:
+                os.remove(os.path.join(orca_output_dir, file_name))
         except orcaError:
             failed_single_chromos[file_name] = [1, chromo_location]
             continue
@@ -339,6 +349,14 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
                 # This chromophore didn't fail, so remove it from the failed
                 # list
                 successful_reruns.append(chromo_name)
+                # If we got this far, then we can delete the input file
+                if parameter_dict["remove_orca_inputs"] is True:
+                    os.remove(os.path.join(
+                        orca_output_dir.replace("output_orca", "input_orca"),
+                        file_name.replace(".out", ".inp")
+                    ))
+                if parameter_dict["remove_orca_outputs"] is True:
+                    os.remove(os.path.join(orca_output_dir, file_name))
             except orcaError:
                 # This chromophore failed so increment its fail counter
                 failed_single_chromos[chromo_name][0] += 1
@@ -346,17 +364,6 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
         for chromo_name in successful_reruns:
             failed_single_chromos.pop(chromo_name)
     print("")
-    # Finally, delete any of the files that need to be deleted.
-    if parameter_dict["remove_orca_inputs"] is True:
-        print("Deleting orca input files...")
-        for file_name in glob.glob(
-            orca_output_dir.replace("output_orca", "input_orca") + "single/*.*"
-        ):
-            os.remove(file_name)
-    if parameter_dict["remove_orca_outputs"] is True:
-        print("Deleting orca output files...")
-        for file_name in glob.glob(orca_output_dir + "single/*.*"):
-            os.remove(file_name)
     return chromophore_list
 
 
@@ -385,6 +392,14 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 dimer_HOMO = energy_levels[1]
                 dimer_LUMO = energy_levels[2]
                 dimer_LUMO_1 = energy_levels[3]
+                # If we got this far, then we can delete the input file
+                if parameter_dict["remove_orca_inputs"] is True:
+                    os.remove(os.path.join(
+                        orca_output_dir.replace("output_orca", "input_orca"),
+                        file_name.replace(".out", ".inp")
+                    ))
+                if parameter_dict["remove_orca_outputs"] is True:
+                    os.remove(os.path.join(orca_output_dir, file_name))
             except orcaError:
                 failed_pair_chromos[file_name] = [1, chromo_location, neighbour_ID]
                 continue
@@ -505,6 +520,14 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 dimer_HOMO = energy_levels[1]
                 dimer_LUMO = energy_levels[2]
                 dimer_LUMO_1 = energy_levels[3]
+                # If we got this far, then we can delete the input file
+                if parameter_dict["remove_orca_inputs"] is True:
+                    os.remove(os.path.join(
+                        orca_output_dir.replace("output_orca", "input_orca"),
+                        file_name.replace(".out", ".inp")
+                    ))
+                if parameter_dict["remove_orca_outputs"] is True:
+                    os.remove(os.path.join(orca_output_dir, file_name))
             except orcaError:
                 # This dimer failed so increment its fail counter
                 failed_pair_chromos[file_name][0] += 1
@@ -579,17 +602,6 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
         for file_name in successful_reruns:
             failed_pair_chromos.pop(file_name)
     print("")
-    # Finally, delete any of the files that need to be deleted.
-    if parameter_dict["remove_orca_inputs"] is True:
-        print("Deleting orca input files...")
-        for file_name in glob.glob(
-            orca_output_dir.replace("output_orca", "input_orca") + "pair/*.*"
-        ):
-            os.remove(file_name)
-    if parameter_dict["remove_orca_outputs"] is True:
-        print("Deleting orca output files...")
-        for file_name in glob.glob(orca_output_dir + "pair/*.*"):
-            os.remove(file_name)
     return chromophore_list
 
 
