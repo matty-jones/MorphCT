@@ -169,9 +169,6 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
     print(failed_chromo_files)
     print("There were", len(list(failed_chromo_files.keys())), "failed jobs.")
     proc_IDs = parameter_dict["proc_IDs"]
-    output_dir = (
-        parameter_dict["output_morphology_directory"]
-    )
     pop_list = []
     permanently_failed = {}
     # Firstly, modify the input files to see if numerical tweaks make orca
@@ -180,7 +177,7 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
         failed_count = failed_data[0]
         error_code = modify_orca_files(
             failed_file,
-            output_dir
+            parameter_dict["output_orca_directory"]
             + "/chromophores/input_orca/"
             + failed_file.replace(".out", ".inp"),
             failed_count,
@@ -201,7 +198,8 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
     # Otherwise, rerun those failed files.
     # First, find the correct locations of the input Files
     input_files = [
-        output_dir + "/chromophores/input_orca/" + file_name.replace(".out", ".inp")
+        parameter_dict["output_orca_directory"] + "/chromophores/input_orca/"
+        + file_name.replace(".out", ".inp")
         for file_name in list(failed_chromo_files.keys())
     ]
     # As before, split the list of reruns based on the number of processors
@@ -213,7 +211,8 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
     ]
     print(jobs_list)
     # Write the jobs pickle for single_core_run_orca to obtain
-    with open(output_dir + "/chromophores/orca_jobs.pickle", "wb+") as pickle_file:
+    with open(parameter_dict["output_orca_directory"]
+              + "/chromophores/orca_jobs.pickle", "wb+") as pickle_file:
         pickle.dump(jobs_list, pickle_file)
     # Now rerun orca
     if len(jobs_list) <= len(proc_IDs):
@@ -223,7 +222,10 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
         # The final argument here tells orca to ignore the presence of the
         # output file and recalculate
         running_jobs.append(
-            sp.Popen(["python", SINGLE_ORCA_RUN_FILE, output_dir, str(CPU_rank), "1"])
+            sp.Popen(["python", SINGLE_ORCA_RUN_FILE,
+                      parameter_dict["output_orca_directory"],
+                      parameter_dict["output_morphology_directory"],
+                      str(CPU_rank), "1"])
         )
     # Wait for running jobs to finish
     [p.wait() for p in running_jobs]
