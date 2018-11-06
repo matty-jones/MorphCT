@@ -103,7 +103,7 @@ def modify_orca_files(file_name, failed_file, failed_count, chromophore_list):
         for chromo_string in file_string.split("-"):
             chromo_ID = int(chromo_string)
             print("AAIDs for chromophore", chromo_ID)
-            print(chromophoreList[chromoID].AAIDs)
+            print(chromophore_list[chromo_ID].AAIDs)
         print("Reverting " + str(file_name) + " back to its original state...")
         revert_orca_files(failed_file)
         return 1
