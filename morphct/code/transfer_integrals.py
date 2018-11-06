@@ -307,6 +307,14 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
             chromophore.HOMO = energy_levels[1]
             chromophore.LUMO = energy_levels[2]
             chromophore.LUMO_1 = energy_levels[3]
+            # If we got this far, then we can delete the input file
+            if parameter_dict["remove_orca_inputs"] is True:
+                os.remove(os.path.join(
+                    orca_output_dir.replace("output_orca", "input_orca"),
+                    "single", file_name.replace(".out", ".inp")
+                ))
+            if parameter_dict["remove_orca_outputs"] is True:
+                os.remove(os.path.join(orca_output_dir, "single", file_name))
         except orcaError:
             failed_single_chromos[file_name] = [1, chromo_location]
             continue
@@ -348,17 +356,6 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
         for chromo_name in successful_reruns:
             failed_single_chromos.pop(chromo_name)
     print("")
-    # Finally, delete any of the files that need to be deleted.
-    if parameter_dict["remove_orca_inputs"] is True:
-        print("Deleting orca input files...")
-        for file_name in glob.glob(
-            orca_output_dir.replace("output_orca", "input_orca") + "single/*.*"
-        ):
-            os.remove(file_name)
-    if parameter_dict["remove_orca_outputs"] is True:
-        print("Deleting orca output files...")
-        for file_name in glob.glob(orca_output_dir + "single/*.*"):
-            os.remove(file_name)
     return chromophore_list
 
 
