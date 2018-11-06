@@ -241,6 +241,12 @@ class simulation:
 
     def make_dir_tree(self):
         print("Sorting out directory structure...")
+        # Delete the ORCA information if the user has asked to
+        if self.overwrite_current_data is True:
+            print("OVERWRITE CURRENT DATA IS TRUE...EMPTYING ORCA DIR")
+            shutil.rmtree(self.output_orca_directory)
+        # NOTE: Don't delete the morphology directory - sometimes we just want to
+        # update and recalculate things, not start the whole pipeline again.
         # Delete any previous data if the user asked to
         # if self.overwriteCurrentData == True:
         #     sp.Popen('echo rm -rf '+self.output_directory+'/*', shell=True)
