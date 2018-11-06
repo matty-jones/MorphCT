@@ -311,10 +311,10 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
             if parameter_dict["remove_orca_inputs"] is True:
                 os.remove(os.path.join(
                     orca_output_dir.replace("output_orca", "input_orca"),
-                    "single", file_name.replace(".out", ".inp")
+                    file_name.replace(".out", ".inp")
                 ))
             if parameter_dict["remove_orca_outputs"] is True:
-                os.remove(os.path.join(orca_output_dir, "single", file_name))
+                os.remove(os.path.join(orca_output_dir, file_name))
         except orcaError:
             failed_single_chromos[file_name] = [1, chromo_location]
             continue
@@ -349,6 +349,14 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
                 # This chromophore didn't fail, so remove it from the failed
                 # list
                 successful_reruns.append(chromo_name)
+                # If we got this far, then we can delete the input file
+                if parameter_dict["remove_orca_inputs"] is True:
+                    os.remove(os.path.join(
+                        orca_output_dir.replace("output_orca", "input_orca"),
+                        file_name.replace(".out", ".inp")
+                    ))
+                if parameter_dict["remove_orca_outputs"] is True:
+                    os.remove(os.path.join(orca_output_dir, file_name))
             except orcaError:
                 # This chromophore failed so increment its fail counter
                 failed_single_chromos[chromo_name][0] += 1
@@ -384,6 +392,14 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 dimer_HOMO = energy_levels[1]
                 dimer_LUMO = energy_levels[2]
                 dimer_LUMO_1 = energy_levels[3]
+                # If we got this far, then we can delete the input file
+                if parameter_dict["remove_orca_inputs"] is True:
+                    os.remove(os.path.join(
+                        orca_output_dir.replace("output_orca", "input_orca"),
+                        file_name.replace(".out", ".inp")
+                    ))
+                if parameter_dict["remove_orca_outputs"] is True:
+                    os.remove(os.path.join(orca_output_dir, file_name))
             except orcaError:
                 failed_pair_chromos[file_name] = [1, chromo_location, neighbour_ID]
                 continue
@@ -504,6 +520,14 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 dimer_HOMO = energy_levels[1]
                 dimer_LUMO = energy_levels[2]
                 dimer_LUMO_1 = energy_levels[3]
+                # If we got this far, then we can delete the input file
+                if parameter_dict["remove_orca_inputs"] is True:
+                    os.remove(os.path.join(
+                        orca_output_dir.replace("output_orca", "input_orca"),
+                        file_name.replace(".out", ".inp")
+                    ))
+                if parameter_dict["remove_orca_outputs"] is True:
+                    os.remove(os.path.join(orca_output_dir, file_name))
             except orcaError:
                 # This dimer failed so increment its fail counter
                 failed_pair_chromos[file_name][0] += 1
@@ -578,17 +602,6 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
         for file_name in successful_reruns:
             failed_pair_chromos.pop(file_name)
     print("")
-    # Finally, delete any of the files that need to be deleted.
-    if parameter_dict["remove_orca_inputs"] is True:
-        print("Deleting orca input files...")
-        for file_name in glob.glob(
-            orca_output_dir.replace("output_orca", "input_orca") + "pair/*.*"
-        ):
-            os.remove(file_name)
-    if parameter_dict["remove_orca_outputs"] is True:
-        print("Deleting orca output files...")
-        for file_name in glob.glob(orca_output_dir + "pair/*.*"):
-            os.remove(file_name)
     return chromophore_list
 
 
