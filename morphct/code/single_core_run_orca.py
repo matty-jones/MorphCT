@@ -7,15 +7,18 @@ import time as T
 from morphct.code import helper_functions as hf
 
 
+def check_job_output(orca_lines):
+    if "ORCA TERMINATED NORMALLY" in orca_lines[-3]:
+        return True
+    return False
+
+
 if __name__ == "__main__":
     morph_orca_dir = sys.argv[1]
     morph_output_dir = sys.argv[2]
     CPU_rank = int(sys.argv[3])
-    overwrite = False
-    try:
-        overwrite = bool(sys.argv[4])
-    except:
-        pass
+    overwrite = bool(sys.argv[4])
+    delete_inputs = bool(sys.argv[4])
     morphology_name = morph_orca_dir[hf.find_index(morph_orca_dir, "/")[-1] + 1 :]
     try:
         orca_path = os.environ["ORCA_BIN"]
@@ -68,13 +71,17 @@ if __name__ == "__main__":
         #     hf.write_to_file(log_file, ["Taskset command not found, skipping setting"
         #                                 " of processor affinities..."])
         orca_shell_output = orca_job.communicate()
+        orca_stdout = orca_shell_output[0].decode().split("\n")
+        orca_stderr = orca_shell_output[1].decode().split("\n")
         # Write the outputFile:
         hf.write_to_file(
             output_file_name,
-            orca_shell_output[0].decode().split("\n"),
+            orca_stdout,
             mode="output_file",
         )
-        hf.write_to_file(log_file, orca_shell_output[1].decode().split("\n"))
+        if len(orca_stderr) > 0:
+            # Write any errors
+            hf.write_to_file(log_file, orca_stderr)
         t2 = T.time()
         elapsed_time = float(t2) - float(t1)
         if elapsed_time < 60:
@@ -91,8 +98,19 @@ if __name__ == "__main__":
         elapsed_time = "%.1f" % (float(elapsed_time))
         hf.write_to_file(
             log_file,
-            ["Job " + str(job) + " completed in " + elapsed_time + " " + time_units],
+            ["Job " + str(job) + " completed in " + elapsed_time + " " + time_units
+             + "\n"],
         )
+        # Now check the output file and delete the input files if we don't need them
+        # any more
+        delete_inputs = check_job_output(orca_stdout)
+        if delete_inputs:
+            for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges"]:
+                try:
+                    os.remove(job.replace(".inp", extension))
+                except FileNotFoundError:
+                    # Already deleted
+                    pass
     t3 = T.time()
     elapsed_time = float(t3) - float(t0)
     if elapsed_time < 60:
