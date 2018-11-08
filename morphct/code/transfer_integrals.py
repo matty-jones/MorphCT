@@ -311,7 +311,7 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
             chromophore.LUMO_1 = energy_levels[3]
             # If we got this far, then we can delete the input file
             if parameter_dict["remove_orca_inputs"] is True:
-                for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges"]:
+                for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges", ".txt"]:
                     try:
                         os.remove(os.path.join(
                             orca_output_dir.replace("output_orca", "input_orca"),
@@ -362,7 +362,7 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
                 successful_reruns.append(chromo_name)
                 # If we got this far, then we can delete the input file
                 if parameter_dict["remove_orca_inputs"] is True:
-                    for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges"]:
+                    for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges", ".txt"]:
                         try:
                             os.remove(os.path.join(
                                 orca_output_dir.replace("output_orca", "input_orca"),
@@ -414,7 +414,7 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 dimer_LUMO_1 = energy_levels[3]
                 # If we got this far, then we can delete the input file
                 if parameter_dict["remove_orca_inputs"] is True:
-                    for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges"]:
+                    for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges", ".txt"]:
                         try:
                             os.remove(os.path.join(
                                 orca_output_dir.replace("output_orca", "input_orca"),
@@ -551,7 +551,7 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 dimer_LUMO_1 = energy_levels[3]
                 # If we got this far, then we can delete the input file
                 if parameter_dict["remove_orca_inputs"] is True:
-                    for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges"]:
+                    for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges", ".txt"]:
                         try:
                             os.remove(os.path.join(
                                 orca_output_dir.replace("output_orca", "input_orca"),

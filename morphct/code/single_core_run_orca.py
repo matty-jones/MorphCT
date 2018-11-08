@@ -79,6 +79,17 @@ if __name__ == "__main__":
             orca_stdout,
             mode="output_file",
         )
+        if delete_inputs:
+            output_ok = check_job_output(orca_stdout)
+            if output_ok:
+                hf.write_to_file(log_file, "Output OK and remove_orca_inputs set.\n"
+                                 + "Deleting " + job[:-4] + " inputs...")
+                for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges", ".txt"]:
+                    try:
+                        os.remove(job.replace(".inp", extension))
+                    except FileNotFoundError:
+                        # Already deleted
+                        pass
         if len(orca_stderr) > 0:
             # Write any errors
             hf.write_to_file(log_file, orca_stderr)
@@ -103,14 +114,6 @@ if __name__ == "__main__":
         )
         # Now check the output file and delete the input files if we don't need them
         # any more
-        delete_inputs = check_job_output(orca_stdout)
-        if delete_inputs:
-            for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges"]:
-                try:
-                    os.remove(job.replace(".inp", extension))
-                except FileNotFoundError:
-                    # Already deleted
-                    pass
     t3 = T.time()
     elapsed_time = float(t3) - float(t0)
     if elapsed_time < 60:
