@@ -51,7 +51,7 @@ def run_simulation():
     # ---============ Chromophore Parameters ==========---
     # ---==============================================---
     molecule_terminating_connections = {"C1": [[2, 1]], "C10": [[2, 1]]}
-    remove_orca_inputs = True
+    remove_orca_inputs = False
     remove_orca_outputs = True
 
     # ---==============================================---
