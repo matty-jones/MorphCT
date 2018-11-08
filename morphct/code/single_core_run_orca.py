@@ -17,8 +17,8 @@ if __name__ == "__main__":
     morph_orca_dir = sys.argv[1]
     morph_output_dir = sys.argv[2]
     CPU_rank = int(sys.argv[3])
-    overwrite = bool(sys.argv[4])
-    delete_inputs = bool(sys.argv[4])
+    overwrite = bool(int(sys.argv[4]))
+    delete_inputs = bool(int(sys.argv[5]))
     morphology_name = morph_orca_dir[hf.find_index(morph_orca_dir, "/")[-1] + 1 :]
     try:
         orca_path = os.environ["ORCA_BIN"]
@@ -82,9 +82,10 @@ if __name__ == "__main__":
         if delete_inputs:
             output_ok = check_job_output(orca_stdout)
             if output_ok:
-                hf.write_to_file(log_file, "Output OK and remove_orca_inputs set.\n"
-                                 + "Deleting " + job[:-4] + " inputs...")
-                for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges", ".txt"]:
+                hf.write_to_file(log_file, ["Output OK and remove_orca_inputs set.",
+                                 "Deleting " + job[:-4] + " inputs..."])
+                for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges",
+                                  "_property.txt"]:
                     try:
                         os.remove(job.replace(".inp", extension))
                     except FileNotFoundError:
