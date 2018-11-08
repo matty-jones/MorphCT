@@ -79,7 +79,7 @@ def run_simulation(request):
     maximum_hole_hop_distance = _hop_range
     maximum_electron_hop_distance = _hop_range
     permit_hops_through_opposing_chromophores = _transiting
-    remove_orca_inputs = True
+    remove_orca_inputs = False
     remove_orca_outputs = True
     chromophore_length = 3
 
@@ -264,6 +264,6 @@ if __name__ == "__main__":
 
     run_simulation(
         parameters(
-            {"voronoi": False, "hop_range": 10.0, "transiting": False, "koopmans": True}
+            {"voronoi": False, "hop_range": 10.0, "transiting": False, "koopmans": True},
         )
     )

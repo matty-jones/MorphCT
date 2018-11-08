@@ -373,6 +373,7 @@ def main(
                         parameter_dict["output_morphology_directory"],
                         str(CPU_rank),
                         str(int(parameter_dict["overwrite_current_data"])),
+                        str(int(parameter_dict["remove_orca_inputs"])),
                     ]
                 )
             )

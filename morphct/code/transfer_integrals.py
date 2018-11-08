@@ -225,7 +225,9 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
             sp.Popen(["python", SINGLE_ORCA_RUN_FILE,
                       parameter_dict["output_orca_directory"],
                       parameter_dict["output_morphology_directory"],
-                      str(CPU_rank), "1"])
+                      str(CPU_rank), "1",
+                      str(int(parameter_dict["remove_orca_inputs"])),
+                     ])
         )
     # Wait for running jobs to finish
     [p.wait() for p in running_jobs]
@@ -309,7 +311,7 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
             chromophore.LUMO_1 = energy_levels[3]
             # If we got this far, then we can delete the input file
             if parameter_dict["remove_orca_inputs"] is True:
-                for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges"]:
+                for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges", ".txt"]:
                     try:
                         os.remove(os.path.join(
                             orca_output_dir.replace("output_orca", "input_orca"),
@@ -360,7 +362,7 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
                 successful_reruns.append(chromo_name)
                 # If we got this far, then we can delete the input file
                 if parameter_dict["remove_orca_inputs"] is True:
-                    for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges"]:
+                    for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges", ".txt"]:
                         try:
                             os.remove(os.path.join(
                                 orca_output_dir.replace("output_orca", "input_orca"),
@@ -412,7 +414,7 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 dimer_LUMO_1 = energy_levels[3]
                 # If we got this far, then we can delete the input file
                 if parameter_dict["remove_orca_inputs"] is True:
-                    for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges"]:
+                    for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges", ".txt"]:
                         try:
                             os.remove(os.path.join(
                                 orca_output_dir.replace("output_orca", "input_orca"),
@@ -549,7 +551,7 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 dimer_LUMO_1 = energy_levels[3]
                 # If we got this far, then we can delete the input file
                 if parameter_dict["remove_orca_inputs"] is True:
-                    for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges"]:
+                    for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges", ".txt"]:
                         try:
                             os.remove(os.path.join(
                                 orca_output_dir.replace("output_orca", "input_orca"),
