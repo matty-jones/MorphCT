@@ -1061,8 +1061,8 @@ def get_clusters(
     freud_box = [[AA_morphology_dict[coord] for coord in ["lx", "ly", "lz"]]]
     materials_to_check = ["donor", "acceptor"]
     carriers_to_check = ["hole", "electron"]
-    cluster_freqs = []
-    cluster_dicts = []
+    cluster_freqs = [{}, {}]
+    cluster_dicts = [{}, {}]
     clusters_total = [0, 0]
     clusters_large = [0, 0]
     clusters_biggest = [0, 0]
@@ -1134,8 +1134,8 @@ def get_clusters(
             )
         )
         print("----------====================----------")
-        cluster_dicts.append(cluster_dict)
-        cluster_freqs.append(cluster_freq)
+        cluster_dicts[type_index] = cluster_dict
+        cluster_freqs[type_index] = cluster_freq
     return (
         cluster_dicts,
         cluster_freqs,
