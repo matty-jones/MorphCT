@@ -762,6 +762,7 @@ def plot_temperature_progression(
     temp_data, mobility_data, anisotropy_data, carrier_type, x_label
 ):
     plt.gcf()
+    plt.clf()
     xvals = temp_data
     yvals = list(np.array(mobility_data)[:, 0])
     yerrs = list(np.array(mobility_data)[:, 1])
@@ -1048,6 +1049,12 @@ def create_cut_off_dict(
                 cut_off_dict[cut_type][material_index] = float(cut)
             except TypeError:
                 pass
+            except ValueError:
+                # Most likely both donor and acceptor cuts have been specified
+                # for this KMCA job, but only one type of carrier is available in
+                # this instance, so we can safely set the opposing carrier type cut
+                # to None.
+                cut_off_dict[cut_type][material_index] = None
     return cut_off_dict
 
 
@@ -2438,6 +2445,7 @@ def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
     smoothed_n = gaussian_filter(n, 1.0)
     plt.plot(bin_centres, smoothed_n, color="r")
     if (cut_off is not None) and (cut_off.lower() == "auto"):
+        print("DYNAMIC CUT")
         cut_off = calculate_cut_off_from_dist(
             bin_centres,
             smoothed_n,
