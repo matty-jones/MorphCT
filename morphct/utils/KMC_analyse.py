@@ -2802,6 +2802,9 @@ def main():
         # Load in all the required data
         data_dict = {}
         print("\n")
+        print("-----===== KMC_ANALYSE =====-----")
+        print(directory)
+        print("-----=======================-----")
         print("Getting carrier data...")
         carrier_data = load_KMC_results_pickle(directory)
         print("Carrier Data obtained")
