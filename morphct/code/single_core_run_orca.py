@@ -96,7 +96,7 @@ if __name__ == "__main__":
                     except FileNotFoundError:
                         # Already deleted
                         pass
-        if len(orca_stderr) > 0:
+        if len(orca_stderr) > 1:
             # Write any errors
             hf.write_to_file(log_file, orca_stderr)
         t2 = T.time()
