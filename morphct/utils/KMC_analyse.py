@@ -3025,8 +3025,6 @@ def main():
         print("Writing CSV Output File...")
         write_CSV(data_dict, directory)
     print("Plotting Mobility and Anisotropy progressions...")
-    print(len(hole_mobility_data), len(hole_anisotropy_data))
-    print(len(electron_mobility_data), len(electron_anisotropy_data))
     if args.sequence_donor is not None:
         if len(hole_anisotropy_data) > 0:
             plot_temperature_progression(
