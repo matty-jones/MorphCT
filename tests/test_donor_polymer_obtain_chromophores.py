@@ -233,6 +233,8 @@ class TestCompareOutputs(TestCommand):
                 "input_morphology_file",
                 "output_device_dir",
                 "input_morph_dir",
+                "input_orca_dir",
+                "output_orca_dir",
             ]:
                 continue
             output_pars = run_simulation["output_parameter_dict"][key]
