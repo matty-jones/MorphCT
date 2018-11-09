@@ -30,7 +30,7 @@ if __name__ == "__main__":
     except KeyError:
         orca_path = distutils.spawn.find_executable("orca")
     input_dir = morph_orca_dir + "/chromophores/input_orca"
-    log_file = morph_output_dir + "/chromophores/orca_log_" + str(CPU_rank) + ".log"
+    log_file = morph_output_dir + "/chromophores/orca_log_{:02d}.log".format(CPU_rank)
     output_dir = morph_orca_dir + "/chromophores/output_orca"
     pickle_file_name = input_dir.replace("input_orca", "orca_jobs.pickle")
     with open(pickle_file_name, "rb") as pickle_file:
