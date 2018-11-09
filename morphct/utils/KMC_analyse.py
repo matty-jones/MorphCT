@@ -2607,17 +2607,31 @@ def main():
         ),
     )
     parser.add_argument(
-        "-s",
-        "--sequence",
+        "-sd",
+        "--sequence_donor",
         type=lambda s: [float(item) for item in s.split(",")],
         default=None,
         required=False,
         help=(
             "Create a figure in the current directory that describes the evolution"
-            " of the anisotropy/mobility using the specified comma-delimited string"
-            " as the sequence of x values. For instance -s '1.5,1.75,2.0,2.25,2.5'"
-            " will assign each of the 5 following directories these x-values when"
-            " plotting the mobility evolution."
+            " of the hole anisotropy/mobility using the specified comma-delimited"
+            " string as the sequence of x values. For instance -s"
+            " '1.5,1.75,2.0,2.25,2.5' will assign each of the 5 following directories"
+            " these x-values when plotting the hole mobility evolution."
+        ),
+    )
+    parser.add_argument(
+        "-sa",
+        "--sequence_acceptor",
+        type=lambda s: [float(item) for item in s.split(",")],
+        default=None,
+        required=False,
+        help=(
+            "Create a figure in the current directory that describes the evolution"
+            " of the electron anisotropy/mobility using the specified comma-delimited"
+            " string as the sequence of x values. For instance -s"
+            " '1.5,1.75,2.0,2.25,2.5' will assign each of the 5 following directories"
+            " these x-values when plotting the electron mobility evolution."
         ),
     )
     parser.add_argument(
@@ -3011,18 +3025,21 @@ def main():
         print("Writing CSV Output File...")
         write_CSV(data_dict, directory)
     print("Plotting Mobility and Anisotropy progressions...")
-    if args.sequence is not None:
+    print(len(hole_mobility_data), len(hole_anisotropy_data))
+    print(len(electron_mobility_data), len(electron_anisotropy_data))
+    if args.sequence_donor is not None:
         if len(hole_anisotropy_data) > 0:
             plot_temperature_progression(
-                args.sequence,
+                args.sequence_donor,
                 hole_mobility_data,
                 hole_anisotropy_data,
                 "hole",
                 args.xlabel,
             )
+    if args.sequence_acceptor is not None:
         if len(electron_anisotropy_data) > 0:
             plot_temperature_progression(
-                args.sequence,
+                args.sequence_acceptor,
                 electron_mobility_data,
                 electron_anisotropy_data,
                 "electron",
