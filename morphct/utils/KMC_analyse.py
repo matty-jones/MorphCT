@@ -762,6 +762,7 @@ def plot_temperature_progression(
     temp_data, mobility_data, anisotropy_data, carrier_type, x_label
 ):
     plt.gcf()
+    plt.clf()
     xvals = temp_data
     yvals = list(np.array(mobility_data)[:, 0])
     yerrs = list(np.array(mobility_data)[:, 1])
@@ -1048,6 +1049,12 @@ def create_cut_off_dict(
                 cut_off_dict[cut_type][material_index] = float(cut)
             except TypeError:
                 pass
+            except ValueError:
+                # Most likely both donor and acceptor cuts have been specified
+                # for this KMCA job, but only one type of carrier is available in
+                # this instance, so we can safely set the opposing carrier type cut
+                # to None.
+                cut_off_dict[cut_type][material_index] = None
     return cut_off_dict
 
 
@@ -1061,8 +1068,8 @@ def get_clusters(
     freud_box = [[AA_morphology_dict[coord] for coord in ["lx", "ly", "lz"]]]
     materials_to_check = ["donor", "acceptor"]
     carriers_to_check = ["hole", "electron"]
-    cluster_freqs = []
-    cluster_dicts = []
+    cluster_freqs = [{}, {}]
+    cluster_dicts = [{}, {}]
     clusters_total = [0, 0]
     clusters_large = [0, 0]
     clusters_biggest = [0, 0]
@@ -1134,8 +1141,8 @@ def get_clusters(
             )
         )
         print("----------====================----------")
-        cluster_dicts.append(cluster_dict)
-        cluster_freqs.append(cluster_freq)
+        cluster_dicts[type_index] = cluster_dict
+        cluster_freqs[type_index] = cluster_freq
     return (
         cluster_dicts,
         cluster_freqs,
@@ -2438,6 +2445,7 @@ def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
     smoothed_n = gaussian_filter(n, 1.0)
     plt.plot(bin_centres, smoothed_n, color="r")
     if (cut_off is not None) and (cut_off.lower() == "auto"):
+        print("DYNAMIC CUT")
         cut_off = calculate_cut_off_from_dist(
             bin_centres,
             smoothed_n,
@@ -2599,17 +2607,31 @@ def main():
         ),
     )
     parser.add_argument(
-        "-s",
-        "--sequence",
+        "-sd",
+        "--sequence_donor",
         type=lambda s: [float(item) for item in s.split(",")],
         default=None,
         required=False,
         help=(
             "Create a figure in the current directory that describes the evolution"
-            " of the anisotropy/mobility using the specified comma-delimited string"
-            " as the sequence of x values. For instance -s '1.5,1.75,2.0,2.25,2.5'"
-            " will assign each of the 5 following directories these x-values when"
-            " plotting the mobility evolution."
+            " of the hole anisotropy/mobility using the specified comma-delimited"
+            " string as the sequence of x values. For instance -s"
+            " '1.5,1.75,2.0,2.25,2.5' will assign each of the 5 following directories"
+            " these x-values when plotting the hole mobility evolution."
+        ),
+    )
+    parser.add_argument(
+        "-sa",
+        "--sequence_acceptor",
+        type=lambda s: [float(item) for item in s.split(",")],
+        default=None,
+        required=False,
+        help=(
+            "Create a figure in the current directory that describes the evolution"
+            " of the electron anisotropy/mobility using the specified comma-delimited"
+            " string as the sequence of x values. For instance -s"
+            " '1.5,1.75,2.0,2.25,2.5' will assign each of the 5 following directories"
+            " these x-values when plotting the electron mobility evolution."
         ),
     )
     parser.add_argument(
@@ -2794,6 +2816,9 @@ def main():
         # Load in all the required data
         data_dict = {}
         print("\n")
+        print("-----===== KMC_ANALYSE =====-----")
+        print(directory)
+        print("-----=======================-----")
         print("Getting carrier data...")
         carrier_data = load_KMC_results_pickle(directory)
         print("Carrier Data obtained")
@@ -3000,18 +3025,19 @@ def main():
         print("Writing CSV Output File...")
         write_CSV(data_dict, directory)
     print("Plotting Mobility and Anisotropy progressions...")
-    if args.sequence is not None:
+    if args.sequence_donor is not None:
         if len(hole_anisotropy_data) > 0:
             plot_temperature_progression(
-                args.sequence,
+                args.sequence_donor,
                 hole_mobility_data,
                 hole_anisotropy_data,
                 "hole",
                 args.xlabel,
             )
+    if args.sequence_acceptor is not None:
         if len(electron_anisotropy_data) > 0:
             plot_temperature_progression(
-                args.sequence,
+                args.sequence_acceptor,
                 electron_mobility_data,
                 electron_anisotropy_data,
                 "electron",

@@ -336,14 +336,14 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
             failed_single_chromos, parameter_dict, chromophore_list
         )
         if len(permanently_failed) > 0:
-            print(permanentlyFailed)
+            print(permanently_failed)
             print("--== CRITICAL ERROR ==--")
             print(
                 "THE ABOVE SINGLE-CHROMOPHORE SYSTEMS FAILED PERMANENTLY. THESE NEED"
                 " FIXING/REMOVING FROM THE SYSTEM BEFORE ANY FURTHER DATA CAN BE"
                 " OBTAINED."
             )
-            raise SystemError("TERMINATING...")
+            exit()
         successful_reruns = []
         # Now check all of the files to see if we can update the
         # chromophore_list

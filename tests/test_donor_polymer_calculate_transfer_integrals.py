@@ -46,6 +46,10 @@ def run_simulation():
         False
     )  # Requires: calculate_transfer_integrals for all device_components
 
+
+    remove_orca_inputs = False
+    remove_orca_outputs = False
+
     # ---==============================================---
     # ---================= Begin run ==================---
     # ---==============================================---

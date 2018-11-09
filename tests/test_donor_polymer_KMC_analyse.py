@@ -15,7 +15,7 @@ from morphct.code import helper_functions as hf
         "",
         "-t",
         '-x "TEST_OUTPUT"',
-        "-s 0.0,1.0",
+        "-sd 0.0,1.0",
         "COMBINE_KMC",
         "-crd auto -cod auto -cfd auto",
         "-ctd 0.1 -crd 1.0 -cod 10.0",
@@ -283,4 +283,4 @@ if __name__ == "__main__":
         def __init__(self, param):
             self.param = param
 
-    run_simulation(parameters("-ctd 0.1 -crd 1.0 -cod 10.0"))
+    run_simulation(parameters("-sd 0.0,1.0"))

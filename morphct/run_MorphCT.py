@@ -181,6 +181,22 @@ class simulation:
                 parameter_dict = returned_data[3]
                 chromophore_list = returned_data[4]
                 print("---=== DETERMINATION COMPLETED ===---")
+                if (self.remove_orca_inputs is True):
+                    print("remove_orca_inputs is True. Cleaning up orca input dir...")
+                    orca_input_dir = os.path.join(self.output_orca_directory,
+                                                  "chromophores", "input_orca")
+                    try:
+                        shutil.rmtree(orca_input_dir)
+                    except FileNotFoundError:
+                        print("Directory already empty. Continuing...")
+                if (self.remove_orca_outputs is True):
+                    print("remove_orca_outputs is True. Cleaning up orca output dir...")
+                    orca_output_dir = os.path.join(self.output_orca_directory,
+                                                  "chromophores", "output_orca")
+                    try:
+                        shutil.rmtree(orca_output_dir)
+                    except FileNotFoundError:
+                        print("Directory already empty. Continuing...")
             if self.execute_calculate_mobility is True:
                 print(
                     "---=== EXECUTING KINETIC MONTE CARLO MOBILITY SIMULATIONS..."
