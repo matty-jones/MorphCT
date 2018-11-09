@@ -43,47 +43,69 @@ class TestCommand(object):
         )
 
     def compare_equal(
-        self, expected, response=None, function=None, posn_args=None, kw_args=None
+        self, expected, response=None, function=None, posn_args=None, kw_args=None,
+        dict_key=None
     ):
         if function is not None:
             response = self.fn_response(function, posn_args, kw_args)
         if isinstance(expected, (float, int)):
-            self.check_scalar(response, expected)
+            self.check_scalar(response, expected, dict_key)
         elif isinstance(expected, (np.matrixlib.defmatrix.matrix)):
-            self.check_matrix(response, expected)
+            self.check_matrix(response, expected, dict_key)
         elif isinstance(expected, (scipy.sparse.lil.lil_matrix)):
-            self.check_matrix(response.toarray(), expected.toarray())
+            self.check_matrix(response.toarray(), expected.toarray(), dict_key)
         elif isinstance(expected, (list, np.ndarray)):
-            self.check_array(response, expected)
+            self.check_array(response, expected, dict_key)
         elif isinstance(expected, (dict)):
-            self.check_dictionary(response, expected)
+            self.check_dictionary(response, expected, dict_key)
         elif isinstance(expected, (oc.chromophore)):
-            self.check_dictionary(response.__dict__, expected.__dict__)
+            self.check_dictionary(response.__dict__, expected.__dict__, dict_key)
         else:
-            self.check_identical(response, expected)
+            self.check_identical(response, expected, dict_key)
 
-    def check_scalar(self, response, expected):
+    def check_scalar(self, response, expected, dict_key=None):
+        if dict_key is not None:
+            assert_string = "".join(
+                [
+                    "Expected ",
+                    repr(expected),
+                    " for key",
+                    repr(dict_key),
+                    " but got ",
+                    repr(response),
+                    ", which is more than 1E-4% from expected.",
+                ]
+            )
+        else:
+            assert_string = "".join(
+                [
+                    "Expected ",
+                    repr(expected),
+                    " but got ",
+                    repr(response),
+                    ", which is more than 1E-4% from expected.",
+                ]
+            )
         # Check that the answer is within 1E-4% of expected
-        assert np.isclose(response, expected, 1E-6), "".join(
-            [
-                "Expected ",
-                repr(expected),
-                " but got ",
-                repr(response),
-                ", which is more than 1E-4% from expected.",
-            ]
-        )
+        assert np.isclose(response, expected, 1E-6), assert_string
 
-    def check_identical(self, response, expected):
-        assert response == expected, " ".join(
-            ["Expected", repr(expected), "but got", repr(response), "instead."]
+    def check_identical(self, response, expected, dict_key=None):
+        if dict_key is not None:
+            assert_string = " ".join(
+            ["Expected", repr(expected), "for key", repr(dict_key), "but got",
+             repr(response), "instead."]
         )
+        else:
+            assert_string = " ".join(
+                ["Expected", repr(expected), "but got", repr(response), "instead."]
+            )
+        assert response == expected, assert_string
 
-    def check_array(self, response, expected):
+    def check_array(self, response, expected, dict_key=None):
         for expected_index, expected_value in enumerate(expected):
             self.compare_equal(response[expected_index], expected_value)
 
-    def check_matrix(self, response, expected):
+    def check_matrix(self, response, expected, dict_key=None):
         for expected_row_id in range(expected.shape[0]):
             for expected_col_id in range(expected.shape[1]):
                 self.compare_equal(
@@ -91,10 +113,11 @@ class TestCommand(object):
                     expected[expected_row_id, expected_col_id],
                 )
 
-    def check_dictionary(self, response, expected):
+    def check_dictionary(self, response, expected, dict_key=None):
         for expected_key, expected_val in expected.items():
             print("".join(["Checking key ", str(expected_key), "..."]))
-            self.compare_equal(response[expected_key], expected_val)
+            self.compare_equal(response[expected_key], expected_val,
+                               dict_key=expected_key)
 
     def confirm_file_exists(
         self,
