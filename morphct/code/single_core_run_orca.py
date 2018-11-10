@@ -9,12 +9,16 @@ from morphct.code import helper_functions as hf
 
 def check_job_output(orca_lines):
     # Sometimes ORCA terminates normally even though the SCF didn't converge.
-    # Checking for the word "ERROR" should address this issue.
+    # Also, sometimes ORCA will fail at the SCF but not use the word "ERROR"
     for line in orca_lines:
+        # Any "ERROR" lines should come first
         if "ERROR" in line:
             return False
-    if "ORCA TERMINATED NORMALLY" in orca_lines[-3]:
-        return True
+        # Only if there are no "ERROR" lines and "ORCA TERMINATED NORMALLY" is
+        # near/at the bottom was the job successful.
+        if "ORCA TERMINATED NORMALLY" in line:
+            return True
+    # If no "ERROR" but also no "ORCA TERMINATED NORMALLY", then the job failed.
     return False
 
 
@@ -30,7 +34,7 @@ if __name__ == "__main__":
     except KeyError:
         orca_path = distutils.spawn.find_executable("orca")
     input_dir = morph_orca_dir + "/chromophores/input_orca"
-    log_file = morph_output_dir + "/chromophores/orca_log_" + str(CPU_rank) + ".log"
+    log_file = morph_output_dir + "/chromophores/orca_log_{:02d}.log".format(CPU_rank)
     output_dir = morph_orca_dir + "/chromophores/output_orca"
     pickle_file_name = input_dir.replace("input_orca", "orca_jobs.pickle")
     with open(pickle_file_name, "rb") as pickle_file:
@@ -96,7 +100,7 @@ if __name__ == "__main__":
                     except FileNotFoundError:
                         # Already deleted
                         pass
-        if len(orca_stderr) > 0:
+        if len(orca_stderr) > 1:
             # Write any errors
             hf.write_to_file(log_file, orca_stderr)
         t2 = T.time()
