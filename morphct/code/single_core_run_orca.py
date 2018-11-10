@@ -9,12 +9,16 @@ from morphct.code import helper_functions as hf
 
 def check_job_output(orca_lines):
     # Sometimes ORCA terminates normally even though the SCF didn't converge.
-    # Checking for the word "ERROR" should address this issue.
+    # Also, sometimes ORCA will fail at the SCF but not use the word "ERROR"
     for line in orca_lines:
+        # Any "ERROR" lines should come first
         if "ERROR" in line:
             return False
-    if "ORCA TERMINATED NORMALLY" in orca_lines[-3]:
-        return True
+        # Only if there are no "ERROR" lines and "ORCA TERMINATED NORMALLY" is
+        # near/at the bottom was the job successful.
+        if "ORCA TERMINATED NORMALLY" in line:
+            return True
+    # If no "ERROR" but also no "ORCA TERMINATED NORMALLY", then the job failed.
     return False
 
 
