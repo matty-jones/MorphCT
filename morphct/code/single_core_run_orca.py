@@ -7,19 +7,57 @@ import time as T
 from morphct.code import helper_functions as hf
 
 
-def check_job_output(orca_lines):
-    # Sometimes ORCA terminates normally even though the SCF didn't converge.
-    # Also, sometimes ORCA will fail at the SCF but not use the word "ERROR"
-    for line in orca_lines:
-        # Any "ERROR" lines should come first
-        if "ERROR" in line:
-            return False
-        # Only if there are no "ERROR" lines and "ORCA TERMINATED NORMALLY" is
-        # near/at the bottom was the job successful.
-        if "ORCA TERMINATED NORMALLY" in line:
-            return True
-    # If no "ERROR" but also no "ORCA TERMINATED NORMALLY", then the job failed.
-    return False
+### There are still so many edge cases that the following function doesn't always
+### work. Use the one below it instead.
+# def check_job_output(orca_lines):
+#     # Sometimes ORCA terminates normally even though the SCF didn't converge.
+#     # Also, sometimes ORCA will fail at the SCF but not use the word "ERROR"
+#     for line in orca_lines:
+#         # Any "ERROR" lines should come first
+#         if "ERROR" in line:
+#             return False
+#         # Only if there are no "ERROR" lines and "ORCA TERMINATED NORMALLY" is
+#         # near/at the bottom was the job successful.
+#         if "ORCA TERMINATED NORMALLY" in line:
+#             return True
+#     # If no "ERROR" but also no "ORCA TERMINATED NORMALLY", then the job failed.
+#     return False
+
+
+def check_job_output(data_file):
+    record_MO_data = False
+    orbital_data = []
+    for line in data_file:
+        if "ORBITAL ENERGIES" in line:
+            # Next line begins the MO data
+            record_MO_data = True
+            continue
+        if record_MO_data is True:
+            if "MOLECULAR ORBITALS" in line:
+                # Don't need anything else from the output file
+                break
+            data_in_line = []
+            for element in line.split(" "):
+                if len(element) > 1:
+                    try:
+                        data_in_line.append(float(element))
+                    except ValueError:
+                        continue
+            if len(data_in_line) == 4:
+                orbital_data.append(data_in_line)
+    for i in range(len(orbital_data)):
+        if orbital_data[i][1] == 0:
+            # This line is the first unoccupied orbital - i.e. LUMO
+            LUMO = orbital_data[i][3]
+            HOMO = orbital_data[i - 1][3]
+            HOMO_1 = orbital_data[i - 2][3]
+            LUMO_1 = orbital_data[i + 1][3]
+            # Don't need any other orbitals
+            break
+    if record_MO_data is False:
+        # Molecular orbital data not present in this file
+        return False
+    return True
 
 
 if __name__ == "__main__":
