@@ -56,7 +56,7 @@ def check_job_output(data_file, job):
             break
     if record_MO_data is False:
         # Molecular orbital data not present in this file
-        print("Molecular orbital data not present in", job, ". Skipping deletion")
+        print("Molecular orbital data not present for", job, ". Skipping deletion")
         return False
     print("Molecular orbital data detected. Deleting", job, "...")
     return True
