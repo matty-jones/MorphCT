@@ -309,23 +309,16 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
             chromophore.HOMO = energy_levels[1]
             chromophore.LUMO = energy_levels[2]
             chromophore.LUMO_1 = energy_levels[3]
-            # If we got this far, then we can delete the input file
-            if parameter_dict["remove_orca_inputs"] is True:
-                for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges", ".txt"]:
-                    try:
-                        os.remove(os.path.join(
-                            orca_output_dir.replace("output_orca", "input_orca"),
-                            file_name.replace(".out", extension)
-                        ))
-                    except FileNotFoundError:
-                        # Already deleted
-                        pass
             if parameter_dict["remove_orca_outputs"] is True:
                 try:
                     os.remove(os.path.join(orca_output_dir, file_name))
                 except FileNotFoundError:
                     # Already deleted
                     pass
+            # If this file had originally failed, then we can safely remove it
+            # from the fail list.
+            if file_name in failed_single_chromos.keys():
+                failed_single_chromos.pop(file_name)
         except orcaError:
             failed_single_chromos[file_name] = [1, chromo_location]
             continue
@@ -360,17 +353,6 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
                 # This chromophore didn't fail, so remove it from the failed
                 # list
                 successful_reruns.append(chromo_name)
-                # If we got this far, then we can delete the input file
-                if parameter_dict["remove_orca_inputs"] is True:
-                    for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges", ".txt"]:
-                        try:
-                            os.remove(os.path.join(
-                                orca_output_dir.replace("output_orca", "input_orca"),
-                                file_name.replace(".out", extension)
-                            ))
-                        except FileNotFoundError:
-                            # Already deleted
-                            pass
                 if parameter_dict["remove_orca_outputs"] is True:
                     try:
                         os.remove(os.path.join(orca_output_dir, file_name))
@@ -412,23 +394,16 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 dimer_HOMO = energy_levels[1]
                 dimer_LUMO = energy_levels[2]
                 dimer_LUMO_1 = energy_levels[3]
-                # If we got this far, then we can delete the input file
-                if parameter_dict["remove_orca_inputs"] is True:
-                    for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges", ".txt"]:
-                        try:
-                            os.remove(os.path.join(
-                                orca_output_dir.replace("output_orca", "input_orca"),
-                                file_name.replace(".out", extension)
-                            ))
-                        except FileNotFoundError:
-                            # Already deleted
-                            pass
                 if parameter_dict["remove_orca_outputs"] is True:
                     try:
                         os.remove(os.path.join(orca_output_dir, file_name))
                     except FileNotFoundError:
                         # Already deleted
                         pass
+                # If this file had originally failed, then we can safely remove it
+                # from the fail list.
+                if file_name in failed_pair_chromos.keys():
+                    failed_pair_chromos.pop(file_name)
             except orcaError:
                 failed_pair_chromos[file_name] = [1, chromo_location, neighbour_ID]
                 continue
@@ -550,16 +525,6 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 dimer_LUMO = energy_levels[2]
                 dimer_LUMO_1 = energy_levels[3]
                 # If we got this far, then we can delete the input file
-                if parameter_dict["remove_orca_inputs"] is True:
-                    for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges", ".txt"]:
-                        try:
-                            os.remove(os.path.join(
-                                orca_output_dir.replace("output_orca", "input_orca"),
-                                file_name.replace(".out", extension)
-                            ))
-                        except FileNotFoundError:
-                            # Already deleted
-                            pass
                 if parameter_dict["remove_orca_outputs"] is True:
                     try:
                         os.remove(os.path.join(orca_output_dir, file_name))
