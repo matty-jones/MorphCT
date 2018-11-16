@@ -24,7 +24,7 @@ from morphct.code import helper_functions as hf
 #     return False
 
 
-def check_job_output(data_file):
+def check_job_output(data_file, job):
     record_MO_data = False
     orbital_data = []
     for line in data_file:
@@ -56,7 +56,9 @@ def check_job_output(data_file):
             break
     if record_MO_data is False:
         # Molecular orbital data not present in this file
+        print("Molecular orbital data not present for", job, ". Skipping deletion")
         return False
+    print("Molecular orbital data detected. Deleting", job, "...")
     return True
 
 
@@ -127,7 +129,7 @@ if __name__ == "__main__":
             mode="output_file",
         )
         if delete_inputs:
-            output_ok = check_job_output(orca_stdout)
+            output_ok = check_job_output(orca_stdout, job)
             if output_ok:
                 hf.write_to_file(log_file, ["Output OK and remove_orca_inputs set.",
                                  "Deleting " + job[:-4] + " inputs..."])
