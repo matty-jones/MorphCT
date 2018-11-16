@@ -225,8 +225,7 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
             sp.Popen(["python", SINGLE_ORCA_RUN_FILE,
                       parameter_dict["output_orca_directory"],
                       parameter_dict["output_morphology_directory"],
-                      str(CPU_rank), "1",
-                      str(int(parameter_dict["remove_orca_inputs"])),
+                      str(CPU_rank), "1", "0",
                      ])
         )
     # Wait for running jobs to finish
@@ -524,13 +523,6 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 dimer_HOMO = energy_levels[1]
                 dimer_LUMO = energy_levels[2]
                 dimer_LUMO_1 = energy_levels[3]
-                # If we got this far, then we can delete the input file
-                if parameter_dict["remove_orca_outputs"] is True:
-                    try:
-                        os.remove(os.path.join(orca_output_dir, file_name))
-                    except FileNotFoundError:
-                        # Already deleted
-                        pass
             except orcaError:
                 # This dimer failed so increment its fail counter
                 failed_pair_chromos[file_name][0] += 1
