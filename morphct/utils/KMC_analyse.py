@@ -1748,6 +1748,8 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
     LUMO_levels = []
     donor_delta_E_ij = []
     acceptor_delta_E_ij = []
+    donor_lambda_ij = None
+    acceptor_lambda_ij = None
     for chromo in chromophore_list:
         if chromo.species == "donor":
             HOMO_levels.append(chromo.HOMO)
@@ -1756,6 +1758,8 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
                     chromo.neighbours_TI[neighbour_index] is not None
                 ):
                     donor_delta_E_ij.append(delta_E_ij)
+                if "reorganization_energy" in chromo.__dict__:
+                    donor_lambda_ij = chromo.reorganization_energy
         else:
             LUMO_levels.append(chromo.LUMO)
             for neighbour_index, delta_E_ij in enumerate(chromo.neighbours_delta_E):
@@ -1763,6 +1767,8 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
                     chromo.neighbours_TI[neighbour_index] is not None
                 ):
                     acceptor_delta_E_ij.append(delta_E_ij)
+                if "reorganization_energy" in chromo.__dict__:
+                    acceptor_lambda_ij = chromo.reorganization_energy
     if len(donor_delta_E_ij) > 0:
         donor_bin_edges, donor_fit_args, donor_mean, donor_std = gauss_fit(
             donor_delta_E_ij
@@ -1790,6 +1796,7 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
             donor_fit_args,
             "donor",
             output_dir + "/06_donor_delta_E_ij.pdf",
+            donor_lambda_ij,
         )
     if len(acceptor_delta_E_ij) > 0:
         acceptor_bin_edges, acceptor_fit_args, acceptor_mean, acceptor_std = gauss_fit(
@@ -1820,11 +1827,12 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
             acceptor_fit_args,
             "acceptor",
             output_dir + "/07_acceptor_delta_E_ij.pdf",
+            acceptor_lambda_ij,
         )
     return data_dict
 
 
-def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name):
+def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name, lambda_ij):
     plt.figure()
     n, bins, patches = plt.hist(delta_E_ij, np.linspace(-0.5, 0.5, 20), color=["b"])
     if fit_args is not None:
@@ -1833,9 +1841,11 @@ def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name):
         plt.plot(gauss_bins[:-1], gauss_Y * scale_factor, "ro:")
     else:
         print("No Gaussian found (probably zero-width delta function)")
+    if lambda_ij is not None:
+        plt.axvline(float(lambda_ij), c="k")
     plt.ylabel("Frequency (Arb. U.)")
     plt.xlabel(data_type.capitalize() + r" $\Delta E_{ij}$ (eV)")
-    plt.xlim([-0.5, 0.5])
+    #plt.xlim([-0.5, 0.5])
     plt.savefig(file_name)
     plt.close()
     print("Figure saved as", file_name)
@@ -2205,7 +2215,7 @@ def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name, cut_off):
     )
     plt.ylabel("Frequency (Arb. U.)")
     plt.xlabel(data_type.capitalize() + r" J$_{i,j}$ (eV)")
-    plt.xlim([0, 1.2])
+    #plt.xlim([0, 1.2])
     plt.ylim([0, np.max(n) * 1.02])
     if cut_off is not None:
         plt.axvline(float(cut_off), c="k")
