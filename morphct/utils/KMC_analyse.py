@@ -1824,7 +1824,11 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
 
 def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name, lambda_ij):
     plt.figure()
-    n, bins, patches = plt.hist(delta_E_ij, np.linspace(-0.5, 0.5, 20), color=["b"])
+    n, bins, patches = plt.hist(
+        delta_E_ij,
+        np.arange(np.min(delta_E_ij), np.max(delta_E_ij), 0.05),
+        color=["b"],
+    )
     if fit_args is not None:
         gauss_Y = gaussian(gauss_bins[:-1], *fit_args)
         scale_factor = max(n) / max(gauss_Y)
