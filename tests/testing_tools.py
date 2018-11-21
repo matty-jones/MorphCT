@@ -120,7 +120,8 @@ class TestCommand(object):
         for expected_key, expected_val in expected.items():
             print("".join(["Checking key ", str(expected_key), "..."]))
             self.compare_equal(response[expected_key], expected_val,
-                               dict_key=" | ".join([repr(dict_key), expected_key]))
+                               dict_key=" | ".join([repr(dict_key),
+                                                    repr(expected_key)]))
 
     def confirm_file_exists(
         self,
