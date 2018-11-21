@@ -163,7 +163,7 @@ def plot_displacement_dist(carrier_data, directory, carrier_type):
     carrier_types = ["hole", "electron"]
     plt.figure()
     plt.hist(np.array(carrier_data["displacement"]) * 0.1, bins=60, color="b")
-    plt.xlabel("".join([carrier_types.index(carrier_type), "Displacement (nm)"])
+    plt.xlabel("".join([carrier_types.index(carrier_type), "Displacement (nm)"]))
     plt.ylabel("Frequency (Arb. U.)")
     # 30 for hole displacement dist, 31 for electron displacement dist
     file_name = "".join(
