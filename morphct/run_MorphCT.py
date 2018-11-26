@@ -259,12 +259,7 @@ class simulation:
                 print("Directory already empty. Continuing...")
         # NOTE: Don't delete the morphology directory - sometimes we just want to
         # update and recalculate things, not start the whole pipeline again.
-        # Delete any previous data if the user asked to
-        # if self.overwriteCurrentData == True:
-        #     sp.Popen('echo rm -rf '+self.output_directory+'/*', shell=True)
-        #     # Make sure that the rm command has finished before moving on
-        #     sp.Popen('rm -rf '+self.output_directory+'/*', shell=True).communicate()
-        # Then, make sure that all the required directories are in place
+        # Make sure that all the required directories are in place
         if self.morphology is not None:
             for directory_to_make in [
                 "KMC",
@@ -328,7 +323,7 @@ class simulation:
                 os.path.join(self.output_morphology_directory, "code/"),
             ]
             code_copy = [
-                code_dir + "/*.py",
+                "/".join([code_dir, "*.py"]),
                 os.path.join(self.output_morphology_directory, "code/"),
             ]
             input_copy = [
@@ -343,7 +338,7 @@ class simulation:
                 os.path.join(self.output_device_directory, "code/"),
             ]
             code_copy = [
-                code_dir + "/*.py",
+                "/".join([code_dir, "*.py"]),
                 os.path.join(self.output_device_directory, "code/"),
             ]
         print("cp", par_copy[0], par_copy[1])

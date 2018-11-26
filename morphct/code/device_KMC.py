@@ -9,14 +9,7 @@ from morphct.code import helper_functions as hf
 
 class morphology_moiety:
     def __init__(self, mol_morph_name, parameter_dict):
-        chromophore_list_location = (
-            parameter_dict["output_morph_dir"]
-            + "/"
-            + mol_morph_name
-            + "/code/"
-            + mol_morph_name
-            + ".pickle"
-        )
+        chromophore_list_location = os.path.join(parameter_dict["output_morph_dir"], mol_morph_name, "code", "".join([mol_morph_name, ".pickle"]))
         pickle_data = hf.load_pickle(chromophore_list_location)
         self.AA_morphology_dict = pickle_data[0]
         self.parameter_dict = pickle_data[3]
@@ -127,15 +120,13 @@ class morphology_data_container:
 
 
 def load_device_morphology(parameter_dict):
-    device_dir = (
-        parameter_dict["input_device_dir"] + "/" + parameter_dict["device_morphology"]
-    )
+    device_dir = os.path.join(parameter_dict["input_device_dir"], parameter_dict["device_morphology"])
     y_slices = os.listdir(device_dir)
     # Initialize the array of the correct size (assumes cubic morphology)
     device_array = np.zeros([len(y_slices)] * 3, dtype=int)
     for y_val, file_name in enumerate(y_slices):
         # Load the ySlice as-presented in the input files
-        y_slice = np.loadtxt(device_dir + "/" + file_name, dtype=int)
+        y_slice = np.loadtxt(os.path.join(device_dir, file_name), dtype=int)
         if len(y_slice.shape) > 0:
             # The z-origin is at the top, and we need it at the bottom, so turn
             # the array upside down
@@ -172,14 +163,9 @@ def main(parameter_dict):
     # Write these classes out to a pickle file so that they can be loaded by the
     # child processes later
     to_pickle = [device_array, chromophore_data, morphology_data, parameter_dict]
-    save_directory = (
-        parameter_dict["output_device_dir"]
-        + "/"
-        + parameter_dict["device_morphology"]
-        + "/code"
-    )
+    save_directory = os.path.join(parameter_dict["output_device_dir"], parameter_dict["device_morphology"], "code")
     if parameter_dict["overwrite_current_data"] is True:
-        with open(save_directory + "/device_data.pickle", "wb+") as pickle_file:
+        with open(os.path.join(save_directory, "device_data.pickle"), "wb+") as pickle_file:
             pickle.dump(to_pickle, pickle_file)
     voltages = []
     for V in parameter_dict["voltage_sweep"]:

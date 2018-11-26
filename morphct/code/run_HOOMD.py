@@ -74,14 +74,7 @@ class md_phase:
         self.rigid_group, self.non_rigid_group, self.integration_types = (
             self.get_integration_groups()
         )
-        self.output_log_file_name = (
-            self.output_morph_dir
-            + "/"
-            + self.morphology[:-4]
-            + "/morphology/energies_"
-            + self.morphology[:-4]
-            + ".log"
-        )
+        self.output_log_file_name = os.path.join(self.output_morph_dir, self.morphology[:-4], "morphology", "".join(["energies_", self.morphology[:-4], ".log"]))
         # Determine which quantities should be logged during the simulation
         # phase
         self.log_quantities = [
@@ -235,7 +228,7 @@ class md_phase:
         # First find all of the forcefields specified in the par file
         all_FF_names = {}
         for CG_site, directory in self.CG_to_template_dirs.items():
-            FF_loc = directory + "/" + self.CG_to_template_force_fields[CG_site]
+            FF_loc = os.path.join(directory, self.CG_to_template_force_fields[CG_site])
             if FF_loc not in list(all_FF_names.values()):
                 all_FF_names[CG_site] = FF_loc
         FF_list = []
@@ -542,9 +535,7 @@ def obtain_scale_factors(parameter_dict):
     # / largestEpsilon
     LJFFs = []
     for CG_site, directory in parameter_dict["CG_to_template_dirs"].items():
-        FF_loc = (
-            directory + "/" + parameter_dict["CG_to_template_force_fields"][CG_site]
-        )
+        FF_loc = os.path.join(directory, parameter_dict["CG_to_template_force_fields"][CG_site])
         FF = hf.load_FF_xml(FF_loc)
         LJFFs += FF["lj"]
     largest_sigma = max(list(map(float, np.array(LJFFs)[:, 2])))
@@ -559,11 +550,7 @@ def scale_morphology(initial_morphology, parameter_dict, s_scale, e_scale):
         hf.scale(initial_morphology, s_scale)
     hf.write_morphology_xml(
         initial_morphology,
-        parameter_dict["output_morph_dir"]
-        + "/"
-        + parameter_dict["morphology"][:-4]
-        + "/morphology/phase0_"
-        + parameter_dict["morphology"],
+        os.path.join(parameter_dict["output_morph_dir"], parameter_dict["morphology"][:-4], "morphology", "".join(["phase0_", parameter_dict["morphology"]]))
     )
 
 
@@ -583,12 +570,7 @@ def main(
     # interaction and the diameter of the largest atom (makes it easier on
     # HOOMDs calculations and ensures that T = 1.0 is an interesting temperature
     # threshold)
-    current_files = os.listdir(
-        parameter_dict["output_morph_dir"]
-        + "/"
-        + parameter_dict["morphology"][:-4]
-        + "/morphology"
-    )
+    current_files = os.listdir(os.path.join(parameter_dict["output_morph_dir"], parameter_dict["morphology"][:-4], "morphology"))
     # sScale, eScale = obtainScaleFactors(parameterDict)
     print("Under the hood eScaling and sScaling has been disabled.")
     s_scale = 1.0
@@ -603,12 +585,7 @@ def main(
     # Reset logfile
     try:
         os.remove(
-            parameter_dict["output_morph_dir"]
-            + "/"
-            + parameter_dict["morphology"][:-4]
-            + "/morphology/energies_"
-            + parameter_dict["morphology"][:-4]
-            + ".log"
+            os.path.join(parameter_dict["output_morph_dir"], parameter_dict["morphology"][:-4], "morphology", "".join(["energies_", parameter_dict["morphology"][:-4], ".log"]))
         )
     except OSError:
         pass
@@ -626,36 +603,20 @@ def main(
             CG_to_AAID_master,
             parameter_dict,
             phase_no,
-            parameter_dict["output_morph_dir"]
-            + "/"
-            + parameter_dict["morphology"][:-4]
-            + "/morphology/"
-            + input_file,
-            parameter_dict["output_morph_dir"]
-            + "/"
-            + parameter_dict["morphology"][:-4]
-            + "/morphology/"
-            + output_file,
+            os.path.join(parameter_dict["output_morph_dir"], parameter_dict["morphology"][:-4], "morphology", input_file),
+            os.path.join(parameter_dict["output_morph_dir"], parameter_dict["morphology"][:-4], "morphology", output_file),
             s_scale,
             e_scale,
         ).optimise_structure()
     final_xml_name = (
-        parameter_dict["output_morph_dir"]
-        + "/"
-        + parameter_dict["morphology"][:-4]
-        + "/morphology/final_"
-        + parameter_dict["morphology"]
+        os.path.join(parameter_dict["output_morph_dir"], parameter_dict["morphology"][:-4], "morphology", "".join(["final_", parameter_dict["morphology"]]))
     )
     if "final_" + parameter_dict["morphology"] not in current_files:
         # Now all phases are complete, remove the ghost particles from the
         # system
         print("Removing ghost particles to create final output...")
         remove_ghost_particles(
-            parameter_dict["output_morph_dir"]
-            + "/"
-            + parameter_dict["morphology"][:-4]
-            + "/morphology/"
-            + output_file,
+            os.path.join(parameter_dict["output_morph_dir"], parameter_dict["morphology"][:-4], "morphology", output_file),
             final_xml_name,
             sigma=s_scale,
         )
@@ -679,12 +640,7 @@ def main(
             parameter_dict,
             chromophore_list,
         ),
-        parameter_dict["output_morph_dir"]
-        + "/"
-        + parameter_dict["morphology"][:-4]
-        + "/code/"
-        + parameter_dict["morphology"][:-4]
-        + ".pickle",
+        os.path.join(parameter_dict["output_morph_dir"], parameter_dict["morphology"][:-4], "code", "".join([parameter_dict["morphology"][:-4], ".pickle"])),
     )
     return (
         AA_morphology_dict,

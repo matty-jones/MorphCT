@@ -1,4 +1,5 @@
 import copy
+import os
 import sys
 import numpy as np
 from morphct.code import helper_functions as hf
@@ -56,28 +57,14 @@ class morphology:
             )
             # Write the xml file and create the pickle
             print("Writing xml file...")
-            AA_file_name = (
-                self.output_morph_dir
-                + "/"
-                + self.morphology_name
-                + "/morphology/"
-                + self.morphology_name
-                + ".xml"
-            )
+            AA_file_name = os.path.join(self.output_morph_dir, self.morphology_name, morphology, "".join([self.morphology_name, ".xml"]))
             atomistic_morphology = hf.add_unwrapped_positions(self.CG_dictionary)
             # Now write the morphology xml
             hf.write_morphology_xml(atomistic_morphology, AA_file_name)
             # And finally write the pickle with the CGDictionary as None (to
             # indicate to MorphCT that no fine-graining has taken place), but
             # the other parameters assigned as required.
-            pickle_location = (
-                self.output_morph_dir
-                + "/"
-                + self.morphology_name
-                + "/code/"
-                + self.morphology_name
-                + ".pickle"
-            )
+            pickle_location = os.path.join(self.output_morph_dir, self.morphology_name, code, "".join([self.morphology_name, ".pickle"]))
             hf.write_pickle(
                 (
                     atomistic_morphology,
@@ -226,14 +213,7 @@ class morphology:
         print("\n")
         # Now write the xml file and create the pickle
         print("Writing xml file...")
-        AA_file_name = (
-            self.output_morph_dir
-            + "/"
-            + self.morphology_name
-            + "/morphology/"
-            + self.morphology_name
-            + ".xml"
-        )
+        AA_file_name = os.path.join(self.output_morph_dir, self.morphology_name, "morphology", "".join([self.morphology_name, ".xml"]))
         # Replace the `positions' with the `unwrapped_positions' ready for
         # writing
         AA_morphology_dict = hf.replace_wrapped_positions(AA_morphology_dict)
@@ -243,14 +223,7 @@ class morphology:
         # Now write the morphology xml
         hf.write_morphology_xml(AA_morphology_dict, AA_file_name)
         # And finally write the pickle
-        pickle_location = (
-            self.output_morph_dir
-            + "/"
-            + self.morphology_name
-            + "/code/"
-            + self.morphology_name
-            + ".pickle"
-        )
+        pickle_location = os.path.join(self.output_morph_dir, self.morphology_name, "code", "".join([self.morphology_name, ".pickle"]))
         hf.write_pickle(
             (
                 AA_morphology_dict,
@@ -329,7 +302,7 @@ class morphology:
         morphology_atom_types = []
         CG_to_template_mappings = {}
         for CG_site, directory in CG_to_template_dirs.items():
-            FF_loc = directory + "/" + CG_to_template_force_fields[CG_site]
+            FF_loc = os.path.join(directory, CG_to_template_force_fields[CG_site])
             if FF_loc not in force_field_locations:
                 force_field_locations.append(FF_loc)
         for FF_loc in force_field_locations:
@@ -353,7 +326,7 @@ class morphology:
                 mapping_for_this_FF[lj_interaction[0]] = atom_type
             force_field_mappings.append(mapping_for_this_FF)
         for CG_site, directory in CG_to_template_dirs.items():
-            FF_loc = directory + "/" + CG_to_template_force_fields[CG_site]
+            FF_loc = os.path.join(directory, CG_to_template_force_fields[CG_site])
             CG_to_template_mappings[CG_site] = force_field_mappings[
                 force_field_locations.index(FF_loc)
             ]
@@ -386,10 +359,7 @@ class atomistic:
         # Load the template file for each CG atom
         for CG_atom_type in list(self.CG_to_template_files.keys()):
             template_dictionary = hf.load_morphology_xml(
-                self.CG_to_template_dirs[CG_atom_type]
-                + "/"
-                + self.CG_to_template_files[CG_atom_type]
-            )
+                os.path.join(self.CG_to_template_dirs[CG_atom_type], self.CG_to_template_files[CG_atom_type]))
             template_dictionary = self.remap_atom_types(
                 template_dictionary, parameter_dict["new_type_mappings"][CG_atom_type]
             )

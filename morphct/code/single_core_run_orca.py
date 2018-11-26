@@ -68,14 +68,14 @@ if __name__ == "__main__":
     CPU_rank = int(sys.argv[3])
     overwrite = bool(int(sys.argv[4]))
     delete_inputs = bool(int(sys.argv[5]))
-    morphology_name = morph_orca_dir[hf.find_index(morph_orca_dir, "/")[-1] + 1 :]
+    morphology_name = os.path.split(morph_orca_dir[1])
     try:
         orca_path = os.environ["ORCA_BIN"]
     except KeyError:
         orca_path = distutils.spawn.find_executable("orca")
-    input_dir = morph_orca_dir + "/chromophores/input_orca"
-    log_file = morph_output_dir + "/chromophores/orca_log_{:02d}.log".format(CPU_rank)
-    output_dir = morph_orca_dir + "/chromophores/output_orca"
+    input_dir = os.path.join(morph_orca_dir, "chromophores", "input_orca")
+    log_file = os.path.join(morph_output_dir, "chromophores", "orca_log_{:02d}.log".format(CPU_rank))
+    output_dir = os.path.join(morph_orca_dir, "chromophores", "output_orca")
     pickle_file_name = input_dir.replace("input_orca", "orca_jobs.pickle")
     with open(pickle_file_name, "rb") as pickle_file:
         jobs_list = pickle.load(pickle_file)

@@ -223,7 +223,7 @@ def write_orca_inp(
         )
     # Load the orca input template
     orca_temp_dir = os.path.join(PROJECT_ROOT, "templates")
-    orca_temp_test_dir = os.path.join(PROJECT_ROOT, "code/unit_testing/assets")
+    orca_temp_test_dir = os.path.join(PROJECT_ROOT, "code", "unit_testing", "assets")
     try:
         with open(os.path.join(orca_temp_dir, "template.inp"), "r") as template_file:
             inp_file_lines = template_file.readlines()
@@ -240,7 +240,7 @@ def write_orca_inp(
         orca_file.writelines(inp_file_lines)
     print(
         "\rOrca Input File written as",
-        input_name[hf.find_index(input_name, "/")[-1] + 1 :],
+        os.path.split(input_name[1]),
         end=" ",
     )
 
@@ -289,15 +289,15 @@ def get_orca_jobs(input_dir, parameter_dict, proc_IDs):
     except OSError:
         pass
     # Obtain a list of files to run
-    single_orca_file_list = os.listdir(input_dir + "/single")
-    pair_orca_file_list = os.listdir(input_dir + "/pair")
+    single_orca_file_list = os.listdir(os.path.join(input_dir, "single"))
+    pair_orca_file_list = os.listdir(os.path.join(input_dir, "pair"))
     orca_files_to_run = []
     for file_name in single_orca_file_list:
         if file_name[-4:] == ".inp":
-            orca_files_to_run.append(input_dir + "/single/" + file_name)
+            orca_files_to_run.append(os.path.join(input_dir, "single", file_name))
     for file_name in pair_orca_file_list:
         if file_name[-4:] == ".inp":
-            orca_files_to_run.append(input_dir + "/pair/" + file_name)
+            orca_files_to_run.append(os.path.join(input_dir, "pair", file_name))
     orca_files_to_run.sort()
     if parameter_dict["overwrite_current_data"] is False:
         # Do not run any jobs that have already have an output file (and so have
@@ -343,10 +343,7 @@ def main(
     if parameter_dict["random_seed_override"] is not None:
         np.random.seed(parameter_dict["random_seed_override"])
     create_input_files(chromophore_list, AA_morphology_dict, parameter_dict)
-    input_dir = (
-        parameter_dict["output_orca_directory"]
-        + "/chromophores/input_orca"
-    )
+    input_dir = os.path.join(parameter_dict["output_orca_directory"], "chromophores", "input_orca")
     proc_IDs = parameter_dict["proc_IDs"]
     jobs_list = get_orca_jobs(input_dir, parameter_dict, proc_IDs)
     # Shuffle the jobsList to spread it out over the cores

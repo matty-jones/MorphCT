@@ -97,9 +97,7 @@ def modify_orca_files(file_name, failed_file, failed_count, chromophore_list):
             " the input file tweaks. Examine the geometry - it is most likely"
             " unreasonable."
         )
-        file_string = file_name[
-            [index for index, char in enumerate(file_name) if char == "/"][-1] + 1 : -4
-        ]
+        file_string = os.path.splitext(os.path.split(file_name)[1])[0]
         for chromo_string in file_string.split("-"):
             chromo_ID = int(chromo_string)
             print("AAIDs for chromophore", chromo_ID)
@@ -177,9 +175,7 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
         failed_count = failed_data[0]
         error_code = modify_orca_files(
             failed_file,
-            parameter_dict["output_orca_directory"]
-            + "/chromophores/input_orca/"
-            + failed_file.replace(".out", ".inp"),
+            os.path.join(parameter_dict["output_orca_directory"], "chromophores", "input_orca", failed_file.replace(".out", ".inp")),
             failed_count,
             chromophore_list,
         )
@@ -198,8 +194,7 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
     # Otherwise, rerun those failed files.
     # First, find the correct locations of the input Files
     input_files = [
-        parameter_dict["output_orca_directory"] + "/chromophores/input_orca/"
-        + file_name.replace(".out", ".inp")
+        os.path.join(parameter_dict["output_orca_directory"], "chromophores", "input_orca", file_name.replace(".out", ".inp"))
         for file_name in list(failed_chromo_files.keys())
     ]
     # As before, split the list of reruns based on the number of processors
@@ -211,8 +206,7 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
     ]
     print(jobs_list)
     # Write the jobs pickle for single_core_run_orca to obtain
-    with open(parameter_dict["output_orca_directory"]
-              + "/chromophores/orca_jobs.pickle", "wb+") as pickle_file:
+    with open(os.path.join(parameter_dict["output_orca_directory"], "chromophores", "orca_jobs.pickle"), "wb+") as pickle_file:
         pickle.dump(jobs_list, pickle_file)
     # Now rerun orca
     if len(jobs_list) <= len(proc_IDs):
@@ -283,8 +277,7 @@ def calculate_TI(orbital_splitting, delta_E):
 
 def update_single_chromophore_list(chromophore_list, parameter_dict):
     orca_output_dir = (
-        parameter_dict["output_orca_directory"]
-        + "/chromophores/output_orca/"
+        os.path.join(parameter_dict["output_orca_directory"], "chromophores", "output_orca")
     )
     # NOTE: This can possibly be done by recursively iterating through the
     # neighbourlist of each chromophore, but I imagine Python will whinge about
@@ -374,8 +367,7 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
     # failed (which it won't have done because all my chromophores are
     # delicious now).
     orca_output_dir = (
-        parameter_dict["output_orca_directory"]
-        + "/chromophores/output_orca/"
+        os.path.join(parameter_dict["output_orca_directory"], "chromophores", "output_orca")
     )
     failed_pair_chromos = {}
     for chromo_location, chromophore in enumerate(chromophore_list):
@@ -661,7 +653,7 @@ def main(
     pickle_name = os.path.join(
         parameter_dict["output_morphology_directory"],
         "code",
-        "".join([parameter_dict["morphology"][:-4], ".pickle"]),
+        "".join([os.path.splitext(parameter_dict["morphology"])[0], ".pickle"]),
     )
     # First, check that we need to examine the single chromophores
     run_singles = False

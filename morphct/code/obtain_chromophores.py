@@ -897,7 +897,7 @@ def main(
     # information.
     pickle_name = os.path.join(
         parameter_dict["output_morphology_directory"],
-        "code/",
+        "code",
         "".join([parameter_dict["morphology"][:-4], ".pickle"]),
     )
     hf.write_pickle(

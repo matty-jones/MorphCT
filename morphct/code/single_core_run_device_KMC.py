@@ -1405,12 +1405,7 @@ def execute(
         log_file, ["current E-field value = " + str(current_field_value) + "vm^{-1}"]
     )
     output_figures_dir = (
-        parameter_dict["output_device_dir"]
-        + "/"
-        + parameter_dict["device_morphology"]
-        + "/figures/"
-        + str(voltage_val)
-        + "/"
+        os.path.join(parameter_dict["output_device_dir"], parameter_dict["device_morphology"], "figures", str(voltage_val))
     )
 
     # DEBUG
@@ -2385,7 +2380,7 @@ if __name__ == "__main__":
     if time_limit is not None:
         time_limit = slurm_time_in_S(time_limit)
 
-    jobs_file_name = KMC_directory + "/KMC_data_%02d.pickle" % (CPU_rank)
+    jobs_file_name = os.path.join(KMC_directory, "KMC_data_%02d.pickle" % (CPU_rank))
     device_data_file_name = KMC_directory.replace("/KMC", "/code/device_data.pickle")
 
     with open(device_data_file_name, "rb") as pickle_file:
@@ -2398,7 +2393,7 @@ if __name__ == "__main__":
         print("Redirecting log to standard out.")
         log_file = "stdout"
     else:
-        log_file = KMC_directory + "/KMC_log_" + str(CPU_rank) + ".log"
+        log_file = os.path.join(KMC_directory, "KMC_log_%02d.log" % (CPU_rank))
         # Reset the log file
         with open(log_file, "wb+") as log_file_handle:
             pass
