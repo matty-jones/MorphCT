@@ -163,17 +163,17 @@ def plot_displacement_dist(carrier_data, directory, carrier_type):
     carrier_types = ["hole", "electron"]
     plt.figure()
     plt.hist(np.array(carrier_data["displacement"]) * 0.1, bins=60, color="b")
-    plt.xlabel("Displacement (nm)")
+    plt.xlabel("".join([carrier_type, "Displacement (nm)"]))
     plt.ylabel("Frequency (Arb. U.)")
     # 30 for hole displacement dist, 31 for electron displacement dist
     file_name = "".join(
         [
             "{:02}_".format(30 + carrier_types.index(carrier_type)),
             carrier_type,
-            "_displacement_dist.pdf",
+            "_displacement_dist.png",
         ]
     )
-    plt.savefig(os.path.join(directory, "figures", file_name))
+    plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
     print("Figure saved as", os.path.join(directory, "figures", file_name))
 
 
@@ -183,6 +183,8 @@ def plot_cluster_size_dist(cluster_freqs, directory):
         try:
             sizes = list(cluster_freqs[carrier_type_index].values())
             sizes = [np.log10(size) for size in sizes if size > 5]
+            if len(sizes) == 0:
+               raise IndexError
         except IndexError:
             return
         plt.figure()
@@ -203,10 +205,10 @@ def plot_cluster_size_dist(cluster_freqs, directory):
             [
                 "{:02}_".format(32 + carrier_types.index(carrier_type)),
                 carrier_type,
-                "_cluster_dist.pdf",
+                "_cluster_dist.png",
             ]
         )
-        plt.savefig(os.path.join(directory, "figures", file_name))
+        plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
         print("Figure saved as", os.path.join(directory, "figures", file_name))
 
 
@@ -258,8 +260,7 @@ def create_array_for_plot_connections(chromophore_list, carrier_history, sim_dim
 
 
 def plot_connections(
-    chromophore_list, sim_dims, carrier_history, directory, carrier_type, save_png
-):
+    chromophore_list, sim_dims, carrier_history, directory, carrier_type):
     # A complicated function that shows connections between carriers in 3D that carriers prefer to hop between.
     # Connections that are frequently used are highlighted in black, whereas rarely used connections are more white.
     # Import matplotlib color modules to set up color bar.
@@ -416,16 +417,10 @@ def plot_connections(
     )
     # plt.title(figure_title, y=1.1)
     # 01 for donor 3d network, 02 for acceptor 3d network
-    file_name = "".join(["{:02}_3d_".format(1 + carrier_index), carrier_type, ".pdf"])
-    plt.savefig(os.path.join(directory, "figures", file_name), bbox_inches="tight")
+    file_name = "".join(["{:02}_3d_".format(1 + carrier_index), carrier_type, ".png"])
+    plt.savefig(os.path.join(directory, "figures", file_name), bbox_inches="tight",
+                dpi=300)
     print("Figure saved as", os.path.join(directory, "figures", file_name))
-
-    if save_png:
-        file_name = "".join(
-            ["{:02}_3d_".format(1 + carrier_index), carrier_type, ".png"]
-        )
-        plt.savefig(os.path.join(directory, "figures", file_name), bbox_inches="tight")
-        print("Figure also saved as", os.path.join(directory, "figures", file_name))
 
     plt.clf()
 
@@ -484,10 +479,10 @@ def plot_MSD(
         [
             "{:02}_lin_MSD_".format(18 + carrier_types.index(carrier_type)),
             carrier_type,
-            ".pdf",
+            ".png",
         ]
     )
-    plt.savefig(os.path.join(directory, "figures", file_name))
+    plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
     plt.clf()
     print("Figure saved as", os.path.join(directory, "figures", file_name))
     plt.semilogx(times, MSDs)
@@ -511,10 +506,10 @@ def plot_MSD(
         [
             "{:02}_semi_log_MSD_".format(20 + carrier_types.index(carrier_type)),
             carrier_type,
-            ".pdf",
+            ".png",
         ]
     )
-    plt.savefig(os.path.join(directory, "figures", file_name))
+    plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
     plt.clf()
     print("Figure saved as", os.path.join(directory, "figures", file_name))
     plt.plot(times, MSDs)
@@ -540,10 +535,10 @@ def plot_MSD(
         [
             "{:02}_log_MSD_".format(22 + carrier_types.index(carrier_type)),
             carrier_type,
-            ".pdf",
+            ".png",
         ]
     )
-    plt.savefig(os.path.join(directory, "figures", file_name))
+    plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
     plt.clf()
     print("Figure saved as", os.path.join(directory, "figures", file_name))
     return mobility, mob_error, r_val ** 2
@@ -738,9 +733,9 @@ def plot_anisotropy(carrier_data, directory, sim_dims, carrier_type, plot3D_grap
     file_name = os.path.join(
         directory,
         "figures",
-        "".join([figure_index, "_anisotropy_", carrier_type, ".pdf"]),
+        "".join([figure_index, "_anisotropy_", carrier_type, ".png"]),
     )
-    plt.savefig(file_name, bbox_inches="tight")
+    plt.savefig(file_name, bbox_inches="tight", dpi=300)
     plt.clf()
     print("Figure saved as", file_name)
     return anisotropy
@@ -770,16 +765,16 @@ def plot_temperature_progression(
     plt.ylabel("Mobility (cm" + r"$^{2}$ " + "V" + r"$^{-1}$" + r"s$^{-1}$)")
     plt.errorbar(xvals, yvals, xerr=0, yerr=yerrs)
     plt.yscale("log")
-    file_name = "".join(["mobility_", carrier_type, ".pdf"])
-    plt.savefig(file_name)
+    file_name = "".join(["mobility_", carrier_type, ".png"])
+    plt.savefig(file_name, dpi=300)
     plt.clf()
     print("Figure saved as " + file_name)
 
     plt.plot(temp_data, anisotropy_data, c="r")
     plt.xlabel(x_label)
     plt.ylabel(r"$\kappa$" + " (Arb. U)")
-    file_name = "".join(["anisotropy_", carrier_type, ".pdf"])
-    plt.savefig(file_name)
+    file_name = "".join(["anisotropy_", carrier_type, ".png"])
+    plt.savefig(file_name, dpi=300)
     plt.clf()
     print("Figure saved as " + file_name)
 
@@ -935,10 +930,10 @@ def plot_neighbour_hist(
             [
                 "{:02}_neighbour_hist_".format(4 + material_type),
                 material[material_type].lower(),
-                ".pdf",
+                ".png",
             ]
         )
-        plt.savefig(os.path.join(output_dir, file_name))
+        plt.savefig(os.path.join(output_dir, file_name), dpi=300)
         plt.close()
         print(
             "Neighbour histogram figure saved as", os.path.join(output_dir, file_name)
@@ -1015,10 +1010,10 @@ def plot_orientation_hist(
             [
                 "{:02}_orientation_hist_".format(34 + material_type),
                 material[material_type].lower(),
-                ".pdf",
+                ".png",
             ]
         )
-        plt.savefig(os.path.join(output_dir, file_name))
+        plt.savefig(os.path.join(output_dir, file_name), dpi=300)
         plt.close()
         print(
             "Orientation histogram figure saved as", os.path.join(output_dir, file_name)
@@ -1579,8 +1574,7 @@ def generate_lists_for_3d_clusters(cluster_lookup, colours, large_cluster):
 
 
 def plot_clusters_3D(
-    output_dir, chromophore_list, cluster_dicts, sim_dims, generate_tcl, save_png
-):
+    output_dir, chromophore_list, cluster_dicts, sim_dims, generate_tcl):
     fig = plt.figure()
     ax = p3.Axes3D(fig)
     colours = ["r", "g", "b", "c", "m", "y", "k"]
@@ -1696,11 +1690,9 @@ def plot_clusters_3D(
     ax.set_ylim([sim_dims[1][0], sim_dims[1][1]])
     ax.set_zlim([sim_dims[2][0], sim_dims[2][1]])
     # 03 for clusters (material agnostic)
-    plt.savefig(os.path.join(output_dir, "03_clusters.pdf"), bbox_inches="tight")
-    print("3D cluster figure saved as", os.path.join(output_dir, "03_clusters.pdf"))
-    if save_png:
-        plt.savefig(os.path.join(output_dir, "03_clusters.png"), bbox_inches="tight")
-        print("Figure also saved as", os.path.join(output_dir, "03_clusters.png"))
+    plt.savefig(os.path.join(output_dir, "03_clusters.png"), bbox_inches="tight",
+                dpi=300)
+    print("3D cluster figure saved as", os.path.join(output_dir, "03_clusters.png"))
     plt.clf()
 
 
@@ -1748,6 +1740,8 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
     LUMO_levels = []
     donor_delta_E_ij = []
     acceptor_delta_E_ij = []
+    donor_lambda_ij = None
+    acceptor_lambda_ij = None
     for chromo in chromophore_list:
         if chromo.species == "donor":
             HOMO_levels.append(chromo.HOMO)
@@ -1756,6 +1750,8 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
                     chromo.neighbours_TI[neighbour_index] is not None
                 ):
                     donor_delta_E_ij.append(delta_E_ij)
+                if "reorganisation_energy" in chromo.__dict__:
+                    donor_lambda_ij = chromo.reorganisation_energy
         else:
             LUMO_levels.append(chromo.LUMO)
             for neighbour_index, delta_E_ij in enumerate(chromo.neighbours_delta_E):
@@ -1763,6 +1759,8 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
                     chromo.neighbours_TI[neighbour_index] is not None
                 ):
                     acceptor_delta_E_ij.append(delta_E_ij)
+                if "reorganisation_energy" in chromo.__dict__:
+                    acceptor_lambda_ij = chromo.reorganisation_energy
     if len(donor_delta_E_ij) > 0:
         donor_bin_edges, donor_fit_args, donor_mean, donor_std = gauss_fit(
             donor_delta_E_ij
@@ -1789,7 +1787,8 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
             donor_bin_edges,
             donor_fit_args,
             "donor",
-            output_dir + "/06_donor_delta_E_ij.pdf",
+            output_dir + "/06_donor_delta_E_ij.png",
+            donor_lambda_ij,
         )
     if len(acceptor_delta_E_ij) > 0:
         acceptor_bin_edges, acceptor_fit_args, acceptor_mean, acceptor_std = gauss_fit(
@@ -1819,24 +1818,31 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
             acceptor_bin_edges,
             acceptor_fit_args,
             "acceptor",
-            output_dir + "/07_acceptor_delta_E_ij.pdf",
+            output_dir + "/07_acceptor_delta_E_ij.png",
+            acceptor_lambda_ij,
         )
     return data_dict
 
 
-def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name):
+def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name, lambda_ij):
     plt.figure()
-    n, bins, patches = plt.hist(delta_E_ij, np.linspace(-0.5, 0.5, 20), color=["b"])
+    n, bins, patches = plt.hist(
+        delta_E_ij,
+        np.arange(np.min(delta_E_ij), np.max(delta_E_ij), 0.05),
+        color=["b"],
+    )
     if fit_args is not None:
         gauss_Y = gaussian(gauss_bins[:-1], *fit_args)
         scale_factor = max(n) / max(gauss_Y)
         plt.plot(gauss_bins[:-1], gauss_Y * scale_factor, "ro:")
     else:
         print("No Gaussian found (probably zero-width delta function)")
+    if lambda_ij is not None:
+        plt.axvline(-float(lambda_ij), c="k")
     plt.ylabel("Frequency (Arb. U.)")
     plt.xlabel(data_type.capitalize() + r" $\Delta E_{ij}$ (eV)")
-    plt.xlim([-0.5, 0.5])
-    plt.savefig(file_name)
+    #plt.xlim([-0.5, 0.5])
+    plt.savefig(file_name, dpi=300)
     plt.close()
     print("Figure saved as", file_name)
 
@@ -1996,14 +2002,14 @@ def plot_mixed_hopping_rates(
             property_lists["inter_cluster_rates_donor"],
             ["Intra-cluster", "Inter-cluster"],
             "donor",
-            os.path.join(output_dir, "16_donor_hopping_rate_clusters.pdf"),
+            os.path.join(output_dir, "16_donor_hopping_rate_clusters.png"),
         )
         plot_stacked_hist_TIs(
             property_lists["intra_cluster_TIs_donor"],
             property_lists["inter_cluster_TIs_donor"],
             ["Intra-cluster", "Inter-cluster"],
             "donor",
-            os.path.join(output_dir, "12_donor_transfer_integral_clusters.pdf"),
+            os.path.join(output_dir, "12_donor_transfer_integral_clusters.png"),
             cut_off_dict["TI"][0],
         )
     # Acceptor cluster Plots:
@@ -2029,14 +2035,14 @@ def plot_mixed_hopping_rates(
             property_lists["inter_cluster_rates_acceptor"],
             ["Intra-cluster", "Inter-cluster"],
             "acceptor",
-            os.path.join(output_dir, "17_acceptor_hopping_rate_clusters.pdf"),
+            os.path.join(output_dir, "17_acceptor_hopping_rate_clusters.png"),
         )
         plot_stacked_hist_TIs(
             property_lists["intra_cluster_TIs_acceptor"],
             property_lists["inter_cluster_TIs_acceptor"],
             ["Intra-cluster", "Inter-cluster"],
             "acceptor",
-            os.path.join(output_dir, "13_acceptor_transfer_integral_clusters.pdf"),
+            os.path.join(output_dir, "13_acceptor_transfer_integral_clusters.png"),
             cut_off_dict["TI"][1],
         )
     # Donor Mol Plots:
@@ -2062,7 +2068,7 @@ def plot_mixed_hopping_rates(
             property_lists["inter_mol_rates_donor"],
             ["Intra-mol", "Inter-mol"],
             "donor",
-            os.path.join(output_dir, "14_donor_hopping_rate_mols.pdf"),
+            os.path.join(output_dir, "14_donor_hopping_rate_mols.png"),
         )
     # Acceptor Mol Plots:
     if (len(property_lists["intra_mol_rates_acceptor"]) > 0) or (
@@ -2087,7 +2093,7 @@ def plot_mixed_hopping_rates(
             property_lists["inter_mol_rates_acceptor"],
             ["Intra-mol", "Inter-mol"],
             "acceptor",
-            os.path.join(output_dir, "15_acceptor_hopping_rate_mols.pdf"),
+            os.path.join(output_dir, "15_acceptor_hopping_rate_mols.png"),
         )
     # Update the dataDict
     for material in chromo_species:
@@ -2189,7 +2195,7 @@ def plot_stacked_hist_rates(data1, data2, labels, data_type, file_name):
     plt.ylim([0, np.max(n) * 1.02])
     plt.legend(loc=2, prop={"size": 18})
     plt.gca().set_xscale("log")
-    plt.savefig(file_name)
+    plt.savefig(file_name, dpi=300)
     plt.close()
     print("Figure saved as", file_name)
 
@@ -2205,12 +2211,12 @@ def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name, cut_off):
     )
     plt.ylabel("Frequency (Arb. U.)")
     plt.xlabel(data_type.capitalize() + r" J$_{i,j}$ (eV)")
-    plt.xlim([0, 1.2])
+    #plt.xlim([0, 1.2])
     plt.ylim([0, np.max(n) * 1.02])
     if cut_off is not None:
         plt.axvline(float(cut_off), c="k")
     plt.legend(loc=0, prop={"size": 18})
-    plt.savefig(file_name)
+    plt.savefig(file_name, dpi=300)
     plt.close()
     print("Figure saved as", file_name)
 
@@ -2419,10 +2425,10 @@ def plot_TI_hist(
                 "{:02}_".format(10 + material_index),
                 material_type,
                 "_transfer_integral_mols",
-                ".pdf",
+                ".png",
             ]
         )
-        plt.savefig(os.path.join(output_dir, file_name))
+        plt.savefig(os.path.join(output_dir, file_name), dpi=300)
         plt.clf()
         print("Figure saved as", os.path.join(output_dir, file_name))
     return TI_cuts[0], TI_cuts[1]
@@ -2469,10 +2475,10 @@ def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
         [
             "{:02}_total_hop_freq_".format(24 + carrier_types.index(carrier_type)),
             carrier_type,
-            ".pdf",
+            ".png",
         ]
     )
-    plt.savefig(os.path.join(directory, "figures", file_name))
+    plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
     plt.clf()
     print("Figure saved as", os.path.join(directory, "figures", file_name))
     return cut_off
@@ -2504,10 +2510,10 @@ def plot_net_frequency_dist(directory, carrier_type, carrier_history):
         [
             "{:02}_net_hop_freq_".format(26 + carrier_types.index(carrier_type)),
             carrier_type,
-            ".pdf",
+            ".png",
         ]
     )
-    plt.savefig(os.path.join(directory, "figures", file_name))
+    plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
     plt.clf()
     print("Figure saved as", os.path.join(directory, "figures", file_name))
 
@@ -2547,10 +2553,10 @@ def plot_discrepancy_frequency_dist(directory, carrier_type, carrier_history):
         [
             "{:02}_hop_discrepancy_".format(28 + carrier_types.index(carrier_type)),
             carrier_type,
-            ".pdf",
+            ".png",
         ]
     )
-    plt.savefig(os.path.join(directory, "figures", file_name))
+    plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
     plt.clf()
     print(
         "There are",
@@ -2779,16 +2785,6 @@ def main():
             "flag. Default = False"
         ),
     )
-    parser.add_argument(
-        "-png",
-        "--save_png",
-        action="store_true",
-        required=False,
-        help=(
-            "Specify to save the 3D clusters and Network plots as png files in addition"
-            "to pdf files. Default = False"
-        ),
-    )
     args, directory_list = parser.parse_known_args()
 
     # Load the matplotlib backend and the plotting subroutines
@@ -2912,7 +2908,6 @@ def main():
                     carrier_history,
                     directory,
                     current_carrier_type,
-                    args.save_png,
                 )
             if current_carrier_type == "hole":
                 hole_anisotropy_data.append(anisotropy)
@@ -3008,7 +3003,6 @@ def main():
                 cluster_dicts,
                 sim_dims,
                 args.generate_tcl,
-                args.save_png,
             )
         data_dict = plot_mixed_hopping_rates(
             temp_dir,
