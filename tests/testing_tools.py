@@ -103,7 +103,7 @@ class TestCommand(object):
 
     def check_array(self, response, expected, dict_key=None):
         for expected_index, expected_value in enumerate(expected):
-            self.compare_equal(response[expected_index], expected_value)
+            self.compare_equal(response[expected_index], expected_value, dict_key=dict_key)
 
     def check_matrix(self, response, expected, dict_key=None):
         for expected_row_id in range(expected.shape[0]):
@@ -111,13 +111,15 @@ class TestCommand(object):
                 self.compare_equal(
                     response[expected_row_id, expected_col_id],
                     expected[expected_row_id, expected_col_id],
+                    dict_key=dict_key
                 )
 
     def check_dictionary(self, response, expected, dict_key=None):
         for expected_key, expected_val in expected.items():
             print("".join(["Checking key ", str(expected_key), "..."]))
             self.compare_equal(response[expected_key], expected_val,
-                               dict_key=expected_key)
+                               dict_key=" | ".join([repr(dict_key),
+                                                    repr(expected_key)]))
 
     def confirm_file_exists(
         self,
