@@ -1016,24 +1016,6 @@ def convert_string_to_int(x):
     return 99999
 
 
-def obtain_random_seed():
-    # NOTE: This function seems pointless because I could just
-    # from morphct.definitions import RANDOM_SEED, but you run into lots of
-    # problems with the interpreter caching the contents of morphct.definitions
-    # before run_MorphCT has time to change it, which messes everything up.
-    # As it stands, definitions is a good place for the random seed to be
-    # stored and tuned, but we need this hacky fix to be able to load in the
-    # most up-to-date seed as and when we need it.
-    with open(os.path.join(PROJECT_ROOT, "definitions.py"), "r") as file_name:
-        lines = file_name.readlines()
-        for line in lines:
-            if "RANDOM_SEED" in line:
-                try:
-                    return int(line.split()[-1])
-                except ValueError:
-                    return None
-
-
 def fix_images(original_morphology):
     def check_bonds(morphology, bond_dict):
         for bond in morphology["bond"]:

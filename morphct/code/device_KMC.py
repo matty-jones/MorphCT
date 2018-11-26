@@ -158,7 +158,8 @@ def load_device_morphology(parameter_dict):
 
 def main(parameter_dict):
     # Get the random seed now for all the child processes
-    np.random.seed(hf.obtain_random_seed())
+    if parameter_dict["random_seed_override"] is not None:
+        np.random.seed(parameter_dict["random_seed_override"])
     # First job will be to load in the device morphology, when I work out what
     # format I want it to be.
     device_array, moiety_dictionary = load_device_morphology(parameter_dict)
