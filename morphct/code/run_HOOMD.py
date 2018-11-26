@@ -74,7 +74,7 @@ class md_phase:
         self.rigid_group, self.non_rigid_group, self.integration_types = (
             self.get_integration_groups()
         )
-        self.output_log_file_name = os.path.join(self.output_morph_dir, self.morphology[:-4], "morphology", "".join(["energies_", self.morphology[:-4], ".log"]))
+        self.output_log_file_name = os.path.join(self.output_morph_dir, os.path.splitext(self.morphology)[0], "morphology", "".join(["energies_", os.path.splitext(self.morphology)[0], ".log"]))
         # Determine which quantities should be logged during the simulation
         # phase
         self.log_quantities = [
@@ -550,7 +550,7 @@ def scale_morphology(initial_morphology, parameter_dict, s_scale, e_scale):
         hf.scale(initial_morphology, s_scale)
     hf.write_morphology_xml(
         initial_morphology,
-        os.path.join(parameter_dict["output_morph_dir"], parameter_dict["morphology"][:-4], "morphology", "".join(["phase0_", parameter_dict["morphology"]]))
+        os.path.join(parameter_dict["output_morph_dir"], os.path.splitext(parameter_dict["morphology"])[0], "morphology", "".join(["phase0_", parameter_dict["morphology"]]))
     )
 
 
@@ -570,7 +570,7 @@ def main(
     # interaction and the diameter of the largest atom (makes it easier on
     # HOOMDs calculations and ensures that T = 1.0 is an interesting temperature
     # threshold)
-    current_files = os.listdir(os.path.join(parameter_dict["output_morph_dir"], parameter_dict["morphology"][:-4], "morphology"))
+    current_files = os.listdir(os.path.join(parameter_dict["output_morph_dir"], os.path.splitext(parameter_dict["morphology"])[0], "morphology"))
     # sScale, eScale = obtainScaleFactors(parameterDict)
     print("Under the hood eScaling and sScaling has been disabled.")
     s_scale = 1.0
@@ -585,7 +585,7 @@ def main(
     # Reset logfile
     try:
         os.remove(
-            os.path.join(parameter_dict["output_morph_dir"], parameter_dict["morphology"][:-4], "morphology", "".join(["energies_", parameter_dict["morphology"][:-4], ".log"]))
+            os.path.join(parameter_dict["output_morph_dir"], os.path.splitext(parameter_dict["morphology"])[0], "morphology", "".join(["energies_", os.path.splitext(parameter_dict["morphology"])[0], ".log"]))
         )
     except OSError:
         pass
@@ -603,20 +603,20 @@ def main(
             CG_to_AAID_master,
             parameter_dict,
             phase_no,
-            os.path.join(parameter_dict["output_morph_dir"], parameter_dict["morphology"][:-4], "morphology", input_file),
-            os.path.join(parameter_dict["output_morph_dir"], parameter_dict["morphology"][:-4], "morphology", output_file),
+            os.path.join(parameter_dict["output_morph_dir"], os.path.splitext(parameter_dict["morphology"])[0], "morphology", input_file),
+            os.path.join(parameter_dict["output_morph_dir"], os.path.splitext(parameter_dict["morphology"])[0], "morphology", output_file),
             s_scale,
             e_scale,
         ).optimise_structure()
     final_xml_name = (
-        os.path.join(parameter_dict["output_morph_dir"], parameter_dict["morphology"][:-4], "morphology", "".join(["final_", parameter_dict["morphology"]]))
+        os.path.join(parameter_dict["output_morph_dir"], os.path.splitext(parameter_dict["morphology"])[0], "morphology", "".join(["final_", parameter_dict["morphology"]]))
     )
     if "final_" + parameter_dict["morphology"] not in current_files:
         # Now all phases are complete, remove the ghost particles from the
         # system
         print("Removing ghost particles to create final output...")
         remove_ghost_particles(
-            os.path.join(parameter_dict["output_morph_dir"], parameter_dict["morphology"][:-4], "morphology", output_file),
+            os.path.join(parameter_dict["output_morph_dir"], os.path.splitext(parameter_dict["morphology"])[0], "morphology", output_file),
             final_xml_name,
             sigma=s_scale,
         )
@@ -640,7 +640,7 @@ def main(
             parameter_dict,
             chromophore_list,
         ),
-        os.path.join(parameter_dict["output_morph_dir"], parameter_dict["morphology"][:-4], "code", "".join([parameter_dict["morphology"][:-4], ".pickle"])),
+        os.path.join(parameter_dict["output_morph_dir"], os.path.splitext(parameter_dict["morphology"])[0], "code", "".join([os.path.splitext(parameter_dict["morphology"])[0], ".pickle"])),
     )
     return (
         AA_morphology_dict,

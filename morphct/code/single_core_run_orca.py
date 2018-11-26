@@ -132,7 +132,7 @@ if __name__ == "__main__":
             output_ok = check_job_output(orca_stdout, job)
             if output_ok:
                 hf.write_to_file(log_file, ["Output OK and remove_orca_inputs set.",
-                                 "Deleting " + job[:-4] + " inputs..."])
+                                 "Deleting " + os.path.splitext(job)[0] + " inputs..."])
                 for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges",
                                   "_property.txt"]:
                     try:
