@@ -57,14 +57,24 @@ class morphology:
             )
             # Write the xml file and create the pickle
             print("Writing xml file...")
-            AA_file_name = os.path.join(self.output_morph_dir, self.morphology_name, morphology, "".join([self.morphology_name, ".xml"]))
+            AA_file_name = os.path.join(
+                self.output_morph_dir,
+                self.morphology_name,
+                morphology,
+                "".join([self.morphology_name, ".xml"]),
+            )
             atomistic_morphology = hf.add_unwrapped_positions(self.CG_dictionary)
             # Now write the morphology xml
             hf.write_morphology_xml(atomistic_morphology, AA_file_name)
             # And finally write the pickle with the CGDictionary as None (to
             # indicate to MorphCT that no fine-graining has taken place), but
             # the other parameters assigned as required.
-            pickle_location = os.path.join(self.output_morph_dir, self.morphology_name, code, "".join([self.morphology_name, ".pickle"]))
+            pickle_location = os.path.join(
+                self.output_morph_dir,
+                self.morphology_name,
+                code,
+                "".join([self.morphology_name, ".pickle"]),
+            )
             hf.write_pickle(
                 (
                     atomistic_morphology,
@@ -213,7 +223,12 @@ class morphology:
         print("\n")
         # Now write the xml file and create the pickle
         print("Writing xml file...")
-        AA_file_name = os.path.join(self.output_morph_dir, self.morphology_name, "morphology", "".join([self.morphology_name, ".xml"]))
+        AA_file_name = os.path.join(
+            self.output_morph_dir,
+            self.morphology_name,
+            "morphology",
+            "".join([self.morphology_name, ".xml"]),
+        )
         # Replace the `positions' with the `unwrapped_positions' ready for
         # writing
         AA_morphology_dict = hf.replace_wrapped_positions(AA_morphology_dict)
@@ -223,7 +238,12 @@ class morphology:
         # Now write the morphology xml
         hf.write_morphology_xml(AA_morphology_dict, AA_file_name)
         # And finally write the pickle
-        pickle_location = os.path.join(self.output_morph_dir, self.morphology_name, "code", "".join([self.morphology_name, ".pickle"]))
+        pickle_location = os.path.join(
+            self.output_morph_dir,
+            self.morphology_name,
+            "code",
+            "".join([self.morphology_name, ".pickle"]),
+        )
         hf.write_pickle(
             (
                 AA_morphology_dict,
@@ -359,7 +379,11 @@ class atomistic:
         # Load the template file for each CG atom
         for CG_atom_type in list(self.CG_to_template_files.keys()):
             template_dictionary = hf.load_morphology_xml(
-                os.path.join(self.CG_to_template_dirs[CG_atom_type], self.CG_to_template_files[CG_atom_type]))
+                os.path.join(
+                    self.CG_to_template_dirs[CG_atom_type],
+                    self.CG_to_template_files[CG_atom_type],
+                )
+            )
             template_dictionary = self.remap_atom_types(
                 template_dictionary, parameter_dict["new_type_mappings"][CG_atom_type]
             )
@@ -429,7 +453,9 @@ class atomistic:
             for constraint_index, constraint in enumerate(
                 template_dict[constraint_type]
             ):
-                new_constraint0 = "-".join([template_dict["type"][atom_ID] for atom_ID in constraint[1:]])
+                new_constraint0 = "-".join(
+                    [template_dict["type"][atom_ID] for atom_ID in constraint[1:]]
+                )
                 # Assign the constraint label
                 template_dict[constraint_type][constraint_index][0] = new_constraint0
         return template_dict
@@ -548,14 +574,18 @@ class atomistic:
                     ghost_dictionary["unwrapped_position"].append(ghost_COM)
                     ghost_dictionary["mass"].append(1.0)
                     ghost_dictionary["diameter"].append(1.0)
-                    ghost_dictionary["type"].append("R{:s}".format(CG_type_list[site_ID]))
+                    ghost_dictionary["type"].append(
+                        "R{:s}".format(CG_type_list[site_ID])
+                    )
                     ghost_dictionary["body"].append(current_monomer_index)
                     ghost_dictionary["charge"].append(0.0)
                     # Then create the corresponding CG anchorpoint
                     ghost_dictionary["unwrapped_position"].append(ghost_COM)
                     ghost_dictionary["mass"].append(1.0)
                     ghost_dictionary["diameter"].append(1.0)
-                    ghost_dictionary["type"].append("X{:s}".format(CG_type_list[site_ID]))
+                    ghost_dictionary["type"].append(
+                        "X{:s}".format(CG_type_list[site_ID])
+                    )
                     ghost_dictionary["body"].append(-1)
                     ghost_dictionary["charge"].append(0.0)
                     # Now create a bond between them
@@ -564,7 +594,10 @@ class atomistic:
                     # number of ghost particles already in the system.
                     ghost_dictionary["bond"].append(
                         [
-                            "{0:s}-{1:s}".format(ghost_dictionary["type"][-2], ghost_dictionary["type"][-1]),
+                            "{0:s}-{1:s}".format(
+                                ghost_dictionary["type"][-2],
+                                ghost_dictionary["type"][-1],
+                            ),
                             "".join(["*" + str(len(ghost_dictionary["type"]) - 2)]),
                             "".join(["*" + str(len(ghost_dictionary["type"]) - 1)]),
                         ]
@@ -577,7 +610,9 @@ class atomistic:
                     )
                     ghost_dictionary["mass"].append(1.0)
                     ghost_dictionary["diameter"].append(1.0)
-                    ghost_dictionary["type"].append("X{:s}".format(CG_type_list[site_ID]))
+                    ghost_dictionary["type"].append(
+                        "X{:s}".format(CG_type_list[site_ID])
+                    )
                     ghost_dictionary["body"].append(-1)
                     ghost_dictionary["charge"].append(0.0)
                     # Add in bonds between the CG anchorpoints and the atom
@@ -610,9 +645,14 @@ class atomistic:
                     # because they are already correct for the whole system.
                     ghost_dictionary["bond"].append(
                         [
-                            "{0:s}-{1:s}".format(ghost_dictionary["type"][-1], this_monomer_dictionary["type"][closest_atom_ID]),
+                            "{0:s}-{1:s}".format(
+                                ghost_dictionary["type"][-1],
+                                this_monomer_dictionary["type"][closest_atom_ID],
+                            ),
                             "".join(["*" + str(len(ghost_dictionary["type"]) - 1)]),
-                            "".join(["_" + str(closest_atom_ID + no_atoms_in_molecule)]),
+                            "".join(
+                                ["_" + str(closest_atom_ID + no_atoms_in_molecule)]
+                            ),
                         ]
                     )
             # Now add in the bonds between CG_sites in this monomer
@@ -735,7 +775,11 @@ class atomistic:
             AA_dictionary["body"].append(-1)
             AA_dictionary["charge"].append(0.0)
             AA_dictionary["bond"].append(
-                ["-".join([AA_dictionary["type"][hydrogen[0]], "h1"]), hydrogen[0], hydrogen_ID]
+                [
+                    "-".join([AA_dictionary["type"][hydrogen[0]], "h1"]),
+                    hydrogen[0],
+                    hydrogen_ID,
+                ]
             )
             AA_dictionary["natoms"] += 1
             hydrogen_ID += 1

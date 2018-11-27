@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+
 try:
     from hoomd_script import *
 except ImportError:
@@ -74,7 +75,12 @@ class md_phase:
         self.rigid_group, self.non_rigid_group, self.integration_types = (
             self.get_integration_groups()
         )
-        self.output_log_file_name = os.path.join(self.output_morph_dir, os.path.splitext(self.morphology)[0], "morphology", "".join(["energies_", os.path.splitext(self.morphology)[0], ".log"]))
+        self.output_log_file_name = os.path.join(
+            self.output_morph_dir,
+            os.path.splitext(self.morphology)[0],
+            "morphology",
+            "".join(["energies_", os.path.splitext(self.morphology)[0], ".log"]),
+        )
         # Determine which quantities should be logged during the simulation
         # phase
         self.log_quantities = [
@@ -304,7 +310,9 @@ class md_phase:
                             gamma=self.pair_dpd_gamma_val,
                         )
                         try:
-                            all_pair_types.remove("{0}-{1}".format(atom_type1, atom_type2))
+                            all_pair_types.remove(
+                                "{0}-{1}".format(atom_type1, atom_type2)
+                            )
                         except:
                             pass
                 # Because we've been removing each pair from allPairTypes, all
@@ -341,7 +349,9 @@ class md_phase:
                             ),
                         )
                         try:
-                            all_pair_types.remove("{0}-{1}".format(atom_type1, atom_type2))
+                            all_pair_types.remove(
+                                "{0}-{1}".format(atom_type1, atom_type2)
+                            )
                         except:
                             pass
                 # Because we've been removing each pair from allPairTypes, all
@@ -364,7 +374,9 @@ class md_phase:
         # Real bonds
         if self.bond_type.lower() == "harmonic":
             if len(self.bond_coeffs) > 0:
-                self.log_quantities.append("".join(["bond_", self.bond_type, "_energy"]))
+                self.log_quantities.append(
+                    "".join(["bond_", self.bond_type, "_energy"])
+                )
             self.bond_class = bond.harmonic()
             for bond_coeff in self.bond_coeffs:
                 # [k] = kcal mol^{-1} \AA^{-2} * episilon/sigma^{2}, [r0] =
@@ -379,13 +391,15 @@ class md_phase:
             # bond k values to 0.
             if self.group_anchoring.lower() == "all":
                 group_anchoring_types = [
-                    "".join(["X", CG_type]) for CG_type in list(self.CG_to_template_AAIDs.keys())
+                    "".join(["X", CG_type])
+                    for CG_type in list(self.CG_to_template_AAIDs.keys())
                 ]
             elif self.group_anchoring.lower() == "none":
                 group_anchoring_types = []
             else:
                 group_anchoring_types = [
-                    "".join(["X", CG_type]) for CG_type in self.group_anchoring.split(",")
+                    "".join(["X", CG_type])
+                    for CG_type in self.group_anchoring.split(",")
                 ]
             anchor_bond_types = []
             no_anchor_bond_types = []
@@ -433,7 +447,9 @@ class md_phase:
         # Set Dihedral Coeffs
         self.dihedral_class = None
         if len(self.dihedral_coeffs) > 0:
-            self.log_quantities.append("".join(["dihedral_", self.dihedral_type, "_energy"]))
+            self.log_quantities.append(
+                "".join(["dihedral_", self.dihedral_type, "_energy"])
+            )
             if self.dihedral_type.lower() == "table":
                 self.dihedral_class = dihedral.table(width=1000)
                 for dihedral_coeff in self.dihedral_coeffs:
@@ -484,7 +500,9 @@ class md_phase:
         else:
             integration_types = self.integration_target.split(",")
         # Add in any rigid ghost particles that might need to be integrated too
-        ghost_integration_types = ["".join(["R", type_name]) for type_name in integration_types]
+        ghost_integration_types = [
+            "".join(["R", type_name]) for type_name in integration_types
+        ]
         atom_IDs_to_integrate = []
         for molecule in self.CG_to_AAID_master:
             for CG_site_ID in list(molecule.keys()):
@@ -535,7 +553,9 @@ def obtain_scale_factors(parameter_dict):
     # / largestEpsilon
     LJFFs = []
     for CG_site, directory in parameter_dict["CG_to_template_dirs"].items():
-        FF_loc = os.path.join(directory, parameter_dict["CG_to_template_force_fields"][CG_site])
+        FF_loc = os.path.join(
+            directory, parameter_dict["CG_to_template_force_fields"][CG_site]
+        )
         FF = hf.load_FF_xml(FF_loc)
         LJFFs += FF["lj"]
     largest_sigma = max(list(map(float, np.array(LJFFs)[:, 2])))
@@ -550,7 +570,12 @@ def scale_morphology(initial_morphology, parameter_dict, s_scale, e_scale):
         hf.scale(initial_morphology, s_scale)
     hf.write_morphology_xml(
         initial_morphology,
-        os.path.join(parameter_dict["output_morph_dir"], os.path.splitext(parameter_dict["morphology"])[0], "morphology", "".join(["phase0_", parameter_dict["morphology"]]))
+        os.path.join(
+            parameter_dict["output_morph_dir"],
+            os.path.splitext(parameter_dict["morphology"])[0],
+            "morphology",
+            "".join(["phase0_", parameter_dict["morphology"]]),
+        ),
     )
 
 
@@ -570,7 +595,13 @@ def main(
     # interaction and the diameter of the largest atom (makes it easier on
     # HOOMDs calculations and ensures that T = 1.0 is an interesting temperature
     # threshold)
-    current_files = os.listdir(os.path.join(parameter_dict["output_morph_dir"], os.path.splitext(parameter_dict["morphology"])[0], "morphology"))
+    current_files = os.listdir(
+        os.path.join(
+            parameter_dict["output_morph_dir"],
+            os.path.splitext(parameter_dict["morphology"])[0],
+            "morphology",
+        )
+    )
     # sScale, eScale = obtainScaleFactors(parameterDict)
     print("Under the hood eScaling and sScaling has been disabled.")
     s_scale = 1.0
@@ -585,14 +616,27 @@ def main(
     # Reset logfile
     try:
         os.remove(
-            os.path.join(parameter_dict["output_morph_dir"], os.path.splitext(parameter_dict["morphology"])[0], "morphology", "".join(["energies_", os.path.splitext(parameter_dict["morphology"])[0], ".log"]))
+            os.path.join(
+                parameter_dict["output_morph_dir"],
+                os.path.splitext(parameter_dict["morphology"])[0],
+                "morphology",
+                "".join(
+                    [
+                        "energies_",
+                        os.path.splitext(parameter_dict["morphology"])[0],
+                        ".log",
+                    ]
+                ),
+            )
         )
     except OSError:
         pass
     # Perform each molecular dynamics phase as specified in the parXX.py
     for phase_no in range(parameter_dict["number_of_phases"]):
         input_file = "phase{0:d}_{1:s}".format(phase_no, parameter_dict["morphology"])
-        output_file = "phase{0:d}_{1:s}".format(phase_no + 1, parameter_dict["morphology"])
+        output_file = "phase{0:d}_{1:s}".format(
+            phase_no + 1, parameter_dict["morphology"]
+        )
         if output_file in current_files:
             if parameter_dict["overwrite_current_data"] is False:
                 print(output_file, "already exists. Skipping...")
@@ -603,20 +647,38 @@ def main(
             CG_to_AAID_master,
             parameter_dict,
             phase_no,
-            os.path.join(parameter_dict["output_morph_dir"], os.path.splitext(parameter_dict["morphology"])[0], "morphology", input_file),
-            os.path.join(parameter_dict["output_morph_dir"], os.path.splitext(parameter_dict["morphology"])[0], "morphology", output_file),
+            os.path.join(
+                parameter_dict["output_morph_dir"],
+                os.path.splitext(parameter_dict["morphology"])[0],
+                "morphology",
+                input_file,
+            ),
+            os.path.join(
+                parameter_dict["output_morph_dir"],
+                os.path.splitext(parameter_dict["morphology"])[0],
+                "morphology",
+                output_file,
+            ),
             s_scale,
             e_scale,
         ).optimise_structure()
-    final_xml_name = (
-        os.path.join(parameter_dict["output_morph_dir"], os.path.splitext(parameter_dict["morphology"])[0], "morphology", "".join(["final_", parameter_dict["morphology"]]))
+    final_xml_name = os.path.join(
+        parameter_dict["output_morph_dir"],
+        os.path.splitext(parameter_dict["morphology"])[0],
+        "morphology",
+        "".join(["final_", parameter_dict["morphology"]]),
     )
     if "".join(["final_", parameter_dict["morphology"]]) not in current_files:
         # Now all phases are complete, remove the ghost particles from the
         # system
         print("Removing ghost particles to create final output...")
         remove_ghost_particles(
-            os.path.join(parameter_dict["output_morph_dir"], os.path.splitext(parameter_dict["morphology"])[0], "morphology", output_file),
+            os.path.join(
+                parameter_dict["output_morph_dir"],
+                os.path.splitext(parameter_dict["morphology"])[0],
+                "morphology",
+                output_file,
+            ),
             final_xml_name,
             sigma=s_scale,
         )
@@ -640,7 +702,12 @@ def main(
             parameter_dict,
             chromophore_list,
         ),
-        os.path.join(parameter_dict["output_morph_dir"], os.path.splitext(parameter_dict["morphology"])[0], "code", "".join([os.path.splitext(parameter_dict["morphology"])[0], ".pickle"])),
+        os.path.join(
+            parameter_dict["output_morph_dir"],
+            os.path.splitext(parameter_dict["morphology"])[0],
+            "code",
+            "".join([os.path.splitext(parameter_dict["morphology"])[0], ".pickle"]),
+        ),
     )
     return (
         AA_morphology_dict,

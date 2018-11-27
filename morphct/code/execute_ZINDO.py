@@ -235,11 +235,7 @@ def write_orca_inp(
     # Write the orca input file
     with open(input_name, "w+") as orca_file:
         orca_file.writelines(inp_file_lines)
-    print(
-        "\rOrca Input File written as",
-        os.path.split(input_name[1]),
-        end=" ",
-    )
+    print("\rOrca Input File written as", os.path.split(input_name[1]), end=" ")
 
 
 def terminate_monomers(chromophore, parameter_dict, AA_morphology_dict):
@@ -340,7 +336,9 @@ def main(
     if parameter_dict["random_seed_override"] is not None:
         np.random.seed(parameter_dict["random_seed_override"])
     create_input_files(chromophore_list, AA_morphology_dict, parameter_dict)
-    input_dir = os.path.join(parameter_dict["output_orca_directory"], "chromophores", "input_orca")
+    input_dir = os.path.join(
+        parameter_dict["output_orca_directory"], "chromophores", "input_orca"
+    )
     proc_IDs = parameter_dict["proc_IDs"]
     jobs_list = get_orca_jobs(input_dir, parameter_dict, proc_IDs)
     # Shuffle the jobsList to spread it out over the cores

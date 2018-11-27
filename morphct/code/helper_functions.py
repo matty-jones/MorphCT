@@ -91,7 +91,9 @@ def calc_COM(list_of_positions, list_of_atom_types=None, list_of_atom_masses=Non
                 list_of_atom_masses.append(18.998403)
             else:
                 raise SystemError(
-                    "Unknown atomic mass {:s}. Please hardcode into helper_functions.calc_COM.".format(atom_type)
+                    "Unknown atomic mass {:s}. Please hardcode into helper_functions.calc_COM.".format(
+                        atom_type
+                    )
                 )
     total_mass = np.sum(list_of_atom_masses)
     for atom_ID, position in enumerate(list_of_positions):
@@ -662,10 +664,14 @@ def check_constraint_names(AA_morphology_dict):
     constraint_types = ["bond", "angle", "dihedral", "improper"]
     for constraint_type in constraint_types:
         for constraint_ID, constraint in enumerate(AA_morphology_dict[constraint_type]):
-            new_constraint_name = "-".join([AA_morphology_dict["type"][atom_ID] for atom_ID in constraint[1:]])
+            new_constraint_name = "-".join(
+                [AA_morphology_dict["type"][atom_ID] for atom_ID in constraint[1:]]
+            )
             # Update the dict if the name has changed
             if constraint[0] != new_constraint_name:
-                AA_morphology_dict[constraint_type][constraint_ID][0] = new_constraint_name
+                AA_morphology_dict[constraint_type][constraint_ID][
+                    0
+                ] = new_constraint_name
     return AA_morphology_dict
 
 
@@ -693,11 +699,24 @@ def write_morphology_xml(
     lines_to_write = [
         '<?xml version="1.0" encoding="UTF-8"?>\n',
         '<hoomd_xml version="1.4">\n',
-        '<configuration time_step="0" dimensions="3" natoms="{:d}" >\n'.format(input_dictionary["natoms"]),
-        '<box lx="{0:f}" ly="{1:f}" lz="{2:f}"'.format(input_dictionary["lx"], input_dictionary["ly"], input_dictionary["lz"]),
+        '<configuration time_step="0" dimensions="3" natoms="{:d}" >\n'.format(
+            input_dictionary["natoms"]
+        ),
+        '<box lx="{0:f}" ly="{1:f}" lz="{2:f}"'.format(
+            input_dictionary["lx"], input_dictionary["ly"], input_dictionary["lz"]
+        ),
     ]
     if all([tilt_factor in input_dictionary.keys() for tilt_factor in tilt_factors]):
-        lines_to_write[-1] = "".join([lines_to_write[-1], ' xy="{0:f}" xz="{1:f}" yz="{2:f}" />\n'.format(input_dictionary["xy"], input_dictionary["xz"], input_dictionary["yz"])])
+        lines_to_write[-1] = "".join(
+            [
+                lines_to_write[-1],
+                ' xy="{0:f}" xz="{1:f}" yz="{2:f}" />\n'.format(
+                    input_dictionary["xy"],
+                    input_dictionary["xz"],
+                    input_dictionary["yz"],
+                ),
+            ]
+        )
     else:
         lines_to_write[-1] = "".join([lines_to_write[-1], '" />\n'])
     # Position
@@ -741,12 +760,16 @@ def write_morphology_xml(
         lines_to_write.append(" ".join(str(coord) for coord in angle_data) + "\n")
     lines_to_write.append("</angle>\n")
     # Dihedral
-    lines_to_write.append('<dihedral num="{:d}">\n'.format(input_dictionary["dihedral"]))
+    lines_to_write.append(
+        '<dihedral num="{:d}">\n'.format(input_dictionary["dihedral"])
+    )
     for dihedral_data in input_dictionary["dihedral"]:
         lines_to_write.append(" ".join(str(coord) for coord in dihedral_data) + "\n")
     lines_to_write.append("</dihedral>\n")
     # Improper
-    lines_to_write.append('<improper num="{:d}">\n'.format(input_dictionary["improper"]))
+    lines_to_write.append(
+        '<improper num="{:d}">\n'.format(input_dictionary["improper"])
+    )
     for improper_data in input_dictionary["improper"]:
         lines_to_write.append(" ".join(str(coord) for coord in improper_data) + "\n")
     lines_to_write.append("</improper>\n")
@@ -1137,7 +1160,13 @@ def determine_event_tau(
                             write_to_file(
                                 log_file,
                                 [
-                                    "Attempted {0:d} times to obtain a {1:s}-type event timescale withing the tolerances: {2:.2e} <= tau < {3:.2e} with the given rate {4:.2e}, all without success. Permitting the event anyway with the next random number...".format(maximum_attempts, event_type, fastest_event, slowest_event, rate)
+                                    "Attempted {0:d} times to obtain a {1:s}-type event timescale withing the tolerances: {2:.2e} <= tau < {3:.2e} with the given rate {4:.2e}, all without success. Permitting the event anyway with the next random number...".format(
+                                        maximum_attempts,
+                                        event_type,
+                                        fastest_event,
+                                        slowest_event,
+                                        rate,
+                                    )
                                 ],
                             )
 

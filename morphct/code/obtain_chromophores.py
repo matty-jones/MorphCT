@@ -314,7 +314,11 @@ def calculate_chromophores(
     old_keys = sorted(chromophore_data.keys())
     for new_key, old_key in enumerate(old_keys):
         chromophore_data[new_key] = chromophore_data.pop(old_key)
-    print("{:d} chromophores successfully identified!".format(len(list(chromophore_data.keys()))))
+    print(
+        "{:d} chromophores successfully identified!".format(
+            len(list(chromophore_data.keys()))
+        )
+    )
     # Now let's create a list of all the chromophore instances which contain all
     # of the information we could ever want about them.
     chromophore_instances = []
@@ -390,7 +394,11 @@ def calculate_chromophores_AA(
     old_keys = sorted(chromophore_data.keys())
     for new_key, old_key in enumerate(old_keys):
         chromophore_data[new_key] = chromophore_data.pop(old_key)
-    print("{:d} chromophores successfully identified!".format(len(list(chromophore_data.keys()))))
+    print(
+        "{:d} chromophores successfully identified!".format(
+            len(list(chromophore_data.keys()))
+        )
+    )
     # Now let's create a list of all the chromophore instances which contain all
     # of the information we could ever want about them.
     chromophore_instances = []

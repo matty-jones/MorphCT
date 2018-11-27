@@ -580,7 +580,15 @@ class carrier:
                     hf.write_to_file(
                         log_file,
                         [
-                            "".join(["ID = {:d}, current posn =".format(ID), repr(carrier.current_device_posn), ", current_chromophore_ID = {:d}".format(carrier.current_chromophore.ID)])
+                            "".join(
+                                [
+                                    "ID = {:d}, current posn =".format(ID),
+                                    repr(carrier.current_device_posn),
+                                    ", current_chromophore_ID = {:d}".format(
+                                        carrier.current_chromophore.ID
+                                    ),
+                                ]
+                            )
                         ],
                     )
                 print("NO VIABLE HOPS FOUND")
@@ -630,14 +638,32 @@ class carrier:
                 hf.write_to_file(
                     log_file,
                     [
-                        "".join(["EVENT: Electron left out of {0:s} of device! New number of extractions: {0:d} after {1:d} iterations (global_time = {2:.2e})".format(self.destination_chromophore, number_of_extractions, KMC_iterations, global_time)])
+                        "".join(
+                            [
+                                "EVENT: Electron left out of {0:s} of device! New number of extractions: {0:d} after {1:d} iterations (global_time = {2:.2e})".format(
+                                    self.destination_chromophore,
+                                    number_of_extractions,
+                                    KMC_iterations,
+                                    global_time,
+                                )
+                            ]
+                        )
                     ],
                 )
             else:
                 hf.write_to_file(
                     log_file,
                     [
-                        "".join(["EVENT: Hole left out of {0:s} of device! New number of extractions: {0:d} after {1:d} iterations (global_time = {2:.2e})".format(self.destination_chromophore, number_of_extractions, KMC_iterations, global_time)])
+                        "".join(
+                            [
+                                "EVENT: Hole left out of {0:s} of device! New number of extractions: {0:d} after {1:d} iterations (global_time = {2:.2e})".format(
+                                    self.destination_chromophore,
+                                    number_of_extractions,
+                                    KMC_iterations,
+                                    global_time,
+                                )
+                            ]
+                        )
                     ],
                 )
             # Now ensure that it doesn't get queued up again
@@ -806,7 +832,9 @@ def plot_Z_profile(carrier, z_dim_size, output_dir):
             colour = "b"
         else:
             colour = "r"
-            file_name = "{0:s}carrier_{1:05d}_Z_profile.pdf".format(output_dir, carrier.ID)
+            file_name = "{0:s}carrier_{1:05d}_Z_profile.pdf".format(
+                output_dir, carrier.ID
+            )
     plt.figure()
     plt.plot(x_vals, y_vals, color=colour)
     plt.ylim([0, z_dim_size])
@@ -1098,7 +1126,12 @@ def get_next_dark_event(queue, electrode):
     requeued_event = copy.deepcopy(next_event[2])
     requeued_event.calculate_inject_time()
     queue = push_to_queue(
-        queue, (requeued_event.inject_time, "".join([electrode, "-injection"]), requeued_event)
+        queue,
+        (
+            requeued_event.inject_time,
+            "".join([electrode, "-injection"]),
+            requeued_event,
+        ),
     )
     return next_event, queue
 
@@ -1138,7 +1171,9 @@ def push_to_queue(queue, event):
             "".join([" Event = ", event])
         ]
         if event[2].history is not None:
-            log_line_to_write.append("This carrier has completed {:d} hops.".format(len(event[2].history)))
+            log_line_to_write.append(
+                "This carrier has completed {:d} hops.".format(len(event[2].history))
+            )
         hf.write_to_file(log_file, log_line_to_write)
         try:
             event[2].__dict__.pop("history")
@@ -1149,8 +1184,18 @@ def push_to_queue(queue, event):
             hf.write_to_file(
                 log_file,
                 [
-                    "".join(["Current chromophore = ", repr(event[2].current_chromophore.__dict__)]),
-                    "".join(["Destination chromophore = ", repr(event[2].destination_chromophore.__dict__)]),
+                    "".join(
+                        [
+                            "Current chromophore = ",
+                            repr(event[2].current_chromophore.__dict__),
+                        ]
+                    ),
+                    "".join(
+                        [
+                            "Destination chromophore = ",
+                            repr(event[2].destination_chromophore.__dict__),
+                        ]
+                    ),
                 ],
             )
         except AttributeError:
@@ -1160,7 +1205,12 @@ def push_to_queue(queue, event):
             hf.write_to_file(
                 log_file,
                 [
-                    " ".join([str(carrier.current_device_posn), str(carrier.current_chromophore.posn)])
+                    " ".join(
+                        [
+                            str(carrier.current_device_posn),
+                            str(carrier.current_chromophore.posn),
+                        ]
+                    )
                 ],
             )
         for carrier1ID, carrier1 in global_carrier_dict.items():
@@ -1176,7 +1226,11 @@ def push_to_queue(queue, event):
                 hf.write_to_file(
                     log_file,
                     [
-                        "{0:d} {1:d} {2:f}".format(carrier1ID, carrier2ID, hf.calculate_separation(carrier1posn, carrier2posn))
+                        "{0:d} {1:d} {2:f}".format(
+                            carrier1ID,
+                            carrier2ID,
+                            hf.calculate_separation(carrier1posn, carrier2posn),
+                        )
                     ],
                 )
         raise keyboard_interrupt
@@ -1373,8 +1427,11 @@ def execute(
     hf.write_to_file(
         log_file, ["Current E-field value = {:s} Vm^{-1}".format(current_field_value)]
     )
-    output_figures_dir = (
-        os.path.join(parameter_dict["output_device_dir"], parameter_dict["device_morphology"], "figures", str(voltage_val))
+    output_figures_dir = os.path.join(
+        parameter_dict["output_device_dir"],
+        parameter_dict["device_morphology"],
+        "figures",
+        str(voltage_val),
     )
 
     # DEBUG
@@ -1566,7 +1623,13 @@ def execute(
                 hf.write_to_file(
                     log_file,
                     [
-                        "Current runtime = {0:d} s, with {1:d} events currently in the queue and {2:d} carriers currently in the system. Currently completed {3:d} iterations and simulated {4:.2e} s.".format(t1 - t0, len(event_queue), len(global_carrier_dict.keys()), KMC_iterations, global_time)
+                        "Current runtime = {0:d} s, with {1:d} events currently in the queue and {2:d} carriers currently in the system. Currently completed {3:d} iterations and simulated {4:.2e} s.".format(
+                            t1 - t0,
+                            len(event_queue),
+                            len(global_carrier_dict.keys()),
+                            KMC_iterations,
+                            global_time,
+                        )
                     ],
                 )
                 already_printed = True
@@ -1597,7 +1660,19 @@ def execute(
                 hf.write_to_file(
                     log_file,
                     [
-                        "".join(["EVENT: Photoinjection #{:d} into ".format(number_of_photoinjections), repr(random_device_position), " (which has type ", repr(device_array[tuple(random_device_position)]), ") after {0:d} iterations (global_time = {1:.2e})".format(KMC_iterations, global_time)])
+                        "".join(
+                            [
+                                "EVENT: Photoinjection #{:d} into ".format(
+                                    number_of_photoinjections
+                                ),
+                                repr(random_device_position),
+                                " (which has type ",
+                                repr(device_array[tuple(random_device_position)]),
+                                ") after {0:d} iterations (global_time = {1:.2e})".format(
+                                    KMC_iterations, global_time
+                                ),
+                            ]
+                        )
                     ],
                 )
                 injected_exciton = exciton(
@@ -1653,8 +1728,22 @@ def execute(
                         hf.write_to_file(
                             log_file,
                             [
-                                " ".join(["Exciton depositing electron at", repr(injected_exciton.current_device_posn), repr(injected_exciton.electron_chromophore.posn)]),
-                                " ".join(["Exciton depositing hole at", repr(injected_exciton.current_device_posn), repr(injected_exciton.hole_chromophore.posn)]),
+                                " ".join(
+                                    [
+                                        "Exciton depositing electron at",
+                                        repr(injected_exciton.current_device_posn),
+                                        repr(
+                                            injected_exciton.electron_chromophore.posn
+                                        ),
+                                    ]
+                                ),
+                                " ".join(
+                                    [
+                                        "Exciton depositing hole at",
+                                        repr(injected_exciton.current_device_posn),
+                                        repr(injected_exciton.hole_chromophore.posn),
+                                    ]
+                                ),
                             ],
                         )
                         # Now determine the behaviour of both carriers, and add
@@ -1725,7 +1814,22 @@ def execute(
                     hf.write_to_file(
                         log_file,
                         [
-                            "".join(["EVENT: Dark current injection from the {0:s} #{1:d} into ".format(inject_site.electrode, number_of_injections), repr(inject_site.device_posn), " (which has type ", repr(device_array[tuple(inject_site.device_posn)]), ") chromophore number {0:d} after {1:d} iterations (global_time = {2:.2e})",format(inject_site.chromophore.ID, KMC_iterations, global_time)])
+                            "".join(
+                                [
+                                    "EVENT: Dark current injection from the {0:s} #{1:d} into ".format(
+                                        inject_site.electrode, number_of_injections
+                                    ),
+                                    repr(inject_site.device_posn),
+                                    " (which has type ",
+                                    repr(device_array[tuple(inject_site.device_posn)]),
+                                    ") chromophore number {0:d} after {1:d} iterations (global_time = {2:.2e})",
+                                    format(
+                                        inject_site.chromophore.ID,
+                                        KMC_iterations,
+                                        global_time,
+                                    ),
+                                ]
+                            )
                         ],
                     )
                     # Inject the carrier
@@ -1755,7 +1859,14 @@ def execute(
                             hf.write_to_file(
                                 log_file,
                                 [
-                                    " ".join([repr(carrier_from_list.current_device_posn), repr(carrier_from_list.current_chromophore.posn)])
+                                    " ".join(
+                                        [
+                                            repr(carrier_from_list.current_device_posn),
+                                            repr(
+                                                carrier_from_list.current_chromophore.posn
+                                            ),
+                                        ]
+                                    )
                                 ],
                             )
                         hf.write_to_file(
@@ -1830,7 +1941,9 @@ def execute(
                         hf.write_to_file(
                             log_file,
                             [
-                                "EVENT: Exciton dissociating after {0:d} iterations (global_time = {1:.2e})".format(KMC_iterations, global_time)
+                                "EVENT: Exciton dissociating after {0:d} iterations (global_time = {1:.2e})".format(
+                                    KMC_iterations, global_time
+                                )
                             ],
                         )
                         number_of_dissociations += 1
@@ -1902,7 +2015,9 @@ def execute(
                         hf.write_to_file(
                             log_file,
                             [
-                                "EVENT: Exciton #{0:d} recombining after {1:d} iterations (global_time = {2:.2e})".format(hopping_exciton.ID, KMC_iterations, global_time)
+                                "EVENT: Exciton #{0:d} recombining after {1:d} iterations (global_time = {2:.2e})".format(
+                                    hopping_exciton.ID, KMC_iterations, global_time
+                                )
                             ],
                         )
                         number_of_recombinations += 1
@@ -2007,7 +2122,9 @@ def execute(
                 hf.write_to_file(
                     log_file,
                     [
-                        "EVENT: Carrier recombination check after {0:d} iterations (global_time = {1:.2e})".format(KMC_iterations, global_time)
+                        "EVENT: Carrier recombination check after {0:d} iterations (global_time = {1:.2e})".format(
+                            KMC_iterations, global_time
+                        )
                     ],
                 )
                 # A recombination event is about to occur. At this point, we
@@ -2060,13 +2177,17 @@ def execute(
                     hf.write_to_file(
                         log_file,
                         [
-                            "{0:f} <= {1:f}".format(separation, parameter_dict["coulomb_capture_radius"])
+                            "{0:f} <= {1:f}".format(
+                                separation, parameter_dict["coulomb_capture_radius"]
+                            )
                         ],
                     )
                     hf.write_to_file(
                         log_file,
                         [
-                            "EVENT: Carrier recombination succeeded after {0:d} iterations (global_time = {1:.2e})".format(KMC_iterations, global_time)
+                            "EVENT: Carrier recombination succeeded after {0:d} iterations (global_time = {1:.2e})".format(
+                                KMC_iterations, global_time
+                            )
                         ],
                     )
                     # Carriers are in range, so recombine them
@@ -2094,13 +2215,17 @@ def execute(
                     hf.write_to_file(
                         log_file,
                         [
-                            "{0:f} > {1:f}".format(separation, parameter_dict["coulomb_capture_radius"])
+                            "{0:f} > {1:f}".format(
+                                separation, parameter_dict["coulomb_capture_radius"]
+                            )
                         ],
                     )
                     hf.write_to_file(
                         log_file,
                         [
-                            "EVENT: Carrier recombination failed after {0:d} iterations (global_time = {1:.2e})".format(KMC_iterations, global_time)
+                            "EVENT: Carrier recombination failed after {0:d} iterations (global_time = {1:.2e})".format(
+                                KMC_iterations, global_time
+                            )
                         ],
                     )
                     # Carriers are no longer in range, so the recombination fails.
@@ -2123,9 +2248,13 @@ def execute(
                 "Kill command recieved...",
                 "Plotting output graphs before terminating...",
                 " ".join(["---=== Results from CPU rank", sys.argv[2], "===---"]),
-                "Run terminated after {0:d} iterations (global_time = {1:.2e}) after {2:.2f} seconds.".format(KMC_iterations, global_time, time),
+                "Run terminated after {0:d} iterations (global_time = {1:.2e}) after {2:.2f} seconds.".format(
+                    KMC_iterations, global_time, time
+                ),
                 "Number of photoinjections = {:d}".format(number_of_photoinjections),
-                "Number of cathode injections = {:d}".format(number_of_cathode_injections),
+                "Number of cathode injections = {:d}".format(
+                    number_of_cathode_injections
+                ),
                 "Number of anode injections = {:d}".format(number_of_anode_injections),
                 "Number of dissociations = {:d}".format(number_of_dissociations),
                 "Number of recombinations = {:d}".format(number_of_recombinations),
@@ -2222,7 +2351,9 @@ def execute(
             "Plotting output graphs...",
             " ".join(["---=== Results from CPU rank", sys.argv[2], "===---"]),
             "Simulation voltage = {:.2f}".format(voltage_val),
-            "Run completed after {0:d} iterations (global_time = {1:.2e}) after {2:.2f} seconds.".format(KMC_iterations, global_time, time),
+            "Run completed after {0:d} iterations (global_time = {1:.2e}) after {2:.2f} seconds.".format(
+                KMC_iterations, global_time, time
+            ),
             "Number of photoinjections = {:d}".format(number_of_photoinjections),
             "Number of cathode injections = {:d}".format(number_of_cathode_injections),
             "Number of anode injections = {:d}".format(number_of_anode_injections),
@@ -2288,9 +2419,15 @@ if __name__ == "__main__":
             pass
     hf.write_to_file(
         log_file,
-        ["".join(["Found {:d} jobs to run:".format(len(jobs_to_run)), repr(jobs_to_run)])],
+        [
+            "".join(
+                ["Found {:d} jobs to run:".format(len(jobs_to_run)), repr(jobs_to_run)]
+            )
+        ],
     )
-    hf.write_to_file(log_file, ["Using random number seed {:d}".format(int(sys.argv[3]))])
+    hf.write_to_file(
+        log_file, ["Using random number seed {:d}".format(int(sys.argv[3]))]
+    )
     if parameter_dict["disable_coulombic"] is True:
         hf.write_to_file(log_file, ["COULOMBIC INTERACTIONS DISABLED"])
     if parameter_dict["disable_dark_injection"] is True:

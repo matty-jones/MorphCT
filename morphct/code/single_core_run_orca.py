@@ -74,7 +74,9 @@ if __name__ == "__main__":
     except KeyError:
         orca_path = distutils.spawn.find_executable("orca")
     input_dir = os.path.join(morph_orca_dir, "chromophores", "input_orca")
-    log_file = os.path.join(morph_output_dir, "chromophores", "orca_log_{:02d}.log".format(CPU_rank))
+    log_file = os.path.join(
+        morph_output_dir, "chromophores", "orca_log_{:02d}.log".format(CPU_rank)
+    )
     output_dir = os.path.join(morph_orca_dir, "chromophores", "output_orca")
     pickle_file_name = input_dir.replace("input_orca", "orca_jobs.pickle")
     with open(pickle_file_name, "rb") as pickle_file:
@@ -96,7 +98,14 @@ if __name__ == "__main__":
                 hf.write_to_file(
                     log_file,
                     [
-                        "".join([output_file_name, " already exists, and overwrite_current_data is ", repr(overwrite), "! skipping..."])
+                        "".join(
+                            [
+                                output_file_name,
+                                " already exists, and overwrite_current_data is ",
+                                repr(overwrite),
+                                "! skipping...",
+                            ]
+                        )
                     ],
                 )
                 continue
@@ -120,18 +129,25 @@ if __name__ == "__main__":
         orca_stdout = orca_shell_output[0].decode().split("\n")
         orca_stderr = orca_shell_output[1].decode().split("\n")
         # Write the outputFile:
-        hf.write_to_file(
-            output_file_name,
-            orca_stdout,
-            mode="output_file",
-        )
+        hf.write_to_file(output_file_name, orca_stdout, mode="output_file")
         if delete_inputs:
             output_ok = check_job_output(orca_stdout, job)
             if output_ok:
-                hf.write_to_file(log_file, ["Output OK and remove_orca_inputs set.",
-                                 "".join(["Deleting ", os.path.splitext(job)[0], " inputs..."])])
-                for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges",
-                                  "_property.txt"]:
+                hf.write_to_file(
+                    log_file,
+                    [
+                        "Output OK and remove_orca_inputs set.",
+                        "".join(["Deleting ", os.path.splitext(job)[0], " inputs..."]),
+                    ],
+                )
+                for extension in [
+                    ".inp",
+                    ".gbw",
+                    ".prop",
+                    ".tmp",
+                    ".ges",
+                    "_property.txt",
+                ]:
                     try:
                         os.remove(job.replace(".inp", extension))
                     except FileNotFoundError:
@@ -155,7 +171,11 @@ if __name__ == "__main__":
             time_units = "days."
         hf.write_to_file(
             log_file,
-            ["Job {0:s} completed in {1:.2f} {2:s}\n".format(job, elapsed_time, time_units)],
+            [
+                "Job {0:s} completed in {1:.2f} {2:s}\n".format(
+                    job, elapsed_time, time_units
+                )
+            ],
         )
         # Now check the output file and delete the input files if we don't need them
         # any more
@@ -173,6 +193,7 @@ if __name__ == "__main__":
         elapsed_time /= 86400.0
         time_units = "days."
     hf.write_to_file(
-        log_file, ["All jobs completed in {0:.2f} {1:s}".format(elapsed_time, time_units)]
+        log_file,
+        ["All jobs completed in {0:.2f} {1:s}".format(elapsed_time, time_units)],
     )
     hf.write_to_file(log_file, ["Exiting normally..."])
