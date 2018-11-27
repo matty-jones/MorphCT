@@ -43,8 +43,13 @@ class TestCommand(object):
         )
 
     def compare_equal(
-        self, expected, response=None, function=None, posn_args=None, kw_args=None,
-        dict_key=None
+        self,
+        expected,
+        response=None,
+        function=None,
+        posn_args=None,
+        kw_args=None,
+        dict_key=None,
     ):
         if function is not None:
             response = self.fn_response(function, posn_args, kw_args)
@@ -92,9 +97,16 @@ class TestCommand(object):
     def check_identical(self, response, expected, dict_key=None):
         if dict_key is not None:
             assert_string = " ".join(
-            ["Expected", repr(expected), "for key", repr(dict_key), "but got",
-             repr(response), "instead."]
-        )
+                [
+                    "Expected",
+                    repr(expected),
+                    "for key",
+                    repr(dict_key),
+                    "but got",
+                    repr(response),
+                    "instead.",
+                ]
+            )
         else:
             assert_string = " ".join(
                 ["Expected", repr(expected), "but got", repr(response), "instead."]
@@ -113,15 +125,17 @@ class TestCommand(object):
                 self.compare_equal(
                     response[expected_row_id, expected_col_id],
                     expected[expected_row_id, expected_col_id],
-                    dict_key=dict_key
+                    dict_key=dict_key,
                 )
 
     def check_dictionary(self, response, expected, dict_key=None):
         for expected_key, expected_val in expected.items():
             print("".join(["Checking key ", str(expected_key), "..."]))
-            self.compare_equal(response[expected_key], expected_val,
-                               dict_key=" | ".join([repr(dict_key),
-                                                    repr(expected_key)]))
+            self.compare_equal(
+                response[expected_key],
+                expected_val,
+                dict_key=" | ".join([repr(dict_key), repr(expected_key)]),
+            )
 
     def confirm_file_exists(
         self,
