@@ -55,7 +55,7 @@ def create_input_files(chromophore_list, AA_morphology_dict, parameter_dict):
                 continue
             # Update the orca input name
             input_name = chromophore1.orca_input.replace(
-                ".inp", "-%05d.inp" % (chromophore2.ID)
+                ".inp", "-{:05d}.inp".format(chromophore2.ID)
             ).replace("single", "pair")
             # Find the correct relative image for the neighbour chromophore
             chromophore2_relative_image = neighbours_image[
@@ -210,13 +210,7 @@ def write_orca_inp(
     # Create the lines to be written in the input file
     for index, position in enumerate(all_positions):
         lines_to_write.append(
-            " %s  %.5f  %.5f  %.5f\n"
-            % (
-                all_atom_types[index],
-                position[0] - central_position[0],
-                position[1] - central_position[1],
-                position[2] - central_position[2],
-            )
+            " {0:s}  {1:.5f}  {2:.5f}  {3:.5f}\n".format(all_atom_types[index], position[0] - central_position[0], position[1] - central_position[1], position[2] - central_position[2])
         )
     # Load the orca input template
     orca_temp_dir = os.path.join(PROJECT_ROOT, "templates")

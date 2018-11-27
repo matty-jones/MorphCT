@@ -1537,7 +1537,7 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
     )
     with open(tcl_file_path, "w+") as tcl_file:
         tcl_file.writelines("".join(tcl_text))
-    print("Clusters coloring written to {}".format(tcl_file_path))
+    print("Clusters coloring written to {:s}".format(tcl_file_path))
 
 
 def generate_lists_for_3d_clusters(cluster_lookup, colours, large_cluster):
@@ -2247,17 +2247,17 @@ def create_results_pickle(directory):
     keep_list = []
     for core in cores_list:
         # Check if there is already a finished KMC_results pickle
-        main = os.path.join(directory, "KMC", "KMC_results_%02d.pickle" % (int(core)))
+        main = os.path.join(directory, "KMC", "KMC_results_{:02d}.pickle".format(int(core)))
         if os.path.exists(main):
             results_pickles_list.append(main)
             keep_list.append(None)
             continue
         # If not, find the slot1 and slot2 pickle that is most recent
         slot1 = os.path.join(
-            directory, "KMC", "KMC_slot1_results_%02d.pickle" % (int(core))
+            directory, "KMC", "KMC_slot1_results_{:02d}.pickle".format(int(core))
         )
         slot2 = os.path.join(
-            directory, "KMC", "KMC_slot2_results_%02d.pickle" % (int(core))
+            directory, "KMC", "KMC_slot2_results_{:02d}.pickle".format(int(core))
         )
         if os.path.exists(slot1) and not os.path.exists(slot2):
             keep_list.append(slot1)
@@ -2267,7 +2267,7 @@ def create_results_pickle(directory):
             keep_list.append(slot1)
         else:
             keep_list.append(slot2)
-    print("%d pickle files found to combine!" % (len(keep_list)))
+    print("{:d} pickle files found to combine!".format(len(keep_list)))
     print("Combining", keep_list)
     for keeper in zip(cores_list, keep_list):
         # Skip this core if we already have a finished KMC_results for it
@@ -2603,7 +2603,7 @@ def calculate_mobility(
         current_carrier_type.capitalize(),
         "mobility for",
         directory,
-        "= %.2E +- %.2E cm^{2} V^{-1} s^{-1}" % (mobility, mob_error),
+        "= {0:.2E} +- {1:.2E} cm^{2} V^{-1} s^{-1}".format(mobility, mob_error),
     )
     print("----------====================----------")
     return mobility, mob_error, r_squared

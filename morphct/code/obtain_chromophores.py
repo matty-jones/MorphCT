@@ -20,8 +20,8 @@ class chromophore:
         sim_dims,
     ):
         self.ID = chromo_ID
-        self.orca_input = "/chromophores/input_orca/single/%05d.inp" % (self.ID)
-        self.orca_output = "/chromophores/output_orca/single/%05d.out" % (self.ID)
+        self.orca_input = "/chromophores/input_orca/single/{:05d}.inp".format(self.ID)
+        self.orca_output = "/chromophores/output_orca/single/{:05d}.out".format(self.ID)
         self.CGIDs = chromophore_CG_sites
         # Determine whether this chromophore is a donor or an acceptor, as well
         # as the site types that have been defined as the electronically active
@@ -324,8 +324,7 @@ def calculate_chromophores(
     chromophore_instances = []
     for chromo_ID, chromophore_CG_sites in chromophore_data.items():
         print(
-            "\rCalculating properties of chromophore %05d of %05d..."
-            % (chromo_ID, len(list(chromophore_data.keys())) - 1),
+            "\rCalculating properties of chromophore {:05d} of {:05d}...".format(chromo_ID, len(list(chromophore_data.keys())) - 1),
             end=" ",
         )
         if sys.stdout is not None:
@@ -404,8 +403,7 @@ def calculate_chromophores_AA(
     chromophore_instances = []
     for chromo_ID, chromophore_CG_sites in chromophore_data.items():
         print(
-            "\rCalculating properties of chromophore %05d of %05d..."
-            % (chromo_ID, len(list(chromophore_data.keys())) - 1),
+            "\rCalculating properties of chromophore {:05d} of {:05d}...".format(chromo_ID, len(list(chromophore_data.keys())) - 1),
             end=" ",
         )
         if sys.stdout is not None:
@@ -732,8 +730,7 @@ def determine_neighbours_voronoi(chromophore_list, parameter_dict, sim_dims):
 def determine_neighbours_cut_off(chromophore_list, parameter_dict, sim_dims):
     for chromophore1 in chromophore_list:
         print(
-            "\rIdentifying neighbours of chromophore %05d of %05d..."
-            % (chromophore1.ID, len(chromophore_list) - 1),
+            "\rIdentifying neighbours of chromophore {:05d} of {:05d}...".format(chromophore1.ID, len(chromophore_list) - 1),
             end=" ",
         )
         if sys.stdout is not None:

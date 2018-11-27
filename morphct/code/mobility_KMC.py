@@ -70,13 +70,13 @@ def main(
     print("Writing job pickles for each CPU...")
     running_jobs = []
     for proc_ID, jobs in enumerate(jobs_list):
-        pickle_name = os.path.join(output_dir, "KMC_data_%02d.pickle" % (proc_ID))
+        pickle_name = os.path.join(output_dir, "KMC_data_{:02d}.pickle".format(proc_ID))
         with open(pickle_name, "wb+") as pickle_file:
             pickle.dump(jobs, pickle_file)
         print(
             "KMC jobs for proc_ID",
             proc_ID,
-            "written to KMC_data_%02d.pickle" % (proc_ID),
+            "written to KMC_data_{:02d}.pickle".format(proc_ID),
         )
         # Open the required processes to execute the KMC jobs
         # Random seeding is a little weird here. If we don't generate a random
@@ -105,7 +105,7 @@ def main(
         print("Combining outputs...")
         combined_data = {}
         for proc_ID, jobs in enumerate(jobs_list):
-            file_name = os.path.join(output_dir, "KMC_results_%02d.pickle" % (proc_ID))
+            file_name = os.path.join(output_dir, "KMC_results_{:02d}.pickle".format(proc_ID))
             # The pickle was repeatedly dumped to, in order to save time.
             # Each dump stream is self-contained, so iteratively unpickle to
             # add the new data.

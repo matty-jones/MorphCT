@@ -17,7 +17,7 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title, save_f
     print("Converting images and adding annotations...")
     directory = "/".join(images_to_stitch[0].split("/")[:-2])
     for ID, image in enumerate(images_to_stitch):
-        ID_str = "%04d" % (ID)
+        ID_str = "{:04d}".format(ID)
         if image[-4:] == ".pdf":
             print("Vectorized input image detected, using supersampling...")
             sp.call(

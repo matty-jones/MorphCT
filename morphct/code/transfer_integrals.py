@@ -185,7 +185,7 @@ def revert_orca_files(input_file):
     original_lines[3] = "! ZINDO/S\n"
     for line_no in range(len(original_lines)):
         # REMOVE THE SCF ITER
-        if "%scf MazIter" in original_lines[line_no]:
+        if "%scf MaxIter" in original_lines[line_no]:
             original_lines.pop(line_no)
             break
     with open(input_file, "w+") as file_name:
@@ -332,7 +332,7 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
     # location_in_chromophore_list]}
     failed_single_chromos = {}
     for chromo_location, chromophore in enumerate(chromophore_list):
-        file_name = "single/%05d.out" % (chromophore.ID)
+        file_name = "single/{:05d}.out".format(chromophore.ID)
         print("\rDetermining energy levels for", file_name, end=" ")
         if sys.stdout is not None:
             sys.stdout.flush()
@@ -420,7 +420,7 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
         for neighbour_loc, neighbour_ID in enumerate(neighbour_IDs):
             if chromophore.ID > neighbour_ID:
                 continue
-            file_name = "pair/%05d-%05d.out" % (chromophore.ID, neighbour_ID)
+            file_name = "pair/{0:05d}-{1:05d}.out".format(chromophore.ID, neighbour_ID)
             print("\rDetermining energy levels for", file_name, end=" ")
             if sys.stdout is not None:
                 sys.stdout.flush()
