@@ -340,7 +340,8 @@ def main(
     chromophore_list,
 ):
     # Get the random seed now for all the child processes
-    np.random.seed(hf.obtain_random_seed())
+    if parameter_dict["random_seed_override"] is not None:
+        np.random.seed(parameter_dict["random_seed_override"])
     create_input_files(chromophore_list, AA_morphology_dict, parameter_dict)
     input_dir = (
         parameter_dict["output_orca_directory"]

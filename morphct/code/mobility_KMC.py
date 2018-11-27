@@ -16,7 +16,8 @@ def main(
     chromophore_list,
 ):
     # Get the random seed now for all the child processes
-    np.random.seed(hf.obtain_random_seed())
+    if parameter_dict["random_seed_override"] is not None:
+        np.random.seed(parameter_dict["random_seed_override"])
     try:
         if parameter_dict["use_average_hop_rates"]:
             print(

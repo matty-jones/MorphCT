@@ -575,7 +575,8 @@ def main(
     chromophore_list,
 ):
     # Get the random seed now for all the child processes
-    np.random.seed(hf.obtain_random_seed())
+    if parameter_dict["random_seed_override"] is not None:
+        np.random.seed(parameter_dict["random_seed_override"])
     # Main execution function for run_HOOMD that performs the required MD phases
     # First, scale the input morphology based on the pair potentials such that
     # the distances and energies are normalised to the strongest pair

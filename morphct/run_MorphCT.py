@@ -51,11 +51,6 @@ class simulation:
             parameter_dict[key] = value
         # Make the correct directory tree
         self.make_dir_tree()
-        # Change the random seed if necessary
-        if ("random_seed_override" in parameter_dict.keys()) and (
-            parameter_dict["random_seed_override"] is not None
-        ):
-            self.update_random_seed(parameter_dict["random_seed_override"])
         if self.morphology is not None:
             # Copy the current code and the parameter file for safekeeping
             self.copy_code()
@@ -224,11 +219,6 @@ class simulation:
                 )
                 device_KMC.main(parameter_dict)
                 print("---=== EXECUTION COMPLETED ===---")
-        # Return the random seed to None
-        if ("random_seed_override" in parameter_dict.keys()) and (
-            parameter_dict["random_seed_override"] is not None
-        ):
-            self.update_random_seed(None)
 
     def get_slurm_ID(self):
         # Use Squeue to determine the current slurm job number
@@ -328,31 +318,6 @@ class simulation:
                     )
                     print("mkdir -p", directory)
                     os.makedirs(directory, exist_ok=True)
-
-    def update_random_seed(self, seed):
-        lines = []
-        with open(
-            os.path.join(PROJECT_ROOT, "definitions.py"), "r"
-        ) as definitions_file:
-            lines = definitions_file.readlines()
-        for line_no, line in enumerate(lines):
-            if "RANDOM_SEED" in line:
-                print(
-                    " ".join(
-                        [
-                            "Updating the random seed from",
-                            line.split()[-1],
-                            "to",
-                            str(seed),
-                        ]
-                    )
-                )
-                lines[line_no] = "".join(["RANDOM_SEED = ", str(seed), "\n"])
-                break
-        with open(
-            os.path.join(PROJECT_ROOT, "definitions.py"), "w+"
-        ) as definitions_file:
-            definitions_file.writelines(lines)
 
     def copy_code(self):
         print("Copying code...")
