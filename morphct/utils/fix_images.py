@@ -68,7 +68,7 @@ def main():
         print("No files requested to convert!")
         exit()
     for file_name in list_of_files:
-        print("Fixing the images for", file_name + "...")
+        print("Fixing the images for {:s}...".format(file_name))
         morphology = hf.load_morphology_xml(file_name)
         morphology = zero_out_images(morphology)
         bond_dict = get_bond_dict(morphology)

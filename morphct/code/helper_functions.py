@@ -750,25 +750,27 @@ def write_morphology_xml(
         lines_to_write.append("".join([str(body_data), "\n"]))
     lines_to_write.append("</body>\n")
     # Bond
-    lines_to_write.append('<bond num="{:d}">\n'.format(input_dictionary["bond"]))
+    lines_to_write.append('<bond num="{:d}">\n'.format(len(input_dictionary["bond"])))
     for bond_data in input_dictionary["bond"]:
         lines_to_write.append(" ".join(str(coord) for coord in bond_data) + "\n")
     lines_to_write.append("</bond>\n")
     # Angle
-    lines_to_write.append('<angle num="{:d}">\n'.format(input_dictionary["angle"]))
+    lines_to_write.append(
+        '<angle num="{:d}">\n'.format(len(input_dictionary["angle"]))
+    )
     for angle_data in input_dictionary["angle"]:
         lines_to_write.append(" ".join(str(coord) for coord in angle_data) + "\n")
     lines_to_write.append("</angle>\n")
     # Dihedral
     lines_to_write.append(
-        '<dihedral num="{:d}">\n'.format(input_dictionary["dihedral"])
+        '<dihedral num="{:d}">\n'.format(len(input_dictionary["dihedral"]))
     )
     for dihedral_data in input_dictionary["dihedral"]:
         lines_to_write.append(" ".join(str(coord) for coord in dihedral_data) + "\n")
     lines_to_write.append("</dihedral>\n")
     # Improper
     lines_to_write.append(
-        '<improper num="{:d}">\n'.format(input_dictionary["improper"])
+        '<improper num="{:d}">\n'.format(len(input_dictionary["improper"]))
     )
     for improper_data in input_dictionary["improper"]:
         lines_to_write.append(" ".join(str(coord) for coord in improper_data) + "\n")

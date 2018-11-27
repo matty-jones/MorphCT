@@ -27,7 +27,7 @@ temperature = 290  # K
 
 
 def load_KMC_results_pickle(directory):
-    KMC_pickle = os.path.join(directory, "KMC", "KMCResults.pickle")
+    KMC_pickle = os.path.join(directory, "KMC", "KMC_results.pickle")
     try:
         with open(KMC_pickle, "rb") as pickle_file:
             carrier_data = pickle.load(pickle_file)
@@ -463,7 +463,7 @@ def plot_MSD(
     plt.errorbar(times, MSDs, xerr=time_standard_errors, yerr=MSD_standard_errors)
     plt.plot(fit_X, fit_Y, "r")
     plt.xlabel("Time (s)")
-    plt.ylabel("MSD (m" + r"$^{2}$)")
+    plt.ylabel(r"MSD (m$^{2}$)")
     plt.title("".join([r"$\mu_{{{0}, {1}}}$ = {2:.3e} cm$^{{{3}}}$/Vs".format(0, carrier_type[0], mobility, 2)]), y=1.1)
     # 18 for hole linear MSD, 19 for electron linear MSD
     file_name = "".join(
@@ -579,10 +579,7 @@ def plot_anisotropy(carrier_data, directory, sim_dims, carrier_type, plot3D_grap
     if not plot3D_graphs:
         return anisotropy
     print("----------====================----------")
-    print(
-        carrier_type.capitalize() + " charge transport anisotropy calculated as",
-        anisotropy,
-    )
+    print("{0:s} charge transport anisotropy calculated as {1:f}".format(carrier_type.capitalize(), anisotropy))
     print("----------====================----------")
     # Reduce number of plot markers
     fig = plt.gcf()
@@ -700,7 +697,7 @@ def plot_anisotropy(carrier_data, directory, sim_dims, carrier_type, plot3D_grap
         figure_index = "08"
     elif carrier_type == "electron":
         figure_index = "09"
-    plt.title("Anisotropy (" + carrier_type.capitalize() + ")", y=1.1)
+    plt.title("Anisotropy ({:s})".format(carrier_type.capitalize()), y=1.1)
     file_name = os.path.join(
         directory,
         "figures",
@@ -713,15 +710,15 @@ def plot_anisotropy(carrier_data, directory, sim_dims, carrier_type, plot3D_grap
 
 
 def get_temp_val(string):
-    hyphen_list = hf.find_index(string, "-")
-    temp_val = float(string[hyphen_list[-2] + 2 : hyphen_list[-1]])
-    return temp_val
+    # hyphen_list = hf.find_index(string, "-")
+    # temp_val = float(string[hyphen_list[-2] + 2 : hyphen_list[-1]])
+    return string.split("-")[-2][2:]
 
 
 def get_frame_val(string):
-    hyphen_list = hf.find_index(string, "-")
-    temp_val = int(string[hyphen_list[0] + 1 : hyphen_list[1]])
-    return temp_val
+    # hyphen_list = hf.find_index(string, "-")
+    # temp_val = int(string[hyphen_list[0] + 1 : hyphen_list[1]])
+    return string.split("-")[0][1:]
 
 
 def plot_temperature_progression(
@@ -733,21 +730,21 @@ def plot_temperature_progression(
     yvals = list(np.array(mobility_data)[:, 0])
     yerrs = list(np.array(mobility_data)[:, 1])
     plt.xlabel(x_label)
-    plt.ylabel("Mobility (cm" + r"$^{2}$ " + "V" + r"$^{-1}$" + r"s$^{-1}$)")
+    plt.ylabel(r"Mobility (cm$^{2}$ / Vs)")
     plt.errorbar(xvals, yvals, xerr=0, yerr=yerrs)
     plt.yscale("log")
     file_name = "".join(["mobility_", carrier_type, ".png"])
     plt.savefig(file_name, dpi=300)
     plt.clf()
-    print("Figure saved as " + file_name)
+    print("Figure saved as {:s}".format(file_name))
 
     plt.plot(temp_data, anisotropy_data, c="r")
     plt.xlabel(x_label)
-    plt.ylabel(r"$\kappa$" + " (Arb. U)")
+    plt.ylabel(r"$\kappa$ (Arb. U)")
     file_name = "".join(["anisotropy_", carrier_type, ".png"])
     plt.savefig(file_name, dpi=300)
     plt.clf()
-    print("Figure saved as " + file_name)
+    print("Figure saved as {:s}".format(file_name))
 
 
 def calculate_lambda_ij(chromo_length):
@@ -894,7 +891,7 @@ def plot_neighbour_hist(
                 sep_cuts[material_type],
             )
             plt.axvline(float(sep_cuts[material_type]), c="k")
-        plt.xlabel(material[material_type].capitalize() + r" r$_{ij}$" + " (A)")
+        plt.xlabel("".join([material[material_type].capitalize(), r" r$_{i,j}$ (\AA)"]))
         plt.ylabel("Frequency (Arb. U.)")
         # 04 for donor neighbour hist, 05 for acceptor neighbour hist
         file_name = "".join(
@@ -972,7 +969,7 @@ def plot_orientation_hist(
                 o_cuts[material_type],
             )
             plt.axvline(float(o_cuts[material_type]), c="k")
-        plt.xlabel(material[material_type].capitalize() + r" orientations" + " (Deg)")
+            plt.xlabel(r"{:s} Orientations (Deg)".format(material[material_type].capitalize()))
         plt.xlim([0, 90])
         plt.xticks(np.arange(0, 91, 15))
         plt.ylabel("Frequency (Arb. U.)")
@@ -1477,27 +1474,27 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
         if len(chromo_IDs) > large_cluster:  # Only make clusters that are ``large''
             inclust = ""
             for chromo in chromo_IDs:
-                inclust += "{} ".format(chromo)
+                inclust = "".join([inclust, "{:s} ".format(chromo)])
             tcl_text += ["mol material AOEdgy;"]  # Use AOEdgy if donor
             # The +1 makes the largest cluster red rather than blue (looks better
             # with AO, DoF, shadows)
-            tcl_text += ["mol color ColorID {};".format(colors[count + 1 % 32])]
+            tcl_text += ["mol color ColorID {:s};".format(colors[count + 1 % 32])]
             # VMD has 32 unique colors
             tcl_text += ["mol representation VDW 4.0 8.0;"]
-            tcl_text += ["mol selection resid {};".format(inclust)]
+            tcl_text += ["mol selection resid {:s};".format(inclust)]
             tcl_text += ["mol addrep 0;"]
             count += 1
         chromo_IDs = [chromo.ID for chromo in chromos if chromo.species == "acceptor"]
         if len(chromo_IDs) > large_cluster:
             inclust = ""
             for chromo in chromo_IDs:
-                inclust += "{} ".format(chromo)
+                inclust += "".join([inclust, "{:s} ".format(chromo)])
             tcl_text += ["mol material Glass2;"]  # Use Glass2 if acceptor
             # The +1 makes the largest cluster red rather than blue (looks better
             # with AO, DoF, shadows)
-            tcl_text += ["mol color ColorID {};".format(colors[count + 1 % 32])]
+            tcl_text += ["mol color ColorID {:s};".format(colors[count + 1 % 32])]
             tcl_text += ["mol representation VDW 4.0 8.0;"]
-            tcl_text += ["mol selection resid {};".format(inclust)]
+            tcl_text += ["mol selection resid {:s};".format(inclust)]
             tcl_text += ["mol addrep 0;"]
             count += 1
     tcl_file_path = os.path.join(
@@ -1811,7 +1808,7 @@ def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name, lamb
     if lambda_ij is not None:
         plt.axvline(-float(lambda_ij), c="k")
     plt.ylabel("Frequency (Arb. U.)")
-    plt.xlabel(data_type.capitalize() + r" $\Delta E_{ij}$ (eV)")
+    plt.xlabel("".join([data_type.capitalize(), r" $\Delta E_{i,j}$ (eV)"]))
     #plt.xlim([-0.5, 0.5])
     plt.savefig(file_name, dpi=300)
     plt.close()
@@ -1835,7 +1832,7 @@ def plot_mixed_hopping_rates(
     chromo_species = ["donor", "acceptor"]
     property_lists = {}
     for property_name in [
-        hop_type + "_" + hop_target + "_" + hop_property + "_" + species
+        "_".join([hop_type, hop_target, hop_property, species])
         for hop_type in hop_types
         for hop_target in hop_targets
         for hop_property in hop_properties
@@ -2159,7 +2156,7 @@ def plot_stacked_hist_rates(data1, data2, labels, data_type, file_name):
         label=labels,
     )
     plt.ylabel("Frequency (Arb. U.)")
-    plt.xlabel(data_type.capitalize() + r" k$_{i,j}$ (s" + r"$^{-1}$" + ")")
+    plt.xlabel("".join([data_type.capitalize(), r" k$_{i,j}$ (s$^{-1}$)"]))
     plt.xlim([1, 1E18])
     plt.xticks([1E0, 1E3, 1E6, 1E9, 1E12, 1E15, 1E18])
     # plt.ylim([0, 14000])
@@ -2181,7 +2178,7 @@ def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name, cut_off):
         label=labels,
     )
     plt.ylabel("Frequency (Arb. U.)")
-    plt.xlabel(data_type.capitalize() + r" J$_{i,j}$ (eV)")
+    plt.xlabel("".join([data_type.capitalize(), r" J$_{i,j}$ (eV)"]))
     #plt.xlim([0, 1.2])
     plt.ylim([0, np.max(n) * 1.02])
     if cut_off is not None:
@@ -2198,7 +2195,7 @@ def write_CSV(data_dict, directory):
         CSV_writer = csv.writer(CSV_file)
         for key in sorted(data_dict.keys()):
             CSV_writer.writerow([key, data_dict[key]])
-    print("CSV file written to " + CSV_file_name)
+    print("CSV file written to {:s}".format(CSV_file_name))
 
 
 def create_results_pickle(directory):
@@ -2389,7 +2386,7 @@ def plot_TI_hist(
         )
         plt.ylim([0, np.max(n) * 1.02])
         plt.ylabel("Frequency (Arb. U.)")
-        plt.xlabel(material_type.capitalize() + r" J$_{i,j}$ (eV)")
+        plt.xlabel("".join([material[material_index].capitalize(), r" J$_{i,j}$ (eV)"]))
         plt.legend(loc=1, prop={"size": 18})
         # 10 for donor TI mols dist, 11 for acceptor TI mols dist,
         file_name = "".join(
@@ -2829,7 +2826,7 @@ def main():
         carrier_history_dict = {}
         for carrier_type_index, carrier_data in enumerate(complete_carrier_data):
             current_carrier_type = complete_carrier_types[carrier_type_index]
-            print("Considering the transport of", current_carrier_type + "...")
+            print("Considering the transport of {:s}...".format(current_carrier_type))
             print("Obtaining mean squared displacements...")
             carrier_history, times, MSDs, time_standard_errors, MSD_standard_errors = get_carrier_data(
                 carrier_data
@@ -2887,10 +2884,11 @@ def main():
             elif current_carrier_type == "electron":
                 electron_anisotropy_data.append(anisotropy)
                 electron_mobility_data.append([mobility, mob_error])
+            lower_carrier_type = current_carrier_type.lower()
             data_dict["name"] = os.path.split(directory)[1]
-            data_dict[current_carrier_type.lower() + "_anisotropy"] = anisotropy
-            data_dict[current_carrier_type.lower() + "_mobility"] = mobility
-            data_dict[current_carrier_type.lower() + "_mobility_r_squared"] = r_squared
+            data_dict["{:s}_anisotropy".format(lower_carrier_type)] = anisotropy
+            data_dict["{:s}_mobility".format(lower_carrier_type)] = mobility
+            data_dict["{:s}_mobility_r_squared".format(lower_carrier_type)] = r_squared
         # Now plot the distributions!
         temp_dir = os.path.join(directory, "figures")
         chromo_to_mol_ID = determine_molecule_IDs(

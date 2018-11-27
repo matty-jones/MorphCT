@@ -48,7 +48,7 @@ def add_underscores(old_parameter_dict):
         "DOS",
         "AAID",
     ]
-    leave_these_capitalised += [abbrev + "s" for abbrev in leave_these_capitalised]
+    leave_these_capitalised += ["".join([abbrev, "s"]) for abbrev in leave_these_capitalised]
     new_parameter_dict = {}
     for key, value in old_parameter_dict.items():
         # Some hardcoded ones because I can't work out the regex
@@ -222,10 +222,7 @@ def convert_chromos(
     print("Updating the chromophore list (this might take a few minutes)...")
     for old_chromo in old_chromophore_list:
         print(
-            "\rUpdating chromophore",
-            old_chromo.ID + 1,
-            "of",
-            len(old_chromophore_list),
+            "\rUpdating chromophore {0:d} of {1:d}...".format(old_chromo.ID + 1, len(old_chromophore_list)),
             end=" ",
         )
         # Set up an empty chromophore instance using the parameter_dict

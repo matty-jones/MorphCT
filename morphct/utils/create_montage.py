@@ -10,7 +10,7 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title, save_f
     if title is None:
         title = morphology_name
     try:
-        os.remove("./" + title.replace(" ", "_") + ".png")
+        os.remove("".join("./", title.replace(" ", "_") + ".png"))
     except:
         pass
     # Then load all the files
@@ -19,15 +19,6 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title, save_f
     for ID, image in enumerate(images_to_stitch):
         ID_str = "%04d" % (ID)
         if image[-4:] == ".pdf":
-            ## Load image using supersampling to keep the quality high,
-            ## and "crop" to add a section of whitespace to the left
-            # sp.call(["convert", "-density", "500", image, "-resize", "20%",
-            #         "-gravity", "West", "-bordercolor", "white",
-            #         "-border", "7%x0", IDStr + "_crop.png"])
-            ## Now add the annotation
-            # sp.call(["convert", IDStr + "_crop.png", "-font", "Arial-Black",
-            #         "-pointsize", "72", "-gravity", "NorthWest",
-            #         "-annotate", "0", str(ID+1) + ")", IDStr + "_temp.png"])
             print("Vectorized input image detected, using supersampling...")
             sp.call(
                 [
@@ -49,21 +40,11 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title, save_f
                     "+0+0",
                     "-annotate",
                     "0",
-                    str(ID + 1) + ")",
+                    "{:d})".format(ID + 1),
                     os.path.join(directory, "".join([ID_str, "_temp.png"])),
                 ]
             )
         else:
-            # Rasterized format, so no supersampling
-            # sp.call(["convert", image, "-gravity", "West",
-            #         "-bordercolor", "white", "-border", "7%x0",
-            #         IDStr + "_crop.png"])
-            # Now add the annotation
-            # sp.call(['convert', image, '-font', 'Arial-Black',
-            #         '-pointsize', '72', '-gravity', 'NorthWest',
-            #         '-bordercolor', 'white', '-border', '140x80',
-            #         '-page', '+0+0', '-annotate', '0',
-            #         str(ID+1) + ')', IDStr + '_temp.png'])
             sp.call(
                 [
                     "convert",
@@ -82,7 +63,7 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title, save_f
                     "+0+0",
                     "-annotate",
                     "+40+0",
-                    str(ID + 1) + ")",
+                    "{:d})".format(ID + 1),
                     os.path.join(directory, "".join([ID_str, "_temp.png"])),
                 ]
             )
