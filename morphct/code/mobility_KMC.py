@@ -21,8 +21,13 @@ def main(
     try:
         if parameter_dict["use_average_hop_rates"]:
             print(
-                "Be advised: use_average_hop_rates is set to",
-                repr(parameter_dict["use_average_hop_rates"]) + ".",
+                "".join(
+                    [
+                        "Be advised: use_average_hop_rates is set to ",
+                        repr(parameter_dict["use_average_hop_rates"]),
+                        ".",
+                    ]
+                )
             )
             print(
                 "Orca-calculated energy levels will be ignored, and the following hop "
@@ -55,10 +60,7 @@ def main(
             carrier_list.append([carrier_no, lifetime, "electron"])
     np.random.shuffle(carrier_list)
     proc_IDs = parameter_dict["proc_IDs"]
-    output_dir = (
-        parameter_dict["output_morphology_directory"]
-        + "/KMC"
-    )
+    output_dir = os.path.join(parameter_dict["output_morphology_directory"], "KMC")
     jobs_list = [
         carrier_list[i : i + (int(np.ceil(len(carrier_list) / len(proc_IDs))))]
         for i in range(
@@ -68,13 +70,13 @@ def main(
     print("Writing job pickles for each CPU...")
     running_jobs = []
     for proc_ID, jobs in enumerate(jobs_list):
-        pickle_name = os.path.join(output_dir, "KMC_data_%02d.pickle" % (proc_ID))
+        pickle_name = os.path.join(output_dir, "KMC_data_{:02d}.pickle".format(proc_ID))
         with open(pickle_name, "wb+") as pickle_file:
             pickle.dump(jobs, pickle_file)
         print(
             "KMC jobs for proc_ID",
             proc_ID,
-            "written to KMC_data_%02d.pickle" % (proc_ID),
+            "written to KMC_data_{:02d}.pickle".format(proc_ID),
         )
         # Open the required processes to execute the KMC jobs
         # Random seeding is a little weird here. If we don't generate a random
@@ -103,7 +105,9 @@ def main(
         print("Combining outputs...")
         combined_data = {}
         for proc_ID, jobs in enumerate(jobs_list):
-            file_name = output_dir + "/KMC_results_%02d.pickle" % (proc_ID)
+            file_name = os.path.join(
+                output_dir, "KMC_results_{:02d}.pickle".format(proc_ID)
+            )
             # The pickle was repeatedly dumped to, in order to save time.
             # Each dump stream is self-contained, so iteratively unpickle to
             # add the new data.
@@ -115,16 +119,17 @@ def main(
                     else:
                         combined_data[key] += val
         # Write out the combined data
-        with open(output_dir + "/KMC_results.pickle", "wb+") as pickle_file:
+        KMC_output_file = os.path.join(output_dir, "KMC_results.pickle")
+        with open(KMC_output_file, "wb+") as pickle_file:
             pickle.dump(combined_data, pickle_file)
-        print("Complete data written to", output_dir + "/KMC_results.pickle.")
+        print("Complete data written to", KMC_output_file)
         print("Cleaning up...")
         # Delete any unneeded files
-        for file_name in glob.glob(output_dir + "/KMC_results_*"):
+        for file_name in glob.glob(os.path.join(output_dir, "KMC_results_*")):
             os.remove(file_name)
-        for file_name in glob.glob(output_dir + "/KMC_slot_*"):
+        for file_name in glob.glob(os.path.join(output_dir, "KMC_slot_*")):
             os.remove(file_name)
-    for file_name in glob.glob(output_dir + "/KMC_data*"):
+    for file_name in glob.glob(os.path.join(output_dir, "KMC_data*")):
         os.remove(file_name)
     return [
         AA_morphology_dict,

@@ -28,11 +28,11 @@ class simulation:
                 self.input_morph_dir, self.morphology
             )
             self.output_morphology_directory = os.path.join(
-                self.output_morph_dir, self.morphology[:-4]
+                self.output_morph_dir, os.path.splitext(self.morphology)[0]
             )
             if (self.output_orca_dir is not None) and len(self.output_orca_dir) > 0:
                 self.output_orca_directory = os.path.join(
-                    self.output_orca_dir, self.morphology[:-4]
+                    self.output_orca_dir, os.path.splitext(self.morphology)[0]
                 )
             else:
                 self.output_orca_directory = self.output_morphology_directory
@@ -61,7 +61,7 @@ class simulation:
                         os.path.join(
                             self.output_morphology_directory,
                             "code",
-                            "".join([self.morphology[:-4], ".pickle"]),
+                            "".join([os.path.splitext(self.morphology)[0], ".pickle"]),
                         )
                     )
                     AA_morphology_dict = pickle_data[0]
@@ -81,9 +81,9 @@ class simulation:
                     # pickle using these new parameters.
                     pickle_name = os.path.join(
                         parameter_dict["output_morph_dir"],
-                        parameter_dict["morphology"][:-4],
+                        os.path.splitext(parameter_dict["morphology"])[0],
                         "code",
-                        "".join([parameter_dict["morphology"][:-4], ".pickle"]),
+                        "".join([os.path.splitext(parameter_dict["morphology"])[0], ".pickle"]),
                     )
                     hf.write_pickle(
                         (
@@ -105,7 +105,7 @@ class simulation:
             if self.execute_fine_graining is True:
                 print("---=== BACKMAPPING COARSE-GRAINED SITES... ===---")
                 returned_data = fine_grainer.morphology(
-                    self.input_morphology_file, self.morphology[:-4], parameter_dict, []
+                    self.input_morphology_file, os.path.splitext(self.morphology)[0], parameter_dict, []
                 ).analyse_morphology()
                 AA_morphology_dict = returned_data[0]
                 CG_morphology_dict = returned_data[1]
@@ -259,12 +259,7 @@ class simulation:
                 print("Directory already empty. Continuing...")
         # NOTE: Don't delete the morphology directory - sometimes we just want to
         # update and recalculate things, not start the whole pipeline again.
-        # Delete any previous data if the user asked to
-        # if self.overwriteCurrentData == True:
-        #     sp.Popen('echo rm -rf '+self.output_directory+'/*', shell=True)
-        #     # Make sure that the rm command has finished before moving on
-        #     sp.Popen('rm -rf '+self.output_directory+'/*', shell=True).communicate()
-        # Then, make sure that all the required directories are in place
+        # Make sure that all the required directories are in place
         if self.morphology is not None:
             for directory_to_make in [
                 "KMC",
@@ -328,7 +323,7 @@ class simulation:
                 os.path.join(self.output_morphology_directory, "code/"),
             ]
             code_copy = [
-                code_dir + "/*.py",
+                "/".join([code_dir, "*.py"]),
                 os.path.join(self.output_morphology_directory, "code/"),
             ]
             input_copy = [
@@ -343,7 +338,7 @@ class simulation:
                 os.path.join(self.output_device_directory, "code/"),
             ]
             code_copy = [
-                code_dir + "/*.py",
+                "/".join([code_dir, "*.py"]),
                 os.path.join(self.output_device_directory, "code/"),
             ]
         print("cp", par_copy[0], par_copy[1])

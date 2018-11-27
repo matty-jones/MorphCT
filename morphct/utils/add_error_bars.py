@@ -26,7 +26,7 @@ def split_argument_into_dictionary(argument):
     # Identify and split the lists based off of the '],' feature
     argument = argument.split("],")
     # Add the ']' back in at places it was just stripped in splitting
-    argument = [item + "]" for item in argument[:-1]] + [argument[-1]]
+    argument = ["".join([item, "]"]) for item in argument[:-1]] + [argument[-1]]
     # Iterate through the key:pair strings
     for item in argument:
         # split based on ':' and take the zeroth element as the key name
@@ -90,7 +90,7 @@ def iterate_through_runs_to_combine(runs):
     runs_data = {}
     # Iterate through each run over which to average.
     for directory in runs:
-        result_file = directory + "/results.csv"
+        result_file = os.path.join(directory, "results.csv")
         # Make sure the results.csv file exists.
         if os.path.exists(result_file):
             runs_data = extract_mobility(result_file, runs_data)
@@ -141,7 +141,7 @@ def save_mean_data_to_csv(data, prop):
 
     text = ""
     for line in data:
-        text += "{},{},{}\n".format(line[0], line[1], line[2])
+        text = "".join([text, "{0:s},{1:s},{2:s}\n".format(line[0], line[1], line[2])])
 
     # Will over write data.csv each time.
     with open(os.path.join("output", "".join([prop, ".csv"])), "w+") as f:

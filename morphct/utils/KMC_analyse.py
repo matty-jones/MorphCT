@@ -27,16 +27,17 @@ temperature = 290  # K
 
 
 def load_KMC_results_pickle(directory):
+    KMC_pickle = os.path.join(directory, "KMC", "KMC_results.pickle")
     try:
-        with open(directory + "/KMC/KMC_results.pickle", "rb") as pickle_file:
+        with open(KMC_pickle, "rb") as pickle_file:
             carrier_data = pickle.load(pickle_file)
     except FileNotFoundError:
         print("No final KMC_results.pickle found. Creating it from incomplete parts...")
         create_results_pickle(directory)
-        with open(directory + "/KMC/KMC_results.pickle", "rb") as pickle_file:
+        with open(KMC_pickle, "rb") as pickle_file:
             carrier_data = pickle.load(pickle_file)
     except UnicodeDecodeError:
-        with open(directory + "/KMC/KMC_results.pickle", "rb") as pickle_file:
+        with open(KMC_pickle, "rb") as pickle_file:
             carrier_data = pickle.load(pickle_file, encoding="latin1")
     return carrier_data
 
@@ -184,7 +185,7 @@ def plot_cluster_size_dist(cluster_freqs, directory):
             sizes = list(cluster_freqs[carrier_type_index].values())
             sizes = [np.log10(size) for size in sizes if size > 5]
             if len(sizes) == 0:
-               raise IndexError
+                raise IndexError
         except IndexError:
             return
         plt.figure()
@@ -260,7 +261,8 @@ def create_array_for_plot_connections(chromophore_list, carrier_history, sim_dim
 
 
 def plot_connections(
-    chromophore_list, sim_dims, carrier_history, directory, carrier_type):
+    chromophore_list, sim_dims, carrier_history, directory, carrier_type
+):
     # A complicated function that shows connections between carriers in 3D that carriers prefer to hop between.
     # Connections that are frequently used are highlighted in black, whereas rarely used connections are more white.
     # Import matplotlib color modules to set up color bar.
@@ -418,8 +420,9 @@ def plot_connections(
     # plt.title(figure_title, y=1.1)
     # 01 for donor 3d network, 02 for acceptor 3d network
     file_name = "".join(["{:02}_3d_".format(1 + carrier_index), carrier_type, ".png"])
-    plt.savefig(os.path.join(directory, "figures", file_name), bbox_inches="tight",
-                dpi=300)
+    plt.savefig(
+        os.path.join(directory, "figures", file_name), bbox_inches="tight", dpi=300
+    )
     print("Figure saved as", os.path.join(directory, "figures", file_name))
 
     plt.clf()
@@ -462,16 +465,15 @@ def plot_MSD(
     plt.errorbar(times, MSDs, xerr=time_standard_errors, yerr=MSD_standard_errors)
     plt.plot(fit_X, fit_Y, "r")
     plt.xlabel("Time (s)")
-    plt.ylabel("MSD (m" + r"$^{2}$)")
-    mobility_string = "%.3e" % mobility
+    plt.ylabel(r"MSD (m$^{2}$)")
     plt.title(
-        r"$\mu_{0,"
-        + carrier_type[0]
-        + r"}$"
-        + " = "
-        + mobility_string
-        + " cm"
-        + r"$^{2}$/vs" % (mobility),
+        "".join(
+            [
+                r"$\mu_{{{0}, {1}}}$ = {2:.3e} cm$^{{{3}}}$/Vs".format(
+                    0, carrier_type[0], mobility, 2
+                )
+            ]
+        ),
         y=1.1,
     )
     # 18 for hole linear MSD, 19 for electron linear MSD
@@ -489,16 +491,15 @@ def plot_MSD(
     plt.errorbar(times, MSDs, xerr=time_standard_errors, yerr=MSD_standard_errors)
     plt.semilogx(fit_X, fit_Y, "r")
     plt.xlabel("Time (s)")
-    plt.ylabel("MSD (m" + r"$^{2}$)")
-    mobility_string = "%.3e" % mobility
+    plt.ylabel(r"MSD (m$^{2}$)")
     plt.title(
-        r"$\mu_{0,"
-        + carrier_type[0]
-        + r"}$"
-        + " = "
-        + mobility_string
-        + " cm"
-        + r"$^{2}$/vs" % (mobility),
+        "".join(
+            [
+                r"$\mu_{{{0}, {1}}}$ = {2:.3e} cm$^{{{3}}}$/Vs".format(
+                    0, carrier_type[0], mobility, 2
+                )
+            ]
+        ),
         y=1.1,
     )
     # 20 for hole semilog MSD, 21 for electron semilog MSD
@@ -516,18 +517,17 @@ def plot_MSD(
     plt.errorbar(times, MSDs, xerr=time_standard_errors, yerr=MSD_standard_errors)
     plt.plot(fit_X, fit_Y, "r")
     plt.xlabel("Time (s)")
-    plt.ylabel("MSD (m" + r"$^{2}$)")
+    plt.ylabel(r"MSD (m$^{2}$)")
     plt.xscale("log")
     plt.yscale("log")
-    mobility_string = "%.3e" % mobility
     plt.title(
-        r"$\mu_{0,"
-        + carrier_type[0]
-        + r"}$"
-        + " = "
-        + mobility_string
-        + " cm"
-        + r"$^{2}$/vs" % (mobility),
+        "".join(
+            [
+                r"$\mu_{{{0}, {1}}}$ = {2:.3e} cm$^{{{3}}}$/Vs".format(
+                    0, carrier_type[0], mobility, 2
+                )
+            ]
+        ),
         y=1.1,
     )
     # 22 for hole semilog MSD, 23 for electron semilog MSD
@@ -609,8 +609,9 @@ def plot_anisotropy(carrier_data, directory, sim_dims, carrier_type, plot3D_grap
         return anisotropy
     print("----------====================----------")
     print(
-        carrier_type.capitalize() + " charge transport anisotropy calculated as",
-        anisotropy,
+        "{0:s} charge transport anisotropy calculated as {1:f}".format(
+            carrier_type.capitalize(), anisotropy
+        )
     )
     print("----------====================----------")
     # Reduce number of plot markers
@@ -729,7 +730,7 @@ def plot_anisotropy(carrier_data, directory, sim_dims, carrier_type, plot3D_grap
         figure_index = "08"
     elif carrier_type == "electron":
         figure_index = "09"
-    plt.title("Anisotropy (" + carrier_type.capitalize() + ")", y=1.1)
+    plt.title("Anisotropy ({:s})".format(carrier_type.capitalize()), y=1.1)
     file_name = os.path.join(
         directory,
         "figures",
@@ -742,15 +743,15 @@ def plot_anisotropy(carrier_data, directory, sim_dims, carrier_type, plot3D_grap
 
 
 def get_temp_val(string):
-    hyphen_list = hf.find_index(string, "-")
-    temp_val = float(string[hyphen_list[-2] + 2 : hyphen_list[-1]])
-    return temp_val
+    # hyphen_list = hf.find_index(string, "-")
+    # temp_val = float(string[hyphen_list[-2] + 2 : hyphen_list[-1]])
+    return string.split("-")[-2][2:]
 
 
 def get_frame_val(string):
-    hyphen_list = hf.find_index(string, "-")
-    temp_val = int(string[hyphen_list[0] + 1 : hyphen_list[1]])
-    return temp_val
+    # hyphen_list = hf.find_index(string, "-")
+    # temp_val = int(string[hyphen_list[0] + 1 : hyphen_list[1]])
+    return string.split("-")[0][1:]
 
 
 def plot_temperature_progression(
@@ -762,21 +763,21 @@ def plot_temperature_progression(
     yvals = list(np.array(mobility_data)[:, 0])
     yerrs = list(np.array(mobility_data)[:, 1])
     plt.xlabel(x_label)
-    plt.ylabel("Mobility (cm" + r"$^{2}$ " + "V" + r"$^{-1}$" + r"s$^{-1}$)")
+    plt.ylabel(r"Mobility (cm$^{2}$ / Vs)")
     plt.errorbar(xvals, yvals, xerr=0, yerr=yerrs)
     plt.yscale("log")
     file_name = "".join(["mobility_", carrier_type, ".png"])
     plt.savefig(file_name, dpi=300)
     plt.clf()
-    print("Figure saved as " + file_name)
+    print("Figure saved as {:s}".format(file_name))
 
     plt.plot(temp_data, anisotropy_data, c="r")
     plt.xlabel(x_label)
-    plt.ylabel(r"$\kappa$" + " (Arb. U)")
+    plt.ylabel(r"$\kappa$ (Arb. U)")
     file_name = "".join(["anisotropy_", carrier_type, ".png"])
     plt.savefig(file_name, dpi=300)
     plt.clf()
-    print("Figure saved as " + file_name)
+    print("Figure saved as {:s}".format(file_name))
 
 
 def calculate_lambda_ij(chromo_length):
@@ -923,7 +924,7 @@ def plot_neighbour_hist(
                 sep_cuts[material_type],
             )
             plt.axvline(float(sep_cuts[material_type]), c="k")
-        plt.xlabel(material[material_type].capitalize() + r" r$_{ij}$" + " (A)")
+        plt.xlabel("".join([material[material_type].capitalize(), r" r$_{i,j}$ (\AA)"]))
         plt.ylabel("Frequency (Arb. U.)")
         # 04 for donor neighbour hist, 05 for acceptor neighbour hist
         file_name = "".join(
@@ -1001,7 +1002,9 @@ def plot_orientation_hist(
                 o_cuts[material_type],
             )
             plt.axvline(float(o_cuts[material_type]), c="k")
-        plt.xlabel(material[material_type].capitalize() + r" orientations" + " (Deg)")
+            plt.xlabel(
+                r"{:s} Orientations (Deg)".format(material[material_type].capitalize())
+            )
         plt.xlim([0, 90])
         plt.xticks(np.arange(0, 91, 15))
         plt.ylabel("Frequency (Arb. U.)")
@@ -1506,27 +1509,27 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
         if len(chromo_IDs) > large_cluster:  # Only make clusters that are ``large''
             inclust = ""
             for chromo in chromo_IDs:
-                inclust += "{} ".format(chromo)
+                inclust = "".join([inclust, "{:s} ".format(chromo)])
             tcl_text += ["mol material AOEdgy;"]  # Use AOEdgy if donor
             # The +1 makes the largest cluster red rather than blue (looks better
             # with AO, DoF, shadows)
-            tcl_text += ["mol color ColorID {};".format(colors[count + 1 % 32])]
+            tcl_text += ["mol color ColorID {:s};".format(colors[count + 1 % 32])]
             # VMD has 32 unique colors
             tcl_text += ["mol representation VDW 4.0 8.0;"]
-            tcl_text += ["mol selection resid {};".format(inclust)]
+            tcl_text += ["mol selection resid {:s};".format(inclust)]
             tcl_text += ["mol addrep 0;"]
             count += 1
         chromo_IDs = [chromo.ID for chromo in chromos if chromo.species == "acceptor"]
         if len(chromo_IDs) > large_cluster:
             inclust = ""
             for chromo in chromo_IDs:
-                inclust += "{} ".format(chromo)
+                inclust += "".join([inclust, "{:s} ".format(chromo)])
             tcl_text += ["mol material Glass2;"]  # Use Glass2 if acceptor
             # The +1 makes the largest cluster red rather than blue (looks better
             # with AO, DoF, shadows)
-            tcl_text += ["mol color ColorID {};".format(colors[count + 1 % 32])]
+            tcl_text += ["mol color ColorID {:s};".format(colors[count + 1 % 32])]
             tcl_text += ["mol representation VDW 4.0 8.0;"]
-            tcl_text += ["mol selection resid {};".format(inclust)]
+            tcl_text += ["mol selection resid {:s};".format(inclust)]
             tcl_text += ["mol addrep 0;"]
             count += 1
     tcl_file_path = os.path.join(
@@ -1534,7 +1537,7 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
     )
     with open(tcl_file_path, "w+") as tcl_file:
         tcl_file.writelines("".join(tcl_text))
-    print("Clusters coloring written to {}".format(tcl_file_path))
+    print("Clusters coloring written to {:s}".format(tcl_file_path))
 
 
 def generate_lists_for_3d_clusters(cluster_lookup, colours, large_cluster):
@@ -1574,7 +1577,8 @@ def generate_lists_for_3d_clusters(cluster_lookup, colours, large_cluster):
 
 
 def plot_clusters_3D(
-    output_dir, chromophore_list, cluster_dicts, sim_dims, generate_tcl):
+    output_dir, chromophore_list, cluster_dicts, sim_dims, generate_tcl
+):
     fig = plt.figure()
     ax = p3.Axes3D(fig)
     colours = ["r", "g", "b", "c", "m", "y", "k"]
@@ -1690,8 +1694,9 @@ def plot_clusters_3D(
     ax.set_ylim([sim_dims[1][0], sim_dims[1][1]])
     ax.set_zlim([sim_dims[2][0], sim_dims[2][1]])
     # 03 for clusters (material agnostic)
-    plt.savefig(os.path.join(output_dir, "03_clusters.png"), bbox_inches="tight",
-                dpi=300)
+    plt.savefig(
+        os.path.join(output_dir, "03_clusters.png"), bbox_inches="tight", dpi=300
+    )
     print("3D cluster figure saved as", os.path.join(output_dir, "03_clusters.png"))
     plt.clf()
 
@@ -1787,7 +1792,7 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
             donor_bin_edges,
             donor_fit_args,
             "donor",
-            output_dir + "/06_donor_delta_E_ij.png",
+            os.path.join(output_dir, "06_donor_delta_E_ij.png"),
             donor_lambda_ij,
         )
     if len(acceptor_delta_E_ij) > 0:
@@ -1818,7 +1823,7 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
             acceptor_bin_edges,
             acceptor_fit_args,
             "acceptor",
-            output_dir + "/07_acceptor_delta_E_ij.png",
+            os.path.join(output_dir, "07_acceptor_delta_E_ij.png"),
             acceptor_lambda_ij,
         )
     return data_dict
@@ -1827,9 +1832,7 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
 def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name, lambda_ij):
     plt.figure()
     n, bins, patches = plt.hist(
-        delta_E_ij,
-        np.arange(np.min(delta_E_ij), np.max(delta_E_ij), 0.05),
-        color=["b"],
+        delta_E_ij, np.arange(np.min(delta_E_ij), np.max(delta_E_ij), 0.05), color=["b"]
     )
     if fit_args is not None:
         gauss_Y = gaussian(gauss_bins[:-1], *fit_args)
@@ -1840,8 +1843,8 @@ def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name, lamb
     if lambda_ij is not None:
         plt.axvline(-float(lambda_ij), c="k")
     plt.ylabel("Frequency (Arb. U.)")
-    plt.xlabel(data_type.capitalize() + r" $\Delta E_{ij}$ (eV)")
-    #plt.xlim([-0.5, 0.5])
+    plt.xlabel("".join([data_type.capitalize(), r" $\Delta E_{i,j}$ (eV)"]))
+    # plt.xlim([-0.5, 0.5])
     plt.savefig(file_name, dpi=300)
     plt.close()
     print("Figure saved as", file_name)
@@ -1864,7 +1867,7 @@ def plot_mixed_hopping_rates(
     chromo_species = ["donor", "acceptor"]
     property_lists = {}
     for property_name in [
-        hop_type + "_" + hop_target + "_" + hop_property + "_" + species
+        "_".join([hop_type, hop_target, hop_property, species])
         for hop_type in hop_types
         for hop_target in hop_targets
         for hop_property in hop_properties
@@ -2188,7 +2191,7 @@ def plot_stacked_hist_rates(data1, data2, labels, data_type, file_name):
         label=labels,
     )
     plt.ylabel("Frequency (Arb. U.)")
-    plt.xlabel(data_type.capitalize() + r" k$_{i,j}$ (s" + r"$^{-1}$" + ")")
+    plt.xlabel("".join([data_type.capitalize(), r" k$_{i,j}$ (s$^{-1}$)"]))
     plt.xlim([1, 1E18])
     plt.xticks([1E0, 1E3, 1E6, 1E9, 1E12, 1E15, 1E18])
     # plt.ylim([0, 14000])
@@ -2210,8 +2213,8 @@ def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name, cut_off):
         label=labels,
     )
     plt.ylabel("Frequency (Arb. U.)")
-    plt.xlabel(data_type.capitalize() + r" J$_{i,j}$ (eV)")
-    #plt.xlim([0, 1.2])
+    plt.xlabel("".join([data_type.capitalize(), r" J$_{i,j}$ (eV)"]))
+    # plt.xlim([0, 1.2])
     plt.ylim([0, np.max(n) * 1.02])
     if cut_off is not None:
         plt.axvline(float(cut_off), c="k")
@@ -2222,17 +2225,17 @@ def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name, cut_off):
 
 
 def write_CSV(data_dict, directory):
-    CSV_file_name = directory + "/results.csv"
+    CSV_file_name = os.path.join(directory, "results.csv")
     with open(CSV_file_name, "w+") as CSV_file:
         CSV_writer = csv.writer(CSV_file)
         for key in sorted(data_dict.keys()):
             CSV_writer.writerow([key, data_dict[key]])
-    print("CSV file written to " + CSV_file_name)
+    print("CSV file written to {:s}".format(CSV_file_name))
 
 
 def create_results_pickle(directory):
     cores_list = []
-    for file_name in glob.glob(directory + "/KMC/*"):
+    for file_name in glob.glob(os.path.join(directory, "KMC", "*")):
         if "log" not in file_name:
             continue
         try:
@@ -2244,14 +2247,20 @@ def create_results_pickle(directory):
     keep_list = []
     for core in cores_list:
         # Check if there is already a finished KMC_results pickle
-        main = directory + "/KMC/KMC_results_%02d.pickle" % (int(core))
+        main = os.path.join(
+            directory, "KMC", "KMC_results_{:02d}.pickle".format(int(core))
+        )
         if os.path.exists(main):
             results_pickles_list.append(main)
             keep_list.append(None)
             continue
         # If not, find the slot1 and slot2 pickle that is most recent
-        slot1 = directory + "/KMC/KMC_slot1_results_%02d.pickle" % (int(core))
-        slot2 = directory + "/KMC/KMC_slot2_results_%02d.pickle" % (int(core))
+        slot1 = os.path.join(
+            directory, "KMC", "KMC_slot1_results_{:02d}.pickle".format(int(core))
+        )
+        slot2 = os.path.join(
+            directory, "KMC", "KMC_slot2_results_{:02d}.pickle".format(int(core))
+        )
         if os.path.exists(slot1) and not os.path.exists(slot2):
             keep_list.append(slot1)
         elif os.path.exists(slot2) and not os.path.exists(slot1):
@@ -2260,13 +2269,15 @@ def create_results_pickle(directory):
             keep_list.append(slot1)
         else:
             keep_list.append(slot2)
-    print("%d pickle files found to combine!" % (len(keep_list)))
+    print("{:d} pickle files found to combine!".format(len(keep_list)))
     print("Combining", keep_list)
     for keeper in zip(cores_list, keep_list):
         # Skip this core if we already have a finished KMC_results for it
         if keeper[1] is None:
             continue
-        new_name = directory + "/KMC/KMC_results_" + str(keeper[0]) + ".pickle"
+        new_name = os.path.join(
+            directory, "KMC", "KMC_results_{}.pickle".format(keeper[0])
+        )
         shutil.copyfile(str(keeper[1]), new_name)
         results_pickles_list.append(new_name)
     combine_results_pickles(directory, results_pickles_list)
@@ -2289,9 +2300,10 @@ def combine_results_pickles(directory, pickle_files):
                     combined_data[key] += val
     # Write out the combined data
     print("Writing out the combined pickle file...")
-    with open(directory + "/KMC/KMC_results.pickle", "wb+") as pickle_file:
+    combined_file_loc = os.path.join(directory, "KMC", "KMC_results.pickle")
+    with open(combined_file_loc, "wb+") as pickle_file:
         pickle.dump(combined_data, pickle_file)
-    print("Complete data written to", directory + "/KMC_results.pickle.")
+    print("Complete data written to", combined_file_loc)
 
 
 def calculate_cut_off_from_dist(
@@ -2417,7 +2429,7 @@ def plot_TI_hist(
         )
         plt.ylim([0, np.max(n) * 1.02])
         plt.ylabel("Frequency (Arb. U.)")
-        plt.xlabel(material_type.capitalize() + r" J$_{i,j}$ (eV)")
+        plt.xlabel("".join([material[material_index].capitalize(), r" J$_{i,j}$ (eV)"]))
         plt.legend(loc=1, prop={"size": 18})
         # 10 for donor TI mols dist, 11 for acceptor TI mols dist,
         file_name = "".join(
@@ -2593,7 +2605,8 @@ def calculate_mobility(
         current_carrier_type.capitalize(),
         "mobility for",
         directory,
-        "= %.2E +- %.2E cm^{2} V^{-1} s^{-1}" % (mobility, mob_error),
+        "= {0:.2E} +- {1:.2E}".format(mobility, mob_error),
+        "cm^{2} V^{-1} s^{-1}",
     )
     print("----------====================----------")
     return mobility, mob_error, r_squared
@@ -2808,7 +2821,7 @@ def main():
     electron_anisotropy_data = []
     for directory in directory_list:
         # Create the figures directory if it doesn't already exist
-        os.makedirs(directory + "/figures", exist_ok=True)
+        os.makedirs(os.path.join(directory, "figures"), exist_ok=True)
         # Load in all the required data
         data_dict = {}
         print("\n")
@@ -2857,7 +2870,7 @@ def main():
         carrier_history_dict = {}
         for carrier_type_index, carrier_data in enumerate(complete_carrier_data):
             current_carrier_type = complete_carrier_types[carrier_type_index]
-            print("Considering the transport of", current_carrier_type + "...")
+            print("Considering the transport of {:s}...".format(current_carrier_type))
             print("Obtaining mean squared displacements...")
             carrier_history, times, MSDs, time_standard_errors, MSD_standard_errors = get_carrier_data(
                 carrier_data
@@ -2915,12 +2928,13 @@ def main():
             elif current_carrier_type == "electron":
                 electron_anisotropy_data.append(anisotropy)
                 electron_mobility_data.append([mobility, mob_error])
+            lower_carrier_type = current_carrier_type.lower()
             data_dict["name"] = os.path.split(directory)[1]
-            data_dict[current_carrier_type.lower() + "_anisotropy"] = anisotropy
-            data_dict[current_carrier_type.lower() + "_mobility"] = mobility
-            data_dict[current_carrier_type.lower() + "_mobility_r_squared"] = r_squared
+            data_dict["{:s}_anisotropy".format(lower_carrier_type)] = anisotropy
+            data_dict["{:s}_mobility".format(lower_carrier_type)] = mobility
+            data_dict["{:s}_mobility_r_squared".format(lower_carrier_type)] = r_squared
         # Now plot the distributions!
-        temp_dir = directory + "/figures"
+        temp_dir = os.path.join(directory, "figures")
         chromo_to_mol_ID = determine_molecule_IDs(
             CG_to_AAID_master, AA_morphology_dict, parameter_dict, chromophore_list
         )
@@ -2998,11 +3012,7 @@ def main():
         if args.three_D:
             print("Plotting 3D cluster location plot...")
             plot_clusters_3D(
-                temp_dir,
-                chromophore_list,
-                cluster_dicts,
-                sim_dims,
-                args.generate_tcl,
+                temp_dir, chromophore_list, cluster_dicts, sim_dims, args.generate_tcl
             )
         data_dict = plot_mixed_hopping_rates(
             temp_dir,

@@ -68,23 +68,25 @@ if __name__ == "__main__":
     CPU_rank = int(sys.argv[3])
     overwrite = bool(int(sys.argv[4]))
     delete_inputs = bool(int(sys.argv[5]))
-    morphology_name = morph_orca_dir[hf.find_index(morph_orca_dir, "/")[-1] + 1 :]
+    morphology_name = os.path.split(morph_orca_dir[1])
     try:
         orca_path = os.environ["ORCA_BIN"]
     except KeyError:
         orca_path = distutils.spawn.find_executable("orca")
-    input_dir = morph_orca_dir + "/chromophores/input_orca"
-    log_file = morph_output_dir + "/chromophores/orca_log_{:02d}.log".format(CPU_rank)
-    output_dir = morph_orca_dir + "/chromophores/output_orca"
+    input_dir = os.path.join(morph_orca_dir, "chromophores", "input_orca")
+    log_file = os.path.join(
+        morph_output_dir, "chromophores", "orca_log_{:02d}.log".format(CPU_rank)
+    )
+    output_dir = os.path.join(morph_orca_dir, "chromophores", "output_orca")
     pickle_file_name = input_dir.replace("input_orca", "orca_jobs.pickle")
     with open(pickle_file_name, "rb") as pickle_file:
         jobs_list = pickle.load(pickle_file)
     jobs_to_run = jobs_list[CPU_rank]
-    hf.write_to_file(log_file, ["Found " + str(len(jobs_to_run)) + " jobs to run."])
+    hf.write_to_file(log_file, ["Found {:d} jobs to run.".format(len(jobs_to_run))])
     t0 = T.time()
     for job in jobs_to_run:
         t1 = T.time()
-        hf.write_to_file(log_file, ["Running job " + str(job) + "..."])
+        hf.write_to_file(log_file, ["Running job {:s}...".format(job)])
         output_file_name = job.replace(".inp", ".out").replace(
             "input_orca", "output_orca"
         )
@@ -96,10 +98,14 @@ if __name__ == "__main__":
                 hf.write_to_file(
                     log_file,
                     [
-                        output_file_name + " already exists, and"
-                        " overwrite_current_data is "
-                        + repr(overwrite)
-                        + "! skipping..."
+                        "".join(
+                            [
+                                output_file_name,
+                                " already exists, and overwrite_current_data is ",
+                                repr(overwrite),
+                                "! skipping...",
+                            ]
+                        )
                     ],
                 )
                 continue
@@ -123,18 +129,25 @@ if __name__ == "__main__":
         orca_stdout = orca_shell_output[0].decode().split("\n")
         orca_stderr = orca_shell_output[1].decode().split("\n")
         # Write the outputFile:
-        hf.write_to_file(
-            output_file_name,
-            orca_stdout,
-            mode="output_file",
-        )
+        hf.write_to_file(output_file_name, orca_stdout, mode="output_file")
         if delete_inputs:
             output_ok = check_job_output(orca_stdout, job)
             if output_ok:
-                hf.write_to_file(log_file, ["Output OK and remove_orca_inputs set.",
-                                 "Deleting " + job[:-4] + " inputs..."])
-                for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges",
-                                  "_property.txt"]:
+                hf.write_to_file(
+                    log_file,
+                    [
+                        "Output OK and remove_orca_inputs set.",
+                        "".join(["Deleting ", os.path.splitext(job)[0], " inputs..."]),
+                    ],
+                )
+                for extension in [
+                    ".inp",
+                    ".gbw",
+                    ".prop",
+                    ".tmp",
+                    ".ges",
+                    "_property.txt",
+                ]:
                     try:
                         os.remove(job.replace(".inp", extension))
                     except FileNotFoundError:
@@ -156,11 +169,13 @@ if __name__ == "__main__":
         else:
             elapsed_time /= 86400.0
             time_units = "days."
-        elapsed_time = "%.1f" % (float(elapsed_time))
         hf.write_to_file(
             log_file,
-            ["Job " + str(job) + " completed in " + elapsed_time + " " + time_units
-             + "\n"],
+            [
+                "Job {0:s} completed in {1:.2f} {2:s}\n".format(
+                    job, elapsed_time, time_units
+                )
+            ],
         )
         # Now check the output file and delete the input files if we don't need them
         # any more
@@ -177,8 +192,8 @@ if __name__ == "__main__":
     else:
         elapsed_time /= 86400.0
         time_units = "days."
-    elapsed_time = "%.1f" % (float(elapsed_time))
     hf.write_to_file(
-        log_file, ["All jobs completed in " + elapsed_time + " " + time_units]
+        log_file,
+        ["All jobs completed in {0:.2f} {1:s}".format(elapsed_time, time_units)],
     )
     hf.write_to_file(log_file, ["Exiting normally..."])

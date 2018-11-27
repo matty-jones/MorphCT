@@ -68,17 +68,15 @@ def main():
         print("No files requested to convert!")
         exit()
     for file_name in list_of_files:
-        print("Fixing the images for", file_name + "...")
+        print("Fixing the images for {:s}...".format(file_name))
         morphology = hf.load_morphology_xml(file_name)
         morphology = zero_out_images(morphology)
         bond_dict = get_bond_dict(morphology)
         morphology = check_bonds(morphology, bond_dict)
-        split_file_name = file_name.split("/")
-        file_directory = "/".join(split_file_name[:-1])
-        if len(split_file_name) > 1:
-            file_directory += "/"
+        file_directory, split_file_name = os.path.splitext(file_name)
         hf.write_morphology_xml(
-            morphology, file_directory + "image_fix_" + split_file_name[-1]
+            morphology,
+            os.path.join(file_directory, "".join(["image_fix_", split_file_name])),
         )
 
 
