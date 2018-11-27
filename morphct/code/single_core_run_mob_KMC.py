@@ -347,7 +347,9 @@ if __name__ == "__main__":
         pass
     # Load `jobs_to_run' which is a list, where each element contains the
     # [carrier.ID, carrier.lifetime, carrier.carrierType]
-    pickle_file_name = os.path.join(KMC_directory, "KMC_data_{:02d}.pickle".format(CPU_rank))
+    pickle_file_name = os.path.join(
+        KMC_directory, "KMC_data_{:02d}.pickle".format(CPU_rank)
+    )
     with open(pickle_file_name, "rb") as pickle_file:
         jobs_to_run = pickle.load(pickle_file)
     log_file = os.path.join(KMC_directory, "KMC_log_{:02d}.log".format(CPU_rank))

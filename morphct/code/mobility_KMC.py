@@ -105,7 +105,9 @@ def main(
         print("Combining outputs...")
         combined_data = {}
         for proc_ID, jobs in enumerate(jobs_list):
-            file_name = os.path.join(output_dir, "KMC_results_{:02d}.pickle".format(proc_ID))
+            file_name = os.path.join(
+                output_dir, "KMC_results_{:02d}.pickle".format(proc_ID)
+            )
             # The pickle was repeatedly dumped to, in order to save time.
             # Each dump stream is self-contained, so iteratively unpickle to
             # add the new data.

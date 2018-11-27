@@ -390,7 +390,9 @@ def create_results_pickle(directory):
     keep_list = []
     for core in cores_list:
         # Check if there is already a finished KMC_results pickle
-        main = os.path.join(directory, "KMC", "KMCResults_{:02d}.pickle".format(int(core)))
+        main = os.path.join(
+            directory, "KMC", "KMCResults_{:02d}.pickle".format(int(core))
+        )
         if os.path.exists(main):
             results_pickles_list.append(main)
             keep_list.append(None)

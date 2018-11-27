@@ -210,7 +210,12 @@ def write_orca_inp(
     # Create the lines to be written in the input file
     for index, position in enumerate(all_positions):
         lines_to_write.append(
-            " {0:s}  {1:.5f}  {2:.5f}  {3:.5f}\n".format(all_atom_types[index], position[0] - central_position[0], position[1] - central_position[1], position[2] - central_position[2])
+            " {0:s}  {1:.5f}  {2:.5f}  {3:.5f}\n".format(
+                all_atom_types[index],
+                position[0] - central_position[0],
+                position[1] - central_position[1],
+                position[2] - central_position[2],
+            )
         )
     # Load the orca input template
     orca_temp_dir = os.path.join(PROJECT_ROOT, "templates")

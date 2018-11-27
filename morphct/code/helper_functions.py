@@ -755,9 +755,7 @@ def write_morphology_xml(
         lines_to_write.append(" ".join(str(coord) for coord in bond_data) + "\n")
     lines_to_write.append("</bond>\n")
     # Angle
-    lines_to_write.append(
-        '<angle num="{:d}">\n'.format(len(input_dictionary["angle"]))
-    )
+    lines_to_write.append('<angle num="{:d}">\n'.format(len(input_dictionary["angle"])))
     for angle_data in input_dictionary["angle"]:
         lines_to_write.append(" ".join(str(coord) for coord in angle_data) + "\n")
     lines_to_write.append("</angle>\n")

@@ -324,7 +324,9 @@ def calculate_chromophores(
     chromophore_instances = []
     for chromo_ID, chromophore_CG_sites in chromophore_data.items():
         print(
-            "\rCalculating properties of chromophore {:05d} of {:05d}...".format(chromo_ID, len(list(chromophore_data.keys())) - 1),
+            "\rCalculating properties of chromophore {:05d} of {:05d}...".format(
+                chromo_ID, len(list(chromophore_data.keys())) - 1
+            ),
             end=" ",
         )
         if sys.stdout is not None:
@@ -403,7 +405,9 @@ def calculate_chromophores_AA(
     chromophore_instances = []
     for chromo_ID, chromophore_CG_sites in chromophore_data.items():
         print(
-            "\rCalculating properties of chromophore {:05d} of {:05d}...".format(chromo_ID, len(list(chromophore_data.keys())) - 1),
+            "\rCalculating properties of chromophore {:05d} of {:05d}...".format(
+                chromo_ID, len(list(chromophore_data.keys())) - 1
+            ),
             end=" ",
         )
         if sys.stdout is not None:
@@ -730,7 +734,9 @@ def determine_neighbours_voronoi(chromophore_list, parameter_dict, sim_dims):
 def determine_neighbours_cut_off(chromophore_list, parameter_dict, sim_dims):
     for chromophore1 in chromophore_list:
         print(
-            "\rIdentifying neighbours of chromophore {:05d} of {:05d}...".format(chromophore1.ID, len(chromophore_list) - 1),
+            "\rIdentifying neighbours of chromophore {:05d} of {:05d}...".format(
+                chromophore1.ID, len(chromophore_list) - 1
+            ),
             end=" ",
         )
         if sys.stdout is not None:

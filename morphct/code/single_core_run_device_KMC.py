@@ -2400,7 +2400,9 @@ if __name__ == "__main__":
     if time_limit is not None:
         time_limit = slurm_time_in_S(time_limit)
 
-    jobs_file_name = os.path.join(KMC_directory, "KMC_data_{:02d}.pickle".format(CPU_rank))
+    jobs_file_name = os.path.join(
+        KMC_directory, "KMC_data_{:02d}.pickle".format(CPU_rank)
+    )
     device_data_file_name = KMC_directory.replace("/KMC", "/code/device_data.pickle")
 
     with open(device_data_file_name, "rb") as pickle_file:
