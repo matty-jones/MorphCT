@@ -111,7 +111,9 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title, save_f
     )
     montage.wait()
     print("Removing temporary files...")
-    for file_name in glob.glob(os.path.join(directory, "*_temp.png")) + glob.glob(os.path.join(directory, "*_crop.png")):
+    for file_name in glob.glob(os.path.join(directory, "*_temp.png")) + glob.glob(
+        os.path.join(directory, "*_crop.png")
+    ):
         os.remove(file_name)
     print("Montage created and saved at ", save_file)
 
@@ -165,8 +167,12 @@ def main():
     )
     args, directories = parser.parse_known_args()
     if args.files:
-        images_to_stitch = [os.path.join(os.getcwd(), directory) for directory in directories]
-        stitch_images(args.dimensions, images_to_stitch, "Montage", args.title, args.save_as)
+        images_to_stitch = [
+            os.path.join(os.getcwd(), directory) for directory in directories
+        ]
+        stitch_images(
+            args.dimensions, images_to_stitch, "Montage", args.title, args.save_as
+        )
     else:
         for directory in directories:
             morphology_name = os.path.split(directory)[1]
@@ -179,7 +185,13 @@ def main():
                     raise FileNotFoundError
             except FileNotFoundError:
                 continue
-            stitch_images(args.dimensions, images_to_stitch, morphology_name, args.title, args.save_as)
+            stitch_images(
+                args.dimensions,
+                images_to_stitch,
+                morphology_name,
+                args.title,
+                args.save_as,
+            )
 
 
 if __name__ == "__main__":

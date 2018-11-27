@@ -75,7 +75,8 @@ def main():
         morphology = check_bonds(morphology, bond_dict)
         file_directory, split_file_name = os.path.splitext(file_name)
         hf.write_morphology_xml(
-            morphology, os.path.join(file_directory, "".join(["image_fix_", split_file_name]))
+            morphology,
+            os.path.join(file_directory, "".join(["image_fix_", split_file_name])),
         )
 
 

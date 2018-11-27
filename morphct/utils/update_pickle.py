@@ -48,7 +48,9 @@ def add_underscores(old_parameter_dict):
         "DOS",
         "AAID",
     ]
-    leave_these_capitalised += ["".join([abbrev, "s"]) for abbrev in leave_these_capitalised]
+    leave_these_capitalised += [
+        "".join([abbrev, "s"]) for abbrev in leave_these_capitalised
+    ]
     new_parameter_dict = {}
     for key, value in old_parameter_dict.items():
         # Some hardcoded ones because I can't work out the regex
@@ -168,8 +170,11 @@ def rename_old(old_parameter_dict):
 
 
 def remove_redundant(old_parameter_dict):
-    remove_these_keys = ["electrical_field", "execute_extract_molecules",
-                         "koopmans_hopping_prefactor"]
+    remove_these_keys = [
+        "electrical_field",
+        "execute_extract_molecules",
+        "koopmans_hopping_prefactor",
+    ]
     for key in remove_these_keys:
         try:
             old_parameter_dict.pop(key)
@@ -222,7 +227,9 @@ def convert_chromos(
     print("Updating the chromophore list (this might take a few minutes)...")
     for old_chromo in old_chromophore_list:
         print(
-            "\rUpdating chromophore {0:d} of {1:d}...".format(old_chromo.ID + 1, len(old_chromophore_list)),
+            "\rUpdating chromophore {0:d} of {1:d}...".format(
+                old_chromo.ID + 1, len(old_chromophore_list)
+            ),
             end=" ",
         )
         # Set up an empty chromophore instance using the parameter_dict
@@ -389,8 +396,12 @@ def create_results_pickle(directory):
             keep_list.append(None)
             continue
         # If not, find the slot1 and slot2 pickle that is most recent
-        slot1 = os.path.join(directory, "KMC", "KMCSlot1Results_%02d.pickle" % (int(core)))
-        slot2 = os.path.join(directory, "KMC", "KMCSlot2Results_%02d.pickle" % (int(core)))
+        slot1 = os.path.join(
+            directory, "KMC", "KMCSlot1Results_%02d.pickle" % (int(core))
+        )
+        slot2 = os.path.join(
+            directory, "KMC", "KMCSlot2Results_%02d.pickle" % (int(core))
+        )
         if os.path.exists(slot1) and not os.path.exists(slot2):
             keep_list.append(slot1)
         elif os.path.exists(slot2) and not os.path.exists(slot1):
@@ -405,7 +416,9 @@ def create_results_pickle(directory):
         # Skip this core if we already have a finished KMC_results for it
         if keeper[1] is None:
             continue
-        new_name = os.path.join(directory, "KMC", "KMC_results_{}.pickle".format(keeper[0]))
+        new_name = os.path.join(
+            directory, "KMC", "KMC_results_{}.pickle".format(keeper[0])
+        )
         shutil.copyfile(str(keeper[1]), new_name)
         results_pickles_list.append(new_name)
     combine_results_pickles(directory, results_pickles_list)

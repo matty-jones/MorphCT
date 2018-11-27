@@ -185,7 +185,7 @@ def plot_cluster_size_dist(cluster_freqs, directory):
             sizes = list(cluster_freqs[carrier_type_index].values())
             sizes = [np.log10(size) for size in sizes if size > 5]
             if len(sizes) == 0:
-               raise IndexError
+                raise IndexError
         except IndexError:
             return
         plt.figure()
@@ -261,7 +261,8 @@ def create_array_for_plot_connections(chromophore_list, carrier_history, sim_dim
 
 
 def plot_connections(
-    chromophore_list, sim_dims, carrier_history, directory, carrier_type):
+    chromophore_list, sim_dims, carrier_history, directory, carrier_type
+):
     # A complicated function that shows connections between carriers in 3D that carriers prefer to hop between.
     # Connections that are frequently used are highlighted in black, whereas rarely used connections are more white.
     # Import matplotlib color modules to set up color bar.
@@ -419,8 +420,9 @@ def plot_connections(
     # plt.title(figure_title, y=1.1)
     # 01 for donor 3d network, 02 for acceptor 3d network
     file_name = "".join(["{:02}_3d_".format(1 + carrier_index), carrier_type, ".png"])
-    plt.savefig(os.path.join(directory, "figures", file_name), bbox_inches="tight",
-                dpi=300)
+    plt.savefig(
+        os.path.join(directory, "figures", file_name), bbox_inches="tight", dpi=300
+    )
     print("Figure saved as", os.path.join(directory, "figures", file_name))
 
     plt.clf()
@@ -464,7 +466,16 @@ def plot_MSD(
     plt.plot(fit_X, fit_Y, "r")
     plt.xlabel("Time (s)")
     plt.ylabel(r"MSD (m$^{2}$)")
-    plt.title("".join([r"$\mu_{{{0}, {1}}}$ = {2:.3e} cm$^{{{3}}}$/Vs".format(0, carrier_type[0], mobility, 2)]), y=1.1)
+    plt.title(
+        "".join(
+            [
+                r"$\mu_{{{0}, {1}}}$ = {2:.3e} cm$^{{{3}}}$/Vs".format(
+                    0, carrier_type[0], mobility, 2
+                )
+            ]
+        ),
+        y=1.1,
+    )
     # 18 for hole linear MSD, 19 for electron linear MSD
     file_name = "".join(
         [
@@ -481,7 +492,16 @@ def plot_MSD(
     plt.semilogx(fit_X, fit_Y, "r")
     plt.xlabel("Time (s)")
     plt.ylabel(r"MSD (m$^{2}$)")
-    plt.title("".join([r"$\mu_{{{0}, {1}}}$ = {2:.3e} cm$^{{{3}}}$/Vs".format(0, carrier_type[0], mobility, 2)]), y=1.1)
+    plt.title(
+        "".join(
+            [
+                r"$\mu_{{{0}, {1}}}$ = {2:.3e} cm$^{{{3}}}$/Vs".format(
+                    0, carrier_type[0], mobility, 2
+                )
+            ]
+        ),
+        y=1.1,
+    )
     # 20 for hole semilog MSD, 21 for electron semilog MSD
     file_name = "".join(
         [
@@ -500,7 +520,16 @@ def plot_MSD(
     plt.ylabel(r"MSD (m$^{2}$)")
     plt.xscale("log")
     plt.yscale("log")
-    plt.title("".join([r"$\mu_{{{0}, {1}}}$ = {2:.3e} cm$^{{{3}}}$/Vs".format(0, carrier_type[0], mobility, 2)]), y=1.1)
+    plt.title(
+        "".join(
+            [
+                r"$\mu_{{{0}, {1}}}$ = {2:.3e} cm$^{{{3}}}$/Vs".format(
+                    0, carrier_type[0], mobility, 2
+                )
+            ]
+        ),
+        y=1.1,
+    )
     # 22 for hole semilog MSD, 23 for electron semilog MSD
     file_name = "".join(
         [
@@ -579,7 +608,11 @@ def plot_anisotropy(carrier_data, directory, sim_dims, carrier_type, plot3D_grap
     if not plot3D_graphs:
         return anisotropy
     print("----------====================----------")
-    print("{0:s} charge transport anisotropy calculated as {1:f}".format(carrier_type.capitalize(), anisotropy))
+    print(
+        "{0:s} charge transport anisotropy calculated as {1:f}".format(
+            carrier_type.capitalize(), anisotropy
+        )
+    )
     print("----------====================----------")
     # Reduce number of plot markers
     fig = plt.gcf()
@@ -969,7 +1002,9 @@ def plot_orientation_hist(
                 o_cuts[material_type],
             )
             plt.axvline(float(o_cuts[material_type]), c="k")
-            plt.xlabel(r"{:s} Orientations (Deg)".format(material[material_type].capitalize()))
+            plt.xlabel(
+                r"{:s} Orientations (Deg)".format(material[material_type].capitalize())
+            )
         plt.xlim([0, 90])
         plt.xticks(np.arange(0, 91, 15))
         plt.ylabel("Frequency (Arb. U.)")
@@ -1542,7 +1577,8 @@ def generate_lists_for_3d_clusters(cluster_lookup, colours, large_cluster):
 
 
 def plot_clusters_3D(
-    output_dir, chromophore_list, cluster_dicts, sim_dims, generate_tcl):
+    output_dir, chromophore_list, cluster_dicts, sim_dims, generate_tcl
+):
     fig = plt.figure()
     ax = p3.Axes3D(fig)
     colours = ["r", "g", "b", "c", "m", "y", "k"]
@@ -1658,8 +1694,9 @@ def plot_clusters_3D(
     ax.set_ylim([sim_dims[1][0], sim_dims[1][1]])
     ax.set_zlim([sim_dims[2][0], sim_dims[2][1]])
     # 03 for clusters (material agnostic)
-    plt.savefig(os.path.join(output_dir, "03_clusters.png"), bbox_inches="tight",
-                dpi=300)
+    plt.savefig(
+        os.path.join(output_dir, "03_clusters.png"), bbox_inches="tight", dpi=300
+    )
     print("3D cluster figure saved as", os.path.join(output_dir, "03_clusters.png"))
     plt.clf()
 
@@ -1795,9 +1832,7 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
 def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name, lambda_ij):
     plt.figure()
     n, bins, patches = plt.hist(
-        delta_E_ij,
-        np.arange(np.min(delta_E_ij), np.max(delta_E_ij), 0.05),
-        color=["b"],
+        delta_E_ij, np.arange(np.min(delta_E_ij), np.max(delta_E_ij), 0.05), color=["b"]
     )
     if fit_args is not None:
         gauss_Y = gaussian(gauss_bins[:-1], *fit_args)
@@ -1809,7 +1844,7 @@ def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name, lamb
         plt.axvline(-float(lambda_ij), c="k")
     plt.ylabel("Frequency (Arb. U.)")
     plt.xlabel("".join([data_type.capitalize(), r" $\Delta E_{i,j}$ (eV)"]))
-    #plt.xlim([-0.5, 0.5])
+    # plt.xlim([-0.5, 0.5])
     plt.savefig(file_name, dpi=300)
     plt.close()
     print("Figure saved as", file_name)
@@ -2179,7 +2214,7 @@ def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name, cut_off):
     )
     plt.ylabel("Frequency (Arb. U.)")
     plt.xlabel("".join([data_type.capitalize(), r" J$_{i,j}$ (eV)"]))
-    #plt.xlim([0, 1.2])
+    # plt.xlim([0, 1.2])
     plt.ylim([0, np.max(n) * 1.02])
     if cut_off is not None:
         plt.axvline(float(cut_off), c="k")
@@ -2218,8 +2253,12 @@ def create_results_pickle(directory):
             keep_list.append(None)
             continue
         # If not, find the slot1 and slot2 pickle that is most recent
-        slot1 = os.path.join(directory, "KMC", "KMC_slot1_results_%02d.pickle" % (int(core)))
-        slot2 = os.path.join(directory, "KMC", "KMC_slot2_results_%02d.pickle" % (int(core)))
+        slot1 = os.path.join(
+            directory, "KMC", "KMC_slot1_results_%02d.pickle" % (int(core))
+        )
+        slot2 = os.path.join(
+            directory, "KMC", "KMC_slot2_results_%02d.pickle" % (int(core))
+        )
         if os.path.exists(slot1) and not os.path.exists(slot2):
             keep_list.append(slot1)
         elif os.path.exists(slot2) and not os.path.exists(slot1):
@@ -2234,7 +2273,9 @@ def create_results_pickle(directory):
         # Skip this core if we already have a finished KMC_results for it
         if keeper[1] is None:
             continue
-        new_name = os.path.join(directory, "KMC", "KMC_results_{}.pickle".format(keeper[0]))
+        new_name = os.path.join(
+            directory, "KMC", "KMC_results_{}.pickle".format(keeper[0])
+        )
         shutil.copyfile(str(keeper[1]), new_name)
         results_pickles_list.append(new_name)
     combine_results_pickles(directory, results_pickles_list)
@@ -2968,11 +3009,7 @@ def main():
         if args.three_D:
             print("Plotting 3D cluster location plot...")
             plot_clusters_3D(
-                temp_dir,
-                chromophore_list,
-                cluster_dicts,
-                sim_dims,
-                args.generate_tcl,
+                temp_dir, chromophore_list, cluster_dicts, sim_dims, args.generate_tcl
             )
         data_dict = plot_mixed_hopping_rates(
             temp_dir,
