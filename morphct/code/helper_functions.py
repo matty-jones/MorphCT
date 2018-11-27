@@ -91,7 +91,7 @@ def calc_COM(list_of_positions, list_of_atom_types=None, list_of_atom_masses=Non
                 list_of_atom_masses.append(18.998403)
             else:
                 raise SystemError(
-                    "".join(["Unknown atomic mass ", str(atom_type), ". Please hardcode into helper_functions.calc_COM."])
+                    "Unknown atomic mass {:s}. Please hardcode into helper_functions.calc_COM.".format(atom_type)
                 )
     total_mass = np.sum(list_of_atom_masses)
     for atom_ID, position in enumerate(list_of_positions):
@@ -693,79 +693,73 @@ def write_morphology_xml(
     lines_to_write = [
         '<?xml version="1.0" encoding="UTF-8"?>\n',
         '<hoomd_xml version="1.4">\n',
-        "".join(['<configuration time_step="0" dimensions="3" natoms="', str(input_dictionary["natoms"]), '" >\n']),
-        "".join(['<box lx="', str(input_dictionary["lx"]), '" ly="', str(input_dictionary["ly"]), '" lz="', str(input_dictionary["lz"])]),
+        '<configuration time_step="0" dimensions="3" natoms="{:d}" >\n'.format(input_dictionary["natoms"]),
+        '<box lx="{0:f}" ly="{1:f}" lz="{2:f}"'.format(input_dictionary["lx"], input_dictionary["ly"], input_dictionary["lz"]),
     ]
     if all([tilt_factor in input_dictionary.keys() for tilt_factor in tilt_factors]):
-        lines_to_write[-1] += (
-            "".join(['" xy="', str(input_dictionary["xy"]), '" xz="', str(input_dictionary["xz"]), '" yz="', str(input_dictionary["yz"]), '" />\n'])
-        )
+        lines_to_write[-1] = "".join([lines_to_write[-1], ' xy="{0:f}" xz="{1:f}" yz="{2:f}" />\n'.format(input_dictionary["xy"], input_dictionary["xz"], input_dictionary["yz"])])
     else:
-        lines_to_write[-1] += '" />\n'
+        lines_to_write[-1] = "".join([lines_to_write[-1], '" />\n'])
     # Position
-    lines_to_write.append('<position num="' + str(input_dictionary["natoms"]) + '">\n')
+    lines_to_write.append('<position num="{:d}">\n'.format(input_dictionary["natoms"]))
     for position_data in input_dictionary["position"]:
         lines_to_write.append(" ".join(str(coord) for coord in position_data) + "\n")
     lines_to_write.append("</position>\n")
     # Image
-    lines_to_write.append('<image num="' + str(input_dictionary["natoms"]) + '">\n')
+    lines_to_write.append('<image num="{:d}">\n'.format(input_dictionary["natoms"]))
     for image_data in input_dictionary["image"]:
         lines_to_write.append(" ".join(str(coord) for coord in image_data) + "\n")
     lines_to_write.append("</image>\n")
     # Mass
-    lines_to_write.append('<mass num="' + str(input_dictionary["natoms"]) + '">\n')
+    lines_to_write.append('<mass num="{:d}">\n'.format(input_dictionary["natoms"]))
     for mass_data in input_dictionary["mass"]:
-        lines_to_write.append(str(mass_data) + "\n")
+        lines_to_write.append("".join([str(mass_data), "\n"]))
     lines_to_write.append("</mass>\n")
     # Diameter
-    lines_to_write.append('<diameter num="' + str(input_dictionary["natoms"]) + '">\n')
+    lines_to_write.append('<diameter num="{:d}">\n'.format(input_dictionary["natoms"]))
     for diameter_data in input_dictionary["diameter"]:
-        lines_to_write.append(str(diameter_data) + "\n")
+        lines_to_write.append("".join([str(diameter_data), "\n"]))
     lines_to_write.append("</diameter>\n")
     # Type
-    lines_to_write.append('<type num="' + str(input_dictionary["natoms"]) + '">\n')
+    lines_to_write.append('<type num="{:d}">\n'.format(input_dictionary["natoms"]))
     for type_data in input_dictionary["type"]:
-        lines_to_write.append(str(type_data) + "\n")
+        lines_to_write.append("".join([str(type_data), "\n"]))
     lines_to_write.append("</type>\n")
     # Body
-    lines_to_write.append('<body num="' + str(input_dictionary["natoms"]) + '">\n')
+    lines_to_write.append('<body num="{:d}">\n'.format(input_dictionary["natoms"]))
     for body_data in input_dictionary["body"]:
-        lines_to_write.append(str(body_data) + "\n")
+        lines_to_write.append("".join([str(body_data), "\n"]))
     lines_to_write.append("</body>\n")
     # Bond
-    lines_to_write.append('<bond num="' + str(len(input_dictionary["bond"])) + '">\n')
+    lines_to_write.append('<bond num="{:d}">\n'.format(input_dictionary["bond"]))
     for bond_data in input_dictionary["bond"]:
         lines_to_write.append(" ".join(str(coord) for coord in bond_data) + "\n")
     lines_to_write.append("</bond>\n")
     # Angle
-    lines_to_write.append('<angle num="' + str(len(input_dictionary["angle"])) + '">\n')
+    lines_to_write.append('<angle num="{:d}">\n'.format(input_dictionary["angle"]))
     for angle_data in input_dictionary["angle"]:
         lines_to_write.append(" ".join(str(coord) for coord in angle_data) + "\n")
     lines_to_write.append("</angle>\n")
     # Dihedral
-    lines_to_write.append(
-        '<dihedral num="' + str(len(input_dictionary["dihedral"])) + '">\n'
-    )
+    lines_to_write.append('<dihedral num="{:d}">\n'.format(input_dictionary["dihedral"]))
     for dihedral_data in input_dictionary["dihedral"]:
         lines_to_write.append(" ".join(str(coord) for coord in dihedral_data) + "\n")
     lines_to_write.append("</dihedral>\n")
     # Improper
-    lines_to_write.append(
-        '<improper num="' + str(len(input_dictionary["improper"])) + '">\n'
-    )
+    lines_to_write.append('<improper num="{:d}">\n'.format(input_dictionary["improper"]))
     for improper_data in input_dictionary["improper"]:
         lines_to_write.append(" ".join(str(coord) for coord in improper_data) + "\n")
     lines_to_write.append("</improper>\n")
     # Charge
-    lines_to_write.append('<charge num="' + str(input_dictionary["natoms"]) + '">\n')
+    lines_to_write.append('<charge num="{:d}">\n'.format(input_dictionary["natoms"]))
     for charge_data in input_dictionary["charge"]:
-        lines_to_write.append(str(charge_data) + "\n")
+        lines_to_write.append("".join([str(charge_data), "\n"]))
     lines_to_write.append("</charge>\n")
     lines_to_write.append("</configuration>\n")
     lines_to_write.append("</hoomd_xml>\n")
     with open(output_file, "w+") as xml_file:
         xml_file.writelines(lines_to_write)
-    print("XML file written to", str(output_file) + "!")
+    print("XML file written to", str(output_file))
 
 
 def write_xyz_file(input_dict, output_file):
@@ -775,7 +769,7 @@ def write_xyz_file(input_dict, output_file):
     """
     # First line is atom numbers, second line is boiler plate
     rows_to_write = [
-        str(input_dict["natoms"]) + "\n",
+        "{:d}\n".format(input_dict["natoms"]),
         "xyz file generated from xml using" "helper_functions.xml_to_xyz\n",
     ]
     # Format of xyz is Type, X Pos, Y Pos, Z Pos
@@ -792,11 +786,11 @@ def write_xyz_file(input_dict, output_file):
         while len(atom_Y) < 20:
             atom_Y += " "
         atom_Z = str(input_dict["position"][atom_ID][2])
-        line_to_write = atom_type + atom_X + atom_Y + atom_Z + "\n"
+        line_to_write = "".join([atom_type, atom_X, atom_Y, atom_Z, "\n"])
         rows_to_write.append(line_to_write)
     with open(output_file, "w+") as xyz_file:
         xyz_file.writelines(rows_to_write)
-    print("XYZ data written to", str(output_file) + ".")
+    print("XYZ data written to", str(output_file))
 
 
 def increment_atom_IDs(
@@ -943,15 +937,15 @@ def write_to_file(log_file, string_list, mode="log_file"):
     if log_file == "stdout":
         if sys.stdout is not None:
             for line in string_list:
-                sys.stdout.writelines(line + "\n")
+                sys.stdout.writelines("".join([line, "\n"]))
     else:
         with open(log_file, open_as) as log_write:
             for line in string_list:
-                log_write.writelines(line + "\n")
+                log_write.writelines("".join([line, "\n"]))
 
 
 def load_pickle(pickle_location):
-    print("Loading Pickle from", str(pickle_location) + "...")
+    print("".join(["Loading Pickle from ", str(pickle_location), "..."]))
     try:
         with open(pickle_location, "rb") as pickle_file:
             objects = pickle.load(pickle_file)
@@ -1143,18 +1137,7 @@ def determine_event_tau(
                             write_to_file(
                                 log_file,
                                 [
-                                    "Attempted "
-                                    + str(maximum_attempts)
-                                    + " times to obtain a '"
-                                    + str(event_type)
-                                    + "'-type event timescale within the tolerances: "
-                                    + str(fastest_event)
-                                    + " <= tau < "
-                                    + str(slowest_event)
-                                    + " with the given rate "
-                                    + str(rate)
-                                    + " all without success. Permitting the event "
-                                    "anyway with the next random number."
+                                    "Attempted {0:d} times to obtain a {1:s}-type event timescale withing the tolerances: {2:.2e} <= tau < {3:.2e} with the given rate {4:.2e}, all without success. Permitting the event anyway with the next random number...".format(maximum_attempts, event_type, fastest_event, slowest_event, rate)
                                 ],
                             )
 

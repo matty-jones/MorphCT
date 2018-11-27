@@ -80,11 +80,11 @@ if __name__ == "__main__":
     with open(pickle_file_name, "rb") as pickle_file:
         jobs_list = pickle.load(pickle_file)
     jobs_to_run = jobs_list[CPU_rank]
-    hf.write_to_file(log_file, ["Found " + str(len(jobs_to_run)) + " jobs to run."])
+    hf.write_to_file(log_file, ["Found {:d} jobs to run.".format(len(jobs_to_run))])
     t0 = T.time()
     for job in jobs_to_run:
         t1 = T.time()
-        hf.write_to_file(log_file, ["Running job " + str(job) + "..."])
+        hf.write_to_file(log_file, ["Running job {:s}...".format(job)])
         output_file_name = job.replace(".inp", ".out").replace(
             "input_orca", "output_orca"
         )
@@ -96,10 +96,7 @@ if __name__ == "__main__":
                 hf.write_to_file(
                     log_file,
                     [
-                        output_file_name + " already exists, and"
-                        " overwrite_current_data is "
-                        + repr(overwrite)
-                        + "! skipping..."
+                        "".join([output_file_name, " already exists, and overwrite_current_data is ", repr(overwrite), "! skipping..."])
                     ],
                 )
                 continue
@@ -132,7 +129,7 @@ if __name__ == "__main__":
             output_ok = check_job_output(orca_stdout, job)
             if output_ok:
                 hf.write_to_file(log_file, ["Output OK and remove_orca_inputs set.",
-                                 "Deleting " + os.path.splitext(job)[0] + " inputs..."])
+                                 "".join(["Deleting ", os.path.splitext(job)[0], " inputs..."])])
                 for extension in [".inp", ".gbw", ".prop", ".tmp", ".ges",
                                   "_property.txt"]:
                     try:
@@ -156,11 +153,9 @@ if __name__ == "__main__":
         else:
             elapsed_time /= 86400.0
             time_units = "days."
-        elapsed_time = "%.1f" % (float(elapsed_time))
         hf.write_to_file(
             log_file,
-            ["Job " + str(job) + " completed in " + elapsed_time + " " + time_units
-             + "\n"],
+            ["Job {0:s} completed in {1:.2f} {2:s}\n".format(job, elapsed_time, time_units)],
         )
         # Now check the output file and delete the input files if we don't need them
         # any more
@@ -177,8 +172,7 @@ if __name__ == "__main__":
     else:
         elapsed_time /= 86400.0
         time_units = "days."
-    elapsed_time = "%.1f" % (float(elapsed_time))
     hf.write_to_file(
-        log_file, ["All jobs completed in " + elapsed_time + " " + time_units]
+        log_file, ["All jobs completed in {0:.2f} {1:s}".format(elapsed_time, time_units)]
     )
     hf.write_to_file(log_file, ["Exiting normally..."])

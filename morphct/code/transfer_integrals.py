@@ -10,7 +10,7 @@ from morphct.code import helper_functions as hf
 
 class orcaError(Exception):
     def __init__(self, file_name):
-        self.string = "No molecular orbital data present for " + str(file_name)
+        self.string = "".join(["No molecular orbital data present for ", file_name])
 
     def __str__(self):
         return self.string
@@ -58,51 +58,51 @@ def modify_orca_files(file_name, failed_file, failed_count, chromophore_list):
     if failed_count == 3:
         # Three lots of reruns without any successes, try to turn off SOSCF
         print(
-            str(file_name) + ": Three lots of reruns without any success -"
-            " turning off SOSCF to see if that helps..."
+            "".join([file_name, ": Three lots of reruns without any success -"
+            " turning off SOSCF to see if that helps..."])
         )
         turn_off_soscf(failed_file)
     elif failed_count == 6:
         # Still no joy - increase the number of SCF iterations and see if
         # convergence was just slow
         print(
-            str(file_name) + ": Six lots of reruns without any success -"
-            " increasing the number of SCF iterations to 500..."
+            "".join([file_name, ": Six lots of reruns without any success -"
+            " increasing the number of SCF iterations to 500..."])
         )
         increase_iterations(failed_file)
     elif failed_count == 9:
         # Finally, turn down the SCF tolerance
         print(
-            str(file_name) + ": Nine lots of reruns without any success -"
-            " decreasing SCF tolerance (sloppySCF)..."
+            "".join([file_name, ": Nine lots of reruns without any success -"
+            " decreasing SCF tolerance (sloppySCF)..."])
         )
         reduce_tolerance(failed_file)
     elif failed_count == 12:
         print(
-            str(file_name) + ": Failed to rerun orca 12 times, one final thing"
-            " that can be done is to change the numerical accuracy..."
+            "".join([file_name, ": Failed to rerun orca 12 times, one final thing"
+            " that can be done is to change the numerical accuracy..."])
         )
         revert_orca_files(failed_file)
         increase_grid(failed_file)
     elif failed_count == 15:
         print(
-            str(file_name) + ": Failed to rerun orca 15 times. Will try high"
-            " numerical accuracy with no SOSCF as a last-ditch effort..."
+            "".join([file_name, ": Failed to rerun orca 15 times. Will try high"
+            " numerical accuracy with no SOSCF as a last-ditch effort..."])
         )
         increase_grid_no_soscf(failed_file)
     elif failed_count == 18:
         # SERIOUS PROBLEM
         print(
-            str(file_name) + ": Failed to rerun orca 18 times, even with all"
+            "".join([file_name, ": Failed to rerun orca 18 times, even with all"
             " the input file tweaks. Examine the geometry - it is most likely"
-            " unreasonable."
+            " unreasonable."])
         )
         file_string = os.path.splitext(os.path.split(file_name)[1])[0]
         for chromo_string in file_string.split("-"):
             chromo_ID = int(chromo_string)
             print("AAIDs for chromophore", chromo_ID)
             print(chromophore_list[chromo_ID].AAIDs)
-        print("Reverting " + str(file_name) + " back to its original state...")
+        print("Reverting {:s} back to its original state...".format(file_name))
         revert_orca_files(failed_file)
         return 1
     return 0
@@ -234,19 +234,9 @@ def calculate_delta_E(chromophore_list, chromo1_ID, chromo2_ID):
     chromo2 = chromophore_list[chromo2_ID]
     # NOTE: SANITY CHECK
     if (chromo1.ID != chromo1_ID) or (chromo2.ID != chromo2_ID):
-        print(
-            "chromo1.ID ("
-            + str(chromo1.ID)
-            + ") != chromo1_ID ("
-            + str(chromo1_ID)
-            + "), or chromo2.ID"
-            " ("
-            + str(chromo2.ID)
-            + ") != chromo2_ID ("
-            + str(chromo2_ID)
-            + ")! CHECK CODE!"
+        raise SystemError(
+            "chromo1.ID ({0:d}) != chromo1_ID ({1:d}), or chromo2.ID ({2:d}) != chromo2_ID ({3:d})! CHECK CODE!".format(chromo1.ID, chromo1_ID, chromo2.ID, chromo2_ID)
         )
-        exit()
     # END OF SANITY CHECK
     if chromo1.species.lower() == "donor":
         # Hole transporter
@@ -296,7 +286,7 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
         # Update the chromophores in the chromophore_list with their
         # energy_levels
         try:
-            energy_levels = load_orca_output(orca_output_dir + file_name)
+            energy_levels = load_orca_output(os.path.join(orca_output_dir, file_name))
             chromophore.HOMO_1 = energy_levels[0]
             chromophore.HOMO = energy_levels[1]
             chromophore.LUMO = energy_levels[2]
@@ -337,7 +327,7 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
             chromo_ID = chromo_data[1]
             try:
                 # Update the chromophore data in the chromophore_list
-                energy_levels = load_orca_output(orca_output_dir + chromo_name)
+                energy_levels = load_orca_output(os.path.join(orca_output_dir + chromo_name))
                 chromophore_list[chromo_ID].HOMO_1 = energy_levels[0]
                 chromophore_list[chromo_ID].HOMO = energy_levels[1]
                 chromophore_list[chromo_ID].LUMO = energy_levels[2]
@@ -380,7 +370,7 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
             if sys.stdout is not None:
                 sys.stdout.flush()
             try:
-                energy_levels = load_orca_output(orca_output_dir + file_name)
+                energy_levels = load_orca_output(os.path.join(orca_output_dir, file_name))
                 dimer_HOMO_1 = energy_levels[0]
                 dimer_HOMO = energy_levels[1]
                 dimer_LUMO = energy_levels[2]
@@ -510,7 +500,7 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
             chromo1_ID = chromo_data[1]
             chromo2_ID = chromo_data[2]
             try:
-                energy_levels = load_orca_output(orca_output_dir + file_name)
+                energy_levels = load_orca_output(os.path.join(orca_output_dir, file_name))
                 dimer_HOMO_1 = energy_levels[0]
                 dimer_HOMO = energy_levels[1]
                 dimer_LUMO = energy_levels[2]

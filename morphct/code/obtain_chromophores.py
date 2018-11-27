@@ -127,7 +127,7 @@ class chromophore:
                     for key, val in self.__dict__:
                         print(key, val)
                     raise SystemError(
-                        "Chromophore " + str(self.ID) + " has no species! Exiting..."
+                        "Chromophore {:d} has no species! Exiting...".format(self.ID)
                     )
             else:
                 raise SystemError(
@@ -314,10 +314,7 @@ def calculate_chromophores(
     old_keys = sorted(chromophore_data.keys())
     for new_key, old_key in enumerate(old_keys):
         chromophore_data[new_key] = chromophore_data.pop(old_key)
-    print(
-        str(len(list(chromophore_data.keys())))
-        + " chromophores successfully identified!"
-    )
+    print("{:d} chromophores successfully identified!".format(len(list(chromophore_data.keys()))))
     # Now let's create a list of all the chromophore instances which contain all
     # of the information we could ever want about them.
     chromophore_instances = []
@@ -393,10 +390,7 @@ def calculate_chromophores_AA(
     old_keys = sorted(chromophore_data.keys())
     for new_key, old_key in enumerate(old_keys):
         chromophore_data[new_key] = chromophore_data.pop(old_key)
-    print(
-        str(len(list(chromophore_data.keys())))
-        + " chromophores successfully identified!"
-    )
+    print("{:d} chromophores successfully identified!".format(len(list(chromophore_data.keys()))))
     # Now let's create a list of all the chromophore instances which contain all
     # of the information we could ever want about them.
     chromophore_instances = []

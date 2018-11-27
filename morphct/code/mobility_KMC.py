@@ -21,8 +21,7 @@ def main(
     try:
         if parameter_dict["use_average_hop_rates"]:
             print(
-                "Be advised: use_average_hop_rates is set to",
-                repr(parameter_dict["use_average_hop_rates"]) + ".",
+                "".join(["Be advised: use_average_hop_rates is set to ", repr(parameter_dict["use_average_hop_rates"]), "."])
             )
             print(
                 "Orca-calculated energy levels will be ignored, and the following hop "

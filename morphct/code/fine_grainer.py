@@ -321,7 +321,7 @@ class morphology:
                             break
                         except:
                             continue
-                    atom_type = atom_type[:i] + str(integer + 1)
+                    atom_type = "".join([atom_type[:i], str(integer + 1)])
                 morphology_atom_types.append(atom_type)
                 mapping_for_this_FF[lj_interaction[0]] = atom_type
             force_field_mappings.append(mapping_for_this_FF)
@@ -548,14 +548,14 @@ class atomistic:
                     ghost_dictionary["unwrapped_position"].append(ghost_COM)
                     ghost_dictionary["mass"].append(1.0)
                     ghost_dictionary["diameter"].append(1.0)
-                    ghost_dictionary["type"].append("".join(["R", str(CG_type_list[site_ID])]))
+                    ghost_dictionary["type"].append("R{:s}".format(CG_type_list[site_ID]))
                     ghost_dictionary["body"].append(current_monomer_index)
                     ghost_dictionary["charge"].append(0.0)
                     # Then create the corresponding CG anchorpoint
                     ghost_dictionary["unwrapped_position"].append(ghost_COM)
                     ghost_dictionary["mass"].append(1.0)
                     ghost_dictionary["diameter"].append(1.0)
-                    ghost_dictionary["type"].append("".join(["X", str(CG_type_list[site_ID])]))
+                    ghost_dictionary["type"].append("X{:s}".format(CG_type_list[site_ID]))
                     ghost_dictionary["body"].append(-1)
                     ghost_dictionary["charge"].append(0.0)
                     # Now create a bond between them
@@ -564,7 +564,7 @@ class atomistic:
                     # number of ghost particles already in the system.
                     ghost_dictionary["bond"].append(
                         [
-                            "-".join([str(ghost_dictionary["type"][-2]), str(ghost_dictionary["type"][-1])]),
+                            "{0:s}-{1:s}".format(ghost_dictionary["type"][-2], ghost_dictionary["type"][-1]),
                             "".join(["*" + str(len(ghost_dictionary["type"]) - 2)]),
                             "".join(["*" + str(len(ghost_dictionary["type"]) - 1)]),
                         ]
@@ -577,7 +577,7 @@ class atomistic:
                     )
                     ghost_dictionary["mass"].append(1.0)
                     ghost_dictionary["diameter"].append(1.0)
-                    ghost_dictionary["type"].append("".join(["X", str(CG_type_list[site_ID])]))
+                    ghost_dictionary["type"].append("X{:s}".format(CG_type_list[site_ID]))
                     ghost_dictionary["body"].append(-1)
                     ghost_dictionary["charge"].append(0.0)
                     # Add in bonds between the CG anchorpoints and the atom
@@ -610,7 +610,7 @@ class atomistic:
                     # because they are already correct for the whole system.
                     ghost_dictionary["bond"].append(
                         [
-                            "-".join([str(ghost_dictionary["type"][-1]), str(this_monomer_dictionary["type"][closest_atom_ID])]),
+                            "{0:s}-{1:s}".format(ghost_dictionary["type"][-1], this_monomer_dictionary["type"][closest_atom_ID]),
                             "".join(["*" + str(len(ghost_dictionary["type"]) - 1)]),
                             "".join(["_" + str(closest_atom_ID + no_atoms_in_molecule)]),
                         ]
