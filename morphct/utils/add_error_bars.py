@@ -90,7 +90,7 @@ def iterate_through_runs_to_combine(runs):
     runs_data = {}
     # Iterate through each run over which to average.
     for directory in runs:
-        result_file = directory + "/results.csv"
+        result_file = os.path.join(directory, "results.csv")
         # Make sure the results.csv file exists.
         if os.path.exists(result_file):
             runs_data = extract_mobility(result_file, runs_data)

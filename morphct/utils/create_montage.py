@@ -50,7 +50,7 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title, save_f
                     "-annotate",
                     "0",
                     str(ID + 1) + ")",
-                    directory + "/" + ID_str + "_temp.png",
+                    os.path.join(directory, "".join([ID_str, "_temp.png"])),
                 ]
             )
         else:
@@ -83,7 +83,7 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title, save_f
                     "-annotate",
                     "+40+0",
                     str(ID + 1) + ")",
-                    directory + "/" + ID_str + "_temp.png",
+                    os.path.join(directory, "".join([ID_str, "_temp.png"])),
                 ]
             )
     # Create montage
@@ -95,14 +95,14 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title, save_f
             "concatenate",
             "-tile",
             montage_dims,
-            directory + "/*_temp.png",
+            os.path.join(directory, "*_temp.png"),
             "miff:-",
         ],
         stdout=sp.PIPE,
     )
     print("Exporting montage...")
     if save_file is None:
-        save_file = "".join([directory, "/", title.replace(" ", "_"), ".png"])
+        save_file = os.path.join(directory, "".join([title.replace(" ", "_"), ".png"]))
     convert = sp.call(
         [
             "convert",
@@ -130,9 +130,7 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title, save_f
     )
     montage.wait()
     print("Removing temporary files...")
-    for file_name in glob.glob(directory + "/*_temp.png") + glob.glob(
-        directory + "/*_crop.png"
-    ):
+    for file_name in glob.glob(os.path.join(directory, "*_temp.png")) + glob.glob(os.path.join(directory, "*_crop.png")):
         os.remove(file_name)
     print("Montage created and saved at ", save_file)
 

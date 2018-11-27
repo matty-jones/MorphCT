@@ -359,23 +359,24 @@ def convert_KMC(morphology_directory):
 
 
 def load_KMC_results_pickle(directory):
+    KMC_pickle = os.path.join(directory, "KMC", "KMCResults.pickle")
     try:
-        with open(directory + "/KMC/KMCResults.pickle", "rb") as pickle_file:
+        with open(KMC_pickle, "rb") as pickle_file:
             carrier_data = pickle.load(pickle_file)
     except FileNotFoundError:
         print("No final KMC_results.pickle found. Creating it from incomplete parts...")
         create_results_pickle(directory)
-        with open(directory + "/KMC/KMC_results.pickle", "rb") as pickle_file:
+        with open(KMC_pickle, "rb") as pickle_file:
             carrier_data = pickle.load(pickle_file)
     except UnicodeDecodeError:
-        with open(directory + "/KMC/KMCResults.pickle", "rb") as pickle_file:
+        with open(KMC_pickle, "rb") as pickle_file:
             carrier_data = pickle.load(pickle_file, encoding="latin1")
     return carrier_data
 
 
 def create_results_pickle(directory):
     cores_list = []
-    for file_name in glob.glob(directory + "/KMC/*"):
+    for file_name in glob.glob(os.path.join(directory, "KMC", "*")):
         try:
             cores_list.append(re.findall("([_])(..)([\.])", file_name)[0][1])
         except IndexError:
@@ -385,14 +386,14 @@ def create_results_pickle(directory):
     keep_list = []
     for core in cores_list:
         # Check if there is already a finished KMC_results pickle
-        main = directory + "/KMC/KMCResults_%02d.pickle" % (int(core))
+        main = os.path.join(directory, "KMC", "KMCResults_%02d.pickle" % (int(core)))
         if os.path.exists(main):
             results_pickles_list.append(main)
             keep_list.append(None)
             continue
         # If not, find the slot1 and slot2 pickle that is most recent
-        slot1 = directory + "/KMC/KMCSlot1Results_%02d.pickle" % (int(core))
-        slot2 = directory + "/KMC/KMCSlot2Results_%02d.pickle" % (int(core))
+        slot1 = os.path.join(directory, "KMC", "KMCSlot1Results_%02d.pickle" % (int(core)))
+        slot2 = os.path.join(directory, "KMC", "KMCSlot2Results_%02d.pickle" % (int(core)))
         if os.path.exists(slot1) and not os.path.exists(slot2):
             keep_list.append(slot1)
         elif os.path.exists(slot2) and not os.path.exists(slot1):
@@ -407,7 +408,7 @@ def create_results_pickle(directory):
         # Skip this core if we already have a finished KMC_results for it
         if keeper[1] is None:
             continue
-        new_name = directory + "/KMC/KMC_results_" + str(keeper[0]) + ".pickle"
+        new_name = os.path.join(directory, "KMC", "KMC_results_{}.pickle".format(keeper[0]))
         shutil.copyfile(str(keeper[1]), new_name)
         results_pickles_list.append(new_name)
     combine_results_pickles(directory, results_pickles_list)
@@ -430,9 +431,10 @@ def combine_results_pickles(directory, pickle_files):
                     combined_data[key] += val
     # Write out the combined data
     print("Writing out the combined pickle file...")
-    with open(directory + "/KMC/KMC_results.pickle", "wb+") as pickle_file:
+    combined_file_loc = os.path.join(directory, "KMC", "KMC_results.pickle")
+    with open(combined_file_loc, "wb+") as pickle_file:
         pickle.dump(combined_data, pickle_file)
-    print("Complete data written to", directory + "/KMC_results.pickle.")
+    print("Complete data written to", combined_file_loc)
 
 
 def main():

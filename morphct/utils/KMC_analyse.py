@@ -27,16 +27,17 @@ temperature = 290  # K
 
 
 def load_KMC_results_pickle(directory):
+    KMC_pickle = os.path.join(directory, "KMC", "KMCResults.pickle")
     try:
-        with open(directory + "/KMC/KMC_results.pickle", "rb") as pickle_file:
+        with open(KMC_pickle, "rb") as pickle_file:
             carrier_data = pickle.load(pickle_file)
     except FileNotFoundError:
         print("No final KMC_results.pickle found. Creating it from incomplete parts...")
         create_results_pickle(directory)
-        with open(directory + "/KMC/KMC_results.pickle", "rb") as pickle_file:
+        with open(KMC_pickle, "rb") as pickle_file:
             carrier_data = pickle.load(pickle_file)
     except UnicodeDecodeError:
-        with open(directory + "/KMC/KMC_results.pickle", "rb") as pickle_file:
+        with open(KMC_pickle, "rb") as pickle_file:
             carrier_data = pickle.load(pickle_file, encoding="latin1")
     return carrier_data
 
@@ -463,17 +464,7 @@ def plot_MSD(
     plt.plot(fit_X, fit_Y, "r")
     plt.xlabel("Time (s)")
     plt.ylabel("MSD (m" + r"$^{2}$)")
-    mobility_string = "%.3e" % mobility
-    plt.title(
-        r"$\mu_{0,"
-        + carrier_type[0]
-        + r"}$"
-        + " = "
-        + mobility_string
-        + " cm"
-        + r"$^{2}$/vs" % (mobility),
-        y=1.1,
-    )
+    plt.title("".join([r"$\mu_{{{0}, {1}}}$ = {2:.3e} cm$^{{{3}}}$/Vs".format(0, carrier_type[0], mobility, 2)]), y=1.1)
     # 18 for hole linear MSD, 19 for electron linear MSD
     file_name = "".join(
         [
@@ -489,18 +480,8 @@ def plot_MSD(
     plt.errorbar(times, MSDs, xerr=time_standard_errors, yerr=MSD_standard_errors)
     plt.semilogx(fit_X, fit_Y, "r")
     plt.xlabel("Time (s)")
-    plt.ylabel("MSD (m" + r"$^{2}$)")
-    mobility_string = "%.3e" % mobility
-    plt.title(
-        r"$\mu_{0,"
-        + carrier_type[0]
-        + r"}$"
-        + " = "
-        + mobility_string
-        + " cm"
-        + r"$^{2}$/vs" % (mobility),
-        y=1.1,
-    )
+    plt.ylabel(r"MSD (m$^{2}$)")
+    plt.title("".join([r"$\mu_{{{0}, {1}}}$ = {2:.3e} cm$^{{{3}}}$/Vs".format(0, carrier_type[0], mobility, 2)]), y=1.1)
     # 20 for hole semilog MSD, 21 for electron semilog MSD
     file_name = "".join(
         [
@@ -516,20 +497,10 @@ def plot_MSD(
     plt.errorbar(times, MSDs, xerr=time_standard_errors, yerr=MSD_standard_errors)
     plt.plot(fit_X, fit_Y, "r")
     plt.xlabel("Time (s)")
-    plt.ylabel("MSD (m" + r"$^{2}$)")
+    plt.ylabel(r"MSD (m$^{2}$)")
     plt.xscale("log")
     plt.yscale("log")
-    mobility_string = "%.3e" % mobility
-    plt.title(
-        r"$\mu_{0,"
-        + carrier_type[0]
-        + r"}$"
-        + " = "
-        + mobility_string
-        + " cm"
-        + r"$^{2}$/vs" % (mobility),
-        y=1.1,
-    )
+    plt.title("".join([r"$\mu_{{{0}, {1}}}$ = {2:.3e} cm$^{{{3}}}$/Vs".format(0, carrier_type[0], mobility, 2)]), y=1.1)
     # 22 for hole semilog MSD, 23 for electron semilog MSD
     file_name = "".join(
         [
@@ -1787,7 +1758,7 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
             donor_bin_edges,
             donor_fit_args,
             "donor",
-            output_dir + "/06_donor_delta_E_ij.png",
+            os.path.join(output_dir, "06_donor_delta_E_ij.png"),
             donor_lambda_ij,
         )
     if len(acceptor_delta_E_ij) > 0:
@@ -1818,7 +1789,7 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
             acceptor_bin_edges,
             acceptor_fit_args,
             "acceptor",
-            output_dir + "/07_acceptor_delta_E_ij.png",
+            os.path.join(output_dir, "07_acceptor_delta_E_ij.png"),
             acceptor_lambda_ij,
         )
     return data_dict
@@ -2222,7 +2193,7 @@ def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name, cut_off):
 
 
 def write_CSV(data_dict, directory):
-    CSV_file_name = directory + "/results.csv"
+    CSV_file_name = os.path.join(directory, "results.csv")
     with open(CSV_file_name, "w+") as CSV_file:
         CSV_writer = csv.writer(CSV_file)
         for key in sorted(data_dict.keys()):
@@ -2232,7 +2203,7 @@ def write_CSV(data_dict, directory):
 
 def create_results_pickle(directory):
     cores_list = []
-    for file_name in glob.glob(directory + "/KMC/*"):
+    for file_name in glob.glob(os.path.join(directory, "KMC", "*")):
         if "log" not in file_name:
             continue
         try:
@@ -2244,14 +2215,14 @@ def create_results_pickle(directory):
     keep_list = []
     for core in cores_list:
         # Check if there is already a finished KMC_results pickle
-        main = directory + "/KMC/KMC_results_%02d.pickle" % (int(core))
+        main = os.path.join(directory, "KMC", "KMC_results_%02d.pickle" % (int(core)))
         if os.path.exists(main):
             results_pickles_list.append(main)
             keep_list.append(None)
             continue
         # If not, find the slot1 and slot2 pickle that is most recent
-        slot1 = directory + "/KMC/KMC_slot1_results_%02d.pickle" % (int(core))
-        slot2 = directory + "/KMC/KMC_slot2_results_%02d.pickle" % (int(core))
+        slot1 = os.path.join(directory, "KMC", "KMC_slot1_results_%02d.pickle" % (int(core)))
+        slot2 = os.path.join(directory, "KMC", "KMC_slot2_results_%02d.pickle" % (int(core)))
         if os.path.exists(slot1) and not os.path.exists(slot2):
             keep_list.append(slot1)
         elif os.path.exists(slot2) and not os.path.exists(slot1):
@@ -2266,7 +2237,7 @@ def create_results_pickle(directory):
         # Skip this core if we already have a finished KMC_results for it
         if keeper[1] is None:
             continue
-        new_name = directory + "/KMC/KMC_results_" + str(keeper[0]) + ".pickle"
+        new_name = os.path.join(directory, "KMC", "KMC_results_{}.pickle".format(keeper[0]))
         shutil.copyfile(str(keeper[1]), new_name)
         results_pickles_list.append(new_name)
     combine_results_pickles(directory, results_pickles_list)
@@ -2289,9 +2260,10 @@ def combine_results_pickles(directory, pickle_files):
                     combined_data[key] += val
     # Write out the combined data
     print("Writing out the combined pickle file...")
-    with open(directory + "/KMC/KMC_results.pickle", "wb+") as pickle_file:
+    combined_file_loc = os.path.join(directory, "KMC", "KMC_results.pickle")
+    with open(combined_file_loc, "wb+") as pickle_file:
         pickle.dump(combined_data, pickle_file)
-    print("Complete data written to", directory + "/KMC_results.pickle.")
+    print("Complete data written to", combined_file_loc)
 
 
 def calculate_cut_off_from_dist(
@@ -2808,7 +2780,7 @@ def main():
     electron_anisotropy_data = []
     for directory in directory_list:
         # Create the figures directory if it doesn't already exist
-        os.makedirs(directory + "/figures", exist_ok=True)
+        os.makedirs(os.path.join(directory, "figures"), exist_ok=True)
         # Load in all the required data
         data_dict = {}
         print("\n")
@@ -2920,7 +2892,7 @@ def main():
             data_dict[current_carrier_type.lower() + "_mobility"] = mobility
             data_dict[current_carrier_type.lower() + "_mobility_r_squared"] = r_squared
         # Now plot the distributions!
-        temp_dir = directory + "/figures"
+        temp_dir = os.path.join(directory, "figures")
         chromo_to_mol_ID = determine_molecule_IDs(
             CG_to_AAID_master, AA_morphology_dict, parameter_dict, chromophore_list
         )
