@@ -29,8 +29,7 @@ def create_input_files(chromophore_list, AA_morphology_dict, parameter_dict):
             [chromophore.image] * len(chromophore.AAIDs),
             terminating_group_positions,
             terminating_group_images,
-            parameter_dict["output_orca_directory"]
-            + chromophore.orca_input,
+            "".join([parameter_dict["output_orca_directory"], chromophore.orca_input]),
         )
     print("")
     # Determine how many pairs there are first:
@@ -101,8 +100,7 @@ def create_input_files(chromophore_list, AA_morphology_dict, parameter_dict):
                     images,
                     term_group_posns1 + term_group_posns2,
                     terminating_group_images1 + terminating_group_images2,
-                    parameter_dict["output_orca_directory"]
-                    + input_name,
+                    "".join([parameter_dict["output_orca_directory"], input_name]),
                 )
             else:
                 # Write the dimer input file
@@ -112,8 +110,7 @@ def create_input_files(chromophore_list, AA_morphology_dict, parameter_dict):
                     images,
                     None,
                     None,
-                    parameter_dict["output_orca_directory"]
-                    + input_name,
+                    "".join([parameter_dict["output_orca_directory"], input_name]),
                 )
     print("")
 

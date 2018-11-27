@@ -91,8 +91,7 @@ def calc_COM(list_of_positions, list_of_atom_types=None, list_of_atom_masses=Non
                 list_of_atom_masses.append(18.998403)
             else:
                 raise SystemError(
-                    "Unknown atomic mass " + str(atom_type) + ". Please hardcode"
-                    " into helper_functions.calc_COM."
+                    "".join(["Unknown atomic mass ", str(atom_type), ". Please hardcode into helper_functions.calc_COM."])
                 )
     total_mass = np.sum(list_of_atom_masses)
     for atom_ID, position in enumerate(list_of_positions):
@@ -663,17 +662,10 @@ def check_constraint_names(AA_morphology_dict):
     constraint_types = ["bond", "angle", "dihedral", "improper"]
     for constraint_type in constraint_types:
         for constraint_ID, constraint in enumerate(AA_morphology_dict[constraint_type]):
-            new_constraint_name = ""
-            # Iterate through the atomIDs and update the constraint name based
-            # on the types
-            for atom_ID in constraint[1:]:
-                new_constraint_name += AA_morphology_dict["type"][atom_ID]
-                new_constraint_name += "-"
+            new_constraint_name = "-".join([AA_morphology_dict["type"][atom_ID] for atom_ID in constraint[1:]])
             # Update the dict if the name has changed
-            if constraint[0] != new_constraint_name[:-1]:
-                AA_morphology_dict[constraint_type][constraint_ID][
-                    0
-                ] = new_constraint_name[:-1]
+            if constraint[0] != new_constraint_name:
+                AA_morphology_dict[constraint_type][constraint_ID][0] = new_constraint_name
     return AA_morphology_dict
 
 
@@ -701,25 +693,12 @@ def write_morphology_xml(
     lines_to_write = [
         '<?xml version="1.0" encoding="UTF-8"?>\n',
         '<hoomd_xml version="1.4">\n',
-        '<configuration time_step="0" dimensions="3" natoms="'
-        + str(input_dictionary["natoms"])
-        + '" >\n',
-        '<box lx="'
-        + str(input_dictionary["lx"])
-        + '" ly="'
-        + str(input_dictionary["ly"])
-        + '" lz="'
-        + str(input_dictionary["lz"]),
+        "".join(['<configuration time_step="0" dimensions="3" natoms="', str(input_dictionary["natoms"]), '" >\n']),
+        "".join(['<box lx="', str(input_dictionary["lx"]), '" ly="', str(input_dictionary["ly"]), '" lz="', str(input_dictionary["lz"])]),
     ]
     if all([tilt_factor in input_dictionary.keys() for tilt_factor in tilt_factors]):
         lines_to_write[-1] += (
-            '" xy="'
-            + str(input_dictionary["xy"])
-            + '" xz="'
-            + str(input_dictionary["xz"])
-            + '" yz="'
-            + str(input_dictionary["yz"])
-            + '" />\n'
+            "".join(['" xy="', str(input_dictionary["xy"]), '" xz="', str(input_dictionary["xz"]), '" yz="', str(input_dictionary["yz"]), '" />\n'])
         )
     else:
         lines_to_write[-1] += '" />\n'
