@@ -689,19 +689,32 @@ def write_morphology_xml(
     input_dictionary, output_file, sigma=1.0, check_wrapped_posns=True
 ):
     # Firstly, scale everything by the inverse of the provided sigma value
+    box_lengths = ["lx", "ly", "lz"]
     tilt_factors = ["xy", "yz", "xz"]
     if sigma != 1.0:
         input_dictionary = scale(input_dictionary, 1.0 / sigma)
     # Now need to check the positions of the atoms to ensure that everything is
     # correctly contained inside the box
     if check_wrapped_posns is True:
-        if any(
-            [tilt_factor in input_dictionary.keys() for tilt_factor in tilt_factors]
-        ) and any([input_dictionary[tilt_factor] != 0 for tilt_factor in tilt_factors]):
-            print("Can't check atom wrapping for cells with a non-zero tilt factor")
+        if all(
+            np.isclose(
+                [input_dictionary[box_length] for box_length in box_lengths], [0, 0, 0]
+            )
+        ):
+            print(
+                "No box length specified, cannot wrap positions. Continuing as if"
+                " check_wrapped_posns is False..."
+            )
         else:
-            print("Checking wrapped positions before writing xml...")
-            input_dictionary = check_wrapped_positions(input_dictionary)
+            if any(
+                [tilt_factor in input_dictionary.keys() for tilt_factor in tilt_factors]
+            ) and any(
+                [input_dictionary[tilt_factor] != 0 for tilt_factor in tilt_factors]
+            ):
+                print("Can't check atom wrapping for cells with a non-zero tilt factor")
+            else:
+                print("Checking wrapped positions before writing xml...")
+                input_dictionary = check_wrapped_positions(input_dictionary)
     # Need to add natoms if it doesn't exist already
     if "natoms" not in input_dictionary.keys():
         input_dictionary["natoms"] = len(input_dictionary["position"])
