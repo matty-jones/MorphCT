@@ -17,6 +17,31 @@ hbar = 1.05457173E-34  # m^{2} kg s^{-1}
 sys.setrecursionlimit(10000)
 
 
+def create_blank_morphology_dict():
+    atom_dictionary = {
+        "position": [],
+        "image": [],
+        "unwrapped_position": [],
+        "mass": [],
+        "diameter": [],
+        "type": [],
+        "body": [],
+        "bond": [],
+        "angle": [],
+        "dihedral": [],
+        "improper": [],
+        "charge": [],
+        "xy": 0.0,
+        "xz": 0.0,
+        "yz": 0.0,
+        "lx": 0.0,
+        "ly": 0.0,
+        "lz": 0.0,
+        "natoms": 0,
+    }
+    return atom_dictionary
+
+
 def find_index(string, character):
     """
     This function returns the locations of an inputted character in an inputted string
@@ -460,22 +485,7 @@ def load_morphology_xml(xml_path, sigma=1.0):
     # Improper as <improper (usually none in xml)
     # Charge as <charge
     # Set default tilts so when we use simdims later they exisit always
-    atom_dictionary = {
-        "position": [],
-        "image": [],
-        "mass": [],
-        "diameter": [],
-        "type": [],
-        "body": [],
-        "bond": [],
-        "angle": [],
-        "dihedral": [],
-        "improper": [],
-        "charge": [],
-        "xy": 0.0,
-        "xz": 0.0,
-        "yz": 0.0,
-    }
+    atom_dictionary = create_blank_morphology_dict()
     record = False
     with open(xml_path, "r") as xml_file:
         xml_data = xml_file.readlines()
