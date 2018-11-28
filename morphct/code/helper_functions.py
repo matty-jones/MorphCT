@@ -21,7 +21,6 @@ def create_blank_morphology_dict():
     atom_dictionary = {
         "position": [],
         "image": [],
-        "unwrapped_position": [],
         "mass": [],
         "diameter": [],
         "type": [],
