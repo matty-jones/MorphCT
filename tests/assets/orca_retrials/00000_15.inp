@@ -1,0 +1,12 @@
+# ================================================================
+# Orca input file made by Matty Jones
+# ================================================================
+!ZINDO/S SlowConv Grid7 NoFinalGrid NoSOSCF SloppySCF
+! NOPOP
+! NOMOPRINT
+* xyz 0   1
+ H -0.37000  0.00000  0.00000
+ H  0.37000  0.00000  0.00000
+*
+
+%scf MaxIter 500 end
