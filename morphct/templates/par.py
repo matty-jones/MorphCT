@@ -1,3 +1,5 @@
+import os as __os
+
 # ---==============================================---
 # ---======== Directory and File Structure ========---
 # ---==============================================---
@@ -6,11 +8,16 @@
 The following parameters describe the location of the required input and
 eventual output files. Note that morph directories must be specified, even
 for device files to ensure the correct device components are loaded.
+A seperate orca directory can be specified for the QCCs. It is recommended
+that /dev/shm or similar shared-memory directory be used to dramatically
+improve the speed of orca calculations. Otherwise, setting the output_orca_dir
+to None will use the output_morph_dir instead.
 '''
-input_morph_dir = '/Users/mattyjones/GoogleDrive/Boise/code/MorphCT/inputMolMorphs'
-output_morph_dir = '/Users/mattyjones/GoogleDrive/Boise/code/MorphCT/outputMolFiles'
-input_device_dir = '/Users/mattyjones/GoogleDrive/Boise/code/MorphCT/inputDeviceMorphs'
-output_device_dir = '/Users/mattyjones/GoogleDrive/Boise/code/MorphCT/outputDeviceFiles'
+input_morph_dir = __os.path.join(__os.getcwd(), "inputs")
+output_morph_dir = __os.path.join(__os.getcwd(), "outputs")
+output_orca_dir = None
+input_device_dir = __os.path.join(__os.getcwd(), "input_devices")
+output_device_dir = __os.path.join(__os.getcwd(), "output_devices")
 
 # ---==============================================---
 # ---========== Input Morphology Details ==========---
@@ -19,7 +26,7 @@ output_device_dir = '/Users/mattyjones/GoogleDrive/Boise/code/MorphCT/outputDevi
 The name of the morphology to run (needs to match the name of the xml (including file extension) in input_morph_dir.
 Can be set to None if only running device simulations (and molecular sims are already completed)
 '''
-morphology = None
+morphology = <INPUTXML>
 
 '''
 The sigma value to use (in Angstroems) - necessary for the quantum chemical calculations.
@@ -30,23 +37,19 @@ input_sigma = 1.0
 '''
 The name of the device morphology to use (must match a directory in the input_device_dir).
 '''
-device_morphology = 'testCrystalBilayerLog'
+device_morphology = None
 
 '''
 The names of the corresponding device components/moieties (must match morphologies with calculate_transfer_integrals
 already executed in the output_morph_dir)
 '''
 device_components = {
-    0: 'donor_crystal',
-    1: 'acceptor_crystal',
-    2: 'mixed_crystal_bilayer',
 }
-
 '''
 The boolean that ignores preveiously calculated data for this morphology, and instead overwrites it in the relevant
 output directory.
 '''
-overwrite_current_data = True
+overwrite_current_data = False
 
 '''
 An integer to set the master random seed in definitions.py. From this seed, all child process seeds will be spawned.
@@ -63,13 +66,13 @@ random_seed_override = None
 The following section allows the user to select which MorphCT modules they would like to run.
 comments after each module describe the prerequisites that must be run first.
 '''
-execute_fine_graining = False                 # Requires: None
-execute_molecular_dynamics = False            # Requires: fine_graining
-execute_obtain_chromophores = False           # Requires: Atomistic morphology, or molecular_dynamics
-execute_ZINDO = False                         # Requires: obtain_chromophores
-execute_calculate_transfer_integrals = False  # Requires: execute_zindo
-execute_calculate_mobility = False            # Requires: calculate_transfer_integrals
-execute_device_simulation = True              # Requires: calculate_transfer_integrals for all device_components
+execute_fine_graining = False
+execute_molecular_dynamics = False
+execute_obtain_chromophores = False
+execute_ZINDO = False
+execute_calculate_transfer_integrals = False
+execute_calculate_mobility = False
+execute_device_simulation = False
 
 # ---==============================================---
 # ---========== Fine Graining Parameters ==========---
@@ -158,7 +161,7 @@ The following section allows the user to calibrate some parameters for the pair 
 '''
 The cut-off value for pair potentials during execute_molecular_dynamics
 '''
-pair_r_cut = 10.0
+pair_r_cut = 2.5
 
 '''
 The value of the dissipative gamma to use during the DPD phase of execute_molecular_dynamics (unused if no DPD)
@@ -177,7 +180,7 @@ specified then that value will be used for all phases.
 '''
 The number of MD phases to run
 '''
-number_of_phases = 8
+number_of_phases = 1
 
 '''
 The dimensionless system temperature to perform MD at
@@ -192,50 +195,50 @@ taus = [1.0]
 '''
 The pair interactions to use (permitted: 'none', 'dpd', 'lj')
 '''
-pair_types = ['none', 'dpd', 'lj', 'lj', 'lj', 'lj', 'lj', 'lj']
+pair_types = ["lj"]
 
 '''
 The bond constraints to use (permitted: 'harmonic')
 '''
-bond_types = ['harmonic']
+bond_types = ["harmonic"]
 
 '''
 The angle constraints to use (permitted: 'harmonic')
 '''
-angle_types = ['harmonic']
+angle_types = ["harmonic"]
 
 '''
 The dihedral constraints to use (permitted: 'opls', 'table')
 '''
-dihedral_types = ['opls']
+dihedral_types = ["opls"]
 
 '''
 The atoms to be included in the integration steps (permitted: 'all', <specific CG site name>)
 '''
-integration_targets = ['all']
+integration_targets = ["all"]
 
 '''
 Timestep values for each phase (in dimensionless time units)
 '''
-timesteps = [1E-3, 1E-3, 1E-10, 1E-9, 1E-8, 1E-7, 1E-6, 1E-5]
+timesteps = [1E-3]
 
 '''
 Simulation durations for each phase (in # of timesteps)
 '''
-durations = [1E5, 1E4, 1E3, 1E3, 1E3, 1E4, 1E5, 1E5]
+durations = [1E5]
 
 '''
 The conditions under which the simulation finishes. Incorporated to allow simulations to finish when
 they hit the minimum KE. (permitted: 'ke_min, max_t')
 '''
-termination_conditions = ['ke_min', 'max_t', 'max_t', 'max_t', 'max_t', 'max_t', 'max_t', 'max_t']
+termination_conditions = ["max_t"]
 
 '''
 Usually, when 'all' is selected, the rigid body COMs are strongly bonded with 0 equilibration distance to
 the original coarse-grained site positions. This constraint can be relaxed by specifying either particular
 CG sites to constrain (e.g. 'A,B') or 'none'
 '''
-group_anchorings = ['all', 'all', 'all', 'all', 'all', 'all', 'all', 'none']
+group_anchorings = ["none"]
 
 '''
 Boolean to decide whether to write a DCD file
@@ -269,14 +272,14 @@ For AA_rigid_body_species and CG_site_species there are 3 modes of operation:
    3) len(AA_rigid_body_species) > 0:
       This is the operation for a more complex atomistic morphology, where multiple species
       may be present (e.g. block copolymer, or small molecule blend). MorphCT uses the HOOMD
-      rigid bodies to decide which chromophores are which species. Note that the names need
-      to be consistent with the chromophore_species key names defined below. Non-numpy
+      rigid bodies to decide which chromophores are which species. Note that non-numpy
       ranges work too. For example,
-      AA_rigid_body_species = {'d1': range(0,100), 'a2': range(100,200)}
+      AA_rigid_body_species = {'donor': range(0,100), 'acceptor': range(100,200)}
 '''
 AA_rigid_body_species = {
 }
 CG_site_species = {
+    "all": "donor"
 }
 
 '''
@@ -317,7 +320,7 @@ remove_orca_outputs = True
 This parameter is no longer supported on the master branch due to lack of testing.
 Check the MorphCT "variable_chromo_lengths" if you'd like to.
 '''
-chromophore_length = 3
+chromophore_length = 0
 
 # ---==============================================---
 # ---=== Chromophore Energy Scaling Parameters ====---
@@ -339,34 +342,13 @@ species (string)
 reorganisation_energy (float, e_V)
 '''
 chromophore_species = {
-  "d1": {
-    "literature_MO": -5.0,
-    "target_DOS_std": 0.1,
-    "reorganisation_energy": 0.3064,
-    "species": "donor",
-    "VRH_delocalisation": 2e-10,
-  },
-  "d2": {
-    "literature_MO": -5.0,
-    "target_DOS_std": 0.1,
-    "reorganisation_energy": 0.3064,
-    "species": "donor",
-    "VRH_delocalisation": 2e-10,
-  },
-  "a1": {
-    "literature_MO": -4.7,
-    "target_DOS_std": 0.1,
-    "reorganisation_energy": 0.1496,
-    "species": "acceptor",
-    "VRH_delocalisation": 4e-10,
-  },
-  "a2": {
-    "literature_MO": -3.7,
-    "target_DOS_std": 0.1,
-    "reorganisation_energy": 0.2496,
-    "species": "acceptor",
-    "VRH_delocalisation": 4e-10,
-  },
+    "donor": {
+        "literature_MO": -5.0,
+        "target_DOS_std": 0.1,
+        "reorganisation_energy": 0.1,
+        "species": "donor",
+        "VRH_delocalisation": 2E-10,
+    },
 }
 
 '''
@@ -375,6 +357,14 @@ integral calculation and in the marcus hopping rate. mobilities will be signific
 will permit the user to only consider the effect of morphology on charge transport.
 '''
 use_koopmans_approximation = False
+
+'''
+When Koopmans' approximation is active, this hopping prefactor (which is dependent on energetic disorder) will be
+applied, which can be tuned to obtain better agreement with experimental mobilities. Note: This hopping prefactor
+is only considered in the mobility simulations. For device simulations, only the hopping_prefactor parameter is
+used (look in the device KMC parameters section).
+'''
+koopmans_hopping_prefactor = 1E-3
 
 # ---==============================================---
 # ---=== General Kinetic Monte Carlo Parameters ===---
@@ -413,13 +403,6 @@ Include an explicit consideration of hop distance into the hopping rate equation
 decay is entirely determined by the transfer integral)
 '''
 use_VRH = True
-'''
-A multiplicative hopping prefactor for the carrier (and exciton in the case of device simulations) rate
-calculations. This brings their rates more in keeping with the other event types (recommended 1E-4 in device
-simulations, otherwise the order of magnitude time discrepancy is way too high and nothing actually happens
-in the device).
-'''
-hopping_prefactor = 1.0
 
 
 # ---=== Mobility Specific KMC Parameters ===---
@@ -430,7 +413,7 @@ The following parameters are relevant only for the mobility KMC simulations
 '''
 The total number of holes to simulate
 '''
-number_of_holes_per_simulation_time = 0
+number_of_holes_per_simulation_time = 10000
 
 '''
 The total number of holes to simulate
@@ -445,7 +428,7 @@ hop_limit = 0
 '''
 The termination condition for the mobility KMC simulations
 '''
-simulation_times = [1.00e-12, 3.98e-12, 1.58e-11, 6.31e-11, 2.51e-10, 1.00e-9]
+simulation_times = [1E-6]
 
 '''
 This flag combines the KMC results from multiple cores before termination. Often this doesn't finish in time
@@ -462,12 +445,12 @@ use_average_hop_rates = False
 '''
 The fixed intra-molecular hop rate to use when use_average_hop_rates is True
 '''
-average_intra_hop_rate = 8.07E14
+average_intra_hop_rate = 1E14
 
 '''
 The fixed inter-molecular hop rate to use when use_average_hop_rates is True
 '''
-average_inter_hop_rate = 3.92E14
+average_inter_hop_rate = 1E13
 
 # ---=== Device Kinetic Monte Carlo Parameters ===---
 '''
@@ -482,7 +465,7 @@ The following parameters describe the simulated material
 '''
 The absorption coefficient in units of cm^{-1}
 '''
-absorption_coefficient = 1.3E4
+absorption_coefficient = 1E4
 
 '''
 The relative permittivity of the material
@@ -492,22 +475,22 @@ relative_permittivity = 3
 '''
 The HOMO level of the simulated donor material in units of eV
 '''
-donor_HOMO = -5.3
+donor_HOMO = -5.0
 
 '''
 The LUMO level of the simulated acceptor materials in units of eV
 '''
-acceptor_LUMO = -3.9
+acceptor_LUMO = -4.0
 
 '''
 The workfunction of the cathode in units of eV
 '''
-cathode_work_function = -4.2
+cathode_work_function = -4.3
 
 '''
 The workfunction of the anode in units of eV
 '''
-anode_work_function = -5.0
+anode_work_function = -4.7
 
 '''
 The recombination rate of opposing carriers in units of s^{-1}
@@ -542,6 +525,13 @@ The Forster radius for the exciton in units of m
 forster_radius = 4.3E-9
 
 '''
+A multiplicative hopping prefactor that slows down all carrier and exciton hops to bring their rates more in keeping
+with the other event types (otherwise the order of magnitude time discrepancy is way too high and nothing actually
+happens in the device).
+'''
+hopping_prefactor = 1E-4
+
+'''
 The Miller Abrahams prefactor that controls the rate of dark-current injection hops.
 '''
 MA_prefactor = 1E11
@@ -574,13 +564,13 @@ The following parameters describe the remainder of the simulation
 '''
 The voltage values to sweep over for the generation of the J-V curve
 '''
-voltage_sweep = [-0.1, 0.4, 0.8]
+voltage_sweep = [0.5]
 
 '''
 The average size of the constituent molecular morphologies within the device (used to calculate separations over
 multiple moieties) in units of m
 '''
-morphology_cell_size = 1.00E-8
+morphology_cell_size = 1E-8
 
 '''
 The total number of photoinjections to simulate. After this, the device simulation will end
@@ -621,15 +611,13 @@ output_log_to_stdout = True
 
 
 if __name__ == "__main__":
-    import sys
-    import os
     from morphct import run_MorphCT
     from morphct.code import helper_functions as hf
 
-    parameter_file = os.path.realpath(__file__)
+    parameter_file = __os.path.realpath(__file__)
     proc_IDs = hf.get_CPU_cores()
     parameter_names = [i for i in dir() if (not i.startswith('__')) and (not i.startswith('@'))\
-                      and (i not in ['run_MorphCT', 'helper_functions', 'hf', 'sys', 'os'])]
+                      and (i not in ['run_MorphCT', 'helper_functions', 'hf'])]
     parameters = {}
     for name in parameter_names:
         parameters[name] = locals()[name]
