@@ -20,7 +20,7 @@ branches:
 env:
   global:
   - TRAVIS=False
-  - secure: IglsuSUzH/Sw5DMaiXGPs62rE8s1FBqEwkk1rkGcI4jjfQoNv8ESH48fba3jjSq+/aK8ag0kBa96Y2zVslLH6fB3KpYNPl2HPg9rY0+ytDkcZZBSa3Kn2fkGgWVFA5TrFG9ROGHY+BgDPyLVBQOF7K0ugL0wEQANetSC9ufvDXbsFAEHMKX29QC9rjwdAzZbRH2GZJrTXK3zaNAH2+pitLpmGa6sr93TP1iyXoM4kfHY/zhZGqXumxvQk6snny7jOsgBK1fGIlrxgDaNm1n9u62a7ZV1aMJ5ZR4pOK6isF6f/AG8HTPIXaLRPyV8gFlTNmuXAg4iXpiH9ug8oViZDw== 
+  - secure: N2/WuUOa9lEbwXXOc5i3HGn52F2teM4T5UTb0QNUuQsSooHCR57P6bmamoy0iSReYstD8nhj2NgwQoustlhhQCFbT0uenm6P+B53MW6EAzpF1JdCGxn26O6p6TOKq//ecAqR34Lwy3eLbIqqv14QmIr5d+FhWdFZJ74jgYmG6oNC96oOyFGWGn4Duz4CYFdqPst1iMI1PoqQExl34JFfhRzix+VK8fnniGOHL64b+om76wpthkyXX4c2pyHJg83oJOgQwlqSIAO1aSs+Xl46X889fyAlXkbuaReuO7opYv32darm7oNWJlp8OiUFEO2Ij0FIyYL51BXt6A4EzcdR2Q==
 build:
   cache: true
   cache_dir_list:
@@ -34,4 +34,4 @@ build:
     - pip install -e .
     - PYTEST_ADDOPTS="-c pytest-shippable.ini" pytest
   on_success:
-    - COVERALLS_REPO_TOKEN=$COVERALLS_REPO_TOKEN coveralls
+    - codecov --token=$CODECOV_REPO_TOKEN
