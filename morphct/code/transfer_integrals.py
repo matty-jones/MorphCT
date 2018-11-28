@@ -195,7 +195,11 @@ def revert_orca_files(input_file):
 def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
     print("")
     print(failed_chromo_files)
-    print("There were", len(list(failed_chromo_files.keys())), "failed jobs.")
+    number_of_fails = len(list(failed_chromo_files.keys()))
+    if number_of_fails == 1:
+        print("There was 1 failed job.")
+    else:
+        print("There were {:d} failed jobs.".format(number_of_fails))
     proc_IDs = parameter_dict["proc_IDs"]
     pop_list = []
     permanently_failed = {}
