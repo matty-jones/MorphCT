@@ -25,7 +25,7 @@ def run_simulation(request):
     shutil.copytree(
         os.path.join(TEST_ROOT, "assets", "fix_images"), os.path.join(output_dir)
     )
-    command = ["fixImages", "output_FI/fix_images_input.xml"]
+    command = ["fixImages", os.path.join(output_dir, "fix_images_input.xml")]
     subprocess.Popen(command).communicate()
 
 
