@@ -816,7 +816,7 @@ def write_xyz_file(input_dict, output_file):
     # First line is atom numbers, second line is boiler plate
     rows_to_write = [
         "{:d}\n".format(input_dict["natoms"]),
-        "xyz file generated from xml using" "helper_functions.xml_to_xyz\n",
+        "xyz file generated from xml using helper_functions.xml_to_xyz\n",
     ]
     # Format of xyz is Type, X Pos, Y Pos, Z Pos
     for atom_ID in range(len(input_dict["type"])):
