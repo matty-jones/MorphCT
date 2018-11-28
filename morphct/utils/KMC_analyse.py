@@ -743,14 +743,10 @@ def plot_anisotropy(carrier_data, directory, sim_dims, carrier_type, plot3D_grap
 
 
 def get_temp_val(string):
-    # hyphen_list = hf.find_index(string, "-")
-    # temp_val = float(string[hyphen_list[-2] + 2 : hyphen_list[-1]])
     return string.split("-")[-2][2:]
 
 
 def get_frame_val(string):
-    # hyphen_list = hf.find_index(string, "-")
-    # temp_val = int(string[hyphen_list[0] + 1 : hyphen_list[1]])
     return string.split("-")[0][1:]
 
 

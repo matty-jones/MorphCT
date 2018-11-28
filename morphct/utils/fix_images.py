@@ -1,3 +1,4 @@
+import os
 import sys
 import numpy as np
 from morphct.code import helper_functions as hf
@@ -73,7 +74,7 @@ def main():
         morphology = zero_out_images(morphology)
         bond_dict = get_bond_dict(morphology)
         morphology = check_bonds(morphology, bond_dict)
-        file_directory, split_file_name = os.path.splitext(file_name)
+        file_directory, split_file_name = os.path.split(file_name)
         hf.write_morphology_xml(
             morphology,
             os.path.join(file_directory, "".join(["image_fix_", split_file_name])),
