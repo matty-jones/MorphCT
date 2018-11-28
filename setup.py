@@ -107,6 +107,7 @@ setup(
             "createMontage=morphct.utils.create_montage:main",
             "addHydrogens=morphct.utils.add_hydrogens:main",
             "updatePickle=morphct.utils.update_pickle:main",
+            "morphctInit=morphct.utils.init_morphct:main",
         ],
     },
 )
