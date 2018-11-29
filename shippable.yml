@@ -19,8 +19,9 @@ branches:
 
 env:
   global:
-  - TRAVIS=False
-  - secure: IglsuSUzH/Sw5DMaiXGPs62rE8s1FBqEwkk1rkGcI4jjfQoNv8ESH48fba3jjSq+/aK8ag0kBa96Y2zVslLH6fB3KpYNPl2HPg9rY0+ytDkcZZBSa3Kn2fkGgWVFA5TrFG9ROGHY+BgDPyLVBQOF7K0ugL0wEQANetSC9ufvDXbsFAEHMKX29QC9rjwdAzZbRH2GZJrTXK3zaNAH2+pitLpmGa6sr93TP1iyXoM4kfHY/zhZGqXumxvQk6snny7jOsgBK1fGIlrxgDaNm1n9u62a7ZV1aMJ5ZR4pOK6isF6f/AG8HTPIXaLRPyV8gFlTNmuXAg4iXpiH9ug8oViZDw== 
+    - TRAVIS=False
+    - secure: mBIpBG3zYHrGuQnYwix5dEwAAWPzkCJSDbodZ1gNt29p1yXZ4PsyngBm2fC5CmcXfJfm5TIrhLWqi1kClIwKMuUk8E7c1Hrx1YQ2pK9ydI4G5Q3Xv0+eK26x5CvqYuXrwymuIAVkz2j9cBWOP6XkwroqBOQzQaii7QjTdBt5vY8/NzIzgLTje7qCso63cD/IhI0zniFWItlBRr32RIpwqnKFSRVNNaeTMKEu/uQaXZjJB706dVj1+oM5TXq4cxNrhgftixnLm1DnBFADi3lGdDzF3/GM0GNbnJEd8rBl3MWP4f4AYXnxjfODasoXY4eUXKPl7xwPf9GReA9Jtilrvg==
+
 build:
   cache: true
   cache_dir_list:
@@ -34,4 +35,6 @@ build:
     - pip install -e .
     - PYTEST_ADDOPTS="-c pytest-shippable.ini" pytest
   on_success:
-    - COVERALLS_REPO_TOKEN=$COVERALLS_REPO_TOKEN coveralls
+    - export COMMIT="$(git rev-parse HEAD)"
+      #- curl -s https://codecov.io/bash | bash -s - -t $CODECOV_TOKEN || echo "Codecov upload failed, coverage reports not updated!"
+    - bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN || echo "Codecov upload failed, coverage reports not updated!"
