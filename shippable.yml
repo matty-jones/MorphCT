@@ -34,5 +34,8 @@ build:
     - pip install -e .
     - PYTEST_ADDOPTS="-c pytest-shippable.ini" pytest tests/test_helper_functions.py
   on_success:
+    - echo $COMMIT
     - export COMMIT="$(git rev-parse HEAD)"
-    - bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN || echo "Codecov upload failed, coverage reports not updated!"
+    - echo $COMMIT
+    - curl -s https://codecov.io/bash | bash -s - -t $CODECOV_TOKEN || echo "Codecov upload failed, coverage reports not updated!"
+      #    - bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN || echo "Codecov upload failed, coverage reports not updated!"
