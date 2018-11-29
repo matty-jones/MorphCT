@@ -19,8 +19,9 @@ branches:
 
 env:
   global:
-  - TRAVIS=False
-  - secure: AGvHyk+sj7iFpXOj+mpRMbyiSmBxC3mPndWCGCwfQlhamEwo4xPmw51RH5Z3Z5NSqKlwsLfqFpjygyjttvfRI97Qb+4n4cCPIhozl0/dqhkIPT9PuY2A2+d/i63C73s9jJi1NJVS2gbXeA7BQjh7W7NWYTQt+UBuCpRg0ndssm/u0NLpMIjDW4PWcSS31wXCaXBZQwZVdGCLsY2V4HeCWMZgOZiCkUWo8JtQ7BNTnoTY9VPiD4TLA5e5r/h+5C2J0ur5rC5uk2FuimXZG2hTIbsOXtsn2vEP3wxISqB/9u8prUtBZt6jsRZfj+TyG5/ssgURGL9GmK8E5ASf8KDuaA==
+    - TRAVIS=False
+    - secure: AGvHyk+sj7iFpXOj+mpRMbyiSmBxC3mPndWCGCwfQlhamEwo4xPmw51RH5Z3Z5NSqKlwsLfqFpjygyjttvfRI97Qb+4n4cCPIhozl0/dqhkIPT9PuY2A2+d/i63C73s9jJi1NJVS2gbXeA7BQjh7W7NWYTQt+UBuCpRg0ndssm/u0NLpMIjDW4PWcSS31wXCaXBZQwZVdGCLsY2V4HeCWMZgOZiCkUWo8JtQ7BNTnoTY9VPiD4TLA5e5r/h+5C2J0ur5rC5uk2FuimXZG2hTIbsOXtsn2vEP3wxISqB/9u8prUtBZt6jsRZfj+TyG5/ssgURGL9GmK8E5ASf8KDuaA==
+
 build:
   cache: true
   cache_dir_list:
