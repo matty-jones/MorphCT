@@ -31,14 +31,10 @@ build:
     image_tag: 0.0.2
     pull: true
   ci:
-    - echo $CODECOV_TOKEN
     - source conda_cache_check.bash
     - pip install -e .
-    - PYTEST_ADDOPTS="-c pytest-shippable.ini" pytest tests/test_helper_functions.py
+    - PYTEST_ADDOPTS="-c pytest-shippable.ini" pytest
   on_success:
-    - echo $COMMIT
     - export COMMIT="$(git rev-parse HEAD)"
-    - echo $COMMIT
-    - echo $CODECOV_TOKEN
       #- curl -s https://codecov.io/bash | bash -s - -t $CODECOV_TOKEN || echo "Codecov upload failed, coverage reports not updated!"
     - bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN || echo "Codecov upload failed, coverage reports not updated!"
