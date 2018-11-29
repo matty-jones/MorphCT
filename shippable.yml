@@ -32,6 +32,7 @@ build:
   ci:
     - source conda_cache_check.bash
     - pip install -e .
-    - PYTEST_ADDOPTS="-c pytest-shippable.ini" pytest
+      #    - PYTEST_ADDOPTS="-c pytest-shippable.ini" pytest
   on_success:
+    - echo $COMMIT
     - bash <(curl -s https://codecov.io/bash) -t $CODECOV_REPO_TOKEN || echo "Codecov upload failed, coverage reports not updated!"
