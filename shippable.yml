@@ -20,7 +20,7 @@ branches:
 env:
   global:
     - TRAVIS=False
-    - secure: AGvHyk+sj7iFpXOj+mpRMbyiSmBxC3mPndWCGCwfQlhamEwo4xPmw51RH5Z3Z5NSqKlwsLfqFpjygyjttvfRI97Qb+4n4cCPIhozl0/dqhkIPT9PuY2A2+d/i63C73s9jJi1NJVS2gbXeA7BQjh7W7NWYTQt+UBuCpRg0ndssm/u0NLpMIjDW4PWcSS31wXCaXBZQwZVdGCLsY2V4HeCWMZgOZiCkUWo8JtQ7BNTnoTY9VPiD4TLA5e5r/h+5C2J0ur5rC5uk2FuimXZG2hTIbsOXtsn2vEP3wxISqB/9u8prUtBZt6jsRZfj+TyG5/ssgURGL9GmK8E5ASf8KDuaA==
+    - secure: mBIpBG3zYHrGuQnYwix5dEwAAWPzkCJSDbodZ1gNt29p1yXZ4PsyngBm2fC5CmcXfJfm5TIrhLWqi1kClIwKMuUk8E7c1Hrx1YQ2pK9ydI4G5Q3Xv0+eK26x5CvqYuXrwymuIAVkz2j9cBWOP6XkwroqBOQzQaii7QjTdBt5vY8/NzIzgLTje7qCso63cD/IhI0zniFWItlBRr32RIpwqnKFSRVNNaeTMKEu/uQaXZjJB706dVj1+oM5TXq4cxNrhgftixnLm1DnBFADi3lGdDzF3/GM0GNbnJEd8rBl3MWP4f4AYXnxjfODasoXY4eUXKPl7xwPf9GReA9Jtilrvg==
 
 build:
   cache: true
