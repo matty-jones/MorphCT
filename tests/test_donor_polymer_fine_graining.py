@@ -197,6 +197,9 @@ class TestCompareOutputs(TestCommand):
                 "input_morph_dir",
                 "input_orca_dir",
                 "output_orca_dir",
+                "input_device_file",
+                "output_device_directory",
+                "output_orca_directory",
             ]:
             try:
                 expected_pars.pop(key)
