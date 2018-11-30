@@ -21,7 +21,7 @@ env:
   global:
     - TRAVIS=False
     - secure: mBIpBG3zYHrGuQnYwix5dEwAAWPzkCJSDbodZ1gNt29p1yXZ4PsyngBm2fC5CmcXfJfm5TIrhLWqi1kClIwKMuUk8E7c1Hrx1YQ2pK9ydI4G5Q3Xv0+eK26x5CvqYuXrwymuIAVkz2j9cBWOP6XkwroqBOQzQaii7QjTdBt5vY8/NzIzgLTje7qCso63cD/IhI0zniFWItlBRr32RIpwqnKFSRVNNaeTMKEu/uQaXZjJB706dVj1+oM5TXq4cxNrhgftixnLm1DnBFADi3lGdDzF3/GM0GNbnJEd8rBl3MWP4f4AYXnxjfODasoXY4eUXKPl7xwPf9GReA9Jtilrvg==
-    - export CODECOV_TOKEN="81d357c3-7fd6-4020-bae5-1a3127ca9a8d"
+    - CODECOV_TOKEN="81d357c3-7fd6-4020-bae5-1a3127ca9a8d"
 
 build:
   cache: true
@@ -36,6 +36,6 @@ build:
     - pip install -e .
     - PYTEST_ADDOPTS="-c pytest-shippable.ini" pytest
   on_success:
-    - export COMMIT="$(git rev-parse HEAD)"
+      #- export COMMIT="$(git rev-parse HEAD)"
       #- curl -s https://codecov.io/bash | bash -s - -t $CODECOV_TOKEN || echo "Codecov upload failed, coverage reports not updated!"
     - bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN || echo "Codecov upload failed, coverage reports not updated!"
