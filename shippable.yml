@@ -21,6 +21,7 @@ env:
   global:
     - TRAVIS=False
     - secure: mBIpBG3zYHrGuQnYwix5dEwAAWPzkCJSDbodZ1gNt29p1yXZ4PsyngBm2fC5CmcXfJfm5TIrhLWqi1kClIwKMuUk8E7c1Hrx1YQ2pK9ydI4G5Q3Xv0+eK26x5CvqYuXrwymuIAVkz2j9cBWOP6XkwroqBOQzQaii7QjTdBt5vY8/NzIzgLTje7qCso63cD/IhI0zniFWItlBRr32RIpwqnKFSRVNNaeTMKEu/uQaXZjJB706dVj1+oM5TXq4cxNrhgftixnLm1DnBFADi3lGdDzF3/GM0GNbnJEd8rBl3MWP4f4AYXnxjfODasoXY4eUXKPl7xwPf9GReA9Jtilrvg==
+    - export CODECOV_TOKEN="81d357c3-7fd6-4020-bae5-1a3127ca9a8d"
 
 build:
   cache: true
@@ -31,7 +32,6 @@ build:
     image_tag: 0.0.2
     pull: true
   ci:
-    - export CODECOV_TOKEN="81d357c3-7fd6-4020-bae5-1a3127ca9a8d"
     - source conda_cache_check.bash
     - pip install -e .
     - PYTEST_ADDOPTS="-c pytest-shippable.ini" pytest
