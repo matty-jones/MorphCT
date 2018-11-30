@@ -52,7 +52,7 @@ def run_simulation():
     # ---============ Chromophore Parameters ==========---
     # ---==============================================---
     molecule_terminating_connections = {"C1": [[2, 1]], "C10": [[2, 1]]}
-    remove_orca_inputs = False
+    remove_orca_inputs = True
     remove_orca_outputs = True
 
     # ---==============================================---
@@ -102,7 +102,7 @@ def run_simulation():
             TEST_ROOT,
             "assets",
             os.path.splitext(morphology)[0],
-            "OC",
+            "EZ",
             morphology.replace(".xml", "_post_obtain_chromophores_voronoi.pickle"),
         ),
         os.path.join(
@@ -219,36 +219,6 @@ class TestCompareOutputs(TestCommand):
                         key
                     ],
                 )
-
-    def test_check_input_single_orca_files_created(self, run_simulation):
-        input_morph_dir = run_simulation["output_parameter_dict"]["input_morph_dir"]
-        output_morph_dir = run_simulation["output_parameter_dict"]["output_morph_dir"]
-        morphology = run_simulation["output_parameter_dict"]["morphology"]
-        chromo_dir = os.path.join(
-            output_morph_dir,
-            os.path.splitext(morphology)[0],
-            "chromophores",
-            "input_orca",
-            "single",
-        )
-        asset_dir = os.path.join(input_morph_dir, "EZ", "input_orca", "single")
-        for file_name in os.listdir(asset_dir):
-            self.confirm_file_exists(os.path.join(chromo_dir, file_name))
-
-    def test_check_input_pair_orca_files_created(self, run_simulation):
-        input_morph_dir = run_simulation["output_parameter_dict"]["input_morph_dir"]
-        output_morph_dir = run_simulation["output_parameter_dict"]["output_morph_dir"]
-        morphology = run_simulation["output_parameter_dict"]["morphology"]
-        chromo_dir = os.path.join(
-            output_morph_dir,
-            os.path.splitext(morphology)[0],
-            "chromophores",
-            "input_orca",
-            "pair",
-        )
-        asset_dir = os.path.join(input_morph_dir, "EZ", "input_orca", "pair")
-        for file_name in os.listdir(asset_dir):
-            self.confirm_file_exists(os.path.join(chromo_dir, file_name))
 
     def test_check_output_single_orca_files_created(self, run_simulation):
         input_morph_dir = run_simulation["output_parameter_dict"]["input_morph_dir"]

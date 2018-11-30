@@ -150,7 +150,7 @@ def run_simulation(request):
             TEST_ROOT,
             "assets",
             os.path.splitext(morphology)[0],
-            "RH",
+            "OC",
             morphology.replace(".xml", "_post_run_HOOMD.pickle"),
         ),
         os.path.join(

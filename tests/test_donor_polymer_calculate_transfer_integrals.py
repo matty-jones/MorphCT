@@ -99,7 +99,7 @@ def run_simulation():
             TEST_ROOT,
             "assets",
             os.path.splitext(morphology)[0],
-            "EZ",
+            "TI",
             morphology.replace(".xml", "_post_execute_ZINDO.pickle"),
         ),
         os.path.join(
@@ -111,7 +111,7 @@ def run_simulation():
     )
     shutil.copytree(
         os.path.join(
-            TEST_ROOT, "assets", os.path.splitext(morphology)[0], "EZ", "input_orca"
+            TEST_ROOT, "assets", os.path.splitext(morphology)[0], "TI", "input_orca"
         ),
         os.path.join(
             output_morph_dir,
@@ -122,7 +122,7 @@ def run_simulation():
     )
     shutil.copytree(
         os.path.join(
-            TEST_ROOT, "assets", os.path.splitext(morphology)[0], "EZ", "output_orca"
+            TEST_ROOT, "assets", os.path.splitext(morphology)[0], "TI", "output_orca"
         ),
         os.path.join(
             output_morph_dir,
