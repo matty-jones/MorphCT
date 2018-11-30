@@ -133,7 +133,7 @@ def run_simulation():
             TEST_ROOT,
             "assets",
             os.path.splitext(morphology)[0],
-            "FG",
+            "RH",
             morphology.replace(".xml", "_post_fine_graining.pickle"),
         ),
         os.path.join(
