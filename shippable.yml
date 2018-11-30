@@ -31,6 +31,7 @@ build:
     image_tag: 0.0.2
     pull: true
   ci:
+    - export CODECOV_TOKEN="81d357c3-7fd6-4020-bae5-1a3127ca9a8d"
     - source conda_cache_check.bash
     - pip install -e .
     - PYTEST_ADDOPTS="-c pytest-shippable.ini" pytest
