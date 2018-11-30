@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/100152281.svg)](https://zenodo.org/badge/latestdoi/100152281)
 [![Run Status](https://api.shippable.com/projects/5ae1ee243e7d2b0700153be4/badge?branch=dev)](https://app.shippable.com/bitbucket/cmelab/morphct) 
-[![Coverage Status](https://coveralls.io/repos/bitbucket/cmelab/morphct/badge.svg?branch=dev)](https://coveralls.io/bitbucket/cmelab/morphct?branch=dev)
+[![Coverage Status](https://codecov.io/bb/cmelab/morphct/branch/dev/graph/badge.svg)](https://codecov.io/bb/cmelab/morphct)
 
 # Intellectual Property #
 
