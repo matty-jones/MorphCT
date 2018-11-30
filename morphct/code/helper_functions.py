@@ -162,16 +162,16 @@ def get_rotation_matrix(vector1, vector2):
         )
     )
     cos_angle = np.dot(vector1, vector2)
-    skew_matrix = np.matrix(
+    skew_matrix = np.array(
         [
             [0, -cross_product[2], cross_product[1]],
             [cross_product[2], 0, -cross_product[0]],
             [-cross_product[1], cross_product[0], 0],
         ]
     )
-    skew_matrix_squared = skew_matrix * skew_matrix
+    skew_matrix_squared = skew_matrix @ skew_matrix
     rot_matrix = (
-        np.matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         + skew_matrix
         + skew_matrix_squared * ((1 - cos_angle) / (sin_angle ** 2))
     )

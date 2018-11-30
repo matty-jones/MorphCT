@@ -83,7 +83,12 @@ class simulation:
                         parameter_dict["output_morph_dir"],
                         os.path.splitext(parameter_dict["morphology"])[0],
                         "code",
-                        "".join([os.path.splitext(parameter_dict["morphology"])[0], ".pickle"]),
+                        "".join(
+                            [
+                                os.path.splitext(parameter_dict["morphology"])[0],
+                                ".pickle",
+                            ]
+                        ),
                     )
                     hf.write_pickle(
                         (
@@ -105,7 +110,10 @@ class simulation:
             if self.execute_fine_graining is True:
                 print("---=== BACKMAPPING COARSE-GRAINED SITES... ===---")
                 returned_data = fine_grainer.morphology(
-                    self.input_morphology_file, os.path.splitext(self.morphology)[0], parameter_dict, []
+                    self.input_morphology_file,
+                    os.path.splitext(self.morphology)[0],
+                    parameter_dict,
+                    [],
                 ).analyse_morphology()
                 AA_morphology_dict = returned_data[0]
                 CG_morphology_dict = returned_data[1]
@@ -176,18 +184,20 @@ class simulation:
                 parameter_dict = returned_data[3]
                 chromophore_list = returned_data[4]
                 print("---=== DETERMINATION COMPLETED ===---")
-                if (self.remove_orca_inputs is True):
+                if self.remove_orca_inputs is True:
                     print("remove_orca_inputs is True. Cleaning up orca input dir...")
-                    orca_input_dir = os.path.join(self.output_orca_directory,
-                                                  "chromophores", "input_orca")
+                    orca_input_dir = os.path.join(
+                        self.output_orca_directory, "chromophores", "input_orca"
+                    )
                     try:
                         shutil.rmtree(orca_input_dir)
                     except FileNotFoundError:
                         print("Directory already empty. Continuing...")
-                if (self.remove_orca_outputs is True):
+                if self.remove_orca_outputs is True:
                     print("remove_orca_outputs is True. Cleaning up orca output dir...")
-                    orca_output_dir = os.path.join(self.output_orca_directory,
-                                                  "chromophores", "output_orca")
+                    orca_output_dir = os.path.join(
+                        self.output_orca_directory, "chromophores", "output_orca"
+                    )
                     try:
                         shutil.rmtree(orca_output_dir)
                     except FileNotFoundError:
