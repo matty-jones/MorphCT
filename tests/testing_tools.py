@@ -74,7 +74,7 @@ class TestCommand(object):
                 [
                     "Expected ",
                     repr(expected),
-                    " for key",
+                    " for key ",
                     repr(dict_key),
                     " but got ",
                     repr(response),
@@ -98,13 +98,13 @@ class TestCommand(object):
         if dict_key is not None:
             assert_string = " ".join(
                 [
-                    "Expected",
+                    "Expected ",
                     repr(expected),
-                    "for key",
+                    " for key ",
                     repr(dict_key),
-                    "but got",
+                    " but got ",
                     repr(response),
-                    "instead.",
+                    " instead.",
                 ]
             )
         else:
@@ -130,11 +130,14 @@ class TestCommand(object):
 
     def check_dictionary(self, response, expected, dict_key=None):
         for expected_key, expected_val in expected.items():
-            print("".join(["Checking key ", str(expected_key), "..."]))
+            if dict_key is None:
+                check_dict_key = repr(expected_key)
+            else:
+                check_dict_key=" | ".join([repr(dict_key), repr(expected_key)])
             self.compare_equal(
                 response[expected_key],
                 expected_val,
-                dict_key=" | ".join([repr(dict_key), repr(expected_key)]),
+                dict_key=check_dict_key,
             )
 
     def confirm_file_exists(
@@ -153,9 +156,9 @@ class TestCommand(object):
         files = os.listdir(directory)
         if negate is False:
             assert file_name in files, " ".join(
-                ["Expected the file", str(file_name), "to exist, but it doesn't."]
+                ["Expected the file ", str(file_name), " to exist, but it doesn't."]
             )
         else:
             assert file_name not in files, " ".join(
-                ["Expected the file", str(file_name), "to not exist, but it does."]
+                ["Expected the file ", str(file_name), " to not exist, but it does."]
             )
