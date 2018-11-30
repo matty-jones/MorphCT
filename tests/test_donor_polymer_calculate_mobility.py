@@ -119,7 +119,7 @@ def run_simulation():
             TEST_ROOT,
             "assets",
             os.path.splitext(morphology)[0],
-            "TI",
+            "MKMC",
             morphology.replace(".xml", "_post_calculate_transfer_integrals.pickle"),
         ),
         os.path.join(
