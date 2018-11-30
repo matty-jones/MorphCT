@@ -179,7 +179,7 @@ class TestGeneralOperations(TestCommand):
     def test_get_rotation_matrix(self):
         function = "get_rotation_matrix"
         self.compare_equal(
-            np.matrix(
+            np.array(
                 [
                     [40.56407824, -70.10992864, 86.60426525],
                     [94.64591336, 31.92827421, 31.85780149],
