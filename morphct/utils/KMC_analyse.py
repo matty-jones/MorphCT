@@ -231,9 +231,7 @@ def create_array_for_plot_connections(chromophore_list, carrier_history, sim_dim
         # Iterate through the neighbors of the chromophore
         for neighbor in zip(chromo.neighbours):
             index = neighbor[0][0]  # index of the neighbor
-            image = neighbor[0][
-                1
-            ]  # check to see if they are in the same relative image
+            image = neighbor[0][1]  # check to see if they are in the same rel image
             # Only consider one direction.
             if i < index:
                 # Get the vector between the two chromophores.
@@ -576,6 +574,209 @@ def calculate_anisotropy(xvals, yvals, zvals):
         / ((diagonal[0] + diagonal[1] + diagonal[2]) ** 2)
     ) - (1 / 2)
     return anisotropy
+
+
+def plot_hop_vectors(
+    carrier_data, AA_morphology_dict, chromophore_list, directory, sim_dims,
+    carrier_type, plot3D_graphs
+):
+    box_lengths = np.array([axis[1] - axis[0] for axis in sim_dims])
+    carrier_history = carrier_data["carrier_history_matrix"]
+    non_zero_coords = list(zip(*carrier_history.nonzero()))
+    for (chromo1, chromo2) in non_zero_coords:
+        # Find the normal of chromo1 plane (first three atoms)
+        triplet_posn = [
+            np.array(AA_morphology_dict["position"][AAID])
+            for AAID in chromophore_list[chromo1].AAIDs[:3]
+        ]
+        AB = triplet_posn[1] - triplet_posn[0]
+        AC = triplet_posn[2] - triplet_posn[0]
+        normal = np.cross(AB, AC)
+        normal /= np.linalg.norm(normal)
+        # Calculate rotation matrix required to map this onto baseline (0, 0, 1)
+        rotation_matrix = hf.get_rotation_matrix(normal, np.array([0, 0, 1]))
+        # Find the vector from chromo1 to chromo2 (using the correct rleative image)
+        neighbour_IDs = [
+            neighbour[0] for neighbour in chromophore_list[chromo1].neighbours
+        ]
+        nlist_index = neighbour_IDs.index(chromo2)
+        relative_image = np.array(chromophore_list[chromo1].neighbours[nlist_index][1])
+        chromo1_posn = chromophore_list[chromo1].posn
+        chromo2_posn = chromophore_list[chromo2].posn + (relative_image * box_lengths)
+        unrotated_hop_vector = chromo2_posn - chromo1_posn
+        # Apply rotation matrix to chromo1-chromo2 vector
+        hop_vector = np.matmul(rotation_matrix, unrotated_hop_vector)
+        # Store the hop vector and the intensity
+        intensity = carrier_history[chromo1, chromo2]
+
+
+    # Use quiver to make the plots
+
+
+
+    # A complicated function that shows connections between carriers in 3D that carriers prefer to hop between.
+    # Connections that are frequently used are highlighted in black, whereas rarely used connections are more white.
+    # Import matplotlib color modules to set up color bar.
+    import matplotlib.colors
+    import matplotlib.cm as cmx
+
+    # Create a figure class
+    fig = plt.figure(figsize=(7, 6))
+    # Make a 3D subplot
+    ax = fig.add_subplot(111, projection="3d")
+
+    # Create the array for all the chromophore connections
+    connections_array = create_array_for_plot_connections(
+        chromophore_list, carrier_history, sim_dims
+    )
+
+    # Determine the smalles, non-zero number of times two chromophores are connected.
+    vmin = np.min(np.array(connections_array)[:, 6])
+    # Determine the max number of times two chormophores are connected.
+    vmax = np.max(np.array(connections_array)[:, 6])
+
+    # Set up the color bar.
+    colour_map = plt.get_cmap("inferno")
+    c_norm = matplotlib.colors.Normalize(vmin=np.floor(vmin), vmax=np.ceil(vmax))
+    scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=colour_map)
+    hopcolors = scalar_map.to_rgba(connections_array[:, 6])
+
+    # Set up the intensity for the hops so more travelled paths are more intense
+    alphas = connections_array[:, 6] / vmax
+    hopcolors[:, 3] = alphas
+
+    # Plot the vectors between two chromophores
+    ax.quiver(
+        connections_array[:, 0],
+        connections_array[:, 1],
+        connections_array[:, 2],
+        connections_array[:, 3],
+        connections_array[:, 4],
+        connections_array[:, 5],
+        color=hopcolors,
+        arrow_length_ratio=0,
+        linewidth=0.7,
+    )
+
+    # Draw boxlines
+    # Varying X
+    ax.plot(
+        [sim_dims[0][0], sim_dims[0][1]],
+        [sim_dims[1][0], sim_dims[1][0]],
+        [sim_dims[2][0], sim_dims[2][0]],
+        c="k",
+        linewidth=1.0,
+    )
+    ax.plot(
+        [sim_dims[0][0], sim_dims[0][1]],
+        [sim_dims[1][1], sim_dims[1][1]],
+        [sim_dims[2][0], sim_dims[2][0]],
+        c="k",
+        linewidth=1.0,
+    )
+    ax.plot(
+        [sim_dims[0][0], sim_dims[0][1]],
+        [sim_dims[1][0], sim_dims[1][0]],
+        [sim_dims[2][1], sim_dims[2][1]],
+        c="k",
+        linewidth=1.0,
+    )
+    ax.plot(
+        [sim_dims[0][0], sim_dims[0][1]],
+        [sim_dims[1][1], sim_dims[1][1]],
+        [sim_dims[2][1], sim_dims[2][1]],
+        c="k",
+        linewidth=1.0,
+    )
+    # Varying Y
+    ax.plot(
+        [sim_dims[0][0], sim_dims[0][0]],
+        [sim_dims[1][0], sim_dims[1][1]],
+        [sim_dims[2][0], sim_dims[2][0]],
+        c="k",
+        linewidth=1.0,
+    )
+    ax.plot(
+        [sim_dims[0][1], sim_dims[0][1]],
+        [sim_dims[1][0], sim_dims[1][1]],
+        [sim_dims[2][0], sim_dims[2][0]],
+        c="k",
+        linewidth=1.0,
+    )
+    ax.plot(
+        [sim_dims[0][0], sim_dims[0][0]],
+        [sim_dims[1][0], sim_dims[1][1]],
+        [sim_dims[2][1], sim_dims[2][1]],
+        c="k",
+        linewidth=1.0,
+    )
+    ax.plot(
+        [sim_dims[0][1], sim_dims[0][1]],
+        [sim_dims[1][0], sim_dims[1][1]],
+        [sim_dims[2][1], sim_dims[2][1]],
+        c="k",
+        linewidth=1.0,
+    )
+    # Varying Z
+    ax.plot(
+        [sim_dims[0][0], sim_dims[0][0]],
+        [sim_dims[1][0], sim_dims[1][0]],
+        [sim_dims[2][0], sim_dims[2][1]],
+        c="k",
+        linewidth=1.0,
+    )
+    ax.plot(
+        [sim_dims[0][0], sim_dims[0][0]],
+        [sim_dims[1][1], sim_dims[1][1]],
+        [sim_dims[2][0], sim_dims[2][1]],
+        c="k",
+        linewidth=1.0,
+    )
+    ax.plot(
+        [sim_dims[0][1], sim_dims[0][1]],
+        [sim_dims[1][0], sim_dims[1][0]],
+        [sim_dims[2][0], sim_dims[2][1]],
+        c="k",
+        linewidth=1.0,
+    )
+    ax.plot(
+        [sim_dims[0][1], sim_dims[0][1]],
+        [sim_dims[1][1], sim_dims[1][1]],
+        [sim_dims[2][0], sim_dims[2][1]],
+        c="k",
+        linewidth=1.0,
+    )
+
+    # Make the colour bar
+    scalar_map.set_array(connections_array[:, 6])
+    # tick_location = np.arange(0, int(np.ceil(vmax)) + 1, 1)
+    tick_location = np.arange(0, vmax, 1)
+    # Plot the colour bar
+    cbar = plt.colorbar(
+        scalar_map, ticks=tick_location, shrink=0.8, aspect=20
+    )  # , fraction=0.046, pad=0.04)
+    cbar.ax.set_yticklabels([r"10$^{{{}}}$".format(int(x)) for x in tick_location])
+
+    # Name and save the figure.
+    carrier_types = ["hole", "electron"]
+    materials_types = ["donor", "acceptor"]
+    carrier_index = carrier_types.index(carrier_type)
+    figure_title = " ".join(
+        [
+            materials_types[carrier_index].capitalize(),
+            "".join(["(", carrier_type.capitalize(), ")"]),
+            "Network",
+        ]
+    )
+    # plt.title(figure_title, y=1.1)
+    # 01 for donor 3d network, 02 for acceptor 3d network
+    file_name = "".join(["{:02}_3d_".format(1 + carrier_index), carrier_type, ".png"])
+    plt.savefig(
+        os.path.join(directory, "figures", file_name), bbox_inches="tight", dpi=300
+    )
+    print("Figure saved as", os.path.join(directory, "figures", file_name))
+
+    plt.clf()
 
 
 def plot_anisotropy(carrier_data, directory, sim_dims, carrier_type, plot3D_graphs):
@@ -2874,7 +3075,6 @@ def main():
             carrier_history_dict[current_carrier_type] = carrier_history
             print("Plotting distribution of carrier displacements")
             plot_displacement_dist(carrier_data, directory, current_carrier_type)
-
             print("Calculating mobility...")
             mobility, mob_error, r_squared = calculate_mobility(
                 directory,
@@ -2884,9 +3084,24 @@ def main():
                 time_standard_errors,
                 MSD_standard_errors,
             )
+            print("Plotting hop vector distribution")
+            plot_hop_vectors(
+                carrier_data,
+                AA_morphology_dict,
+                chromophore_list,
+                directory,
+                sim_dims,
+                current_carrier_type,
+                args.three_D,
+            )
+            raise SystemError("WOBBEY BLOBBS")
             print("Calculating carrier trajectory anisotropy...")
             anisotropy = plot_anisotropy(
-                carrier_data, directory, sim_dims, current_carrier_type, args.three_D
+                carrier_data,
+                directory,
+                sim_dims,
+                current_carrier_type,
+                args.three_D,
             )
             print("Plotting carrier hop frequency distribution...")
             if current_carrier_type == "hole":
