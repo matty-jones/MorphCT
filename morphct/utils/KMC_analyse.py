@@ -583,7 +583,7 @@ def plot_hop_vectors(
     import matplotlib.colors
     import matplotlib.cm as cmx
 
-    if not plot3d_graphs:
+    if not plot3D_graphs:
         return
 
     box_lengths = np.array([axis[1] - axis[0] for axis in sim_dims])
@@ -3010,7 +3010,6 @@ def main():
                 current_carrier_type,
                 args.three_D,
             )
-            raise SystemError("WOBBEY BLOBBS")
             print("Calculating carrier trajectory anisotropy...")
             anisotropy = plot_anisotropy(
                 carrier_data,
