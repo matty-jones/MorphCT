@@ -433,18 +433,20 @@ def calc_mobility(lin_fit_X, lin_fit_Y, av_time_error, av_MSD_error):
     # XVals have a std error avTimeError assosciated with them
     numerator = lin_fit_Y[-1] - lin_fit_Y[0]
     denominator = lin_fit_X[-1] - lin_fit_X[0]
-    diffusion_coeff = numerator / denominator
-    # The error in the mobility is the proportionally the same as the error in the diffusion coefficient as the
+    # Diffusion coeff D = d(MSD)/dt * 1/2n (n = 3 = number of dimensions)
+    # Ref: Carbone2014a (Carbone and Troisi)
+    diffusion_coeff = numerator / 6 * denominator
+    # The error in the mobility is proportionally the same as the error in the diffusion coefficient as the
     # other variables are constants with zero error
     diff_error = diffusion_coeff * np.sqrt(
         (av_MSD_error / numerator) ** 2 + (av_time_error / denominator) ** 2
     )
-    # Use Einstein relation (include the factor of 1/6!! It is in the Carbone/Troisi 2014 paper)
+    # Use Einstein-Smoluchowski relation
     mobility = (
-        elementary_charge * diffusion_coeff / (6 * kB * temperature)
+        elementary_charge * diffusion_coeff / (kB * temperature)
     )  # This is in m^{2} / vs
     # Convert to cm^{2}/ Vs
-    mobility *= 100 ** 2
+    mobility *= (100 ** 2)
     mob_error = (diff_error / diffusion_coeff) * mobility
     return mobility, mob_error
 
