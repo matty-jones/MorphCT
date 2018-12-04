@@ -435,7 +435,7 @@ def calc_mobility(lin_fit_X, lin_fit_Y, av_time_error, av_MSD_error):
     denominator = lin_fit_X[-1] - lin_fit_X[0]
     # Diffusion coeff D = d(MSD)/dt * 1/2n (n = 3 = number of dimensions)
     # Ref: Carbone2014a (Carbone and Troisi)
-    diffusion_coeff = numerator / 6 * denominator
+    diffusion_coeff = numerator / (6 * denominator)
     # The error in the mobility is proportionally the same as the error in the diffusion coefficient as the
     # other variables are constants with zero error
     diff_error = diffusion_coeff * np.sqrt(
@@ -444,7 +444,7 @@ def calc_mobility(lin_fit_X, lin_fit_Y, av_time_error, av_MSD_error):
     # Use Einstein-Smoluchowski relation
     mobility = (
         elementary_charge * diffusion_coeff / (kB * temperature)
-    )  # This is in m^{2} / vs
+    )  # This is in m^{2} / Vs
     # Convert to cm^{2}/ Vs
     mobility *= (100 ** 2)
     mob_error = (diff_error / diffusion_coeff) * mobility
