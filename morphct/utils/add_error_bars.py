@@ -30,7 +30,6 @@ def split_argument_into_dictionary(argument):
     # Add the ']' back in at places it was just stripped in splitting
     argument = ["".join([item, "]"]) for item in argument[:-1]] + [argument[-1]]
     # Iterate through the key:pair strings
-    print("Argument =", argument)
     for item in argument:
         # split based on ':' and take the zeroth element as the key name
         name = item.split(":")[0].split("'")[1]
@@ -41,9 +40,7 @@ def split_argument_into_dictionary(argument):
         # Create empty sublist
         sublist = []
         # Split the list based off commas
-        print("Item =", item)
         for subitems in items.split(","):
-            print("Subitems =", subitems)
             # Run a glob on the items in the list (remove quotes from around string)
             if (
                 (subitems[0] == "'") and (subitems[-1] == "'")
@@ -51,16 +48,12 @@ def split_argument_into_dictionary(argument):
                 (subitems[0] == '"') and (subitems[-1] == '"')
             ):
                 subitems = subitems[1:-1]
-            print("PATH =", os.path.abspath(subitems))
             runs = glob.glob(os.path.abspath(subitems))
-            print("Runs =", runs)
             # Add the items in the glob to the sublist
             for run in runs:
                 sublist.append(run)
-            print("Sublist =", sublist)
         # Make the key:pair combination of the keys and sublist
         combine_list[name] = sublist
-    print("Combine_list =", combine_list)
     return combine_list
 
 
@@ -98,7 +91,6 @@ def extract_mobility(filename, runs_data):
             if row[0] not in list(runs_data.keys()):
                 runs_data[row[0]] = []
             runs_data[row[0]].append(float(row[1]))
-    print("runs_data =", runs_data)
     return runs_data
 
 
@@ -292,7 +284,6 @@ def main():
         import matplotlib
         matplotlib.use(args.backend.strip())
     import matplotlib.pyplot as plt
-    print("args.combine =", args.combine)
     calc_mean_and_dev(
         args.combine, args.sequence, args.x_label, args.output_file, prop=args.prop
     )
