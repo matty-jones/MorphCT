@@ -40,6 +40,7 @@ def run_simulation(request):
 
 class TestCompareOutputs(TestCommand):
     def test_check_output_exists(self, run_simulation):
+        print([file_name for file_name in os.listdir(os.path.join(TEST_ROOT, "output_AEB"))])
         self.confirm_file_exists(
             os.path.join(TEST_ROOT, "output_AEB", "hole_mobility.pdf")
         )
