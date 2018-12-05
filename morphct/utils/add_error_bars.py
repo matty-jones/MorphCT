@@ -5,7 +5,9 @@ import glob
 import argparse
 import os
 import csv
-import matplotlib.pyplot as plt
+
+
+plt = None
 
 
 def split_argument_into_dictionary(argument):
@@ -212,6 +214,7 @@ def calc_mean_and_dev(
 
 
 def main():
+    global plt
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-c",
@@ -260,6 +263,16 @@ def main():
         ),
     )
     parser.add_argument(
+        "-b",
+        "--backend",
+        default=None,
+        required=False,
+        help=(
+            "Specify a backend for matplotlib to use when plotting. Default = user defined in the"
+            " .matplotlibrc."
+        ),
+    )
+    parser.add_argument(
         "-o",
         "--output_file",
         required=False,
@@ -267,6 +280,10 @@ def main():
         help=("""Set an x label for the final plot""")
     )
     args, directory_list = parser.parse_known_args()
+    if args.backend is not None:
+        import matplotlib
+        matplotlib.use(args.backend.strip())
+    import matplotlib.pyplot as plt
     calc_mean_and_dev(
         args.combine, args.sequence, args.x_label, args.output_file, prop=args.prop
     )

@@ -26,10 +26,16 @@ def run_simulation(request):
         os.path.join(TEST_ROOT, "assets", "add_error_bars"), os.path.join(output_dir)
     )
 
-
-
-
-    command = ["addErrorBars", "-c", "{'morph_1': ['output_AEB/morph_1*'], 'morph_2': ['output_AEB/morph_2*'], 'morph_3': ['output_AEB/morph_3*']}", "-x", "$\\psi^{\\prime}$ (Arb. U.)", "-s", "0.33,0.25,0.17", "-p" "hole_mobility", "-o", os.path.join(output_dir, "hole_mobility.pdf")]
+    command = [
+        "addErrorBars", "-c",
+        " ".join([
+            "{'morph_1': ['output_AEB/morph_1*'],",
+            "'morph_2': ['output_AEB/morph_2*'],",
+            "'morph_3': ['output_AEB/morph_3*']}"
+        ]), "-x", "$\\psi^{\\prime}$ (Arb. U.)", "-s", "0.33,0.25,0.17",
+        "-b", "AGG", "-p", "hole_mobility", "-o",
+        os.path.join(output_dir, "hole_mobility.pdf")
+    ]
     subprocess.Popen(command).communicate()
 
 
@@ -40,7 +46,6 @@ def run_simulation(request):
 
 class TestCompareOutputs(TestCommand):
     def test_check_output_exists(self, run_simulation):
-        print([file_name for file_name in os.listdir(os.path.join(TEST_ROOT, "output_AEB"))])
         self.confirm_file_exists(
             os.path.join(TEST_ROOT, "output_AEB", "hole_mobility.pdf")
         )
@@ -55,5 +60,4 @@ if __name__ == "__main__":
     class parameters:
         def __init__(self, param):
             self.param = param
-
     run_simulation(parameters(""))
