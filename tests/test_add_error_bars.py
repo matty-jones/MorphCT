@@ -29,7 +29,7 @@ def run_simulation(request):
 
 
 
-    command = ["addErrorBars", "-c", "{'morph_1': ['output_AEB/morph_1*'], 'morph_2': ['output_AEB/morph_2*'], 'morph_3': ['output_AEB/morph_3*']}", "-x", "$\\psi^{\\prime}$ (Arb. U.)", "-s", "0.33,0.25,0.17", "-p" "hole_mobility"]
+    command = ["addErrorBars", "-c", "{'morph_1': ['output_AEB/morph_1*'], 'morph_2': ['output_AEB/morph_2*'], 'morph_3': ['output_AEB/morph_3*']}", "-x", "$\\psi^{\\prime}$ (Arb. U.)", "-s", "0.33,0.25,0.17", "-p" "hole_mobility", "-o", os.path.join(output_dir, "hole_mobility.pdf")]
     subprocess.Popen(command).communicate()
 
 
@@ -41,13 +41,12 @@ def run_simulation(request):
 class TestCompareOutputs(TestCommand):
     def test_check_output_exists(self, run_simulation):
         self.confirm_file_exists(
-            os.path.join(TEST_ROOT, "output", "hole_mobility.pdf")
+            os.path.join(TEST_ROOT, "output_AEB", "hole_mobility.pdf")
         )
 
 
 def teardown_module():
     shutil.rmtree(os.path.join(TEST_ROOT, "output_AEB"))
-    shutil.rmtree(os.path.join(TEST_ROOT, "output"))
 
 
 if __name__ == "__main__":
