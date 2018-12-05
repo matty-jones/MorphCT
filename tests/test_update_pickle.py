@@ -21,7 +21,7 @@ def run_simulation(request):
     # ---==============================================---
     # ---=============== Setup Prereqs ================---
     # ---==============================================---
-    flags = request.param
+    flags = request.param.split()
 
     output_dir = os.path.join(TEST_ROOT, "output_UP")
 
@@ -34,9 +34,9 @@ def run_simulation(request):
         os.path.join(TEST_ROOT, "assets", "update_pickle"), os.path.join(output_dir)
     )
 
-    command = ["updatePickle"] + flags.split()
+    command = ["updatePickle"] + flags
     subprocess.Popen(command).communicate()
-    return os.path.split(flags.split()[-1])
+    return os.path.split(flags[-1])
 
 
 # ---==============================================---
@@ -45,13 +45,27 @@ def run_simulation(request):
 
 
 class TestCompareOutputs(TestCommand):
-    def test_check_output_exists(self, run_simulation):
+    def test_check_outputs_exist(self, run_simulation):
         (directory, pickle_file) = run_simulation
         self.confirm_file_exists(
             os.path.join(
                 TEST_ROOT, directory, pickle_file.replace(".pickle", ".bak_pickle")
             )
         )
+        if "MCT3.0" in pickle_file:
+            # Check for the updated parameter file
+            self.confirm_file_exists(
+                os.path.join(
+                    TEST_ROOT, directory, "MCT3.0_pickle", "code",
+                    "MCT3.0_pickle_par.bak_par"
+                )
+            )
+
+    def test_outputs_import(self, run_simulation):
+        (directory, pickle_file) = run_simulation
+        if ".pickle" not in pickle_file:
+            pickle_file = "".join([pickle_file, "/code/", pickle_file, ".pickle"])
+        hf.load_pickle(os.path.join(directory, pickle_file))
 
 
 def teardown_module():
