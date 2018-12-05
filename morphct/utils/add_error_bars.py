@@ -51,6 +51,7 @@ def split_argument_into_dictionary(argument):
                 (subitems[0] == '"') and (subitems[-1] == '"')
             ):
                 subitems = subitems[1:-1]
+            print("PATH =", os.path.abspath(subitems))
             runs = glob.glob(os.path.abspath(subitems))
             print("Runs =", runs)
             # Add the items in the glob to the sublist
