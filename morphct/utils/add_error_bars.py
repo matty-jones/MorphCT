@@ -91,6 +91,7 @@ def extract_mobility(filename, runs_data):
             if row[0] not in list(runs_data.keys()):
                 runs_data[row[0]] = []
             runs_data[row[0]].append(float(row[1]))
+    print(runs_data)
     return runs_data
 
 
@@ -195,7 +196,6 @@ def calc_mean_and_dev(
     data_list = []
     property_list = []
     # Get the average and deviation from each run for the desired property.
-    print(total_data)
     for key, pair in total_data.items():
         name = "{}_{}".format(key, prop)
         p_data = total_data[key][prop]
@@ -285,6 +285,7 @@ def main():
         import matplotlib
         matplotlib.use(args.backend.strip())
     import matplotlib.pyplot as plt
+    print(args.combine)
     calc_mean_and_dev(
         args.combine, args.sequence, args.x_label, args.output_file, prop=args.prop
     )
