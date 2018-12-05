@@ -48,7 +48,7 @@ def split_argument_into_dictionary(argument):
                 (subitems[0] == '"') and (subitems[-1] == '"')
             ):
                 subitems = subitems[1:-1]
-            runs = glob.glob(os.path.abspath(subitems))
+            runs = glob.glob(subitems)
             # Add the items in the glob to the sublist
             for run in runs:
                 sublist.append(run)
