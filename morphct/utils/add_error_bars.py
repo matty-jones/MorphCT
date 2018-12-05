@@ -54,6 +54,7 @@ def split_argument_into_dictionary(argument):
                 sublist.append(run)
         # Make the key:pair combination of the keys and sublist
         combine_list[name] = sublist
+    print(combine_list)
     return combine_list
 
 
