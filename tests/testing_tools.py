@@ -151,14 +151,19 @@ class TestCommand(object):
     ):
         if function is not None:
             _ = self.fn_response(function, posn_args, kw_args)
-        directory = "/".join(expected.split("/")[:-1])
-        file_name = expected.split("/")[-1]
+        (directory, file_name) = os.path.split(expected)
         files = os.listdir(directory)
         if negate is False:
-            assert file_name in files, " ".join(
-                ["Expected the file ", str(file_name), " to exist, but it doesn't."]
+            assert file_name in files, "".join(
+                [
+                    "Expected the file ", str(file_name), " to exist in ",
+                    str(directory), ", but it doesn't."
+                ]
             )
         else:
-            assert file_name not in files, " ".join(
-                ["Expected the file ", str(file_name), " to not exist, but it does."]
+            assert file_name not in files, "".join(
+                [
+                    "Expected the file ", str(file_name), " to not exist in ",
+                    str(directory), ", but it does."
+                ]
             )
