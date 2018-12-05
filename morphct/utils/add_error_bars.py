@@ -195,6 +195,7 @@ def calc_mean_and_dev(
     data_list = []
     property_list = []
     # Get the average and deviation from each run for the desired property.
+    print(total_data)
     for key, pair in total_data.items():
         name = "{}_{}".format(key, prop)
         p_data = total_data[key][prop]
