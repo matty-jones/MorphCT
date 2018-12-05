@@ -40,6 +40,12 @@ def split_argument_into_dictionary(argument):
         # Split the list based off commas
         for subitems in items.split(","):
             # Run a glob on the items in the list (remove quotes from around string)
+            if (
+                (subitems[0] == "'") and (subitems[-1] == "'")
+            ) or (
+                (subitems[0] == '"') and (subitems[-1] == '"')
+            ):
+                subitems = subitems[1:-1]
             runs = glob.glob(subitems)
             # Add the items in the glob to the sublist
             for run in runs:
@@ -141,7 +147,11 @@ def save_mean_data_to_csv(data, prop):
 
     text = ""
     for line in data:
-        text = "".join([text, "{0:s},{1:s},{2:s}\n".format(line[0], line[1], line[2])])
+        text = "".join(
+            [text, "{0:s},{1:s},{2:s}\n".format(*tuple(map(
+                str, [line[0], line[1], line[2]]
+            )))]
+        )
 
     # Will over write data.csv each time.
     with open(os.path.join("output", "".join([prop, ".csv"])), "w+") as f:
@@ -197,7 +207,7 @@ def calc_mean_and_dev(combine_list, sequence, x_label, prop="hole_mobility"):
     save_mean_data_to_csv(data_list, prop)
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-c",
@@ -244,3 +254,7 @@ if __name__ == "__main__":
     )
     args, directory_list = parser.parse_known_args()
     calc_mean_and_dev(args.combine, args.sequence, args.x_label, prop=args.prop)
+
+
+if __name__ == "__main__":
+    main()
