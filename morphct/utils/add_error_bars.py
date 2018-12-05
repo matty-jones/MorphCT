@@ -51,7 +51,7 @@ def split_argument_into_dictionary(argument):
                 (subitems[0] == '"') and (subitems[-1] == '"')
             ):
                 subitems = subitems[1:-1]
-            runs = glob.glob(subitems)
+            runs = glob.glob(os.path.abspath(subitems))
             print("Runs =", runs)
             # Add the items in the glob to the sublist
             for run in runs:
@@ -60,7 +60,6 @@ def split_argument_into_dictionary(argument):
         # Make the key:pair combination of the keys and sublist
         combine_list[name] = sublist
     print("Combine_list =", combine_list)
-    exit()
     return combine_list
 
 
