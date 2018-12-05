@@ -36,6 +36,8 @@ def run_simulation(request):
         "-b", "AGG", "-p", "hole_mobility", "-o",
         os.path.join(output_dir, "hole_mobility.pdf")
     ]
+    print(command)
+    print(os.listdir(output_dir))
     subprocess.Popen(command).communicate()
 
 
