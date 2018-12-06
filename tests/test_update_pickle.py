@@ -77,4 +77,4 @@ if __name__ == "__main__":
     class parameters:
         def __init__(self, param):
             self.param = param
-    run_simulation(parameters("output_UP/MCT1.0_pickle"))
+    run_simulation(parameters("output_UP/MCT3.0_pickle"))
