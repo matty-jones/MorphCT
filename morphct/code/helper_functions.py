@@ -114,11 +114,8 @@ def calc_COM(list_of_positions, list_of_atom_types=None, list_of_atom_masses=Non
             elif atom_type.lower()[0] == "f":
                 list_of_atom_masses.append(18.998403)
             else:
-                raise SystemError(
-                    "Unknown atomic mass {:s}. Please hardcode into helper_functions.calc_COM.".format(
-                        atom_type
-                    )
-                )
+                print("Unknown atomic mass {:s}. Setting as 1.0.".format(atom_type))
+                list_of_atom_masses.append(1.0)
     total_mass = np.sum(list_of_atom_masses)
     for atom_ID, position in enumerate(list_of_positions):
         for axis in range(3):
