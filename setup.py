@@ -108,6 +108,7 @@ setup(
             "addHydrogens=morphct.utils.add_hydrogens:main",
             "updatePickle=morphct.utils.update_pickle:main",
             "morphctInit=morphct.utils.init_morphct:main",
+            "addErrorBars=morphct.utils.add_error_bars:main",
         ],
     },
 )

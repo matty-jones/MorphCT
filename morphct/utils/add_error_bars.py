@@ -5,7 +5,9 @@ import glob
 import argparse
 import os
 import csv
-import matplotlib.pyplot as plt
+
+
+plt = None
 
 
 def split_argument_into_dictionary(argument):
@@ -40,6 +42,12 @@ def split_argument_into_dictionary(argument):
         # Split the list based off commas
         for subitems in items.split(","):
             # Run a glob on the items in the list (remove quotes from around string)
+            if (
+                (subitems[0] == "'") and (subitems[-1] == "'")
+            ) or (
+                (subitems[0] == '"') and (subitems[-1] == '"')
+            ):
+                subitems = subitems[1:-1]
             runs = glob.glob(subitems)
             # Add the items in the glob to the sublist
             for run in runs:
@@ -97,7 +105,7 @@ def iterate_through_runs_to_combine(runs):
     return runs_data
 
 
-def plot_data(data, title, xlabel="Order-Semi-Disorder"):
+def plot_data(data, title, output_file, xlabel="Order-Semi-Disorder"):
     """
     Creates a simple plot of the data.
     Requires:
@@ -123,8 +131,10 @@ def plot_data(data, title, xlabel="Order-Semi-Disorder"):
     # plt.ylabel(r"Anisotropy (Arb. U.)")
     plt.xlabel(xlabel)
     # plt.title(title)
-    plt.savefig("output/{}.pdf".format(title))
-    print("Figure saved as output/{}.pdf".format(title))
+    (save_dir, save_file) = os.path.split(output_file)
+    os.makedirs(save_dir, exist_ok=True)
+    plt.savefig(os.path.join(save_dir, save_file))
+    print("Figure saved as", output_file)
 
 
 def save_mean_data_to_csv(data, prop):
@@ -141,14 +151,20 @@ def save_mean_data_to_csv(data, prop):
 
     text = ""
     for line in data:
-        text = "".join([text, "{0:s},{1:s},{2:s}\n".format(line[0], line[1], line[2])])
+        text = "".join(
+            [text, "{0:s},{1:s},{2:s}\n".format(*tuple(map(
+                str, [line[0], line[1], line[2]]
+            )))]
+        )
 
     # Will over write data.csv each time.
     with open(os.path.join("output", "".join([prop, ".csv"])), "w+") as f:
         f.writelines(text)
 
 
-def calc_mean_and_dev(combine_list, sequence, x_label, prop="hole_mobility"):
+def calc_mean_and_dev(
+    combine_list, sequence, x_label, output_file, prop="hole_mobility"
+):
     """
     Iterate through the dictionary of lists to get the
     information from the appropriate csv files, then calculate
@@ -192,12 +208,13 @@ def calc_mean_and_dev(combine_list, sequence, x_label, prop="hole_mobility"):
         except:
             property_list.append([sequence[keys_list.index(key)], p_mean, p_error])
     # Plot the data
-    plot_data(np.array(property_list), prop, xlabel=x_label)
+    plot_data(np.array(property_list), prop, output_file, xlabel=x_label)
     # Write all the data into a single file
     save_mean_data_to_csv(data_list, prop)
 
 
-if __name__ == "__main__":
+def main():
+    global plt
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-c",
@@ -231,7 +248,10 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
-        "-x", "--x_label", required=True, help=("""Set an x label for the final plot""")
+        "-x",
+        "--x_label",
+        required=True,
+        help=("""Set an x label for the final plot"""),
     )
     parser.add_argument(
         "-p",
@@ -242,5 +262,32 @@ if __name__ == "__main__":
                               of the data and the error bar calculation."""
         ),
     )
+    parser.add_argument(
+        "-b",
+        "--backend",
+        default=None,
+        required=False,
+        help=(
+            "Specify a backend for matplotlib to use when plotting. Default = user defined in the"
+            " .matplotlibrc."
+        ),
+    )
+    parser.add_argument(
+        "-o",
+        "--output_file",
+        required=False,
+        default="./output/hole_mobility.pdf",
+        help=("""Set an x label for the final plot""")
+    )
     args, directory_list = parser.parse_known_args()
-    calc_mean_and_dev(args.combine, args.sequence, args.x_label, prop=args.prop)
+    if args.backend is not None:
+        import matplotlib
+        matplotlib.use(args.backend.strip())
+    import matplotlib.pyplot as plt
+    calc_mean_and_dev(
+        args.combine, args.sequence, args.x_label, args.output_file, prop=args.prop
+    )
+
+
+if __name__ == "__main__":
+    main()

@@ -9,7 +9,7 @@ import numpy as np
 from morphct.code import helper_functions as hf
 from morphct.code import obtain_chromophores as oc
 from morphct.definitions import PROJECT_ROOT
-from morphct.templates import par_template
+from morphct.templates import par as par_template
 
 
 def convert_params(old_parameter_dict, file_name):

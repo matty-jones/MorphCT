@@ -2920,10 +2920,8 @@ def main():
     global p3
     if args.backend is not None:
         import matplotlib
-
         matplotlib.use(args.backend.strip())
     import matplotlib.pyplot as plt
-
     try:
         import mpl_toolkits.mplot3d as p3
     except ImportError:
