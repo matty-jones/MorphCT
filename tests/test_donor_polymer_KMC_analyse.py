@@ -269,7 +269,9 @@ class TestCompareOutputs(TestCommand):
             )
         else:
             self.confirm_file_exists(
-                os.path.join(TEST_ROOT, "output_KMCA", "figures", "36_hop_vec_hole.png"),
+                os.path.join(
+                    TEST_ROOT, "output_KMCA", "figures", "36_hop_vec_hole.png"
+                ),
                 negate=True,
             )
 

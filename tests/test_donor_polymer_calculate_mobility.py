@@ -15,11 +15,11 @@ def run_simulation():
     # ---======== Directory and File Structure ========---
     # ---==============================================---
 
-    input_morph_dir = TEST_ROOT + "/assets/donor_polymer"
-    output_morph_dir = TEST_ROOT + "/output_MKMC"
+    input_morph_dir = os.path.join(TEST_ROOT, "assets", "donor_polymer")
+    output_morph_dir = os.path.join(TEST_ROOT, "output_MKMC")
     output_orca_dir = None
-    input_device_dir = TEST_ROOT + "/assets/donor_polymer"
-    output_device_dir = TEST_ROOT + "/output_MKMC"
+    input_device_dir = os.path.join(TEST_ROOT, "assets", "donor_polymer")
+    output_device_dir = os.path.join(TEST_ROOT, "output_MKMC")
 
     # ---==============================================---
     # ---========== Input Morphology Details ==========---
@@ -197,20 +197,20 @@ class TestCompareOutputs(TestCommand):
         expected_pars = copy.deepcopy(run_simulation["expected_parameter_dict"])
         output_pars = copy.deepcopy(run_simulation["output_parameter_dict"])
         for key in [
-                "parameter_file",
-                "output_morph_dir",
-                "CG_to_template_dirs",
-                "output_morphology_directory",
-                "input_device_dir",
-                "input_morphology_file",
-                "output_device_dir",
-                "input_morph_dir",
-                "input_orca_dir",
-                "output_orca_dir",
-                "input_device_file",
-                "output_device_directory",
-                "output_orca_directory",
-            ]:
+            "parameter_file",
+            "output_morph_dir",
+            "CG_to_template_dirs",
+            "output_morphology_directory",
+            "input_device_dir",
+            "input_morphology_file",
+            "output_device_dir",
+            "input_morph_dir",
+            "input_orca_dir",
+            "output_orca_dir",
+            "input_device_file",
+            "output_device_directory",
+            "output_orca_directory",
+        ]:
             try:
                 expected_pars.pop(key)
             except KeyError:
