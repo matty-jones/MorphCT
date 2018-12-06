@@ -46,6 +46,7 @@ KMC_iterations = 0
 # DEBUG Nothing is forbidden. Everything is permitted.
 fastest_event_allowed = 1E-99  # 1E-15
 slowest_event_allowed = 1E99  # 1E-9
+log_file = None
 
 
 class exciton:
@@ -2383,7 +2384,7 @@ def slurm_time_in_S(slurm_time):
     return time_in_S
 
 
-if __name__ == "__main__":
+def main():
     global log_file
 
     KMC_directory = sys.argv[1]
@@ -2459,3 +2460,7 @@ if __name__ == "__main__":
             voltage_val,
             time_limit,
         )
+
+
+if __name__ == "__main__":
+    main()

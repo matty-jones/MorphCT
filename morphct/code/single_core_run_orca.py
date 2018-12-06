@@ -62,7 +62,7 @@ def check_job_output(data_file, job):
     return True
 
 
-if __name__ == "__main__":
+def main():
     morph_orca_dir = sys.argv[1]
     morph_output_dir = sys.argv[2]
     CPU_rank = int(sys.argv[3])
@@ -197,3 +197,7 @@ if __name__ == "__main__":
         ["All jobs completed in {0:.2f} {1:s}".format(elapsed_time, time_units)],
     )
     hf.write_to_file(log_file, ["Exiting normally..."])
+
+
+if __name__ == "__main__":
+    main()
