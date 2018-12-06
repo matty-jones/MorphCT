@@ -33,6 +33,6 @@ build:
   ci:
     - source conda_cache_check.bash
     - pip install -e .
-    - PYTEST_ADDOPTS="-c pytest-shippable.ini" pytest tests/test_add_error_bars.py
+    - PYTEST_ADDOPTS="-c pytest-shippable.ini" pytest
   on_success:
     - bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN || echo "Codecov upload failed, coverage reports not updated!"
