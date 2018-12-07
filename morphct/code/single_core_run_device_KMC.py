@@ -512,7 +512,6 @@ class carrier:
                     destination_chromophore.species != self.current_chromophore.species
                 ):
                     continue
-            print(destination_chromophore)
             # Otherwise, we're good to go. Calculate the hop as previously (but
             # a hop to the neighbourChromophore)
             delta_E_ij = self.calculate_delta_E(
@@ -524,13 +523,33 @@ class carrier:
             # All of the energies (EXCEPT EIJ WHICH IS ALREADY IN J) are in eV
             # currently, so convert them to J
             if self.use_VRH is True:
-                relative_image = np.array(destination_image) - np.array(
-                    self.current_device_posn
-                )
-                destination_chromo_posn = destination_chromophore.posn + (
-                    np.array(relative_image)
-                    * np.array([self.cell_size for _ in range(3)])
-                )
+                # Cannot calculate the separation if the destination is "top" or
+                # "bottom"
+                if not isinstance(destination_chromophore, str):
+                    relative_image = np.array(destination_image) - np.array(
+                        self.current_device_posn
+                    )
+                    destination_chromo_posn = destination_chromophore.posn + (
+                        np.array(relative_image)
+                        * np.array([self.cell_size for _ in range(3)])
+                    )
+                else:
+                    # Get the morphology_shape
+                    morphology_shape = [
+                        global_morphology_data.return_AA_morphology(self.current_device_posn)[
+                            key
+                        ]
+                        for key in ["lx", "ly", "lz"]
+                    ]
+                    destination_chromo_posn = copy.deepcopy(
+                        self.current_chromophore.posn
+                    )
+                    if destination_chromophore.lower() == "top":
+                        # Top electrode is current chromo posn but with z = z_max
+                        destination_chromo_posn[2] = morphology_shape[2] / 2.0
+                    elif destination_chromophore.lower() == "bottom":
+                        # Bottom electrode is current chromo posn but with z = z_min
+                        destination_chromo_posn[2] = - morphology_shape[2] / 2.0
                 # Convert from ang to m
                 chromophore_separation = (
                     hf.calculate_separation(
@@ -639,29 +658,54 @@ class carrier:
             # that causes photovoltaic current.
             if self.destination_chromophore.lower() == "top":
                 # Leaving through top (anode)
-                if self.injected_from.lower() != "anode":
-                    if self.carrier_type == HOLE:
+                if self.carrier_type == HOLE:
+                    # If hole injected via exciton or cathode, then increment
+                    # extractions
+                    if (
+                        not isinstance(self.injected_from, str)
+                        or self.injected_from.lower() != "anode"
+                    ):
                         number_of_extractions += 1
-                    else:
+                    # Else: If hole injected from anode AND leaving via anode, then
+                    # skip
+                else:
+                    # If electron injected via exciton or cathode, then decrement
+                    # extractions
+                    if (
+                        not isinstance(self.injected_from, str)
+                        or self.injected_from.lower() != "anode"
+                    ):
                         number_of_extractions -= 1
-                # Else (injected from anode), number of extractions doesn't
-                # change.
+                    # Else: If electron injected from anode AND leaving via anode, then
+                    # skip
             else:
                 # Leaving through bottom (cathode)
-                if self.injected_from.lower() != "cathode":
-                    if self.carrier_type == ELECTRON:
+                if self.carrier_type == ELECTRON:
+                    # If electron injected via exciton or anode, then increment
+                    # extractions
+                    if (
+                        not isinstance(self.injected_from, str)
+                        or self.injected_from.lower() != "cathode"
+                    ):
                         number_of_extractions += 1
-                    else:
+                    # Else: If electron injected from cathode AND leaving via cathode,
+                    # then skip
+                else:
+                    # If hole injected via exciton or anode, then decrement extractions
+                    if (
+                        not isinstance(self.injected_from, str)
+                        or self.injected_from.lower() != "cathode"
+                    ):
                         number_of_extractions -= 1
-                # Else (injected from cathode), number of extractions
-                # doesn't change.
+                    # Else: If hole injected from cathode AND leaving via cathode, then
+                    # skip
             if self.carrier_type == ELECTRON:
                 hf.write_to_file(
                     log_file,
                     [
                         "".join(
                             [
-                                "EVENT: Electron left out of {0:s} of device! New number of extractions: {0:d} after {1:d} iterations (global_time = {2:.2e})".format(
+                                "EVENT: Electron left out of {0:s} of device! New number of extractions: {1:d} after {2:d} iterations (global_time = {3:.2e})".format(
                                     self.destination_chromophore,
                                     number_of_extractions,
                                     KMC_iterations,
@@ -677,7 +721,7 @@ class carrier:
                     [
                         "".join(
                             [
-                                "EVENT: Hole left out of {0:s} of device! New number of extractions: {0:d} after {1:d} iterations (global_time = {2:.2e})".format(
+                                "EVENT: Hole left out of {0:s} of device! New number of extractions: {1:d} after {2:d} iterations (global_time = {3:.2e})".format(
                                     self.destination_chromophore,
                                     number_of_extractions,
                                     KMC_iterations,
@@ -836,14 +880,12 @@ def plot_carrier_Z_profiles(all_carriers, parameter_dict, device_array, output_d
     )
     # Now make the plots
     for carrier in carriers_to_plot:
-        if (carrier.injected_from.lower() == "anode") or (
-            carrier.injected_from.lower() == "cathode"
-        ):
+        if isinstance(carrier.injected_from, str):
             continue
-        plot_Z_profile(carrier, z_len, output_dir)
+        plot_Z_profile(carrier, z_len, parameter_dict, output_dir)
 
 
-def plot_Z_profile(carrier, z_dim_size, output_dir):
+def plot_Z_profile(carrier, z_dim_size, parameter_dict, output_dir):
     x_vals = []
     y_vals = []
     for hop_index, hop in enumerate(carrier.history):
@@ -858,16 +900,16 @@ def plot_Z_profile(carrier, z_dim_size, output_dir):
             colour = "b"
         else:
             colour = "r"
-            file_name = "{0:s}carrier_{1:05d}_Z_profile.pdf".format(
-                output_dir, carrier.ID
-            )
+    file_name = os.path.join(
+        output_dir, "carrier_{:05d}_Z_profile.pdf".format(carrier.ID)
+    )
     plt.figure()
     plt.plot(x_vals, y_vals, color=colour)
     plt.ylim([0, z_dim_size])
     plt.xlabel("Hop Number (Arb. U.)")
     plt.ylabel("Z-position (Ang)")
     plt.savefig(file_name)
-    print("".join(["Carrier Z-Profile saved as ", fileName]))
+    print("".join(["Carrier Z-Profile saved as ", file_name]))
     plt.close()
 
 
@@ -1282,7 +1324,7 @@ def plot_event_time_distribution(event_log, output_dir, fastest, slowest):
     plt.gca().set_yscale("log")
     plt.xlabel(r"$\mathrm{\tau}$ (s)")
     plt.ylabel("Freq (Arb. U.)")
-    file_name = "".join([output_dir, "event_time_dist.pdf"])
+    file_name = os.path.join(output_dir, "event_time_dist.pdf")
     plt.savefig(file_name)
     print("Event time distribution saved as", file_name)
 
@@ -1373,6 +1415,7 @@ def plot3D_trajectory(
                         * parameter_dict["morphology_cell_size"]
                     )
                 ) + np.array(next_hop[1])
+                print("Plotting hop for", color, "from", current_posn, "to", next_posn)
                 ax.plot(
                     [current_posn[0], next_posn[0]],
                     [current_posn[1], next_posn[1]],
@@ -1391,9 +1434,9 @@ def plot3D_trajectory(
                 ],
             )
             continue
-    file_name = "".join([output_dir, carrier_string, "_traj.pdf"])
+    file_name = os.path.join(output_dir, "{:s}_traj.pdf".format(carrier_string))
     plt.savefig(file_name)
-    hf.write_to_file(log_file, ["Figure saved as", file_name])
+    hf.write_to_file(log_file, [" ".join(["Figure saved as", file_name])])
     plt.close()
 
 
@@ -1714,6 +1757,9 @@ def execute(
                 ):
                     # Injected onto either a dissociation site or a trap site
                     if injected_exciton.can_dissociate is True:
+                        # Exciton is finished, add it to the global carrier list
+                        if parameter_dict["record_carrier_history"]:
+                            all_carriers.append(injected_exciton)
                         hf.write_to_file(
                             log_file, ["EVENT: Exciton dissociating immediately"]
                         )

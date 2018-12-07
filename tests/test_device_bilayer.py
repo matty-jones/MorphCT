@@ -85,7 +85,7 @@ def run_simulation():
 
     # Simulation
     voltage_sweep = [-0.1]
-    morphology_cell_size = 3E-8
+    morphology_cell_size = 1E-8
     minimum_number_of_photoinjections = 10
     fastest_event_allowed = 1E-18
     slowest_event_allowed = 1E-8
