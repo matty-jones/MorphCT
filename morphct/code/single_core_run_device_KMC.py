@@ -74,6 +74,7 @@ class exciton:
             self.history = [[self.initial_device_posn, self.initial_chromophore.posn]]
         else:
             self.history = None
+        self.cell_size = parameter_dict["morphology_cell_size"]
 
     def calculate_behaviour(self):
         # Set a flag to indicate whether exciton can dissociate or not
@@ -90,9 +91,12 @@ class exciton:
                 )
                 # The electron chromophore is a randomly selected chromophore of
                 # the opposing type that is in range of the current one
-                e_chromo_ID = np.random.choice(
-                    self.current_chromophore.dissociation_neighbours
-                )[0]
+                random_index = np.random.randint(
+                    len(self.current_chromophore.dissociation_neighbours)
+                )
+                e_chromo_ID = self.current_chromophore.dissociation_neighbours[
+                    random_index
+                ][0]
                 e_chromo = global_chromophore_data.return_specific_chromophore(
                     self.current_device_posn, e_chromo_ID
                 )
@@ -116,9 +120,12 @@ class exciton:
                 )
                 # The hole chromophore is a randomly selected chromophore of the
                 # opposing type that is in range of the current one
-                h_chromo_ID = np.random.choice(
-                    self.current_chromophore.dissociation_neighbours
-                )[0]
+                random_index = np.random.randint(
+                    len(self.current_chromophore.dissociation_neighbours)
+                )
+                h_chromo_ID = self.current_chromophore.dissociation_neighbours[
+                    random_index
+                ][0]
                 h_chromo = global_chromophore_data.return_specific_chromophore(
                     self.current_device_posn, h_chromo_ID
                 )
@@ -254,7 +261,7 @@ class exciton:
             hop_time = hf.determine_event_tau(
                 hop_rate,
                 event_type="exciton-hop",
-                slowest_event_allowed=slowest_event_allowed,
+                slowest_event=slowest_event_allowed,
                 fastest_event=fastest_event_allowed,
                 maximum_attempts=100,
                 log_file=log_file,
@@ -317,7 +324,9 @@ class exciton:
             new_chromo = global_chromophore_data.return_closest_chromophore_to_position(
                 target_device_posn, destination_position
             )
-            if (new_chromo.lower() == "top") or (new_chromo.lower() == "bottom"):
+            if isinstance(new_chromo, str) and (
+                (new_chromo.lower() == "top") or (new_chromo.lower() == "bottom")
+            ):
                 # This exciton is hopping out of the active layer and into the
                 # contacts.
                 # Ensure it doesn't get queued up again
@@ -330,7 +339,9 @@ class exciton:
                 # TODO This carrier has left the simulation volume so we now
                 # need to ensure we remove it from the carrier dictionary so
                 # it's not included in any of the Coulombic calculations
-            elif new_chromo.lower() == "out of bounds":
+            elif isinstance(new_chromo, str) and (
+                new_chromo.lower() == "out of bounds"
+            ):
                 # Ignore this hop, do a different one instead
                 pass
             else:
@@ -415,6 +426,9 @@ class carrier:
             self.use_VRH = False
         if self.use_VRH is True:
             self.VRH_scaling = 1.0 / self.current_chromophore.VRH_delocalisation
+        self.cell_size = parameter_dict["morphology_cell_size"]
+        self.capture_radius = parameter_dict["coulomb_capture_radius"]
+        self.permittivity = parameter_dict["relative_permittivity"]
 
     def calculate_behaviour(self):
         try:
@@ -484,7 +498,9 @@ class carrier:
                         destination_chromophore = global_chromophore_data.return_closest_chromophore_to_position(
                             destination_image, neighbour_chromophore.posn
                         )
-                        if destination_chromophore.lower() == "out of bounds":
+                        if isinstance(destination_chromophore, str) and (
+                            destination_chromophore.lower() == "out of bounds"
+                        ):
                             continue
                     else:
                         continue
@@ -496,12 +512,14 @@ class carrier:
                     destination_chromophore.species != self.current_chromophore.species
                 ):
                     continue
+            print(destination_chromophore)
             # Otherwise, we're good to go. Calculate the hop as previously (but
             # a hop to the neighbourChromophore)
             delta_E_ij = self.calculate_delta_E(
                 neighbour_chromophore,
                 neighbour_relative_image,
                 self.current_chromophore.neighbours_delta_E[neighbour_index],
+                self.cell_size, self.capture_radius, self.permittivity,
             )
             # All of the energies (EXCEPT EIJ WHICH IS ALREADY IN J) are in eV
             # currently, so convert them to J
@@ -509,9 +527,9 @@ class carrier:
                 relative_image = np.array(destination_image) - np.array(
                     self.current_device_posn
                 )
-                destination_chromo_posn = destination_chromo.posn + (
+                destination_chromo_posn = destination_chromophore.posn + (
                     np.array(relative_image)
-                    * np.array([axis[1] - axis[0] for axis in self.sim_dims])
+                    * np.array([self.cell_size for _ in range(3)])
                 )
                 # Convert from ang to m
                 chromophore_separation = (
@@ -528,7 +546,7 @@ class carrier:
                     self.T,
                     use_VRH=True,
                     rij=chromophore_separation,
-                    VRH_prefactor=self.VRH_scaling,
+                    VRH_delocalisation=self.VRH_scaling,
                     boltz_pen=self.use_simple_energetic_penalty,
                 )
             else:
@@ -543,7 +561,7 @@ class carrier:
             hop_time = hf.determine_event_tau(
                 hop_rate,
                 event_type="carrier-hop",
-                slowest_event_allowed=slowest_event_allowed,
+                slowest_event=slowest_event_allowed,
                 fastest_event=fastest_event_allowed,
                 maximum_attempts=100,
                 log_file=log_file,
@@ -610,8 +628,10 @@ class carrier:
         global_chromophore_data.return_specific_chromophore(
             self.current_device_posn, self.current_chromophore.ID
         ).occupied.remove(self.current_device_posn)
-        if (self.destination_chromophore.lower() == "top") or (
-            self.destination_chromophore.lower() == "bottom"
+        if isinstance(self.destination_chromophore, str) and (
+            (self.destination_chromophore.lower() == "top") or (
+                self.destination_chromophore.lower() == "bottom"
+            )
         ):
             # This carrier is hopping out of the active layer and into the
             # contacts. Firstly, work out whether this is a `correct' hop
@@ -682,7 +702,8 @@ class carrier:
             )
 
     def calculate_delta_E(
-        self, destination_chromophore, neighbour_relative_image, chromo_E_ij
+        self, destination_chromophore, neighbour_relative_image, chromo_E_ij,
+        cell_size, capture_radius, permittivity
     ):
         # Delta_E_ij has 3 main components: 1) the energetic disorder (difference
         # in HOMO/LUMO levels), 2) the field within the device, and 3) the
@@ -691,12 +712,12 @@ class carrier:
         # 1) Energetic Disorder
         delta_E_ij += chromo_E_ij * elementary_charge
         # 2) Field within the device
-        current_absolute_position = np.array(self.current_device_posn) * parameter_dict[
-            "morphology_cell_size"
-        ] + (np.array(self.current_chromophore.posn) * 1E-10)
+        current_absolute_position = np.array(self.current_device_posn) * cell_size + (
+            np.array(self.current_chromophore.posn) * 1E-10
+        )
         destination_absolute_position = (
             np.array(self.current_device_posn) + np.array(neighbour_relative_image)
-        ) * parameter_dict["morphology_cell_size"] + (
+        ) * cell_size + (
             np.array(destination_chromophore.posn) * 1E-10
         )
         # Field has negative sign because device is flipped with anode at +Z and
@@ -710,10 +731,14 @@ class carrier:
                 current_absolute_position,
                 self.ID,
                 self.carrier_type,
+                cell_size,
+                capture_radius,
+                permittivity,
                 carrier_is_recombining=self.recombining,
             )
             destination_coulomb, dummy1, dummy2 = calculate_coulomb(
-                destination_absolute_position, self.ID, self.carrier_type
+                destination_absolute_position, self.ID, self.carrier_type, cell_size,
+                capture_radius, permittivity,
             )
             delta_E_ij += destination_coulomb - origin_coulomb
             if (recombine_flag is True) and (self.recombining is False):
@@ -735,7 +760,7 @@ class inject_site:
         self.inject_time = hf.determine_event_tau(
             self.inject_rate,
             event_type="".join([self.electrode, "-injection"]),
-            slowest_event_allowed=slowest_event_allowed,
+            slowest_event=slowest_event_allowed,
             fastest_event=fastest_event_allowed,
             maximum_attempts=100,
             log_file=log_file,
@@ -847,12 +872,13 @@ def plot_Z_profile(carrier, z_dim_size, output_dir):
 
 
 def calculate_coulomb(
-    absolute_position, self_ID, self_carrier_type, carrier_is_recombining=None
+    absolute_position, self_ID, self_carrier_type, cell_size, capture_radius,
+    permittivity, carrier_is_recombining=None,
 ):
     global global_carrier_dict
     coulombic_potential = 0.0
     coulomb_constant = 1.0 / (
-        4 * np.pi * epsilon_nought * parameter_dict["relative_permittivity"]
+        4 * np.pi * epsilon_nought * permittivity
     )
     can_recombine_here = False
     recombining_with = None
@@ -865,9 +891,9 @@ def calculate_coulomb(
         # conditions. Check papers from Chris Groves (Marsh, Groves and
         # Greenham2007 and beyond), Ben Lyons (2011/2012), and van der Holst
         # (2011) for more details.
-        carrier_posn = np.array(carrier.current_device_posn) * parameter_dict[
-            "morphology_cell_size"
-        ] + (np.array(carrier.current_chromophore.posn) * 1E-10)
+        carrier_posn = np.array(carrier.current_device_posn) * cell_size + (
+            np.array(carrier.current_chromophore.posn) * 1E-10
+        )
         if carrier_ID != self_ID:
             # Only consider the current carrier if it is not us!
             separation = hf.calculate_separation(absolute_position, carrier_posn)
@@ -888,7 +914,7 @@ def calculate_coulomb(
             # recombine.
             if carrier_is_recombining is False:
                 # Only do this if we're not currently recombining with something
-                if (separation <= parameter_dict["coulomb_capture_radius"]) and (
+                if (separation <= capture_radius) and (
                     self_carrier_type != carrier.carrier_type
                 ):
                     # If carriers are within 1nm of each other, then assume that
@@ -1426,7 +1452,9 @@ def execute(
         (device_array.shape[2] * parameter_dict["morphology_cell_size"])
     )
     hf.write_to_file(
-        log_file, ["Current E-field value = {:s} Vm^{-1}".format(current_field_value)]
+        log_file, ["".join([
+            "Current E-field value = {:.2E} V/m".format(current_field_value),
+        ])]
     )
     output_figures_dir = os.path.join(
         parameter_dict["output_device_dir"],
@@ -1543,7 +1571,7 @@ def execute(
                 photoinjection_time = hf.determine_event_tau(
                     photoinjection_rate,
                     event_type="photoinjection",
-                    slowest_event_allowed=slowest_event_allowed,
+                    slowest_event=slowest_event_allowed,
                     fastest_event=fastest_event_allowed,
                     maximum_attempts=100,
                     log_file=log_file,
@@ -1573,7 +1601,7 @@ def execute(
                     cathode_injection_time = hf.determine_event_tau(
                         cathode_inject_rate,
                         event_type="cathode-injection",
-                        slowest_event_allowed=slowest_event_allowed,
+                        slowest_event=slowest_event_allowed,
                         fastest_event=fastest_event_allowed,
                         maximum_attempts=100,
                         log_file=log_file,
@@ -1598,7 +1626,7 @@ def execute(
                     anode_injection_time = hf.determine_event_tau(
                         anode_inject_rate,
                         event_type="anode-injection",
-                        slowest_event_allowed=slowest_event_allowed,
+                        slowest_event=slowest_event_allowed,
                         fastest_event=fastest_event_allowed,
                         maximum_attempts=100,
                         log_file=log_file,
@@ -1625,7 +1653,7 @@ def execute(
                     log_file,
                     [
                         "Current runtime = {0:d} s, with {1:d} events currently in the queue and {2:d} carriers currently in the system. Currently completed {3:d} iterations and simulated {4:.2e} s.".format(
-                            t1 - t0,
+                            int(t1 - t0),
                             len(event_queue),
                             len(global_carrier_dict.keys()),
                             KMC_iterations,
@@ -1687,7 +1715,7 @@ def execute(
                     # Injected onto either a dissociation site or a trap site
                     if injected_exciton.can_dissociate is True:
                         hf.write_to_file(
-                            log_file, ["event: exciton dissociating immediately"]
+                            log_file, ["EVENT: Exciton dissociating immediately"]
                         )
                         number_of_dissociations += 1
                         number_of_hops.append(injected_exciton.number_of_hops)
@@ -1788,7 +1816,7 @@ def execute(
                 photoinjection_time = hf.determine_event_tau(
                     photoinjection_rate,
                     event_type="photoinjection",
-                    slowest_event_allowed=slowest_event_allowed,
+                    slowest_event=slowest_event_allowed,
                     fastest_event=fastest_event_allowed,
                     maximum_attempts=100,
                     log_file=log_file,
@@ -2097,7 +2125,7 @@ def execute(
                     recombination_time = hf.determine_event_tau(
                         parameter_dict["recombination_rate"],
                         event_type="carrier-recombination",
-                        slowest_event_allowed=slowest_event_allowed,
+                        slowest_event=slowest_event_allowed,
                         fastest_event=fastest_event_allowed,
                         maximum_attempts=100,
                         log_file=log_file,

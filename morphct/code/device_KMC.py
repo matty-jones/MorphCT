@@ -213,7 +213,7 @@ def main(parameter_dict):
         child_seed = np.random.randint(0, 2 ** 32)
         # Previous run command:
         run_command = [
-            "python ",
+            "python",
             SINGLE_RUN_DEVICE_KMC_FILE,
             output_dir,
             str(proc_ID),
