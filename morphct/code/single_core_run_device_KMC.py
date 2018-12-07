@@ -3,6 +3,8 @@ import heapq
 import os
 import pickle
 import sys
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import time as T
@@ -954,11 +956,12 @@ def calculate_coulomb(
             # Only consider the current carrier if it is not us!
             separation = hf.calculate_separation(absolute_position, carrier_posn)
             if separation == 0.0:
-                print("ZERO SEPARATION BETWEEN CARRIERS, EXITING")
-                if self_carrier_type == carrier.carrier_type:
-                    print("ZERO SEPARATION BETWEEN LIKE CARRIERS, EXITING")
-                    exit()
-                exit()
+                # Destination trial is to site occupied by another carrier.
+                # The occupation matrix should have caught this already in
+                # calculate_hop, therefore the morphology has multiple
+                # chromophores defined at the same point in space (as in the tests).
+                # We can just set the coulombic potential to zero and move on.
+                coulombic_potential = 0.0
             else:
                 coulombic_potential += coulomb_constant * (
                     (elementary_charge * ((2 * self_carrier_type) - 1))
@@ -2167,6 +2170,13 @@ def execute(
                 # we can safely ignore it
                 if hopping_carrier.ID not in global_carrier_dict.keys():
                     continue
+                # print(
+                #     "CARRIER #", hopping_carrier.ID, " hopping from ",
+                #     hopping_carrier.current_device_posn, " ",
+                #     hopping_carrier.current_chromophore.posn, " to ",
+                #     hopping_carrier.destination_image, " ",
+                #     hopping_carrier.destination_chromophore.posn
+                # )
                 hopping_carrier.perform_hop()
                 if hopping_carrier.removed_time is None:
                     # As long as this carrier hasn't just been removed,
@@ -2262,88 +2272,100 @@ def execute(
                     for recombining_carrier in [carrier1, carrier2]:
                         if (
                             (recombining_carrier.carrier_type == HOLE)
+                            and isinstance(recombining_carrier.injected_from, str)
                             and (recombining_carrier.injected_from.lower() == "anode")
                         ) or (
                             (recombining_carrier.carrier_type == ELECTRON)
+                            and isinstance(recombining_carrier.injected_from, str)
                             and (recombining_carrier.injected_from.lower() == "cathode")
                         ):
                             delta_electrical_recombinations += 1
                         elif (
                             (recombining_carrier.carrier_type == ELECTRON)
+                            and isinstance(recombining_carrier.injected_from, str)
                             and (recombining_carrier.injected_from.lower() == "anode")
                         ) or (
                             (recombining_carrier.carrier_type == HOLE)
+                            and isinstance(recombining_carrier.injected_from, str)
                             and (recombining_carrier.injected_from.lower() == "cathode")
                         ):
                             delta_electrical_recombinations -= 1
+                    recombining_carrier_IDs.remove(carrier1.ID)
+                    if separation <= parameter_dict["coulomb_capture_radius"]:
+                        hf.write_to_file(
+                            log_file,
+                            [
+                                "{0:f} <= {1:f}".format(
+                                    separation, parameter_dict["coulomb_capture_radius"]
+                                )
+                            ],
+                        )
+                        hf.write_to_file(
+                            log_file,
+                            [
+                                "EVENT: Carrier recombination (#{0:d} with #{1:d}) succeeded after {2:d} iterations (global_time = {3:.2e})".format(
+                                    carrier1.ID, carrier2.ID, KMC_iterations, global_time
+                                )
+                            ],
+                        )
+                        # Carriers are in range, so recombine them
+                        carrier1.removed_time = global_time
+                        carrier2.removed_time = global_time
+                        number_of_recombinations += 1
+                        number_of_electrical_recombinations += (
+                            delta_electrical_recombinations
+                        )
+                        try:
+                            global_carrier_dict.pop(carrier1.ID)
+                        except KeyError:
+                            # Carrier has already been removed (extracted at contacts while
+                            # waiting for recombination)
+                            pass
+                        try:
+                            global_carrier_dict.pop(carrier2.ID)
+                        except KeyError:
+                            # Carrier has already been removed (extracted at contacts while
+                            # waiting for recombination)
+                            pass
+                        if parameter_dict["record_carrier_history"] is True:
+                            all_carriers += [carrier1, carrier2]
+                    else:
+                        hf.write_to_file(
+                            log_file,
+                            [
+                                "{0:f} > {1:f}".format(
+                                    separation, parameter_dict["coulomb_capture_radius"]
+                                )
+                            ],
+                        )
+                        hf.write_to_file(
+                            log_file,
+                            [
+                                "EVENT: Carrier recombination (#{0:d} with #{1:d}) failed after {2:d} iterations (global_time = {3:.2e})".format(
+                                    carrier1.ID, carrier2.ID, KMC_iterations, global_time
+                                )
+                            ],
+                        )
+                        # Carriers are no longer in range, so the recombination fails.
+                        # Update their recombination flags
+                        carrier1.recombining = False
+                        carrier1.recombining_with = None
+                        if separation != 1E99:
+                            # If recombining carrier was already extracted, then skip this
+                            carrier2.recombining = False
+                            carrier2.recombining_with = None
                 except (ValueError, KeyError):
                     # The second carrier is missing from the simulation (already
-                    # extracted), so set the separation to be large
-                    separation = 1E99
-                recombining_carrier_IDs.remove(carrier1.ID)
-                if separation <= parameter_dict["coulomb_capture_radius"]:
+                    # extracted), so the carriers cannot recombine. Move on.
                     hf.write_to_file(
                         log_file,
                         [
-                            "{0:f} <= {1:f}".format(
-                                separation, parameter_dict["coulomb_capture_radius"]
+                            "EVENT: Carrier recombination of #{0:d} failed (second carrier no longer present) after {1:d} iterations (global_time = {2:.2e})".format(
+                                carrier1.ID, KMC_iterations, global_time
                             )
-                        ],
+                        ]
                     )
-                    hf.write_to_file(
-                        log_file,
-                        [
-                            "EVENT: Carrier recombination (#{0:d} with #{1:d}) succeeded after {2:d} iterations (global_time = {3:.2e})".format(
-                                carrier1.ID, carrier2.ID, KMC_iterations, global_time
-                            )
-                        ],
-                    )
-                    # Carriers are in range, so recombine them
-                    carrier1.removed_time = global_time
-                    carrier2.removed_time = global_time
-                    number_of_recombinations += 1
-                    number_of_electrical_recombinations += (
-                        delta_electrical_recombinations
-                    )
-                    try:
-                        global_carrier_dict.pop(carrier1.ID)
-                    except KeyError:
-                        # Carrier has already been removed (extracted at contacts while
-                        # waiting for recombination)
-                        pass
-                    try:
-                        global_carrier_dict.pop(carrier2.ID)
-                    except KeyError:
-                        # Carrier has already been removed (extracted at contacts while
-                        # waiting for recombination)
-                        pass
-                    if parameter_dict["record_carrier_history"] is True:
-                        all_carriers += [carrier1, carrier2]
-                else:
-                    hf.write_to_file(
-                        log_file,
-                        [
-                            "{0:f} > {1:f}".format(
-                                separation, parameter_dict["coulomb_capture_radius"]
-                            )
-                        ],
-                    )
-                    hf.write_to_file(
-                        log_file,
-                        [
-                            "EVENT: Carrier recombination (#{0:d} with #{1:d}) failed after {2:d} iterations (global_time = {3:.2e})".format(
-                                carrier1.ID, carrier2.ID, KMC_iterations, global_time
-                            )
-                        ],
-                    )
-                    # Carriers are no longer in range, so the recombination fails.
-                    # Update their recombination flags
-                    carrier1.recombining = False
-                    carrier1.recombining_with = None
-                    if separation != 1E99:
-                        # If recombining carrier was already extracted, then skip this
-                        carrier2.recombining = False
-                        carrier2.recombining_with = None
+
             else:
                 print(event_queue)
                 raise SystemError("Next event in queue is unknown")
