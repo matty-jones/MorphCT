@@ -9,8 +9,21 @@ from testing_tools import TestCommand
 from morphct.code import helper_functions as hf
 
 
-@pytest.fixture(scope="module")
-def run_simulation():
+@pytest.fixture(
+    scope="module",
+    params=[
+        {"voltage": [0.0], "no_dark": True, "no_coulomb": True, "stdout_log": True},
+        {"voltage": [-0.5, 0.0, 0.5], "no_dark": True, "no_coulomb": True, "stdout_log": True},
+        {"voltage": [0.0], "no_dark": False, "no_coulomb": True, "stdout_log": True},
+        # {"voltage": [0.0], "no_dark": True, "no_coulomb": False, "stdout_log": True},
+        {"voltage": [0.0], "no_dark": True, "no_coulomb": True, "stdout_log": False},
+    ],
+)
+def run_simulation(request):
+    _voltage = request.param["voltage"]
+    _no_dark = request.param["no_dark"]
+    _no_coulomb = request.param["no_coulomb"]
+    _stdout_log = request.param["stdout_log"]
     # ---==============================================---
     # ---======== Directory and File Structure ========---
     # ---==============================================---
@@ -84,14 +97,14 @@ def run_simulation():
     incident_wavelength = 500E-9
 
     # Simulation
-    voltage_sweep = [-0.1]
+    voltage_sweep = _voltage
     morphology_cell_size = 1E-8
     minimum_number_of_photoinjections = 10
     fastest_event_allowed = 1E-18
     slowest_event_allowed = 1E-8
-    disable_dark_injection = True
-    disable_coulombic = True
-    output_log_to_stdout = True
+    disable_dark_injection = _no_dark
+    disable_coulombic = _no_coulomb
+    output_log_to_stdout = _stdout_log
 
     # ---==============================================---
     # ---================= Begin run ==================---
@@ -103,7 +116,7 @@ def run_simulation():
     parameter_names = [
         i
         for i in dir()
-        if (not i.startswith("__"))
+        if (not i.startswith("_"))
         and (not i.startswith("@"))
         and (not i.startswith("Test"))
         and (not i.startswith("test"))
@@ -123,6 +136,7 @@ def run_simulation():
                 "sys",
                 "pytest",
                 "pickle",
+                "request",
             ]
         )
     ]
@@ -147,6 +161,7 @@ def run_simulation():
     run_MorphCT.simulation(
         **parameters
     )  # Execute MorphCT using these simulation parameters
+    return voltage_sweep
 
 
 # ---==============================================---
@@ -155,8 +170,30 @@ def run_simulation():
 
 
 class TestCompareOutputs(TestCommand):
-    def test_wobbey(self, run_simulation):
-        return True
+    def test_electrode_injection_figures_generated(self, run_simulation):
+        voltage_sweep = run_simulation
+        for voltage in voltage_sweep:
+            figure_dir = os.path.join(TEST_ROOT, "output_DBL", "device_outputs", "bilayer", "figures", str(voltage))
+            self.confirm_file_exists(os.path.join(figure_dir, "anode_traj.pdf"))
+            self.confirm_file_exists(os.path.join(figure_dir, "cathode_traj.pdf"))
+
+    def test_event_time_dist_figure_generated(self, run_simulation):
+        voltage_sweep = run_simulation
+        for voltage in voltage_sweep:
+            figure_dir = os.path.join(TEST_ROOT, "output_DBL", "device_outputs", "bilayer", "figures", str(voltage))
+            self.confirm_file_exists(os.path.join(figure_dir, "event_time_dist.pdf"))
+
+    def test_carrier_profile_figures_generated(self, run_simulation):
+        voltage_sweep = run_simulation
+        for voltage in voltage_sweep:
+            figure_dir = os.path.join(TEST_ROOT, "output_DBL", "device_outputs", "bilayer", "figures", str(voltage))
+            self.confirm_file_exists(os.path.join(figure_dir, "carrier_00000_Z_profile.pdf"))
+
+    def test_exciton_profile_figures_generated(self, run_simulation):
+        voltage_sweep = run_simulation
+        for voltage in voltage_sweep:
+            figure_dir = os.path.join(TEST_ROOT, "output_DBL", "device_outputs", "bilayer", "figures", str(voltage))
+            self.confirm_file_exists(os.path.join(figure_dir, "exciton_00000_traj.pdf"))
 
 
 def teardown_module():
@@ -164,4 +201,13 @@ def teardown_module():
 
 
 if __name__ == "__main__":
-    run_simulation()
+
+    class parameters:
+        def __init__(self, param):
+            self.param = param
+
+    run_simulation(
+        parameters(
+            {"voltage": [0.0], "no_dark": True, "no_coulomb": False, "stdout_log": True},
+        )
+    )

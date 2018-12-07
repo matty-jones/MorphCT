@@ -187,6 +187,18 @@ class exciton:
     def check_dissociation(self):
         # Return True if there are neighbours of the opposing electronic species
         # present, otherwise return False
+        # Firstly, ensure that only dissociation neighbours in the same relative image
+        # are considered (this is done automatically in the latest version of MorphCT 
+        # in the obtain_chromophores phase)
+        pop_list = []
+        for neighbour_index, dissociation_neighbour in enumerate(
+            self.current_chromophore.dissociation_neighbours
+        ):
+            if not np.all(np.isclose(dissociation_neighbour[1], [0, 0, 0])):
+                pop_list.append(neighbour_index)
+        pop_list = sorted(pop_list, reverse=True)
+        for pop_index in pop_list:
+            self.current_chromophore.dissociation_neighbours.pop(pop_index)
         if len(self.current_chromophore.dissociation_neighbours) > 0:
             return True
         return False
@@ -482,7 +494,7 @@ class carrier:
             # Skip this neighbour if the destination is already occupied
             if destination_image in destination_chromophore.occupied:
                 continue
-            elif self.wrapxy is False:
+            if self.wrapxy is False:
                 # Skip this neighbour if we're going to hop out of the device
                 # along the non-electrode axes
                 if neighbour_relative_image != [0, 0, 0]:
@@ -705,7 +717,8 @@ class carrier:
                     [
                         "".join(
                             [
-                                "EVENT: Electron left out of {0:s} of device! New number of extractions: {1:d} after {2:d} iterations (global_time = {3:.2e})".format(
+                                "EVENT: Electron #{0:d} left out of {1:s} of device! New number of extractions: {2:d} after {3:d} iterations (global_time = {4:.2e})".format(
+                                    self.ID,
                                     self.destination_chromophore,
                                     number_of_extractions,
                                     KMC_iterations,
@@ -721,7 +734,8 @@ class carrier:
                     [
                         "".join(
                             [
-                                "EVENT: Hole left out of {0:s} of device! New number of extractions: {1:d} after {2:d} iterations (global_time = {3:.2e})".format(
+                                "EVENT: Hole #{0:d} left out of {1:s} of device! New number of extractions: {2:d} after {3:d} iterations (global_time = {4:.2e})".format(
+                                    self.ID,
                                     self.destination_chromophore,
                                     number_of_extractions,
                                     KMC_iterations,
@@ -1415,7 +1429,6 @@ def plot3D_trajectory(
                         * parameter_dict["morphology_cell_size"]
                     )
                 ) + np.array(next_hop[1])
-                print("Plotting hop for", color, "from", current_posn, "to", next_posn)
                 ax.plot(
                     [current_posn[0], next_posn[0]],
                     [current_posn[1], next_posn[1]],
@@ -1761,7 +1774,7 @@ def execute(
                         if parameter_dict["record_carrier_history"]:
                             all_carriers.append(injected_exciton)
                         hf.write_to_file(
-                            log_file, ["EVENT: Exciton dissociating immediately"]
+                            log_file, ["EVENT: Exciton {:d} dissociating immediately".format(injected_exciton.ID)]
                         )
                         number_of_dissociations += 1
                         number_of_hops.append(injected_exciton.number_of_hops)
@@ -1805,7 +1818,7 @@ def execute(
                             [
                                 " ".join(
                                     [
-                                        "Exciton depositing electron at",
+                                        "\tExciton #{0:d} depositing electron #{1:d} at".format(injected_exciton.ID, injected_electron.ID),
                                         repr(injected_exciton.current_device_posn),
                                         repr(
                                             injected_exciton.electron_chromophore.posn
@@ -1814,7 +1827,7 @@ def execute(
                                 ),
                                 " ".join(
                                     [
-                                        "Exciton depositing hole at",
+                                        "\tExciton #{0:d} depositing hole at #{1:d} at".format(injected_exciton.ID, injected_hole.ID),
                                         repr(injected_exciton.current_device_posn),
                                         repr(injected_exciton.hole_chromophore.posn),
                                     ]
@@ -1847,7 +1860,7 @@ def execute(
                         # Injected onto a site with no connections, so this
                         # exciton will eventually die
                         hf.write_to_file(
-                            log_file, ["EVENT: Exciton recombining immediately"]
+                            log_file, ["EVENT: Exciton {:d} recombining immediately".format(injected_exciton.ID)]
                         )
                         number_of_recombinations += 1
                         number_of_hops.append(injected_exciton.number_of_hops)
@@ -1897,8 +1910,7 @@ def execute(
                                     repr(inject_site.device_posn),
                                     " (which has type ",
                                     repr(device_array[tuple(inject_site.device_posn)]),
-                                    ") chromophore number {0:d} after {1:d} iterations (global_time = {2:.2e})",
-                                    format(
+                                    ") chromophore number {0:d} after {1:d} iterations (global_time = {2:.2e})".format(
                                         inject_site.chromophore.ID,
                                         KMC_iterations,
                                         global_time,
@@ -2016,13 +2028,13 @@ def execute(
                         hf.write_to_file(
                             log_file,
                             [
-                                "EVENT: Exciton dissociating after {0:d} iterations (global_time = {1:.2e})".format(
-                                    KMC_iterations, global_time
+                                "EVENT: Exciton #{0:d} dissociating after {1:d} iterations (global_time = {2:.2e})".format(
+                                    hopping_exciton.ID, KMC_iterations, global_time
                                 )
                             ],
                         )
                         number_of_dissociations += 1
-                        number_of_hops.append(injected_exciton.number_of_hops)
+                        number_of_hops.append(hopping_exciton.number_of_hops)
                         # Create the carrier instances, but don't yet calculate
                         # their behaviour (need to add them to the carrier list
                         # before we can calculate the energetics)
@@ -2061,6 +2073,27 @@ def execute(
                             hopping_exciton.current_device_posn,
                             hopping_exciton.hole_chromophore.ID,
                         ).occupied.append(hopping_exciton.current_device_posn)
+                        hf.write_to_file(
+                            log_file,
+                            [
+                                " ".join(
+                                    [
+                                        "\tExciton #{0:d} depositing electron #{1:d} at".format(hopping_exciton.ID, injected_electron.ID),
+                                        repr(hopping_exciton.current_device_posn),
+                                        repr(
+                                            hopping_exciton.electron_chromophore.posn
+                                        ),
+                                    ]
+                                ),
+                                " ".join(
+                                    [
+                                        "\tExciton #{0:d} depositing hole at #{1:d} at".format(hopping_exciton.ID, injected_hole.ID),
+                                        repr(hopping_exciton.current_device_posn),
+                                        repr(hopping_exciton.hole_chromophore.posn),
+                                    ]
+                                ),
+                            ],
+                        )
                         # Add to the allCarriers list for plotting
                         if parameter_dict["record_carrier_history"] is True:
                             all_carriers += [injected_electron, injected_hole]
@@ -2096,7 +2129,7 @@ def execute(
                             ],
                         )
                         number_of_recombinations += 1
-                        number_of_hops.append(injected_exciton.number_of_hops)
+                        number_of_hops.append(hopping_exciton.number_of_hops)
                     # DEBUG
                     # Calculate the initial position and final positions and
                     # append the excitonDisp with the separation
@@ -2124,7 +2157,7 @@ def execute(
                 else:
                     event_queue = push_to_queue(
                         event_queue,
-                        (hopping_exciton.hop_time, "exciton_hop", injected_exciton),
+                        (hopping_exciton.hop_time, "exciton_hop", hopping_exciton),
                     )
 
             elif next_event[1].lower() == "carrier_hop":
@@ -2260,8 +2293,8 @@ def execute(
                     hf.write_to_file(
                         log_file,
                         [
-                            "EVENT: Carrier recombination succeeded after {0:d} iterations (global_time = {1:.2e})".format(
-                                KMC_iterations, global_time
+                            "EVENT: Carrier recombination (#{0:d} with #{1:d}) succeeded after {2:d} iterations (global_time = {3:.2e})".format(
+                                carrier1.ID, carrier2.ID, KMC_iterations, global_time
                             )
                         ],
                     )
@@ -2298,8 +2331,8 @@ def execute(
                     hf.write_to_file(
                         log_file,
                         [
-                            "EVENT: Carrier recombination failed after {0:d} iterations (global_time = {1:.2e})".format(
-                                KMC_iterations, global_time
+                            "EVENT: Carrier recombination (#{0:d} with #{1:d}) failed after {2:d} iterations (global_time = {3:.2e})".format(
+                                carrier1.ID, carrier2.ID, KMC_iterations, global_time
                             )
                         ],
                     )
