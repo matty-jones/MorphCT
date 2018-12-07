@@ -15,7 +15,7 @@ from morphct.code import helper_functions as hf
         {"voltage": [0.0], "no_dark": True, "no_coulomb": True, "stdout_log": True},
         {"voltage": [-0.5, 0.0, 0.5], "no_dark": True, "no_coulomb": True, "stdout_log": True},
         {"voltage": [0.0], "no_dark": False, "no_coulomb": True, "stdout_log": True},
-        # {"voltage": [0.0], "no_dark": True, "no_coulomb": False, "stdout_log": True},
+        {"voltage": [0.0], "no_dark": True, "no_coulomb": False, "stdout_log": True},
         {"voltage": [0.0], "no_dark": True, "no_coulomb": True, "stdout_log": False},
     ],
 )
