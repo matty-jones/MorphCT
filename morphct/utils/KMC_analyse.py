@@ -444,7 +444,7 @@ def calc_mobility(lin_fit_X, lin_fit_Y, av_time_error, av_MSD_error):
         elementary_charge * diffusion_coeff / (kB * temperature)
     )  # This is in m^{2} / Vs
     # Convert to cm^{2}/ Vs
-    mobility *= (100 ** 2)
+    mobility *= 100 ** 2
     mob_error = (diff_error / diffusion_coeff) * mobility
     return mobility, mob_error
 
@@ -579,8 +579,13 @@ def calculate_anisotropy(xvals, yvals, zvals):
 
 
 def plot_hop_vectors(
-    carrier_data, AA_morphology_dict, chromophore_list, directory, sim_dims,
-    carrier_type, plot3D_graphs
+    carrier_data,
+    AA_morphology_dict,
+    chromophore_list,
+    directory,
+    sim_dims,
+    carrier_type,
+    plot3D_graphs,
 ):
     import matplotlib.colors
     import matplotlib.cm as cmx
@@ -651,18 +656,18 @@ def plot_hop_vectors(
         # Z-vals for start of each arrow
         np.array([0] * len(hop_colors)),
         # X-vecs for direction of each arrow
-        hop_vectors[:,0],
+        hop_vectors[:, 0],
         # Y-vecs for direction of each arrow
-        hop_vectors[:,1],
+        hop_vectors[:, 1],
         # Z-vecs for direction of each arrow
-        hop_vectors[:,2],
+        hop_vectors[:, 2],
         color=hop_colors,
         arrow_length_ratio=0,
         linewidth=0.7,
     )
-    ax.set_xlim([-np.max(hop_vectors[:,0]), np.max(hop_vectors[:,0])])
-    ax.set_ylim([-np.max(hop_vectors[:,1]), np.max(hop_vectors[:,1])])
-    ax.set_zlim([-np.max(hop_vectors[:,2]), np.max(hop_vectors[:,2])])
+    ax.set_xlim([-np.max(hop_vectors[:, 0]), np.max(hop_vectors[:, 0])])
+    ax.set_ylim([-np.max(hop_vectors[:, 1]), np.max(hop_vectors[:, 1])])
+    ax.set_zlim([-np.max(hop_vectors[:, 2]), np.max(hop_vectors[:, 2])])
 
     # Make the colour bar
     scalar_map.set_array(intensities)
@@ -687,8 +692,8 @@ def plot_hop_vectors(
     )
     # plt.title(figure_title, y=1.1)
     # 36 for donor 3d network, 37 for acceptor 3d network
-    file_name = "".join(["{:02}_hop_vec_".format(
-        36 + carrier_index), carrier_type, ".png"]
+    file_name = "".join(
+        ["{:02}_hop_vec_".format(36 + carrier_index), carrier_type, ".png"]
     )
     plt.savefig(
         os.path.join(directory, "figures", file_name), bbox_inches="tight", dpi=300
@@ -2920,8 +2925,10 @@ def main():
     global p3
     if args.backend is not None:
         import matplotlib
+
         matplotlib.use(args.backend.strip())
     import matplotlib.pyplot as plt
+
     try:
         import mpl_toolkits.mplot3d as p3
     except ImportError:
@@ -3012,11 +3019,7 @@ def main():
             )
             print("Calculating carrier trajectory anisotropy...")
             anisotropy = plot_anisotropy(
-                carrier_data,
-                directory,
-                sim_dims,
-                current_carrier_type,
-                args.three_D,
+                carrier_data, directory, sim_dims, current_carrier_type, args.three_D
             )
             print("Plotting carrier hop frequency distribution...")
             if current_carrier_type == "hole":

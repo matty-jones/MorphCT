@@ -259,10 +259,10 @@ class simulation:
         print("Sorting out directory structure...")
         # Delete the ORCA information if the user has asked to (as long as it's not in
         # the same place as the morphology data!!)
-        if (self.morphology is not None) and (
-            self.overwrite_current_data is True
-        ) and (
-            self.output_orca_directory != self.output_morphology_directory
+        if (
+            (self.morphology is not None)
+            and (self.overwrite_current_data is True)
+            and (self.output_orca_directory != self.output_morphology_directory)
         ):
             print("OVERWRITE CURRENT DATA IS TRUE...EMPTYING ORCA DIR")
             try:

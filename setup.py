@@ -22,7 +22,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='3.0.1',
+    version='3.1.0',
 
     description='A multi-scale (1A to 1um, 1fs to 1us) organic solar cell simulation suite - from molecules to efficiencies',
     long_description=long_description,
