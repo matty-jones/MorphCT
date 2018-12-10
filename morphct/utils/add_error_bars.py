@@ -42,9 +42,7 @@ def split_argument_into_dictionary(argument):
         # Split the list based off commas
         for subitems in items.split(","):
             # Run a glob on the items in the list (remove quotes from around string)
-            if (
-                (subitems[0] == "'") and (subitems[-1] == "'")
-            ) or (
+            if ((subitems[0] == "'") and (subitems[-1] == "'")) or (
                 (subitems[0] == '"') and (subitems[-1] == '"')
             ):
                 subitems = subitems[1:-1]
@@ -152,9 +150,12 @@ def save_mean_data_to_csv(data, prop):
     text = ""
     for line in data:
         text = "".join(
-            [text, "{0:s},{1:s},{2:s}\n".format(*tuple(map(
-                str, [line[0], line[1], line[2]]
-            )))]
+            [
+                text,
+                "{0:s},{1:s},{2:s}\n".format(
+                    *tuple(map(str, [line[0], line[1], line[2]]))
+                ),
+            ]
         )
 
     # Will over write data.csv each time.
@@ -248,10 +249,7 @@ def main():
         ),
     )
     parser.add_argument(
-        "-x",
-        "--x_label",
-        required=True,
-        help=("""Set an x label for the final plot"""),
+        "-x", "--x_label", required=True, help=("""Set an x label for the final plot""")
     )
     parser.add_argument(
         "-p",
@@ -277,13 +275,15 @@ def main():
         "--output_file",
         required=False,
         default="./output/hole_mobility.pdf",
-        help=("""Set an x label for the final plot""")
+        help=("""Set an x label for the final plot"""),
     )
     args, directory_list = parser.parse_known_args()
     if args.backend is not None:
         import matplotlib
+
         matplotlib.use(args.backend.strip())
     import matplotlib.pyplot as plt
+
     calc_mean_and_dev(
         args.combine, args.sequence, args.x_label, args.output_file, prop=args.prop
     )

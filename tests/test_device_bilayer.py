@@ -13,7 +13,12 @@ from morphct.code import helper_functions as hf
     scope="module",
     params=[
         {"voltage": [0.0], "no_dark": True, "no_coulomb": True, "stdout_log": True},
-        {"voltage": [-0.5, 0.0, 0.5], "no_dark": True, "no_coulomb": True, "stdout_log": True},
+        {
+            "voltage": [-0.5, 0.0, 0.5],
+            "no_dark": True,
+            "no_coulomb": True,
+            "stdout_log": True,
+        },
         {"voltage": [0.0], "no_dark": False, "no_coulomb": True, "stdout_log": True},
         {"voltage": [0.0], "no_dark": True, "no_coulomb": False, "stdout_log": True},
         {"voltage": [0.0], "no_dark": True, "no_coulomb": True, "stdout_log": False},
@@ -173,14 +178,28 @@ class TestCompareOutputs(TestCommand):
     def test_electrode_injection_figures_generated(self, run_simulation):
         voltage_sweep = run_simulation
         for voltage in voltage_sweep:
-            figure_dir = os.path.join(TEST_ROOT, "output_DBL", "device_outputs", "bilayer", "figures", str(voltage))
+            figure_dir = os.path.join(
+                TEST_ROOT,
+                "output_DBL",
+                "device_outputs",
+                "bilayer",
+                "figures",
+                str(voltage),
+            )
             self.confirm_file_exists(os.path.join(figure_dir, "anode_traj.pdf"))
             self.confirm_file_exists(os.path.join(figure_dir, "cathode_traj.pdf"))
 
     def test_event_time_dist_figure_generated(self, run_simulation):
         voltage_sweep = run_simulation
         for voltage in voltage_sweep:
-            figure_dir = os.path.join(TEST_ROOT, "output_DBL", "device_outputs", "bilayer", "figures", str(voltage))
+            figure_dir = os.path.join(
+                TEST_ROOT,
+                "output_DBL",
+                "device_outputs",
+                "bilayer",
+                "figures",
+                str(voltage),
+            )
             files = os.listdir(figure_dir)
             for file_name in files:
                 if "event_time_dist.pdf" in file_name:
@@ -190,7 +209,14 @@ class TestCompareOutputs(TestCommand):
     def test_carrier_profile_figures_generated(self, run_simulation):
         voltage_sweep = run_simulation
         for voltage in voltage_sweep:
-            figure_dir = os.path.join(TEST_ROOT, "output_DBL", "device_outputs", "bilayer", "figures", str(voltage))
+            figure_dir = os.path.join(
+                TEST_ROOT,
+                "output_DBL",
+                "device_outputs",
+                "bilayer",
+                "figures",
+                str(voltage),
+            )
             files = os.listdir(figure_dir)
             for file_name in files:
                 if ("carrier_" in file_name) and ("_profile" in file_name):
@@ -200,7 +226,14 @@ class TestCompareOutputs(TestCommand):
     def test_exciton_profile_figures_generated(self, run_simulation):
         voltage_sweep = run_simulation
         for voltage in voltage_sweep:
-            figure_dir = os.path.join(TEST_ROOT, "output_DBL", "device_outputs", "bilayer", "figures", str(voltage))
+            figure_dir = os.path.join(
+                TEST_ROOT,
+                "output_DBL",
+                "device_outputs",
+                "bilayer",
+                "figures",
+                str(voltage),
+            )
             files = os.listdir(figure_dir)
             for file_name in files:
                 if ("exciton_" in file_name) and ("_traj" in file_name):
@@ -220,6 +253,6 @@ if __name__ == "__main__":
 
     run_simulation(
         parameters(
-            {"voltage": [0.0], "no_dark": False, "no_coulomb": True, "stdout_log": True},
+            {"voltage": [0.0], "no_dark": False, "no_coulomb": True, "stdout_log": True}
         )
     )

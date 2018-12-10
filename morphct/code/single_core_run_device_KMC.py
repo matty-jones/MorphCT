@@ -4,6 +4,7 @@ import os
 import pickle
 import sys
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -190,7 +191,7 @@ class exciton:
         # Return True if there are neighbours of the opposing electronic species
         # present, otherwise return False
         # Firstly, ensure that only dissociation neighbours in the same relative image
-        # are considered (this is done automatically in the latest version of MorphCT 
+        # are considered (this is done automatically in the latest version of MorphCT
         # in the obtain_chromophores phase)
         pop_list = []
         for neighbour_index, dissociation_neighbour in enumerate(
@@ -532,7 +533,9 @@ class carrier:
                 neighbour_chromophore,
                 neighbour_relative_image,
                 self.current_chromophore.neighbours_delta_E[neighbour_index],
-                self.cell_size, self.capture_radius, self.permittivity,
+                self.cell_size,
+                self.capture_radius,
+                self.permittivity,
             )
             # All of the energies (EXCEPT EIJ WHICH IS ALREADY IN J) are in eV
             # currently, so convert them to J
@@ -550,9 +553,9 @@ class carrier:
                 else:
                     # Get the morphology_shape
                     morphology_shape = [
-                        global_morphology_data.return_AA_morphology(self.current_device_posn)[
-                            key
-                        ]
+                        global_morphology_data.return_AA_morphology(
+                            self.current_device_posn
+                        )[key]
                         for key in ["lx", "ly", "lz"]
                     ]
                     destination_chromo_posn = copy.deepcopy(
@@ -563,7 +566,7 @@ class carrier:
                         destination_chromo_posn[2] = morphology_shape[2] / 2.0
                     elif destination_chromophore.lower() == "bottom":
                         # Bottom electrode is current chromo posn but with z = z_min
-                        destination_chromo_posn[2] = - morphology_shape[2] / 2.0
+                        destination_chromo_posn[2] = -morphology_shape[2] / 2.0
                 # Convert from ang to m
                 chromophore_separation = (
                     hf.calculate_separation(
@@ -662,9 +665,8 @@ class carrier:
             self.current_device_posn, self.current_chromophore.ID
         ).occupied.remove(self.current_device_posn)
         if isinstance(self.destination_chromophore, str) and (
-            (self.destination_chromophore.lower() == "top") or (
-                self.destination_chromophore.lower() == "bottom"
-            )
+            (self.destination_chromophore.lower() == "top")
+            or (self.destination_chromophore.lower() == "bottom")
         ):
             # This carrier is hopping out of the active layer and into the
             # contacts. Firstly, work out whether this is a `correct' hop
@@ -762,8 +764,13 @@ class carrier:
             )
 
     def calculate_delta_E(
-        self, destination_chromophore, neighbour_relative_image, chromo_E_ij,
-        cell_size, capture_radius, permittivity
+        self,
+        destination_chromophore,
+        neighbour_relative_image,
+        chromo_E_ij,
+        cell_size,
+        capture_radius,
+        permittivity,
     ):
         # Delta_E_ij has 3 main components: 1) the energetic disorder (difference
         # in HOMO/LUMO levels), 2) the field within the device, and 3) the
@@ -777,9 +784,7 @@ class carrier:
         )
         destination_absolute_position = (
             np.array(self.current_device_posn) + np.array(neighbour_relative_image)
-        ) * cell_size + (
-            np.array(destination_chromophore.posn) * 1E-10
-        )
+        ) * cell_size + (np.array(destination_chromophore.posn) * 1E-10)
         # Field has negative sign because device is flipped with anode at +Z and
         # Cathode at 0
         z_sep = -(destination_absolute_position[2] - current_absolute_position[2])
@@ -797,8 +802,12 @@ class carrier:
                 carrier_is_recombining=self.recombining,
             )
             destination_coulomb, dummy1, dummy2 = calculate_coulomb(
-                destination_absolute_position, self.ID, self.carrier_type, cell_size,
-                capture_radius, permittivity,
+                destination_absolute_position,
+                self.ID,
+                self.carrier_type,
+                cell_size,
+                capture_radius,
+                permittivity,
             )
             delta_E_ij += destination_coulomb - origin_coulomb
             if (recombine_flag is True) and (self.recombining is False):
@@ -930,14 +939,17 @@ def plot_Z_profile(carrier, z_dim_size, parameter_dict, output_dir):
 
 
 def calculate_coulomb(
-    absolute_position, self_ID, self_carrier_type, cell_size, capture_radius,
-    permittivity, carrier_is_recombining=None,
+    absolute_position,
+    self_ID,
+    self_carrier_type,
+    cell_size,
+    capture_radius,
+    permittivity,
+    carrier_is_recombining=None,
 ):
     global global_carrier_dict
     coulombic_potential = 0.0
-    coulomb_constant = 1.0 / (
-        4 * np.pi * epsilon_nought * permittivity
-    )
+    coulomb_constant = 1.0 / (4 * np.pi * epsilon_nought * permittivity)
     can_recombine_here = False
     recombining_with = None
     for carrier_ID, carrier in global_carrier_dict.items():
@@ -1511,9 +1523,8 @@ def execute(
         (device_array.shape[2] * parameter_dict["morphology_cell_size"])
     )
     hf.write_to_file(
-        log_file, ["".join([
-            "Current E-field value = {:.2E} V/m".format(current_field_value),
-        ])]
+        log_file,
+        ["".join(["Current E-field value = {:.2E} V/m".format(current_field_value)])],
     )
     output_figures_dir = os.path.join(
         parameter_dict["output_device_dir"],
@@ -1777,7 +1788,12 @@ def execute(
                         if parameter_dict["record_carrier_history"]:
                             all_carriers.append(injected_exciton)
                         hf.write_to_file(
-                            log_file, ["EVENT: Exciton {:d} dissociating immediately".format(injected_exciton.ID)]
+                            log_file,
+                            [
+                                "EVENT: Exciton {:d} dissociating immediately".format(
+                                    injected_exciton.ID
+                                )
+                            ],
                         )
                         number_of_dissociations += 1
                         number_of_hops.append(injected_exciton.number_of_hops)
@@ -1821,7 +1837,9 @@ def execute(
                             [
                                 " ".join(
                                     [
-                                        "\tExciton #{0:d} depositing electron #{1:d} at".format(injected_exciton.ID, injected_electron.ID),
+                                        "\tExciton #{0:d} depositing electron #{1:d} at".format(
+                                            injected_exciton.ID, injected_electron.ID
+                                        ),
                                         repr(injected_exciton.current_device_posn),
                                         repr(
                                             injected_exciton.electron_chromophore.posn
@@ -1830,7 +1848,9 @@ def execute(
                                 ),
                                 " ".join(
                                     [
-                                        "\tExciton #{0:d} depositing hole at #{1:d} at".format(injected_exciton.ID, injected_hole.ID),
+                                        "\tExciton #{0:d} depositing hole at #{1:d} at".format(
+                                            injected_exciton.ID, injected_hole.ID
+                                        ),
                                         repr(injected_exciton.current_device_posn),
                                         repr(injected_exciton.hole_chromophore.posn),
                                     ]
@@ -1863,7 +1883,12 @@ def execute(
                         # Injected onto a site with no connections, so this
                         # exciton will eventually die
                         hf.write_to_file(
-                            log_file, ["EVENT: Exciton {:d} recombining immediately".format(injected_exciton.ID)]
+                            log_file,
+                            [
+                                "EVENT: Exciton {:d} recombining immediately".format(
+                                    injected_exciton.ID
+                                )
+                            ],
                         )
                         number_of_recombinations += 1
                         number_of_hops.append(injected_exciton.number_of_hops)
@@ -2081,16 +2106,18 @@ def execute(
                             [
                                 " ".join(
                                     [
-                                        "\tExciton #{0:d} depositing electron #{1:d} at".format(hopping_exciton.ID, injected_electron.ID),
-                                        repr(hopping_exciton.current_device_posn),
-                                        repr(
-                                            hopping_exciton.electron_chromophore.posn
+                                        "\tExciton #{0:d} depositing electron #{1:d} at".format(
+                                            hopping_exciton.ID, injected_electron.ID
                                         ),
+                                        repr(hopping_exciton.current_device_posn),
+                                        repr(hopping_exciton.electron_chromophore.posn),
                                     ]
                                 ),
                                 " ".join(
                                     [
-                                        "\tExciton #{0:d} depositing hole at #{1:d} at".format(hopping_exciton.ID, injected_hole.ID),
+                                        "\tExciton #{0:d} depositing hole at #{1:d} at".format(
+                                            hopping_exciton.ID, injected_hole.ID
+                                        ),
                                         repr(hopping_exciton.current_device_posn),
                                         repr(hopping_exciton.hole_chromophore.posn),
                                     ]
@@ -2304,7 +2331,10 @@ def execute(
                             log_file,
                             [
                                 "EVENT: Carrier recombination (#{0:d} with #{1:d}) succeeded after {2:d} iterations (global_time = {3:.2e})".format(
-                                    carrier1.ID, carrier2.ID, KMC_iterations, global_time
+                                    carrier1.ID,
+                                    carrier2.ID,
+                                    KMC_iterations,
+                                    global_time,
                                 )
                             ],
                         )
@@ -2342,7 +2372,10 @@ def execute(
                             log_file,
                             [
                                 "EVENT: Carrier recombination (#{0:d} with #{1:d}) failed after {2:d} iterations (global_time = {3:.2e})".format(
-                                    carrier1.ID, carrier2.ID, KMC_iterations, global_time
+                                    carrier1.ID,
+                                    carrier2.ID,
+                                    KMC_iterations,
+                                    global_time,
                                 )
                             ],
                         )
@@ -2363,7 +2396,7 @@ def execute(
                             "EVENT: Carrier recombination of #{0:d} failed (second carrier no longer present) after {1:d} iterations (global_time = {2:.2e})".format(
                                 carrier1.ID, KMC_iterations, global_time
                             )
-                        ]
+                        ],
                     )
 
             else:
