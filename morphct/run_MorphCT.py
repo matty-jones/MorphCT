@@ -28,8 +28,14 @@ class simulation:
                 self.input_morph_dir, self.morphology
             )
             self.output_morphology_directory = os.path.join(
-                self.output_morph_dir, self.morphology[:-4]
+                self.output_morph_dir, os.path.splitext(self.morphology)[0]
             )
+            if (self.output_orca_dir is not None) and len(self.output_orca_dir) > 0:
+                self.output_orca_directory = os.path.join(
+                    self.output_orca_dir, os.path.splitext(self.morphology)[0]
+                )
+            else:
+                self.output_orca_directory = self.output_morphology_directory
         if self.device_morphology is not None:
             self.input_device_file = os.path.join(
                 self.input_device_dir, self.device_morphology
@@ -45,11 +51,6 @@ class simulation:
             parameter_dict[key] = value
         # Make the correct directory tree
         self.make_dir_tree()
-        # Change the random seed if necessary
-        if ("random_seed_override" in parameter_dict.keys()) and (
-            parameter_dict["random_seed_override"] is not None
-        ):
-            self.update_random_seed(parameter_dict["random_seed_override"])
         if self.morphology is not None:
             # Copy the current code and the parameter file for safekeeping
             self.copy_code()
@@ -60,7 +61,7 @@ class simulation:
                         os.path.join(
                             self.output_morphology_directory,
                             "code",
-                            "".join([self.morphology[:-4], ".pickle"]),
+                            "".join([os.path.splitext(self.morphology)[0], ".pickle"]),
                         )
                     )
                     AA_morphology_dict = pickle_data[0]
@@ -80,9 +81,14 @@ class simulation:
                     # pickle using these new parameters.
                     pickle_name = os.path.join(
                         parameter_dict["output_morph_dir"],
-                        parameter_dict["morphology"][:-4],
+                        os.path.splitext(parameter_dict["morphology"])[0],
                         "code",
-                        "".join([parameter_dict["morphology"][:-4], ".pickle"]),
+                        "".join(
+                            [
+                                os.path.splitext(parameter_dict["morphology"])[0],
+                                ".pickle",
+                            ]
+                        ),
                     )
                     hf.write_pickle(
                         (
@@ -104,7 +110,10 @@ class simulation:
             if self.execute_fine_graining is True:
                 print("---=== BACKMAPPING COARSE-GRAINED SITES... ===---")
                 returned_data = fine_grainer.morphology(
-                    self.input_morphology_file, self.morphology[:-4], parameter_dict, []
+                    self.input_morphology_file,
+                    os.path.splitext(self.morphology)[0],
+                    parameter_dict,
+                    [],
                 ).analyse_morphology()
                 AA_morphology_dict = returned_data[0]
                 CG_morphology_dict = returned_data[1]
@@ -175,6 +184,24 @@ class simulation:
                 parameter_dict = returned_data[3]
                 chromophore_list = returned_data[4]
                 print("---=== DETERMINATION COMPLETED ===---")
+                if self.remove_orca_inputs is True:
+                    print("remove_orca_inputs is True. Cleaning up orca input dir...")
+                    orca_input_dir = os.path.join(
+                        self.output_orca_directory, "chromophores", "input_orca"
+                    )
+                    try:
+                        shutil.rmtree(orca_input_dir)
+                    except FileNotFoundError:
+                        print("Directory already empty. Continuing...")
+                if self.remove_orca_outputs is True:
+                    print("remove_orca_outputs is True. Cleaning up orca output dir...")
+                    orca_output_dir = os.path.join(
+                        self.output_orca_directory, "chromophores", "output_orca"
+                    )
+                    try:
+                        shutil.rmtree(orca_output_dir)
+                    except FileNotFoundError:
+                        print("Directory already empty. Continuing...")
             if self.execute_calculate_mobility is True:
                 print(
                     "---=== EXECUTING KINETIC MONTE CARLO MOBILITY SIMULATIONS..."
@@ -196,17 +223,12 @@ class simulation:
         else:
             # NEED TO PUT A CHECK IN HERE TO ENSURE THAT WE LOAD THE CORRECT MOLECULAR
             # DATA IN
-            if self.main_device_simulation is True:
+            if self.execute_device_simulation is True:
                 print(
                     "---=== EXECUTING KINETIC MONTE CARLO DEVICE SIMULATIONS... ===---"
                 )
                 device_KMC.main(parameter_dict)
                 print("---=== EXECUTION COMPLETED ===---")
-        # Return the random seed to None
-        if ("random_seed_override" in parameter_dict.keys()) and (
-            parameter_dict["random_seed_override"] is not None
-        ):
-            self.update_random_seed(None)
 
     def get_slurm_ID(self):
         # Use Squeue to determine the current slurm job number
@@ -235,22 +257,28 @@ class simulation:
 
     def make_dir_tree(self):
         print("Sorting out directory structure...")
-        # Delete any previous data if the user asked to
-        # if self.overwriteCurrentData == True:
-        #     sp.Popen('echo rm -rf '+self.output_directory+'/*', shell=True)
-        #     # Make sure that the rm command has finished before moving on
-        #     sp.Popen('rm -rf '+self.output_directory+'/*', shell=True).communicate()
-        # Then, make sure that all the required directories are in place
+        # Delete the ORCA information if the user has asked to (as long as it's not in
+        # the same place as the morphology data!!)
+        if (
+            (self.morphology is not None)
+            and (self.overwrite_current_data is True)
+            and (self.output_orca_directory != self.output_morphology_directory)
+        ):
+            print("OVERWRITE CURRENT DATA IS TRUE...EMPTYING ORCA DIR")
+            try:
+                shutil.rmtree(self.output_orca_directory)
+            except FileNotFoundError:
+                print("Directory already empty. Continuing...")
+        # NOTE: Don't delete the morphology directory - sometimes we just want to
+        # update and recalculate things, not start the whole pipeline again.
+        # Make sure that all the required directories are in place
         if self.morphology is not None:
             for directory_to_make in [
-                "chromophores/input_orca/single",
-                "chromophores/input_orca/pair",
-                "chromophores/output_orca/single",
-                "chromophores/output_orca/pair",
                 "KMC",
                 "molecules",
                 "morphology",
                 "code",
+                "chromophores",
             ]:
                 print(
                     "mkdir -p",
@@ -261,9 +289,25 @@ class simulation:
                     os.path.join(self.output_morphology_directory, directory_to_make),
                     exist_ok=True,
                 )
+            for temp_directory_to_make in [
+                "chromophores/input_orca/single",
+                "chromophores/input_orca/pair",
+                "chromophores/output_orca/single",
+                "chromophores/output_orca/pair",
+            ]:
+                print(
+                    "mkdir -p",
+                    os.path.join(self.output_orca_directory, temp_directory_to_make),
+                )
+                # Make sure that the mkdir command has finished before moving on
+                os.makedirs(
+                    os.path.join(self.output_orca_directory, temp_directory_to_make),
+                    exist_ok=True,
+                )
+
         elif self.device_morphology is not None:
             if self.overwrite_current_data is True:
-                print("rm -r " + self.outputDeviceDirectory)
+                print("rm -r " + self.output_device_directory)
                 shutil.rmtree(self.output_device_directory, ignore_errors=True)
             for device_directory_to_make in ["code", "KMC", "figures"]:
                 if device_directory_to_make == "figures":
@@ -282,31 +326,6 @@ class simulation:
                     print("mkdir -p", directory)
                     os.makedirs(directory, exist_ok=True)
 
-    def update_random_seed(self, seed):
-        lines = []
-        with open(
-            os.path.join(PROJECT_ROOT, "definitions.py"), "r"
-        ) as definitions_file:
-            lines = definitions_file.readlines()
-        for line_no, line in enumerate(lines):
-            if "RANDOM_SEED" in line:
-                print(
-                    " ".join(
-                        [
-                            "Updating the random seed from",
-                            line.split()[-1],
-                            "to",
-                            str(seed),
-                        ]
-                    )
-                )
-                lines[line_no] = "".join(["RANDOM_SEED = ", str(seed), "\n"])
-                break
-        with open(
-            os.path.join(PROJECT_ROOT, "definitions.py"), "w+"
-        ) as definitions_file:
-            definitions_file.writelines(lines)
-
     def copy_code(self):
         print("Copying code...")
         code_dir = os.path.join(PROJECT_ROOT, "code")
@@ -316,7 +335,7 @@ class simulation:
                 os.path.join(self.output_morphology_directory, "code/"),
             ]
             code_copy = [
-                code_dir + "/*.py",
+                "/".join([code_dir, "*.py"]),
                 os.path.join(self.output_morphology_directory, "code/"),
             ]
             input_copy = [
@@ -331,7 +350,7 @@ class simulation:
                 os.path.join(self.output_device_directory, "code/"),
             ]
             code_copy = [
-                code_dir + "/*.py",
+                "/".join([code_dir, "*.py"]),
                 os.path.join(self.output_device_directory, "code/"),
             ]
         print("cp", par_copy[0], par_copy[1])

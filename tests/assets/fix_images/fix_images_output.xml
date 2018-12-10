@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hoomd_xml version="1.4">
+<configuration time_step="0" dimensions="3" natoms="12" >
+<box lx="3.000000" ly="3.000000" lz="3.000000" xy="0.000000" xz="0.000000" yz="0.000000" />
+<position num="12">
+0.0 0.0 1.0
+0.0 0.0 -1.0
+0.0 0.0 -1.0
+0.0 0.0 1.0
+1.0 0.0 0.0
+-1.0 0.0 0.0
+-1.0 0.0 0.0
+1.0 0.0 0.0
+1.0 1.0 1.0
+-1.27 -1.27 -1.27
+-1.0 -1.0 -1.0
+1.27 1.27 1.27
+</position>
+<image num="12">
+0 0 0
+0 0 1
+0 0 0
+0 0 -1
+0 0 0
+1 0 0
+0 0 0
+-1 0 0
+0 0 0
+1 1 1
+0 0 0
+-1 -1 -1
+</image>
+<mass num="12">
+0.1
+0.1
+0.1
+0.1
+0.1
+0.1
+0.1
+0.1
+0.1
+0.1
+0.1
+0.1
+</mass>
+<diameter num="12">
+0.1
+0.1
+0.1
+0.1
+0.1
+0.1
+0.1
+0.1
+0.1
+0.1
+0.1
+0.1
+</diameter>
+<type num="12">
+H
+H
+H
+H
+H
+H
+H
+H
+H
+H
+H
+H
+</type>
+<body num="12">
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+-1
+</body>
+<bond num="6">
+H-H 0 1
+H-H 2 3
+H-H 4 5
+H-H 6 7
+H-H 8 9
+H-H 10 11
+</bond>
+<angle num="0">
+</angle>
+<dihedral num="0">
+</dihedral>
+<improper num="0">
+</improper>
+<charge num="12">
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+</charge>
+</configuration>
+</hoomd_xml>

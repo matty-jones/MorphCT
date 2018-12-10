@@ -17,6 +17,30 @@ hbar = 1.05457173E-34  # m^{2} kg s^{-1}
 sys.setrecursionlimit(10000)
 
 
+def create_blank_morphology_dict():
+    atom_dictionary = {
+        "position": [],
+        "image": [],
+        "mass": [],
+        "diameter": [],
+        "type": [],
+        "body": [],
+        "bond": [],
+        "angle": [],
+        "dihedral": [],
+        "improper": [],
+        "charge": [],
+        "xy": 0.0,
+        "xz": 0.0,
+        "yz": 0.0,
+        "lx": 0.0,
+        "ly": 0.0,
+        "lz": 0.0,
+        "natoms": 0,
+    }
+    return atom_dictionary
+
+
 def find_index(string, character):
     """
     This function returns the locations of an inputted character in an inputted string
@@ -57,24 +81,12 @@ def calc_COM(list_of_positions, list_of_atom_types=None, list_of_atom_masses=Non
             # Add in new atoms here if your molecule requires it!
             if atom_type.lower()[:2] == "si":
                 list_of_atom_masses.append(27.976926)
-            elif atom_type.lower()[0] == "c":
-                list_of_atom_masses.append(12.000000)
-            elif atom_type.lower()[0] == "h":
-                list_of_atom_masses.append(1.0078250)
-            elif atom_type.lower()[0] == "s":
-                list_of_atom_masses.append(31.972071)
-            elif atom_type.lower()[0] == "o":
-                list_of_atom_masses.append(15.994914)
-            elif atom_type.lower()[0] == "n":
-                list_of_atom_masses.append(14.003074)
             elif atom_type.lower()[:2] == "mo":
                 list_of_atom_masses.append(95.960000)
             elif atom_type.lower()[:2] == "nb":
                 list_of_atom_masses.append(92.906380)
             elif atom_type.lower()[:2] == "te":
                 list_of_atom_masses.append(127.60000)
-            elif atom_type.lower()[:2] == "v":
-                list_of_atom_masses.append(50.941500)
             elif atom_type.lower()[:2] == "ni":
                 list_of_atom_masses.append(140.91120)
             elif atom_type.lower()[:2] == "ga":
@@ -87,11 +99,23 @@ def calc_COM(list_of_positions, list_of_atom_types=None, list_of_atom_masses=Non
                 list_of_atom_masses.append(107.86820)
             elif atom_type.lower()[:2] == "au":
                 list_of_atom_masses.append(196.96657)
+            elif atom_type.lower()[0] == "c":
+                list_of_atom_masses.append(12.000000)
+            elif atom_type.lower()[0] == "h":
+                list_of_atom_masses.append(1.0078250)
+            elif atom_type.lower()[0] == "s":
+                list_of_atom_masses.append(31.972071)
+            elif atom_type.lower()[0] == "o":
+                list_of_atom_masses.append(15.994914)
+            elif atom_type.lower()[0] == "n":
+                list_of_atom_masses.append(14.003074)
+            elif atom_type.lower()[0] == "v":
+                list_of_atom_masses.append(50.941500)
+            elif atom_type.lower()[0] == "f":
+                list_of_atom_masses.append(18.998403)
             else:
-                raise SystemError(
-                    "Unknown atomic mass " + str(atom_type) + ". Please hardcode"
-                    " into helper_functions.calc_COM."
-                )
+                print("Unknown atomic mass {:s}. Setting as 1.0.".format(atom_type))
+                list_of_atom_masses.append(1.0)
     total_mass = np.sum(list_of_atom_masses)
     for atom_ID, position in enumerate(list_of_positions):
         for axis in range(3):
@@ -135,16 +159,16 @@ def get_rotation_matrix(vector1, vector2):
         )
     )
     cos_angle = np.dot(vector1, vector2)
-    skew_matrix = np.matrix(
+    skew_matrix = np.array(
         [
             [0, -cross_product[2], cross_product[1]],
             [cross_product[2], 0, -cross_product[0]],
             [-cross_product[1], cross_product[0], 0],
         ]
     )
-    skew_matrix_squared = skew_matrix * skew_matrix
+    skew_matrix_squared = skew_matrix @ skew_matrix
     rot_matrix = (
-        np.matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         + skew_matrix
         + skew_matrix_squared * ((1 - cos_angle) / (sin_angle ** 2))
     )
@@ -457,22 +481,7 @@ def load_morphology_xml(xml_path, sigma=1.0):
     # Improper as <improper (usually none in xml)
     # Charge as <charge
     # Set default tilts so when we use simdims later they exisit always
-    atom_dictionary = {
-        "position": [],
-        "image": [],
-        "mass": [],
-        "diameter": [],
-        "type": [],
-        "body": [],
-        "bond": [],
-        "angle": [],
-        "dihedral": [],
-        "improper": [],
-        "charge": [],
-        "xy": 0.0,
-        "xz": 0.0,
-        "yz": 0.0,
-    }
+    atom_dictionary = create_blank_morphology_dict()
     record = False
     with open(xml_path, "r") as xml_file:
         xml_data = xml_file.readlines()
@@ -661,17 +670,14 @@ def check_constraint_names(AA_morphology_dict):
     constraint_types = ["bond", "angle", "dihedral", "improper"]
     for constraint_type in constraint_types:
         for constraint_ID, constraint in enumerate(AA_morphology_dict[constraint_type]):
-            new_constraint_name = ""
-            # Iterate through the atomIDs and update the constraint name based
-            # on the types
-            for atom_ID in constraint[1:]:
-                new_constraint_name += AA_morphology_dict["type"][atom_ID]
-                new_constraint_name += "-"
+            new_constraint_name = "-".join(
+                [AA_morphology_dict["type"][atom_ID] for atom_ID in constraint[1:]]
+            )
             # Update the dict if the name has changed
-            if constraint[0] != new_constraint_name[:-1]:
+            if constraint[0] != new_constraint_name:
                 AA_morphology_dict[constraint_type][constraint_ID][
                     0
-                ] = new_constraint_name[:-1]
+                ] = new_constraint_name
     return AA_morphology_dict
 
 
@@ -679,19 +685,32 @@ def write_morphology_xml(
     input_dictionary, output_file, sigma=1.0, check_wrapped_posns=True
 ):
     # Firstly, scale everything by the inverse of the provided sigma value
+    box_lengths = ["lx", "ly", "lz"]
     tilt_factors = ["xy", "yz", "xz"]
     if sigma != 1.0:
         input_dictionary = scale(input_dictionary, 1.0 / sigma)
     # Now need to check the positions of the atoms to ensure that everything is
     # correctly contained inside the box
     if check_wrapped_posns is True:
-        if any(
-            [tilt_factor in input_dictionary.keys() for tilt_factor in tilt_factors]
-        ) and any([input_dictionary[tilt_factor] != 0 for tilt_factor in tilt_factors]):
-            print("Can't check atom wrapping for cells with a non-zero tilt factor")
+        if all(
+            np.isclose(
+                [input_dictionary[box_length] for box_length in box_lengths], [0, 0, 0]
+            )
+        ):
+            print(
+                "No box length specified, cannot wrap positions. Continuing as if"
+                " check_wrapped_posns is False..."
+            )
         else:
-            print("Checking wrapped positions before writing xml...")
-            input_dictionary = check_wrapped_positions(input_dictionary)
+            if any(
+                [tilt_factor in input_dictionary.keys() for tilt_factor in tilt_factors]
+            ) and any(
+                [input_dictionary[tilt_factor] != 0 for tilt_factor in tilt_factors]
+            ):
+                print("Can't check atom wrapping for cells with a non-zero tilt factor")
+            else:
+                print("Checking wrapped positions before writing xml...")
+                input_dictionary = check_wrapped_positions(input_dictionary)
     # Need to add natoms if it doesn't exist already
     if "natoms" not in input_dictionary.keys():
         input_dictionary["natoms"] = len(input_dictionary["position"])
@@ -699,92 +718,90 @@ def write_morphology_xml(
     lines_to_write = [
         '<?xml version="1.0" encoding="UTF-8"?>\n',
         '<hoomd_xml version="1.4">\n',
-        '<configuration time_step="0" dimensions="3" natoms="'
-        + str(input_dictionary["natoms"])
-        + '" >\n',
-        '<box lx="'
-        + str(input_dictionary["lx"])
-        + '" ly="'
-        + str(input_dictionary["ly"])
-        + '" lz="'
-        + str(input_dictionary["lz"]),
+        '<configuration time_step="0" dimensions="3" natoms="{:d}" >\n'.format(
+            input_dictionary["natoms"]
+        ),
+        '<box lx="{0:f}" ly="{1:f}" lz="{2:f}"'.format(
+            input_dictionary["lx"], input_dictionary["ly"], input_dictionary["lz"]
+        ),
     ]
     if all([tilt_factor in input_dictionary.keys() for tilt_factor in tilt_factors]):
-        lines_to_write[-1] += (
-            '" xy="'
-            + str(input_dictionary["xy"])
-            + '" xz="'
-            + str(input_dictionary["xz"])
-            + '" yz="'
-            + str(input_dictionary["yz"])
-            + '" />\n'
+        lines_to_write[-1] = "".join(
+            [
+                lines_to_write[-1],
+                ' xy="{0:f}" xz="{1:f}" yz="{2:f}" />\n'.format(
+                    input_dictionary["xy"],
+                    input_dictionary["xz"],
+                    input_dictionary["yz"],
+                ),
+            ]
         )
     else:
-        lines_to_write[-1] += '" />\n'
+        lines_to_write[-1] = "".join([lines_to_write[-1], '" />\n'])
     # Position
-    lines_to_write.append('<position num="' + str(input_dictionary["natoms"]) + '">\n')
+    lines_to_write.append('<position num="{:d}">\n'.format(input_dictionary["natoms"]))
     for position_data in input_dictionary["position"]:
         lines_to_write.append(" ".join(str(coord) for coord in position_data) + "\n")
     lines_to_write.append("</position>\n")
     # Image
-    lines_to_write.append('<image num="' + str(input_dictionary["natoms"]) + '">\n')
+    lines_to_write.append('<image num="{:d}">\n'.format(input_dictionary["natoms"]))
     for image_data in input_dictionary["image"]:
         lines_to_write.append(" ".join(str(coord) for coord in image_data) + "\n")
     lines_to_write.append("</image>\n")
     # Mass
-    lines_to_write.append('<mass num="' + str(input_dictionary["natoms"]) + '">\n')
+    lines_to_write.append('<mass num="{:d}">\n'.format(input_dictionary["natoms"]))
     for mass_data in input_dictionary["mass"]:
-        lines_to_write.append(str(mass_data) + "\n")
+        lines_to_write.append("".join([str(mass_data), "\n"]))
     lines_to_write.append("</mass>\n")
     # Diameter
-    lines_to_write.append('<diameter num="' + str(input_dictionary["natoms"]) + '">\n')
+    lines_to_write.append('<diameter num="{:d}">\n'.format(input_dictionary["natoms"]))
     for diameter_data in input_dictionary["diameter"]:
-        lines_to_write.append(str(diameter_data) + "\n")
+        lines_to_write.append("".join([str(diameter_data), "\n"]))
     lines_to_write.append("</diameter>\n")
     # Type
-    lines_to_write.append('<type num="' + str(input_dictionary["natoms"]) + '">\n')
+    lines_to_write.append('<type num="{:d}">\n'.format(input_dictionary["natoms"]))
     for type_data in input_dictionary["type"]:
-        lines_to_write.append(str(type_data) + "\n")
+        lines_to_write.append("".join([str(type_data), "\n"]))
     lines_to_write.append("</type>\n")
     # Body
-    lines_to_write.append('<body num="' + str(input_dictionary["natoms"]) + '">\n')
+    lines_to_write.append('<body num="{:d}">\n'.format(input_dictionary["natoms"]))
     for body_data in input_dictionary["body"]:
-        lines_to_write.append(str(body_data) + "\n")
+        lines_to_write.append("".join([str(body_data), "\n"]))
     lines_to_write.append("</body>\n")
     # Bond
-    lines_to_write.append('<bond num="' + str(len(input_dictionary["bond"])) + '">\n')
+    lines_to_write.append('<bond num="{:d}">\n'.format(len(input_dictionary["bond"])))
     for bond_data in input_dictionary["bond"]:
         lines_to_write.append(" ".join(str(coord) for coord in bond_data) + "\n")
     lines_to_write.append("</bond>\n")
     # Angle
-    lines_to_write.append('<angle num="' + str(len(input_dictionary["angle"])) + '">\n')
+    lines_to_write.append('<angle num="{:d}">\n'.format(len(input_dictionary["angle"])))
     for angle_data in input_dictionary["angle"]:
         lines_to_write.append(" ".join(str(coord) for coord in angle_data) + "\n")
     lines_to_write.append("</angle>\n")
     # Dihedral
     lines_to_write.append(
-        '<dihedral num="' + str(len(input_dictionary["dihedral"])) + '">\n'
+        '<dihedral num="{:d}">\n'.format(len(input_dictionary["dihedral"]))
     )
     for dihedral_data in input_dictionary["dihedral"]:
         lines_to_write.append(" ".join(str(coord) for coord in dihedral_data) + "\n")
     lines_to_write.append("</dihedral>\n")
     # Improper
     lines_to_write.append(
-        '<improper num="' + str(len(input_dictionary["improper"])) + '">\n'
+        '<improper num="{:d}">\n'.format(len(input_dictionary["improper"]))
     )
     for improper_data in input_dictionary["improper"]:
         lines_to_write.append(" ".join(str(coord) for coord in improper_data) + "\n")
     lines_to_write.append("</improper>\n")
     # Charge
-    lines_to_write.append('<charge num="' + str(input_dictionary["natoms"]) + '">\n')
+    lines_to_write.append('<charge num="{:d}">\n'.format(input_dictionary["natoms"]))
     for charge_data in input_dictionary["charge"]:
-        lines_to_write.append(str(charge_data) + "\n")
+        lines_to_write.append("".join([str(charge_data), "\n"]))
     lines_to_write.append("</charge>\n")
     lines_to_write.append("</configuration>\n")
     lines_to_write.append("</hoomd_xml>\n")
     with open(output_file, "w+") as xml_file:
         xml_file.writelines(lines_to_write)
-    print("XML file written to", str(output_file) + "!")
+    print("XML file written to", str(output_file))
 
 
 def write_xyz_file(input_dict, output_file):
@@ -794,8 +811,8 @@ def write_xyz_file(input_dict, output_file):
     """
     # First line is atom numbers, second line is boiler plate
     rows_to_write = [
-        str(input_dict["natoms"]) + "\n",
-        "xyz file generated from xml using" "helper_functions.xml_to_xyz\n",
+        "{:d}\n".format(input_dict["natoms"]),
+        "xyz file generated from xml using helper_functions.xml_to_xyz\n",
     ]
     # Format of xyz is Type, X Pos, Y Pos, Z Pos
     for atom_ID in range(len(input_dict["type"])):
@@ -811,11 +828,11 @@ def write_xyz_file(input_dict, output_file):
         while len(atom_Y) < 20:
             atom_Y += " "
         atom_Z = str(input_dict["position"][atom_ID][2])
-        line_to_write = atom_type + atom_X + atom_Y + atom_Z + "\n"
+        line_to_write = "".join([atom_type, atom_X, atom_Y, atom_Z, "\n"])
         rows_to_write.append(line_to_write)
     with open(output_file, "w+") as xyz_file:
         xyz_file.writelines(rows_to_write)
-    print("XYZ data written to", str(output_file) + ".")
+    print("XYZ data written to", str(output_file))
 
 
 def increment_atom_IDs(
@@ -962,15 +979,15 @@ def write_to_file(log_file, string_list, mode="log_file"):
     if log_file == "stdout":
         if sys.stdout is not None:
             for line in string_list:
-                sys.stdout.writelines(line + "\n")
+                sys.stdout.writelines("".join([line, "\n"]))
     else:
         with open(log_file, open_as) as log_write:
             for line in string_list:
-                log_write.writelines(line + "\n")
+                log_write.writelines("".join([line, "\n"]))
 
 
 def load_pickle(pickle_location):
-    print("Loading Pickle from", str(pickle_location) + "...")
+    print("".join(["Loading Pickle from ", str(pickle_location), "..."]))
     try:
         with open(pickle_location, "rb") as pickle_file:
             objects = pickle.load(pickle_file)
@@ -1012,24 +1029,6 @@ def convert_string_to_int(x):
         except:
             continue
     return 99999
-
-
-def obtain_random_seed():
-    # NOTE: This function seems pointless because I could just
-    # from morphct.definitions import RANDOM_SEED, but you run into lots of
-    # problems with the interpreter caching the contents of morphct.definitions
-    # before run_MorphCT has time to change it, which messes everything up.
-    # As it stands, definitions is a good place for the random seed to be
-    # stored and tuned, but we need this hacky fix to be able to load in the
-    # most up-to-date seed as and when we need it.
-    with open(os.path.join(PROJECT_ROOT, "definitions.py"), "r") as file_name:
-        lines = file_name.readlines()
-        for line in lines:
-            if "RANDOM_SEED" in line:
-                try:
-                    return int(line.split()[-1])
-                except ValueError:
-                    return None
 
 
 def fix_images(original_morphology):
@@ -1180,18 +1179,13 @@ def determine_event_tau(
                             write_to_file(
                                 log_file,
                                 [
-                                    "Attempted "
-                                    + str(maximum_attempts)
-                                    + " times to obtain a '"
-                                    + str(event_type)
-                                    + "'-type event timescale within the tolerances: "
-                                    + str(fastest_event)
-                                    + " <= tau < "
-                                    + str(slowest_event)
-                                    + " with the given rate "
-                                    + str(rate)
-                                    + " all without success. Permitting the event "
-                                    "anyway with the next random number."
+                                    "Attempted {0:d} times to obtain a {1:s}-type event timescale withing the tolerances: {2:.2e} <= tau < {3:.2e} with the given rate {4:.2e}, all without success. Permitting the event anyway with the next random number...".format(
+                                        maximum_attempts,
+                                        event_type,
+                                        fastest_event,
+                                        slowest_event,
+                                        rate,
+                                    )
                                 ],
                             )
 

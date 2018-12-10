@@ -1,11 +1,12 @@
+import copy
+import os
+import pytest
+import shutil
+import sys
 from morphct.definitions import TEST_ROOT
 from morphct.code import helper_functions as hf
 from morphct import run_MorphCT
 from testing_tools import TestCommand
-import os
-import shutil
-import sys
-import pytest
 
 
 @pytest.fixture(scope="module")
@@ -14,10 +15,11 @@ def run_simulation():
     # ---======== Directory and File Structure ========---
     # ---==============================================---
 
-    input_morph_dir = TEST_ROOT + "/assets/donor_polymer"
-    output_morph_dir = TEST_ROOT + "/output_EZ"
-    input_device_dir = TEST_ROOT + "/assets/donor_polymer"
-    output_device_dir = TEST_ROOT + "/output_EZ"
+    input_morph_dir = os.path.join(TEST_ROOT, "assets", "donor_polymer")
+    output_morph_dir = os.path.join(TEST_ROOT, "output_EZ")
+    output_orca_dir = None
+    input_device_dir = os.path.join(TEST_ROOT, "assets", "donor_polymer")
+    output_device_dir = os.path.join(TEST_ROOT, "output_EZ")
 
     # ---==============================================---
     # ---========== Input Morphology Details ==========---
@@ -100,7 +102,7 @@ def run_simulation():
             TEST_ROOT,
             "assets",
             os.path.splitext(morphology)[0],
-            "OC",
+            "EZ",
             morphology.replace(".xml", "_post_obtain_chromophores_voronoi.pickle"),
         ),
         os.path.join(
@@ -179,22 +181,31 @@ class TestCompareOutputs(TestCommand):
     def test_check_parameter_dict(self, run_simulation):
         # Pop the system-dependent keys, such as the input and output dirs since this will
         # always be system-dependent
-        output_pars = {}
-        expected_pars = {}
-        for key in run_simulation["expected_parameter_dict"]:
-            if key in [
-                "parameter_file",
-                "output_morph_dir",
-                "CG_to_template_dirs",
-                "output_morphology_directory",
-                "input_device_dir",
-                "input_morphology_file",
-                "output_device_dir",
-                "input_morph_dir",
-            ]:
-                continue
-            output_pars = run_simulation["output_parameter_dict"][key]
-            expected_pars = run_simulation["expected_parameter_dict"][key]
+        expected_pars = copy.deepcopy(run_simulation["expected_parameter_dict"])
+        output_pars = copy.deepcopy(run_simulation["output_parameter_dict"])
+        for key in [
+            "parameter_file",
+            "output_morph_dir",
+            "CG_to_template_dirs",
+            "output_morphology_directory",
+            "input_device_dir",
+            "input_morphology_file",
+            "output_device_dir",
+            "input_morph_dir",
+            "input_orca_dir",
+            "output_orca_dir",
+            "input_device_file",
+            "output_device_directory",
+            "output_orca_directory",
+        ]:
+            try:
+                expected_pars.pop(key)
+            except KeyError:
+                pass
+            try:
+                output_pars.pop(key)
+            except KeyError:
+                pass
         self.compare_equal(expected_pars, response=output_pars)
 
     def test_check_chromophore_list(self, run_simulation):
@@ -208,36 +219,6 @@ class TestCompareOutputs(TestCommand):
                         key
                     ],
                 )
-
-    def test_check_input_single_orca_files_created(self, run_simulation):
-        input_morph_dir = run_simulation["output_parameter_dict"]["input_morph_dir"]
-        output_morph_dir = run_simulation["output_parameter_dict"]["output_morph_dir"]
-        morphology = run_simulation["output_parameter_dict"]["morphology"]
-        chromo_dir = os.path.join(
-            output_morph_dir,
-            os.path.splitext(morphology)[0],
-            "chromophores",
-            "input_orca",
-            "single",
-        )
-        asset_dir = os.path.join(input_morph_dir, "EZ", "input_orca", "single")
-        for file_name in os.listdir(asset_dir):
-            self.confirm_file_exists(os.path.join(chromo_dir, file_name))
-
-    def test_check_input_pair_orca_files_created(self, run_simulation):
-        input_morph_dir = run_simulation["output_parameter_dict"]["input_morph_dir"]
-        output_morph_dir = run_simulation["output_parameter_dict"]["output_morph_dir"]
-        morphology = run_simulation["output_parameter_dict"]["morphology"]
-        chromo_dir = os.path.join(
-            output_morph_dir,
-            os.path.splitext(morphology)[0],
-            "chromophores",
-            "input_orca",
-            "pair",
-        )
-        asset_dir = os.path.join(input_morph_dir, "EZ", "input_orca", "pair")
-        for file_name in os.listdir(asset_dir):
-            self.confirm_file_exists(os.path.join(chromo_dir, file_name))
 
     def test_check_output_single_orca_files_created(self, run_simulation):
         input_morph_dir = run_simulation["output_parameter_dict"]["input_morph_dir"]

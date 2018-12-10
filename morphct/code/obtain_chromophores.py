@@ -20,8 +20,8 @@ class chromophore:
         sim_dims,
     ):
         self.ID = chromo_ID
-        self.orca_input = "/chromophores/input_orca/single/%05d.inp" % (self.ID)
-        self.orca_output = "/chromophores/output_orca/single/%05d.out" % (self.ID)
+        self.orca_input = "/chromophores/input_orca/single/{:05d}.inp".format(self.ID)
+        self.orca_output = "/chromophores/output_orca/single/{:05d}.out".format(self.ID)
         self.CGIDs = chromophore_CG_sites
         # Determine whether this chromophore is a donor or an acceptor, as well
         # as the site types that have been defined as the electronically active
@@ -127,7 +127,7 @@ class chromophore:
                     for key, val in self.__dict__:
                         print(key, val)
                     raise SystemError(
-                        "Chromophore " + str(self.ID) + " has no species! Exiting..."
+                        "Chromophore {:d} has no species! Exiting...".format(self.ID)
                     )
             else:
                 raise SystemError(
@@ -315,16 +315,18 @@ def calculate_chromophores(
     for new_key, old_key in enumerate(old_keys):
         chromophore_data[new_key] = chromophore_data.pop(old_key)
     print(
-        str(len(list(chromophore_data.keys())))
-        + " chromophores successfully identified!"
+        "{:d} chromophores successfully identified!".format(
+            len(list(chromophore_data.keys()))
+        )
     )
     # Now let's create a list of all the chromophore instances which contain all
     # of the information we could ever want about them.
     chromophore_instances = []
     for chromo_ID, chromophore_CG_sites in chromophore_data.items():
         print(
-            "\rCalculating properties of chromophore %05d of %05d..."
-            % (chromo_ID, len(list(chromophore_data.keys())) - 1),
+            "\rCalculating properties of chromophore {:05d} of {:05d}...".format(
+                chromo_ID, len(list(chromophore_data.keys())) - 1
+            ),
             end=" ",
         )
         if sys.stdout is not None:
@@ -394,16 +396,18 @@ def calculate_chromophores_AA(
     for new_key, old_key in enumerate(old_keys):
         chromophore_data[new_key] = chromophore_data.pop(old_key)
     print(
-        str(len(list(chromophore_data.keys())))
-        + " chromophores successfully identified!"
+        "{:d} chromophores successfully identified!".format(
+            len(list(chromophore_data.keys()))
+        )
     )
     # Now let's create a list of all the chromophore instances which contain all
     # of the information we could ever want about them.
     chromophore_instances = []
     for chromo_ID, chromophore_CG_sites in chromophore_data.items():
         print(
-            "\rCalculating properties of chromophore %05d of %05d..."
-            % (chromo_ID, len(list(chromophore_data.keys())) - 1),
+            "\rCalculating properties of chromophore {:05d} of {:05d}...".format(
+                chromo_ID, len(list(chromophore_data.keys())) - 1
+            ),
             end=" ",
         )
         if sys.stdout is not None:
@@ -730,8 +734,9 @@ def determine_neighbours_voronoi(chromophore_list, parameter_dict, sim_dims):
 def determine_neighbours_cut_off(chromophore_list, parameter_dict, sim_dims):
     for chromophore1 in chromophore_list:
         print(
-            "\rIdentifying neighbours of chromophore %05d of %05d..."
-            % (chromophore1.ID, len(chromophore_list) - 1),
+            "\rIdentifying neighbours of chromophore {:05d} of {:05d}...".format(
+                chromophore1.ID, len(chromophore_list) - 1
+            ),
             end=" ",
         )
         if sys.stdout is not None:
@@ -809,16 +814,19 @@ def determine_neighbours_cut_off(chromophore_list, parameter_dict, sim_dims):
                         chromophore2.neighbours_delta_E.append(None)
                         chromophore2.neighbours_TI.append(None)
                 else:
-                    if chromophore2.ID not in chromo2dissociation_neighbour_IDs:
+                    # NOTE: Modifying this so that only dissociation neigbours in the
+                    # same periodic image are considered.
+                    if (chromophore2.ID not in chromo2dissociation_neighbour_IDs) and (
+                        np.all(np.isclose(relative_image_of_chromo2, [0, 0, 0]))
+                    ):
                         chromophore1.dissociation_neighbours.append(
-                            [chromophore2.ID, relative_image_of_chromo2]
+                            [chromophore2.ID, [0, 0, 0]]
                         )
-                    if chromophore1.ID not in chromo1dissociation_neighbour_IDs:
+                    if (chromophore1.ID not in chromo1dissociation_neighbour_IDs) and (
+                        np.all(np.isclose(relative_image_of_chromo2, [0, 0, 0]))
+                    ):
                         chromophore2.dissociation_neighbours.append(
-                            [
-                                chromophore1.ID,
-                                list(-np.array(relative_image_of_chromo2)),
-                            ]
+                            [chromophore1.ID, [0, 0, 0]]
                         )
     print("")
     return chromophore_list
@@ -896,10 +904,9 @@ def main(
     # Now we have updated the chromophore_list, rewrite the pickle with this new
     # information.
     pickle_name = os.path.join(
-        parameter_dict["output_morph_dir"],
-        parameter_dict["morphology"][:-4],
-        "code/",
-        "".join([parameter_dict["morphology"][:-4], ".pickle"]),
+        parameter_dict["output_morphology_directory"],
+        "code",
+        "".join([os.path.splitext(parameter_dict["morphology"])[0], ".pickle"]),
     )
     hf.write_pickle(
         (

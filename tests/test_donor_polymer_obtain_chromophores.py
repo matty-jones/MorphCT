@@ -1,3 +1,4 @@
+import copy
 import os
 import pytest
 import shutil
@@ -35,10 +36,11 @@ def run_simulation(request):
     # ---======== Directory and File Structure ========---
     # ---==============================================---
 
-    input_morph_dir = TEST_ROOT + "/assets/donor_polymer"
-    output_morph_dir = TEST_ROOT + "/output_OC"
-    input_device_dir = TEST_ROOT + "/assets/donor_polymer"
-    output_device_dir = TEST_ROOT + "/output_OC"
+    input_morph_dir = os.path.join(TEST_ROOT, "assets", "donor_polymer")
+    output_morph_dir = os.path.join(TEST_ROOT, "output_OC")
+    output_orca_dir = None
+    input_device_dir = os.path.join(TEST_ROOT, "assets", "donor_polymer")
+    output_device_dir = os.path.join(TEST_ROOT, "output_OC")
 
     # ---==============================================---
     # ---========== Input Morphology Details ==========---
@@ -78,7 +80,7 @@ def run_simulation(request):
     maximum_hole_hop_distance = _hop_range
     maximum_electron_hop_distance = _hop_range
     permit_hops_through_opposing_chromophores = _transiting
-    remove_orca_inputs = True
+    remove_orca_inputs = False
     remove_orca_outputs = True
     chromophore_length = 3
 
@@ -148,7 +150,7 @@ def run_simulation(request):
             TEST_ROOT,
             "assets",
             os.path.splitext(morphology)[0],
-            "RH",
+            "OC",
             morphology.replace(".xml", "_post_run_HOOMD.pickle"),
         ),
         os.path.join(
@@ -220,22 +222,31 @@ class TestCompareOutputs(TestCommand):
     def test_check_parameter_dict(self, run_simulation):
         # Pop the system-dependent keys, such as the input and output dirs since this will
         # always be system-dependent
-        output_pars = {}
-        expected_pars = {}
-        for key in run_simulation["expected_parameter_dict"]:
-            if key in [
-                "parameter_file",
-                "output_morph_dir",
-                "CG_to_template_dirs",
-                "output_morphology_directory",
-                "input_device_dir",
-                "input_morphology_file",
-                "output_device_dir",
-                "input_morph_dir",
-            ]:
-                continue
-            output_pars = run_simulation["output_parameter_dict"][key]
-            expected_pars = run_simulation["expected_parameter_dict"][key]
+        expected_pars = copy.deepcopy(run_simulation["expected_parameter_dict"])
+        output_pars = copy.deepcopy(run_simulation["output_parameter_dict"])
+        for key in [
+            "parameter_file",
+            "output_morph_dir",
+            "CG_to_template_dirs",
+            "output_morphology_directory",
+            "input_device_dir",
+            "input_morphology_file",
+            "output_device_dir",
+            "input_morph_dir",
+            "input_orca_dir",
+            "output_orca_dir",
+            "input_device_file",
+            "output_device_directory",
+            "output_orca_directory",
+        ]:
+            try:
+                expected_pars.pop(key)
+            except KeyError:
+                pass
+            try:
+                output_pars.pop(key)
+            except KeyError:
+                pass
         self.compare_equal(expected_pars, response=output_pars)
 
     def test_check_chromophore_list(self, run_simulation):

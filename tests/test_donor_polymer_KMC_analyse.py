@@ -15,7 +15,7 @@ from morphct.code import helper_functions as hf
         "",
         "-t",
         '-x "TEST_OUTPUT"',
-        "-s 0.0,1.0",
+        "-sd 0.0,1.0",
         "COMBINE_KMC",
         "-crd auto -cod auto -cfd auto",
         "-ctd 0.1 -crd 1.0 -cod 10.0",
@@ -120,48 +120,48 @@ class TestCompareOutputs(TestCommand):
     def test_check_network_figure(self, run_simulation):
         if "-t" in run_simulation:
             self.confirm_file_exists(
-                os.path.join(TEST_ROOT, "output_KMCA", "figures", "01_3d_hole.pdf")
+                os.path.join(TEST_ROOT, "output_KMCA", "figures", "01_3d_hole.png")
             )
         else:
             self.confirm_file_exists(
-                os.path.join(TEST_ROOT, "output_KMCA", "figures", "01_3d_hole.pdf"),
+                os.path.join(TEST_ROOT, "output_KMCA", "figures", "01_3d_hole.png"),
                 negate=True,
             )
 
     def test_check_stack_figure(self, run_simulation):
         if "-t" in run_simulation:
             self.confirm_file_exists(
-                os.path.join(TEST_ROOT, "output_KMCA", "figures", "03_clusters.pdf")
+                os.path.join(TEST_ROOT, "output_KMCA", "figures", "03_clusters.png")
             )
         else:
             self.confirm_file_exists(
-                os.path.join(TEST_ROOT, "output_KMCA", "figures", "03_clusters.pdf"),
+                os.path.join(TEST_ROOT, "output_KMCA", "figures", "03_clusters.png"),
                 negate=True,
             )
 
     def test_check_neighbour_hist_figure(self, run_simulation):
         self.confirm_file_exists(
             os.path.join(
-                TEST_ROOT, "output_KMCA", "figures", "04_neighbour_hist_donor.pdf"
+                TEST_ROOT, "output_KMCA", "figures", "04_neighbour_hist_donor.png"
             )
         )
 
     def test_check_delta_E_figure(self, run_simulation):
         self.confirm_file_exists(
-            os.path.join(TEST_ROOT, "output_KMCA", "figures", "06_donor_delta_E_ij.pdf")
+            os.path.join(TEST_ROOT, "output_KMCA", "figures", "06_donor_delta_E_ij.png")
         )
 
     def test_check_anisotropy_figure(self, run_simulation):
         if "-t" in run_simulation:
             self.confirm_file_exists(
                 os.path.join(
-                    TEST_ROOT, "output_KMCA", "figures", "08_anisotropy_hole.pdf"
+                    TEST_ROOT, "output_KMCA", "figures", "08_anisotropy_hole.png"
                 )
             )
         else:
             self.confirm_file_exists(
                 os.path.join(
-                    TEST_ROOT, "output_KMCA", "figures", "08_anisotropy_hole.pdf"
+                    TEST_ROOT, "output_KMCA", "figures", "08_anisotropy_hole.png"
                 ),
                 negate=True,
             )
@@ -172,7 +172,7 @@ class TestCompareOutputs(TestCommand):
                 TEST_ROOT,
                 "output_KMCA",
                 "figures",
-                "10_donor_transfer_integral_mols.pdf",
+                "10_donor_transfer_integral_mols.png",
             )
         )
 
@@ -182,14 +182,14 @@ class TestCompareOutputs(TestCommand):
                 TEST_ROOT,
                 "output_KMCA",
                 "figures",
-                "12_donor_transfer_integral_clusters.pdf",
+                "12_donor_transfer_integral_clusters.png",
             )
         )
 
     def test_check_hopping_rate_mols_figure(self, run_simulation):
         self.confirm_file_exists(
             os.path.join(
-                TEST_ROOT, "output_KMCA", "figures", "14_donor_hopping_rate_mols.pdf"
+                TEST_ROOT, "output_KMCA", "figures", "14_donor_hopping_rate_mols.png"
             )
         )
 
@@ -199,82 +199,95 @@ class TestCompareOutputs(TestCommand):
                 TEST_ROOT,
                 "output_KMCA",
                 "figures",
-                "16_donor_hopping_rate_clusters.pdf",
+                "16_donor_hopping_rate_clusters.png",
             )
         )
 
     def test_check_lin_MSD_figure(self, run_simulation):
         self.confirm_file_exists(
-            os.path.join(TEST_ROOT, "output_KMCA", "figures", "18_lin_MSD_hole.pdf")
+            os.path.join(TEST_ROOT, "output_KMCA", "figures", "18_lin_MSD_hole.png")
         )
 
     def test_check_semi_log_MSD_figure(self, run_simulation):
         self.confirm_file_exists(
             os.path.join(
-                TEST_ROOT, "output_KMCA", "figures", "20_semi_log_MSD_hole.pdf"
+                TEST_ROOT, "output_KMCA", "figures", "20_semi_log_MSD_hole.png"
             )
         )
 
     def test_check_log_MSD_figure(self, run_simulation):
         self.confirm_file_exists(
-            os.path.join(TEST_ROOT, "output_KMCA", "figures", "22_log_MSD_hole.pdf")
+            os.path.join(TEST_ROOT, "output_KMCA", "figures", "22_log_MSD_hole.png")
         )
 
     def test_check_log_MSD_figure(self, run_simulation):
         self.confirm_file_exists(
             os.path.join(
-                TEST_ROOT, "output_KMCA", "figures", "24_total_hop_freq_hole.pdf"
-            )
-        )
-
-    def test_check_log_MSD_figure(self, run_simulation):
-        self.confirm_file_exists(
-            os.path.join(
-                TEST_ROOT, "output_KMCA", "figures", "26_net_hop_freq_hole.pdf"
+                TEST_ROOT, "output_KMCA", "figures", "24_total_hop_freq_hole.png"
             )
         )
 
     def test_check_log_MSD_figure(self, run_simulation):
         self.confirm_file_exists(
             os.path.join(
-                TEST_ROOT, "output_KMCA", "figures", "28_hop_discrepancy_hole.pdf"
+                TEST_ROOT, "output_KMCA", "figures", "26_net_hop_freq_hole.png"
             )
         )
 
     def test_check_log_MSD_figure(self, run_simulation):
         self.confirm_file_exists(
             os.path.join(
-                TEST_ROOT, "output_KMCA", "figures", "30_hole_displacement_dist.pdf"
+                TEST_ROOT, "output_KMCA", "figures", "28_hop_discrepancy_hole.png"
             )
         )
 
     def test_check_log_MSD_figure(self, run_simulation):
         self.confirm_file_exists(
             os.path.join(
-                TEST_ROOT, "output_KMCA", "figures", "32_hole_cluster_dist.pdf"
+                TEST_ROOT, "output_KMCA", "figures", "30_hole_displacement_dist.png"
             )
         )
 
     def test_check_log_MSD_figure(self, run_simulation):
         self.confirm_file_exists(
             os.path.join(
-                TEST_ROOT, "output_KMCA", "figures", "34_orientation_hist_donor.pdf"
+                TEST_ROOT, "output_KMCA", "figures", "32_hole_cluster_dist.png"
             )
         )
+
+    def test_check_log_MSD_figure(self, run_simulation):
+        self.confirm_file_exists(
+            os.path.join(
+                TEST_ROOT, "output_KMCA", "figures", "34_orientation_hist_donor.png"
+            )
+        )
+
+    def test_check_hop_vec_figure(self, run_simulation):
+        if "-t" in run_simulation:
+            self.confirm_file_exists(
+                os.path.join(TEST_ROOT, "output_KMCA", "figures", "36_hop_vec_hole.png")
+            )
+        else:
+            self.confirm_file_exists(
+                os.path.join(
+                    TEST_ROOT, "output_KMCA", "figures", "36_hop_vec_hole.png"
+                ),
+                negate=True,
+            )
 
     def test_check_anisotropy_sequence_figure(self, run_simulation):
         if "-s" in run_simulation:
-            self.confirm_file_exists(os.path.join(os.getcwd(), "anisotropy_hole.pdf"))
+            self.confirm_file_exists(os.path.join(os.getcwd(), "anisotropy_hole.png"))
 
     def test_check_mobility_sequence_figure(self, run_simulation):
         if "-s" in run_simulation:
-            self.confirm_file_exists(os.path.join(os.getcwd(), "mobility_hole.pdf"))
+            self.confirm_file_exists(os.path.join(os.getcwd(), "mobility_hole.png"))
 
 
 def teardown_module():
     shutil.rmtree(os.path.join(TEST_ROOT, "output_KMCA"))
-    os.remove(os.path.join(os.getcwd(), "anisotropy_hole.pdf"))
-    os.remove(os.path.join(os.getcwd(), "mobility_hole.pdf"))
+    os.remove(os.path.join(os.getcwd(), "anisotropy_hole.png"))
+    os.remove(os.path.join(os.getcwd(), "mobility_hole.png"))
 
 
 if __name__ == "__main__":
@@ -283,4 +296,4 @@ if __name__ == "__main__":
         def __init__(self, param):
             self.param = param
 
-    run_simulation(parameters("-ctd 0.1 -crd 1.0 -cod 10.0"))
+    run_simulation(parameters("-t"))

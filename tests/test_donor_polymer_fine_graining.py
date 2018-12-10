@@ -1,3 +1,4 @@
+import copy
 import os
 import pytest
 import shutil
@@ -13,10 +14,11 @@ def run_simulation():
     # ---======== Directory and File Structure ========---
     # ---==============================================---
 
-    input_morph_dir = TEST_ROOT + "/assets/donor_polymer"
-    output_morph_dir = TEST_ROOT + "/output_FG"
-    input_device_dir = TEST_ROOT + "/assets/donor_polymer"
-    output_device_dir = TEST_ROOT + "/output_FG"
+    input_morph_dir = os.path.join(TEST_ROOT, "assets", "donor_polymer")
+    output_morph_dir = os.path.join(TEST_ROOT, "output_FG")
+    output_orca_dir = None
+    input_device_dir = os.path.join(TEST_ROOT, "assets", "donor_polymer")
+    output_device_dir = os.path.join(TEST_ROOT, "output_FG")
 
     # ---==============================================---
     # ---========== Input Morphology Details ==========---
@@ -50,9 +52,9 @@ def run_simulation():
     # ---==============================================---
 
     CG_to_template_dirs = {
-        "A": TEST_ROOT + "/assets/donor_polymer",
-        "B": TEST_ROOT + "/assets/donor_polymer",
-        "C": TEST_ROOT + "/assets/donor_polymer",
+        "A": os.path.join(TEST_ROOT, "assets", "donor_polymer"),
+        "B": os.path.join(TEST_ROOT, "assets", "donor_polymer"),
+        "C": os.path.join(TEST_ROOT, "assets", "donor_polymer"),
     }
     CG_to_template_files = {
         "A": "P3HT_template.xml",
@@ -167,7 +169,7 @@ class TestCompareOutputs(TestCommand):
             response=run_simulation["output_AA_morphology_dict"],
         )
 
-    def test_check_CG_morphology_dict(self, run_simulation):
+    def testck_CG_morphology_dict(self, run_simulation):
         self.compare_equal(
             run_simulation["expected_CG_morphology_dict"],
             response=run_simulation["output_CG_morphology_dict"],
@@ -182,22 +184,31 @@ class TestCompareOutputs(TestCommand):
     def test_check_parameter_dict(self, run_simulation):
         # Pop the system-dependent keys, such as the input and output dirs since this will
         # always be system-dependent
-        output_pars = {}
-        expected_pars = {}
-        for key in run_simulation["expected_parameter_dict"]:
-            if key in [
-                "parameter_file",
-                "output_morph_dir",
-                "CG_to_template_dirs",
-                "output_morphology_directory",
-                "input_device_dir",
-                "input_morphology_file",
-                "output_device_dir",
-                "input_morph_dir",
-            ]:
-                continue
-            output_pars = run_simulation["output_parameter_dict"][key]
-            expected_pars = run_simulation["expected_parameter_dict"][key]
+        expected_pars = copy.deepcopy(run_simulation["expected_parameter_dict"])
+        output_pars = copy.deepcopy(run_simulation["output_parameter_dict"])
+        for key in [
+            "parameter_file",
+            "output_morph_dir",
+            "CG_to_template_dirs",
+            "output_morphology_directory",
+            "input_device_dir",
+            "input_morphology_file",
+            "output_device_dir",
+            "input_morph_dir",
+            "input_orca_dir",
+            "output_orca_dir",
+            "input_device_file",
+            "output_device_directory",
+            "output_orca_directory",
+        ]:
+            try:
+                expected_pars.pop(key)
+            except KeyError:
+                pass
+            try:
+                output_pars.pop(key)
+            except KeyError:
+                pass
         self.compare_equal(expected_pars, response=output_pars)
 
     def test_check_chromophore_list(self, run_simulation):

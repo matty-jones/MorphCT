@@ -8,7 +8,7 @@ def convert_inp(file_name):
     for line in inp_data:
         if line[0] == " ":
             xyz_data.append(line)
-    xyz_data.insert(0, str(len(xyz_data)) + "\n")
+    xyz_data.insert(0, "{:d}\n".format(len(xyz_data)))
     xyz_data.insert(1, "comment_line\n")
     with open(file_name.replace(".inp", ".xyz"), "w+") as xyz_file:
         xyz_file.writelines(xyz_data)
@@ -34,7 +34,7 @@ def convert_out(file_name):
             xyz_data[line_no] = line.split("> ")[-1]
     for line_no in sorted(pop_list, reverse=True):
         xyz_data.pop(line_no)
-    xyz_data.insert(0, str(len(xyz_data)) + "\n")
+    xyz_data.insert(0, "{:d}\n".format(len(xyz_data)))
     xyz_data.insert(1, "comment_line\n")
     with open(file_name.replace(".out", ".xyz"), "w+") as xyz_file:
         xyz_file.writelines(xyz_data)
@@ -46,13 +46,13 @@ def main():
         print("No files requested to convert!")
         exit()
     for file_name in list_of_files:
-        print("Converting", file_name + "...")
+        print("Converting {:s}...".format(file_name))
         if ".inp" in file_name:
             convert_inp(file_name)
         elif ".out" in file_name:
             convert_out(file_name)
         else:
-            print("Unknown file type for", file_name + ", skipping...")
+            print("Unknown file type for {:s}, skipping...".format(file_name))
     print("Conversion tasks completed!")
 
 

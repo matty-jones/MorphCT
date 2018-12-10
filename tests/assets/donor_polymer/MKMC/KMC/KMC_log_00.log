@@ -1,37 +1,37 @@
 Found 30 jobs to run.
-Found main morphology pickle file at /Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/tests/output_MKMC/donor_polymer/code/donor_polymer.pickle! loading data...
+Found main morphology pickle file at /home/mattyjones/Software/morphct/tests/output_MKMC/donor_polymer/code/donor_polymer.pickle! loading data...
 Main morphology pickle loaded!
-Hole hopped 67 times, over 9.9793603315e-13 seconds, into image [0, 0, 0], for a displacement of 20.2895352279, in 0.1 wall-clock seconds.
-Hole hopped 113 times, over 9.83888169737e-13 seconds, into image [0, -1, 0], for a displacement of 12.6279473979, in 0.1 wall-clock seconds.
-Hole hopped 1085 times, over 9.97833155106e-12 seconds, into image [0, 0, 0], for a displacement of 20.7227347959, in 0.6 wall-clock seconds.
-Hole hopped 14 times, over 9.74203953645e-14 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 133 times, over 9.74123575843e-13 seconds, into image [0, 0, 0], for a displacement of 4.09726146565, in 0.1 wall-clock seconds.
-Hole hopped 109 times, over 9.78143190301e-13 seconds, into image [0, 1, 0], for a displacement of 20.7512868064, in 0.1 wall-clock seconds.
-Hole hopped 19 times, over 9.4115532133e-14 seconds, into image [0, 0, 0], for a displacement of 12.3911095341, in 0.0 wall-clock seconds.
-Hole hopped 120 times, over 9.8645305528e-13 seconds, into image [0, 1, 0], for a displacement of 25.045926775, in 0.1 wall-clock seconds.
+Hole hopped 9 times, over 8.42038074921964e-13 seconds, into image [0, 0, 0], for a displacement of 4.1628993373630365, in 0.0 wall-clock seconds.
+Hole hopped 41 times, over 9.995202163530641e-13 seconds, into image [0, 0, 0], for a displacement of 4.195890517531279, in 0.0 wall-clock seconds.
+Hole hopped 5 times, over 9.36740700721744e-13 seconds, into image [0, 0, 0], for a displacement of 3.9522301502582824, in 0.0 wall-clock seconds.
+Hole hopped 4 times, over 8.895416501178768e-14 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 52 times, over 9.825890314237829e-13 seconds, into image [0, 0, 0], for a displacement of 16.44117649263149, in 0.0 wall-clock seconds.
+Hole hopped 50 times, over 9.857938722246212e-13 seconds, into image [0, 0, 0], for a displacement of 8.265071751024996, in 0.0 wall-clock seconds.
+Hole hopped 9 times, over 7.099579565019918e-14 seconds, into image [0, 0, 0], for a displacement of 12.391109534052655, in 0.0 wall-clock seconds.
+Hole hopped 7 times, over 1.7155557405126834e-13 seconds, into image [0, 0, 0], for a displacement of 4.09726146564781, in 0.0 wall-clock seconds.
+Hole hopped 412 times, over 9.975165329993957e-12 seconds, into image [0, 0, 0], for a displacement of 8.399826895139267, in 0.1 wall-clock seconds.
+Hole hopped 6 times, over 8.675740626868987e-12 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 3 times, over 4.510322718186883e-13 seconds, into image [0, 0, 0], for a displacement of 3.9522301502582824, in 0.0 wall-clock seconds.
+Hole hopped 1 times, over 4.0903524209821037e-16 seconds, into image [0, 0, 0], for a displacement of 3.9522301502582824, in 0.0 wall-clock seconds.
+Hole hopped 2 times, over 7.973028300177724e-15 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
 Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 861 times, over 9.98909375742e-12 seconds, into image [0, 0, 0], for a displacement of 4.16244756575, in 0.5 wall-clock seconds.
-Hole hopped 76 times, over 9.88221206066e-13 seconds, into image [0, -1, 0], for a displacement of 24.6952666954, in 0.0 wall-clock seconds.
-Hole hopped 6 times, over 9.79062276186e-14 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 9 times, over 9.62336202474e-14 seconds, into image [0, 0, 0], for a displacement of 4.45990989384, in 0.0 wall-clock seconds.
-Hole hopped 968 times, over 9.97613607865e-12 seconds, into image [0, -1, 0], for a displacement of 33.3140850867, in 0.5 wall-clock seconds.
-Hole hopped 8 times, over 9.56933707434e-14 seconds, into image [0, 0, 0], for a displacement of 16.4747245634, in 0.0 wall-clock seconds.
-Hole hopped 3 times, over 8.21131304338e-14 seconds, into image [0, 0, 0], for a displacement of 4.17292795079, in 0.0 wall-clock seconds.
-Hole hopped 87 times, over 9.83329699721e-13 seconds, into image [0, 0, 0], for a displacement of 12.3414442434, in 0.0 wall-clock seconds.
-Hole hopped 121 times, over 9.7867027013e-13 seconds, into image [0, 0, 0], for a displacement of 4.19589051753, in 0.1 wall-clock seconds.
-Hole hopped 847 times, over 9.88717439699e-12 seconds, into image [0, 1, 0], for a displacement of 36.8932444782, in 0.5 wall-clock seconds.
-Hole hopped 6 times, over 8.52891889558e-14 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 1095 times, over 9.97678601831e-12 seconds, into image [0, -1, 0], for a displacement of 29.2746857548, in 0.6 wall-clock seconds.
-Hole hopped 825 times, over 9.99801442773e-12 seconds, into image [0, 1, 0], for a displacement of 28.6876369863, in 0.5 wall-clock seconds.
-Hole hopped 843 times, over 9.99445528858e-12 seconds, into image [0, 1, 0], for a displacement of 44.9833493192, in 0.5 wall-clock seconds.
-Hole hopped 0 times, over 0.0 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
-Hole hopped 3 times, over 7.64476862573e-14 seconds, into image [0, 0, 0], for a displacement of 4.17292795079, in 0.0 wall-clock seconds.
-Hole hopped 895 times, over 9.99353146851e-12 seconds, into image [0, 1, 0], for a displacement of 20.7649993276, in 0.5 wall-clock seconds.
-Hole hopped 63 times, over 9.23565504549e-13 seconds, into image [0, 0, 0], for a displacement of 3.95223015026, in 0.0 wall-clock seconds.
-Hole hopped 14 times, over 8.63531380818e-14 seconds, into image [0, 1, 0], for a displacement of 24.6604411524, in 0.0 wall-clock seconds.
-Hole hopped 726 times, over 9.99872174476e-12 seconds, into image [0, 1, 0], for a displacement of 48.9653246982, in 0.4 wall-clock seconds.
-Hole hopped 114 times, over 9.91272354028e-13 seconds, into image [0, 0, 0], for a displacement of 16.5294685993, in 0.1 wall-clock seconds.
-All jobs completed in 5.2 seconds.
+Hole hopped 7 times, over 5.258431814348041e-14 seconds, into image [0, 0, 0], for a displacement of 4.180428407937744, in 0.0 wall-clock seconds.
+Hole hopped 2 times, over 1.242427341938567e-14 seconds, into image [0, 0, 0], for a displacement of 8.265071751024996, in 0.0 wall-clock seconds.
+Hole hopped 81 times, over 9.878602158921719e-13 seconds, into image [0, 0, 0], for a displacement of 4.180428407937744, in 0.0 wall-clock seconds.
+Hole hopped 77 times, over 9.991182988788485e-13 seconds, into image [0, 0, 0], for a displacement of 4.170408795261751, in 0.0 wall-clock seconds.
+Hole hopped 2 times, over 9.049021785606154e-12 seconds, into image [0, 0, 0], for a displacement of 0.0, in 0.0 wall-clock seconds.
+Hole hopped 1 times, over 1.3149337809876225e-15 seconds, into image [0, 0, 0], for a displacement of 4.3883692609591245, in 0.0 wall-clock seconds.
+Hole hopped 425 times, over 9.98363401482466e-12 seconds, into image [0, -1, 0], for a displacement of 28.954869228993367, in 0.1 wall-clock seconds.
+Hole hopped 450 times, over 8.60123898758204e-12 seconds, into image [0, 1, 0], for a displacement of 25.07838210448232, in 0.1 wall-clock seconds.
+Hole hopped 487 times, over 9.846962236412799e-12 seconds, into image [0, 1, 0], for a displacement of 28.84506470192366, in 0.1 wall-clock seconds.
+Hole hopped 1 times, over 3.274588466979142e-15 seconds, into image [0, 0, 0], for a displacement of 4.1628993373630365, in 0.0 wall-clock seconds.
+Hole hopped 7 times, over 4.1461634228043863e-14 seconds, into image [0, 0, 0], for a displacement of 4.170408795261751, in 0.0 wall-clock seconds.
+Hole hopped 431 times, over 9.972342706891982e-12 seconds, into image [0, 0, 0], for a displacement of 12.725714535918824, in 0.1 wall-clock seconds.
+Hole hopped 13 times, over 6.066318356244984e-13 seconds, into image [0, 0, 0], for a displacement of 4.171875735081095, in 0.0 wall-clock seconds.
+Hole hopped 9 times, over 9.193887068055338e-14 seconds, into image [0, 0, 0], for a displacement of 4.147471914050547, in 0.0 wall-clock seconds.
+Hole hopped 365 times, over 9.31997522969238e-12 seconds, into image [0, 1, 0], for a displacement of 29.124319156127616, in 0.1 wall-clock seconds.
+Hole hopped 58 times, over 9.110789934254076e-13 seconds, into image [0, 1, 0], for a displacement of 32.827143917633286, in 0.0 wall-clock seconds.
+All jobs completed in 0.9 seconds.
 Saving the pickle file cleanly before termination...
-Pickle file saved successfully as /Users/mattyjones/GoogleDrive/Boise/Code/MorphCT/tests/output_MKMC/donor_polymer/KMC/KMC_results_00.pickle!
+Pickle file saved successfully as /home/mattyjones/Software/morphct/tests/output_MKMC/donor_polymer/KMC/KMC_results_00.pickle!
 Exiting normally...

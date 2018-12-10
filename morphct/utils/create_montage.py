@@ -5,29 +5,20 @@ import glob
 import argparse
 
 
-def stitch_images(montage_dims, images_to_stitch, morphology_name, title):
+def stitch_images(montage_dims, images_to_stitch, morphology_name, title, save_file):
     # First delete previous output to prevent ImageMagick issue
     if title is None:
         title = morphology_name
     try:
-        os.remove("./" + title.replace(" ", "_") + ".png")
+        os.remove("".join("./", title.replace(" ", "_") + ".png"))
     except:
         pass
     # Then load all the files
     print("Converting images and adding annotations...")
     directory = "/".join(images_to_stitch[0].split("/")[:-2])
     for ID, image in enumerate(images_to_stitch):
-        ID_str = "%04d" % (ID)
+        ID_str = "{:04d}".format(ID)
         if image[-4:] == ".pdf":
-            ## Load image using supersampling to keep the quality high,
-            ## and "crop" to add a section of whitespace to the left
-            # sp.call(["convert", "-density", "500", image, "-resize", "20%",
-            #         "-gravity", "West", "-bordercolor", "white",
-            #         "-border", "7%x0", IDStr + "_crop.png"])
-            ## Now add the annotation
-            # sp.call(["convert", IDStr + "_crop.png", "-font", "Arial-Black",
-            #         "-pointsize", "72", "-gravity", "NorthWest",
-            #         "-annotate", "0", str(ID+1) + ")", IDStr + "_temp.png"])
             print("Vectorized input image detected, using supersampling...")
             sp.call(
                 [
@@ -49,21 +40,11 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title):
                     "+0+0",
                     "-annotate",
                     "0",
-                    str(ID + 1) + ")",
-                    directory + "/" + ID_str + "_temp.png",
+                    "{:d})".format(ID + 1),
+                    os.path.join(directory, "".join([ID_str, "_temp.png"])),
                 ]
             )
         else:
-            # Rasterized format, so no supersampling
-            # sp.call(["convert", image, "-gravity", "West",
-            #         "-bordercolor", "white", "-border", "7%x0",
-            #         IDStr + "_crop.png"])
-            # Now add the annotation
-            # sp.call(['convert', image, '-font', 'Arial-Black',
-            #         '-pointsize', '72', '-gravity', 'NorthWest',
-            #         '-bordercolor', 'white', '-border', '140x80',
-            #         '-page', '+0+0', '-annotate', '0',
-            #         str(ID+1) + ')', IDStr + '_temp.png'])
             sp.call(
                 [
                     "convert",
@@ -82,8 +63,8 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title):
                     "+0+0",
                     "-annotate",
                     "+40+0",
-                    str(ID + 1) + ")",
-                    directory + "/" + ID_str + "_temp.png",
+                    "{:d})".format(ID + 1),
+                    os.path.join(directory, "".join([ID_str, "_temp.png"])),
                 ]
             )
     # Create montage
@@ -95,12 +76,14 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title):
             "concatenate",
             "-tile",
             montage_dims,
-            directory + "/*_temp.png",
+            os.path.join(directory, "*_temp.png"),
             "miff:-",
         ],
         stdout=sp.PIPE,
     )
     print("Exporting montage...")
+    if save_file is None:
+        save_file = os.path.join(directory, "".join([title.replace(" ", "_"), ".png"]))
     convert = sp.call(
         [
             "convert",
@@ -122,23 +105,17 @@ def stitch_images(montage_dims, images_to_stitch, morphology_name, title):
             "-annotate",
             "0",
             title,
-            directory + "/" + title.replace(" ", "_") + ".png",
+            save_file,
         ],
         stdin=montage.stdout,
     )
     montage.wait()
     print("Removing temporary files...")
-    for file_name in glob.glob(directory + "/*_temp.png") + glob.glob(
-        directory + "/*_crop.png"
+    for file_name in glob.glob(os.path.join(directory, "*_temp.png")) + glob.glob(
+        os.path.join(directory, "*_crop.png")
     ):
         os.remove(file_name)
-    print(
-        "Montage created and saved at "
-        + directory
-        + "/"
-        + title.replace(" ", "_")
-        + ".png"
-    )
+    print("Montage created and saved at ", save_file)
 
 
 def main():
@@ -167,19 +144,54 @@ def main():
             "assigned based on the enclosing directory."
         ),
     )
+    parser.add_argument(
+        "-s",
+        "--save_as",
+        default=None,
+        required=False,
+        help=(
+            "Location and name of the output montage. Default is based on"
+            "the title in the first directory above the morphology directories"
+            "(might be ../ from cwd)."
+        ),
+    )
+    parser.add_argument(
+        "-f",
+        "--files",
+        action="store_true",
+        required=False,
+        help=(
+            "Operate create_montage in file mode, which does not look for"
+            "the standard MorphCT operating file structure."
+        ),
+    )
     args, directories = parser.parse_known_args()
-    for directory in directories:
-        morphology_name = os.path.split(directory)[1]
-        try:
-            images_to_stitch = [
-                os.path.join(directory, "figures", figure)
-                for figure in os.listdir(os.path.join(directory, "figures"))
-            ]
-            if len(images_to_stitch) == 0:
-                raise FileNotFoundError
-        except FileNotFoundError:
-            continue
-        stitch_images(args.dimensions, images_to_stitch, morphology_name, args.title)
+    if args.files:
+        images_to_stitch = [
+            os.path.join(os.getcwd(), directory) for directory in directories
+        ]
+        stitch_images(
+            args.dimensions, images_to_stitch, "Montage", args.title, args.save_as
+        )
+    else:
+        for directory in directories:
+            morphology_name = os.path.split(directory)[1]
+            try:
+                images_to_stitch = [
+                    os.path.join(directory, "figures", figure)
+                    for figure in os.listdir(os.path.join(directory, "figures"))
+                ]
+                if len(images_to_stitch) == 0:
+                    raise FileNotFoundError
+            except FileNotFoundError:
+                continue
+            stitch_images(
+                args.dimensions,
+                images_to_stitch,
+                morphology_name,
+                args.title,
+                args.save_as,
+            )
 
 
 if __name__ == "__main__":

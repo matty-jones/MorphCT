@@ -29,10 +29,7 @@ def create_input_files(chromophore_list, AA_morphology_dict, parameter_dict):
             [chromophore.image] * len(chromophore.AAIDs),
             terminating_group_positions,
             terminating_group_images,
-            parameter_dict["output_morph_dir"]
-            + "/"
-            + parameter_dict["morphology"][:-4]
-            + chromophore.orca_input,
+            "".join([parameter_dict["output_orca_directory"], chromophore.orca_input]),
         )
     print("")
     # Determine how many pairs there are first:
@@ -58,7 +55,7 @@ def create_input_files(chromophore_list, AA_morphology_dict, parameter_dict):
                 continue
             # Update the orca input name
             input_name = chromophore1.orca_input.replace(
-                ".inp", "-%05d.inp" % (chromophore2.ID)
+                ".inp", "-{:05d}.inp".format(chromophore2.ID)
             ).replace("single", "pair")
             # Find the correct relative image for the neighbour chromophore
             chromophore2_relative_image = neighbours_image[
@@ -103,10 +100,7 @@ def create_input_files(chromophore_list, AA_morphology_dict, parameter_dict):
                     images,
                     term_group_posns1 + term_group_posns2,
                     terminating_group_images1 + terminating_group_images2,
-                    parameter_dict["output_morph_dir"]
-                    + "/"
-                    + parameter_dict["morphology"][:-4]
-                    + input_name,
+                    "".join([parameter_dict["output_orca_directory"], input_name]),
                 )
             else:
                 # Write the dimer input file
@@ -116,10 +110,7 @@ def create_input_files(chromophore_list, AA_morphology_dict, parameter_dict):
                     images,
                     None,
                     None,
-                    parameter_dict["output_morph_dir"]
-                    + "/"
-                    + parameter_dict["morphology"][:-4]
-                    + input_name,
+                    "".join([parameter_dict["output_orca_directory"], input_name]),
                 )
     print("")
 
@@ -219,8 +210,7 @@ def write_orca_inp(
     # Create the lines to be written in the input file
     for index, position in enumerate(all_positions):
         lines_to_write.append(
-            " %s  %.5f  %.5f  %.5f\n"
-            % (
+            " {0:s}  {1:.5f}  {2:.5f}  {3:.5f}\n".format(
                 all_atom_types[index],
                 position[0] - central_position[0],
                 position[1] - central_position[1],
@@ -229,7 +219,7 @@ def write_orca_inp(
         )
     # Load the orca input template
     orca_temp_dir = os.path.join(PROJECT_ROOT, "templates")
-    orca_temp_test_dir = os.path.join(PROJECT_ROOT, "code/unit_testing/assets")
+    orca_temp_test_dir = os.path.join(PROJECT_ROOT, "code", "unit_testing", "assets")
     try:
         with open(os.path.join(orca_temp_dir, "template.inp"), "r") as template_file:
             inp_file_lines = template_file.readlines()
@@ -244,11 +234,7 @@ def write_orca_inp(
     # Write the orca input file
     with open(input_name, "w+") as orca_file:
         orca_file.writelines(inp_file_lines)
-    print(
-        "\rOrca Input File written as",
-        input_name[hf.find_index(input_name, "/")[-1] + 1 :],
-        end=" ",
-    )
+    print("\rOrca Input File written as", os.path.split(input_name[1]), end=" ")
 
 
 def terminate_monomers(chromophore, parameter_dict, AA_morphology_dict):
@@ -295,15 +281,15 @@ def get_orca_jobs(input_dir, parameter_dict, proc_IDs):
     except OSError:
         pass
     # Obtain a list of files to run
-    single_orca_file_list = os.listdir(input_dir + "/single")
-    pair_orca_file_list = os.listdir(input_dir + "/pair")
+    single_orca_file_list = os.listdir(os.path.join(input_dir, "single"))
+    pair_orca_file_list = os.listdir(os.path.join(input_dir, "pair"))
     orca_files_to_run = []
     for file_name in single_orca_file_list:
         if file_name[-4:] == ".inp":
-            orca_files_to_run.append(input_dir + "/single/" + file_name)
+            orca_files_to_run.append(os.path.join(input_dir, "single", file_name))
     for file_name in pair_orca_file_list:
         if file_name[-4:] == ".inp":
-            orca_files_to_run.append(input_dir + "/pair/" + file_name)
+            orca_files_to_run.append(os.path.join(input_dir, "pair", file_name))
     orca_files_to_run.sort()
     if parameter_dict["overwrite_current_data"] is False:
         # Do not run any jobs that have already have an output file (and so have
@@ -345,15 +331,12 @@ def main(
     parameter_dict,
     chromophore_list,
 ):
-    print(parameter_dict["output_morph_dir"])
     # Get the random seed now for all the child processes
-    np.random.seed(hf.obtain_random_seed())
+    if parameter_dict["random_seed_override"] is not None:
+        np.random.seed(parameter_dict["random_seed_override"])
     create_input_files(chromophore_list, AA_morphology_dict, parameter_dict)
-    input_dir = (
-        parameter_dict["output_morph_dir"]
-        + "/"
-        + parameter_dict["morphology"][:-4]
-        + "/chromophores/input_orca"
+    input_dir = os.path.join(
+        parameter_dict["output_orca_directory"], "chromophores", "input_orca"
     )
     proc_IDs = parameter_dict["proc_IDs"]
     jobs_list = get_orca_jobs(input_dir, parameter_dict, proc_IDs)
@@ -378,11 +361,11 @@ def main(
                     [
                         "python",
                         SINGLE_ORCA_RUN_FILE,
-                        parameter_dict["output_morph_dir"]
-                        + "/"
-                        + parameter_dict["morphology"][:-4],
+                        parameter_dict["output_orca_directory"],
+                        parameter_dict["output_morphology_directory"],
                         str(CPU_rank),
                         str(int(parameter_dict["overwrite_current_data"])),
+                        str(int(parameter_dict["remove_orca_inputs"])),
                     ]
                 )
             )

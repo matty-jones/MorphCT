@@ -1,6 +1,10 @@
 import sys
 import numpy as np
-from hoomd_script import *
+
+try:
+    from hoomd_script import *
+except ImportError:
+    print("HOOMD 1.3 NOT FOUND. FINE_GRAINING AND RUN_HOOMD WILL NOT WORK.")
 from morphct.code import helper_functions as hf
 
 
@@ -9,7 +13,7 @@ class ExitHOOMD(Exception):
     a particular reason (e.g. minimum KE found)"""
 
     def __init__(self, string):
-        self.string = string + " at timestep = " + str(get_step())
+        self.string = "".join([string, " at timestep = {:d}".format(get_step())])
 
     def __str__(self):
         return self.string
@@ -71,13 +75,11 @@ class md_phase:
         self.rigid_group, self.non_rigid_group, self.integration_types = (
             self.get_integration_groups()
         )
-        self.output_log_file_name = (
-            self.output_morph_dir
-            + "/"
-            + self.morphology[:-4]
-            + "/morphology/energies_"
-            + self.morphology[:-4]
-            + ".log"
+        self.output_log_file_name = os.path.join(
+            self.output_morph_dir,
+            os.path.splitext(self.morphology)[0],
+            "morphology",
+            "".join(["energies_", os.path.splitext(self.morphology)[0], ".log"]),
         )
         # Determine which quantities should be logged during the simulation
         # phase
@@ -232,7 +234,7 @@ class md_phase:
         # First find all of the forcefields specified in the par file
         all_FF_names = {}
         for CG_site, directory in self.CG_to_template_dirs.items():
-            FF_loc = directory + "/" + self.CG_to_template_force_fields[CG_site]
+            FF_loc = os.path.join(directory, self.CG_to_template_force_fields[CG_site])
             if FF_loc not in list(all_FF_names.values()):
                 all_FF_names[CG_site] = FF_loc
         FF_list = []
@@ -262,7 +264,7 @@ class md_phase:
         self.pair_class = None
         if self.pair_type.lower() != "none":
             # Log the correct pairType energy
-            self.log_quantities.append("pair_" + self.pair_type + "_energy")
+            self.log_quantities.append("".join(["pair_", self.pair_type, "_energy"]))
             # HOOMD crashes if you don't specify all pair combinations, so need
             # to make sure we do this.
             atom_types = sorted(
@@ -274,8 +276,8 @@ class md_phase:
             # coefficients are set
             for atom_type1 in atom_types:
                 for atom_type2 in atom_types:
-                    pair_type = str(atom_type1) + "-" + str(atom_type2)
-                    reverse_pair_type = str(atom_type2) + "-" + str(atom_type1)
+                    pair_type = "{0}-{1}".format(atom_type1, atom_type2)
+                    reverse_pair_type = "{1}-{0}".format(atom_type1, atom_type2)
                     if (pair_type not in all_pair_types) and (
                         reverse_pair_type not in all_pair_types
                     ):
@@ -308,7 +310,9 @@ class md_phase:
                             gamma=self.pair_dpd_gamma_val,
                         )
                         try:
-                            all_pair_types.remove(atom_type1 + "-" + atom_type2)
+                            all_pair_types.remove(
+                                "{0}-{1}".format(atom_type1, atom_type2)
+                            )
                         except:
                             pass
                 # Because we've been removing each pair from allPairTypes, all
@@ -345,7 +349,9 @@ class md_phase:
                             ),
                         )
                         try:
-                            all_pair_types.remove(atom_type1 + "-" + atom_type2)
+                            all_pair_types.remove(
+                                "{0}-{1}".format(atom_type1, atom_type2)
+                            )
                         except:
                             pass
                 # Because we've been removing each pair from allPairTypes, all
@@ -368,7 +374,9 @@ class md_phase:
         # Real bonds
         if self.bond_type.lower() == "harmonic":
             if len(self.bond_coeffs) > 0:
-                self.log_quantities.append("bond_" + self.bond_type + "_energy")
+                self.log_quantities.append(
+                    "".join(["bond_", self.bond_type, "_energy"])
+                )
             self.bond_class = bond.harmonic()
             for bond_coeff in self.bond_coeffs:
                 # [k] = kcal mol^{-1} \AA^{-2} * episilon/sigma^{2}, [r0] =
@@ -383,13 +391,15 @@ class md_phase:
             # bond k values to 0.
             if self.group_anchoring.lower() == "all":
                 group_anchoring_types = [
-                    "X" + CG_type for CG_type in list(self.CG_to_template_AAIDs.keys())
+                    "".join(["X", CG_type])
+                    for CG_type in list(self.CG_to_template_AAIDs.keys())
                 ]
             elif self.group_anchoring.lower() == "none":
                 group_anchoring_types = []
             else:
                 group_anchoring_types = [
-                    "X" + CG_type for CG_type in self.group_anchoring.split(",")
+                    "".join(["X", CG_type])
+                    for CG_type in self.group_anchoring.split(",")
                 ]
             anchor_bond_types = []
             no_anchor_bond_types = []
@@ -417,7 +427,7 @@ class md_phase:
         # Set Angle Coeffs
         self.angle_class = None
         if len(self.angle_coeffs) > 0:
-            self.log_quantities.append("angle_" + self.angle_type + "_energy")
+            self.log_quantities.append("".join(["angle_", self.angle_type, "_energy"]))
             if self.angle_type.lower() == "harmonic":
                 self.angle_class = angle.harmonic()
                 for angle_coeff in self.angle_coeffs:
@@ -437,7 +447,9 @@ class md_phase:
         # Set Dihedral Coeffs
         self.dihedral_class = None
         if len(self.dihedral_coeffs) > 0:
-            self.log_quantities.append("dihedral_" + self.dihedral_type + "_energy")
+            self.log_quantities.append(
+                "".join(["dihedral_", self.dihedral_type, "_energy"])
+            )
             if self.dihedral_type.lower() == "table":
                 self.dihedral_class = dihedral.table(width=1000)
                 for dihedral_coeff in self.dihedral_coeffs:
@@ -488,7 +500,9 @@ class md_phase:
         else:
             integration_types = self.integration_target.split(",")
         # Add in any rigid ghost particles that might need to be integrated too
-        ghost_integration_types = ["R" + type_name for type_name in integration_types]
+        ghost_integration_types = [
+            "".join(["R", type_name]) for type_name in integration_types
+        ]
         atom_IDs_to_integrate = []
         for molecule in self.CG_to_AAID_master:
             for CG_site_ID in list(molecule.keys()):
@@ -539,8 +553,8 @@ def obtain_scale_factors(parameter_dict):
     # / largestEpsilon
     LJFFs = []
     for CG_site, directory in parameter_dict["CG_to_template_dirs"].items():
-        FF_loc = (
-            directory + "/" + parameter_dict["CG_to_template_force_fields"][CG_site]
+        FF_loc = os.path.join(
+            directory, parameter_dict["CG_to_template_force_fields"][CG_site]
         )
         FF = hf.load_FF_xml(FF_loc)
         LJFFs += FF["lj"]
@@ -551,16 +565,17 @@ def obtain_scale_factors(parameter_dict):
 
 def scale_morphology(initial_morphology, parameter_dict, s_scale, e_scale):
     # If sScale != 1.0, then scale the morphology and rewrite the phase0 xml
-    print("Scaling morphology by sigma =", str(1 / s_scale) + "...")
+    print("Scaling morphology by sigma = {:f}...".format(1 / s_scale))
     if s_scale != 1.0:
         hf.scale(initial_morphology, s_scale)
     hf.write_morphology_xml(
         initial_morphology,
-        parameter_dict["output_morph_dir"]
-        + "/"
-        + parameter_dict["morphology"][:-4]
-        + "/morphology/phase0_"
-        + parameter_dict["morphology"],
+        os.path.join(
+            parameter_dict["output_morph_dir"],
+            os.path.splitext(parameter_dict["morphology"])[0],
+            "morphology",
+            "".join(["phase0_", parameter_dict["morphology"]]),
+        ),
     )
 
 
@@ -572,7 +587,8 @@ def main(
     chromophore_list,
 ):
     # Get the random seed now for all the child processes
-    np.random.seed(hf.obtain_random_seed())
+    if parameter_dict["random_seed_override"] is not None:
+        np.random.seed(parameter_dict["random_seed_override"])
     # Main execution function for run_HOOMD that performs the required MD phases
     # First, scale the input morphology based on the pair potentials such that
     # the distances and energies are normalised to the strongest pair
@@ -580,10 +596,11 @@ def main(
     # HOOMDs calculations and ensures that T = 1.0 is an interesting temperature
     # threshold)
     current_files = os.listdir(
-        parameter_dict["output_morph_dir"]
-        + "/"
-        + parameter_dict["morphology"][:-4]
-        + "/morphology"
+        os.path.join(
+            parameter_dict["output_morph_dir"],
+            os.path.splitext(parameter_dict["morphology"])[0],
+            "morphology",
+        )
     )
     # sScale, eScale = obtainScaleFactors(parameterDict)
     print("Under the hood eScaling and sScaling has been disabled.")
@@ -591,7 +608,7 @@ def main(
     e_scale = 1.0
     # Only scale the morphology if it hasn't been already
     if (parameter_dict["overwrite_current_data"] is False) and (
-        "phase0_" + parameter_dict["morphology"] in current_files
+        "".join(["phase0_", parameter_dict["morphology"]]) in current_files
     ):
         pass
     else:
@@ -599,19 +616,27 @@ def main(
     # Reset logfile
     try:
         os.remove(
-            parameter_dict["output_morph_dir"]
-            + "/"
-            + parameter_dict["morphology"][:-4]
-            + "/morphology/energies_"
-            + parameter_dict["morphology"][:-4]
-            + ".log"
+            os.path.join(
+                parameter_dict["output_morph_dir"],
+                os.path.splitext(parameter_dict["morphology"])[0],
+                "morphology",
+                "".join(
+                    [
+                        "energies_",
+                        os.path.splitext(parameter_dict["morphology"])[0],
+                        ".log",
+                    ]
+                ),
+            )
         )
     except OSError:
         pass
     # Perform each molecular dynamics phase as specified in the parXX.py
     for phase_no in range(parameter_dict["number_of_phases"]):
-        input_file = "phase" + str(phase_no) + "_" + parameter_dict["morphology"]
-        output_file = "phase" + str(phase_no + 1) + "_" + parameter_dict["morphology"]
+        input_file = "phase{0:d}_{1:s}".format(phase_no, parameter_dict["morphology"])
+        output_file = "phase{0:d}_{1:s}".format(
+            phase_no + 1, parameter_dict["morphology"]
+        )
         if output_file in current_files:
             if parameter_dict["overwrite_current_data"] is False:
                 print(output_file, "already exists. Skipping...")
@@ -622,36 +647,38 @@ def main(
             CG_to_AAID_master,
             parameter_dict,
             phase_no,
-            parameter_dict["output_morph_dir"]
-            + "/"
-            + parameter_dict["morphology"][:-4]
-            + "/morphology/"
-            + input_file,
-            parameter_dict["output_morph_dir"]
-            + "/"
-            + parameter_dict["morphology"][:-4]
-            + "/morphology/"
-            + output_file,
+            os.path.join(
+                parameter_dict["output_morph_dir"],
+                os.path.splitext(parameter_dict["morphology"])[0],
+                "morphology",
+                input_file,
+            ),
+            os.path.join(
+                parameter_dict["output_morph_dir"],
+                os.path.splitext(parameter_dict["morphology"])[0],
+                "morphology",
+                output_file,
+            ),
             s_scale,
             e_scale,
         ).optimise_structure()
-    final_xml_name = (
-        parameter_dict["output_morph_dir"]
-        + "/"
-        + parameter_dict["morphology"][:-4]
-        + "/morphology/final_"
-        + parameter_dict["morphology"]
+    final_xml_name = os.path.join(
+        parameter_dict["output_morph_dir"],
+        os.path.splitext(parameter_dict["morphology"])[0],
+        "morphology",
+        "".join(["final_", parameter_dict["morphology"]]),
     )
-    if "final_" + parameter_dict["morphology"] not in current_files:
+    if "".join(["final_", parameter_dict["morphology"]]) not in current_files:
         # Now all phases are complete, remove the ghost particles from the
         # system
         print("Removing ghost particles to create final output...")
         remove_ghost_particles(
-            parameter_dict["output_morph_dir"]
-            + "/"
-            + parameter_dict["morphology"][:-4]
-            + "/morphology/"
-            + output_file,
+            os.path.join(
+                parameter_dict["output_morph_dir"],
+                os.path.splitext(parameter_dict["morphology"])[0],
+                "morphology",
+                output_file,
+            ),
             final_xml_name,
             sigma=s_scale,
         )
@@ -675,12 +702,12 @@ def main(
             parameter_dict,
             chromophore_list,
         ),
-        parameter_dict["output_morph_dir"]
-        + "/"
-        + parameter_dict["morphology"][:-4]
-        + "/code/"
-        + parameter_dict["morphology"][:-4]
-        + ".pickle",
+        os.path.join(
+            parameter_dict["output_morph_dir"],
+            os.path.splitext(parameter_dict["morphology"])[0],
+            "code",
+            "".join([os.path.splitext(parameter_dict["morphology"])[0], ".pickle"]),
+        ),
     )
     return (
         AA_morphology_dict,

@@ -74,12 +74,6 @@ class carrier:
             self.use_koopmans_approximation = parameter_dict[
                 "use_koopmans_approximation"
             ]
-            if self.use_koopmans_approximation:
-                self.koopmans_hopping_prefactor = parameter_dict[
-                    "koopmans_hopping_prefactor"
-                ]
-            else:
-                self.koopmans_hopping_prefactor = 1.0
         except KeyError:
             self.use_koopmans_approximation = False
         # Are we using a simple Boltzmann penalty?
@@ -96,6 +90,10 @@ class carrier:
             self.use_VRH = False
         if self.use_VRH is True:
             self.VRH_delocalisation = self.current_chromophore.VRH_delocalisation
+        try:
+            self.hopping_prefactor = parameter_dict["hopping_prefactor"]
+        except KeyError:
+            self.hopping_prefactor = 1.0
 
     def calculate_hop(self, chromophore_list):
         # Terminate if the next hop would be more than the termination limit
@@ -133,11 +131,8 @@ class carrier:
                 delta_E_ij = self.current_chromophore.neighbours_delta_E[
                     neighbour_index
                 ]
-                # Create a hopping prefactor that can be modified if we're
-                # using Koopmans' approximation
-                prefactor = 1.0
-                if self.use_koopmans_approximation:
-                    prefactor *= self.koopmans_hopping_prefactor
+                # Load the specified hopping prefactor
+                prefactor = self.hopping_prefactor
                 # Get the relative image so we can update the carrier image
                 # after the hop
                 relative_image = self.current_chromophore.neighbours[neighbour_index][1]
@@ -266,7 +261,7 @@ def save_pickle(save_data, save_pickle_name):
     with open(save_pickle_name, "wb+") as pickle_file:
         pickle.dump(save_data, pickle_file)
     hf.write_to_file(
-        log_file, ["Pickle file saved successfully as " + save_pickle_name + "!"]
+        log_file, ["".join(["Pickle file saved successfully as", save_pickle_name])]
     )
 
 
@@ -341,7 +336,9 @@ def update_molecule(atom_ID, molecule_list, bonded_atoms):
     return molecule_list
 
 
-if __name__ == "__main__":
+def main():
+    global log_file
+
     KMC_directory = sys.argv[1]
     CPU_rank = int(sys.argv[2])
     np.random.seed(int(sys.argv[3]))
@@ -352,14 +349,16 @@ if __name__ == "__main__":
         pass
     # Load `jobs_to_run' which is a list, where each element contains the
     # [carrier.ID, carrier.lifetime, carrier.carrierType]
-    pickle_file_name = KMC_directory + "/KMC_data_%02d.pickle" % (CPU_rank)
+    pickle_file_name = os.path.join(
+        KMC_directory, "KMC_data_{:02d}.pickle".format(CPU_rank)
+    )
     with open(pickle_file_name, "rb") as pickle_file:
         jobs_to_run = pickle.load(pickle_file)
-    log_file = KMC_directory + "/KMC_log_%02d.log" % (CPU_rank)
+    log_file = os.path.join(KMC_directory, "KMC_log_{:02d}.log".format(CPU_rank))
     # Reset the log file
     with open(log_file, "wb+") as log_file_handle:
         pass
-    hf.write_to_file(log_file, ["Found " + str(len(jobs_to_run)) + " jobs to run."])
+    hf.write_to_file(log_file, ["Found {:d} jobs to run".format(len(jobs_to_run))])
     # Set the affinities for this current process to make sure it's maximising
     # available CPU usage
     current_PID = os.getpid()
@@ -382,9 +381,13 @@ if __name__ == "__main__":
     hf.write_to_file(
         log_file,
         [
-            "Found main morphology pickle file at "
-            + main_morphology_pickle_name
-            + "! loading data..."
+            "".join(
+                [
+                    "Found main morphology pickle file at ",
+                    main_morphology_pickle_name,
+                    "! loading data...",
+                ]
+            )
         ],
     )
     pickle_data = hf.load_pickle(main_morphology_pickle_name)
@@ -494,46 +497,46 @@ if __name__ == "__main__":
             else:
                 elapsed_time /= 86400.0
                 time_units = "days."
-            elapsed_time = "%.1f" % (float(elapsed_time))
             hf.write_to_file(
                 log_file,
                 [
-                    str(this_carrier.carrier_type).capitalize()
-                    + " hopped "
-                    + str(this_carrier.no_hops)
-                    + " times, over "
-                    + str(this_carrier.current_time)
-                    + " seconds, into image "
-                    + str(this_carrier.image)
-                    + ", for a displacement of "
-                    + str(this_carrier.displacement)
-                    + ", in "
-                    + str(elapsed_time)
-                    + " wall-clock "
-                    + str(time_units)
+                    "".join(
+                        [
+                            "{0:s} hopped {1:d} times, over {2:.2e} seconds, into image ".format(
+                                this_carrier.carrier_type.capitalize(),
+                                this_carrier.no_hops,
+                                this_carrier.current_time,
+                            ),
+                            repr(this_carrier.image),
+                            ", for a displacement of {0:.2f}, in {1:.2f} wall-clock {2:s}".format(
+                                this_carrier.displacement, elapsed_time, time_units
+                            ),
+                        ]
+                    )
                 ],
             )
             # Save the pickle file every hour
             if (t2 - save_time) > 3600:
                 print(
-                    "Completed",
-                    job_number,
-                    "of",
-                    len(jobs_to_run),
-                    "jobs. Making checkpoint at %3d%%"
-                    % (np.round((job_number + 1) / float(len(jobs_to_run)) * 100)),
+                    "Completed {0:d} of {1:d} jobs. Making checkpoint at {2:3d}%%".format(
+                        job_number,
+                        len(jobs_to_run),
+                        np.round((job_number + 1) / float(len(jobs_to_run)) * 100),
+                    )
                 )
                 hf.write_to_file(
                     log_file,
                     [
-                        "Completed "
-                        + str(job_number)
-                        + " jobs. making checkpoint at %3d%%"
-                        % (np.round(job_number / float(len(jobs_to_run)) * 100))
+                        "Completed {0:d} of {1:d} jobs. Making checkpoint at {2:3d}%%".format(
+                            job_number,
+                            len(jobs_to_run),
+                            np.round((job_number + 1) / float(len(jobs_to_run)) * 100),
+                        )
                     ],
                 )
                 save_pickle(
-                    save_data, pickle_file_name.replace("data", save_slot + "_results")
+                    save_data,
+                    pickle_file_name.replace("data", "".join([save_slot, "_results"])),
                 )
                 if save_slot.lower() == "slot1":
                     save_slot = "slot2"
@@ -563,10 +566,14 @@ if __name__ == "__main__":
     else:
         elapsed_time /= 86400.0
         time_units = "days."
-    elapsed_time = "%.1f" % (float(elapsed_time))
     hf.write_to_file(
-        log_file, ["All jobs completed in " + elapsed_time + " " + time_units]
+        log_file,
+        ["All jobs completed in {0:.2f} {1:s}".format(elapsed_time, time_units)],
     )
     hf.write_to_file(log_file, ["Saving the pickle file cleanly before termination..."])
     save_pickle(save_data, pickle_file_name.replace("data", "results"))
     hf.write_to_file(log_file, ["Exiting normally..."])
+
+
+if __name__ == "__main__":
+    main()

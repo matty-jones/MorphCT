@@ -10,7 +10,7 @@ from morphct.code import helper_functions as hf
 
 class orcaError(Exception):
     def __init__(self, file_name):
-        self.string = "No molecular orbital data present for " + str(file_name)
+        self.string = "".join(["No molecular orbital data present for ", file_name])
 
     def __str__(self):
         return self.string
@@ -58,53 +58,81 @@ def modify_orca_files(file_name, failed_file, failed_count, chromophore_list):
     if failed_count == 3:
         # Three lots of reruns without any successes, try to turn off SOSCF
         print(
-            str(file_name) + ": Three lots of reruns without any success -"
-            " turning off SOSCF to see if that helps..."
+            "".join(
+                [
+                    file_name,
+                    ": Three lots of reruns without any success -"
+                    " turning off SOSCF to see if that helps...",
+                ]
+            )
         )
         turn_off_soscf(failed_file)
     elif failed_count == 6:
         # Still no joy - increase the number of SCF iterations and see if
         # convergence was just slow
         print(
-            str(file_name) + ": Six lots of reruns without any success -"
-            " increasing the number of SCF iterations to 500..."
+            "".join(
+                [
+                    file_name,
+                    ": Six lots of reruns without any success -"
+                    " increasing the number of SCF iterations to 500...",
+                ]
+            )
         )
         increase_iterations(failed_file)
     elif failed_count == 9:
         # Finally, turn down the SCF tolerance
         print(
-            str(file_name) + ": Nine lots of reruns without any success -"
-            " decreasing SCF tolerance (sloppySCF)..."
+            "".join(
+                [
+                    file_name,
+                    ": Nine lots of reruns without any success -"
+                    " decreasing SCF tolerance (sloppySCF)...",
+                ]
+            )
         )
         reduce_tolerance(failed_file)
     elif failed_count == 12:
         print(
-            str(file_name) + ": Failed to rerun orca 12 times, one final thing"
-            " that can be done is to change the numerical accuracy..."
+            "".join(
+                [
+                    file_name,
+                    ": Failed to rerun orca 12 times, one final thing"
+                    " that can be done is to change the numerical accuracy...",
+                ]
+            )
         )
         revert_orca_files(failed_file)
         increase_grid(failed_file)
     elif failed_count == 15:
         print(
-            str(file_name) + ": Failed to rerun orca 15 times. Will try high"
-            " numerical accuracy with no SOSCF as a last-ditch effort..."
+            "".join(
+                [
+                    file_name,
+                    ": Failed to rerun orca 15 times. Will try high"
+                    " numerical accuracy with no SOSCF as a last-ditch effort...",
+                ]
+            )
         )
         increase_grid_no_soscf(failed_file)
     elif failed_count == 18:
         # SERIOUS PROBLEM
         print(
-            str(file_name) + ": Failed to rerun orca 18 times, even with all"
-            " the input file tweaks. Examine the geometry - it is most likely"
-            " unreasonable."
+            "".join(
+                [
+                    file_name,
+                    ": Failed to rerun orca 18 times, even with all"
+                    " the input file tweaks. Examine the geometry - it is most likely"
+                    " unreasonable.",
+                ]
+            )
         )
-        file_string = file_name[
-            [index for index, char in enumerate(file_name) if char == "/"][-1] + 1 : -4
-        ]
+        file_string = os.path.splitext(os.path.split(file_name)[1])[0]
         for chromo_string in file_string.split("-"):
             chromo_ID = int(chromo_string)
             print("AAIDs for chromophore", chromo_ID)
-            print(chromophoreList[chromoID].AAIDs)
-        print("Reverting " + str(file_name) + " back to its original state...")
+            print(chromophore_list[chromo_ID].AAIDs)
+        print("Reverting {:s} back to its original state...".format(file_name))
         revert_orca_files(failed_file)
         return 1
     return 0
@@ -157,7 +185,7 @@ def revert_orca_files(input_file):
     original_lines[3] = "! ZINDO/S\n"
     for line_no in range(len(original_lines)):
         # REMOVE THE SCF ITER
-        if "%scf MazIter" in original_lines[line_no]:
+        if "%scf MaxIter" in original_lines[line_no]:
             original_lines.pop(line_no)
             break
     with open(input_file, "w+") as file_name:
@@ -167,11 +195,12 @@ def revert_orca_files(input_file):
 def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
     print("")
     print(failed_chromo_files)
-    print("There were", len(list(failed_chromo_files.keys())), "failed jobs.")
+    number_of_fails = len(list(failed_chromo_files.keys()))
+    if number_of_fails == 1:
+        print("There was 1 failed job.")
+    else:
+        print("There were {:d} failed jobs.".format(number_of_fails))
     proc_IDs = parameter_dict["proc_IDs"]
-    output_dir = (
-        parameter_dict["output_morph_dir"] + "/" + parameter_dict["morphology"][:-4]
-    )
     pop_list = []
     permanently_failed = {}
     # Firstly, modify the input files to see if numerical tweaks make orca
@@ -180,9 +209,12 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
         failed_count = failed_data[0]
         error_code = modify_orca_files(
             failed_file,
-            output_dir
-            + "/chromophores/input_orca/"
-            + failed_file.replace(".out", ".inp"),
+            os.path.join(
+                parameter_dict["output_orca_directory"],
+                "chromophores",
+                "input_orca",
+                failed_file.replace(".out", ".inp"),
+            ),
             failed_count,
             chromophore_list,
         )
@@ -201,7 +233,12 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
     # Otherwise, rerun those failed files.
     # First, find the correct locations of the input Files
     input_files = [
-        output_dir + "/chromophores/input_orca/" + file_name.replace(".out", ".inp")
+        os.path.join(
+            parameter_dict["output_orca_directory"],
+            "chromophores",
+            "input_orca",
+            file_name.replace(".out", ".inp"),
+        )
         for file_name in list(failed_chromo_files.keys())
     ]
     # As before, split the list of reruns based on the number of processors
@@ -213,7 +250,12 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
     ]
     print(jobs_list)
     # Write the jobs pickle for single_core_run_orca to obtain
-    with open(output_dir + "/chromophores/orca_jobs.pickle", "wb+") as pickle_file:
+    with open(
+        os.path.join(
+            parameter_dict["output_orca_directory"], "chromophores", "orca_jobs.pickle"
+        ),
+        "wb+",
+    ) as pickle_file:
         pickle.dump(jobs_list, pickle_file)
     # Now rerun orca
     if len(jobs_list) <= len(proc_IDs):
@@ -223,7 +265,17 @@ def rerun_fails(failed_chromo_files, parameter_dict, chromophore_list):
         # The final argument here tells orca to ignore the presence of the
         # output file and recalculate
         running_jobs.append(
-            sp.Popen(["python", SINGLE_ORCA_RUN_FILE, output_dir, str(CPU_rank), "1"])
+            sp.Popen(
+                [
+                    "python",
+                    SINGLE_ORCA_RUN_FILE,
+                    parameter_dict["output_orca_directory"],
+                    parameter_dict["output_morphology_directory"],
+                    str(CPU_rank),
+                    "1",
+                    "0",
+                ]
+            )
         )
     # Wait for running jobs to finish
     [p.wait() for p in running_jobs]
@@ -237,19 +289,11 @@ def calculate_delta_E(chromophore_list, chromo1_ID, chromo2_ID):
     chromo2 = chromophore_list[chromo2_ID]
     # NOTE: SANITY CHECK
     if (chromo1.ID != chromo1_ID) or (chromo2.ID != chromo2_ID):
-        print(
-            "chromo1.ID ("
-            + str(chromo1.ID)
-            + ") != chromo1_ID ("
-            + str(chromo1_ID)
-            + "), or chromo2.ID"
-            " ("
-            + str(chromo2.ID)
-            + ") != chromo2_ID ("
-            + str(chromo2_ID)
-            + ")! CHECK CODE!"
+        raise SystemError(
+            "chromo1.ID ({0:d}) != chromo1_ID ({1:d}), or chromo2.ID ({2:d}) != chromo2_ID ({3:d})! CHECK CODE!".format(
+                chromo1.ID, chromo1_ID, chromo2.ID, chromo2_ID
+            )
         )
-        exit()
     # END OF SANITY CHECK
     if chromo1.species.lower() == "donor":
         # Hole transporter
@@ -279,11 +323,8 @@ def calculate_TI(orbital_splitting, delta_E):
 
 
 def update_single_chromophore_list(chromophore_list, parameter_dict):
-    orca_output_dir = (
-        parameter_dict["output_morph_dir"]
-        + "/"
-        + parameter_dict["morphology"][:-4]
-        + "/chromophores/output_orca/"
+    orca_output_dir = os.path.join(
+        parameter_dict["output_orca_directory"], "chromophores", "output_orca"
     )
     # NOTE: This can possibly be done by recursively iterating through the
     # neighbourlist of each chromophore, but I imagine Python will whinge about
@@ -295,18 +336,28 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
     # location_in_chromophore_list]}
     failed_single_chromos = {}
     for chromo_location, chromophore in enumerate(chromophore_list):
-        file_name = "single/%05d.out" % (chromophore.ID)
+        file_name = "single/{:05d}.out".format(chromophore.ID)
         print("\rDetermining energy levels for", file_name, end=" ")
         if sys.stdout is not None:
             sys.stdout.flush()
         # Update the chromophores in the chromophore_list with their
         # energy_levels
         try:
-            energy_levels = load_orca_output(orca_output_dir + file_name)
+            energy_levels = load_orca_output(os.path.join(orca_output_dir, file_name))
             chromophore.HOMO_1 = energy_levels[0]
             chromophore.HOMO = energy_levels[1]
             chromophore.LUMO = energy_levels[2]
             chromophore.LUMO_1 = energy_levels[3]
+            if parameter_dict["remove_orca_outputs"] is True:
+                try:
+                    os.remove(os.path.join(orca_output_dir, file_name))
+                except FileNotFoundError:
+                    # Already deleted
+                    pass
+            # If this file had originally failed, then we can safely remove it
+            # from the fail list.
+            if file_name in failed_single_chromos.keys():
+                failed_single_chromos.pop(file_name)
         except orcaError:
             failed_single_chromos[file_name] = [1, chromo_location]
             continue
@@ -317,14 +368,14 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
             failed_single_chromos, parameter_dict, chromophore_list
         )
         if len(permanently_failed) > 0:
-            print(permanentlyFailed)
+            print(permanently_failed)
             print("--== CRITICAL ERROR ==--")
             print(
                 "THE ABOVE SINGLE-CHROMOPHORE SYSTEMS FAILED PERMANENTLY. THESE NEED"
                 " FIXING/REMOVING FROM THE SYSTEM BEFORE ANY FURTHER DATA CAN BE"
                 " OBTAINED."
             )
-            raise SystemError("TERMINATING...")
+            exit()
         successful_reruns = []
         # Now check all of the files to see if we can update the
         # chromophore_list
@@ -333,7 +384,9 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
             chromo_ID = chromo_data[1]
             try:
                 # Update the chromophore data in the chromophore_list
-                energy_levels = load_orca_output(orca_output_dir + chromo_name)
+                energy_levels = load_orca_output(
+                    os.path.join(orca_output_dir + chromo_name)
+                )
                 chromophore_list[chromo_ID].HOMO_1 = energy_levels[0]
                 chromophore_list[chromo_ID].HOMO = energy_levels[1]
                 chromophore_list[chromo_ID].LUMO = energy_levels[2]
@@ -341,6 +394,12 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
                 # This chromophore didn't fail, so remove it from the failed
                 # list
                 successful_reruns.append(chromo_name)
+                if parameter_dict["remove_orca_outputs"] is True:
+                    try:
+                        os.remove(os.path.join(orca_output_dir, file_name))
+                    except FileNotFoundError:
+                        # Already deleted
+                        pass
             except orcaError:
                 # This chromophore failed so increment its fail counter
                 failed_single_chromos[chromo_name][0] += 1
@@ -348,17 +407,6 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
         for chromo_name in successful_reruns:
             failed_single_chromos.pop(chromo_name)
     print("")
-    # Finally, delete any of the files that need to be deleted.
-    if parameter_dict["remove_orca_inputs"] is True:
-        print("Deleting orca input files...")
-        for file_name in glob.glob(
-            orca_output_dir.replace("output_orca", "input_orca") + "single/*.*"
-        ):
-            os.remove(file_name)
-    if parameter_dict["remove_orca_outputs"] is True:
-        print("Deleting orca output files...")
-        for file_name in glob.glob(orca_output_dir + "single/*.*"):
-            os.remove(file_name)
     return chromophore_list
 
 
@@ -367,11 +415,8 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
     # through again and check the neighbours, rerunning the pair file if it
     # failed (which it won't have done because all my chromophores are
     # delicious now).
-    orca_output_dir = (
-        parameter_dict["output_morph_dir"]
-        + "/"
-        + parameter_dict["morphology"][:-4]
-        + "/chromophores/output_orca/"
+    orca_output_dir = os.path.join(
+        parameter_dict["output_orca_directory"], "chromophores", "output_orca"
     )
     failed_pair_chromos = {}
     for chromo_location, chromophore in enumerate(chromophore_list):
@@ -379,16 +424,28 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
         for neighbour_loc, neighbour_ID in enumerate(neighbour_IDs):
             if chromophore.ID > neighbour_ID:
                 continue
-            file_name = "pair/%05d-%05d.out" % (chromophore.ID, neighbour_ID)
+            file_name = "pair/{0:05d}-{1:05d}.out".format(chromophore.ID, neighbour_ID)
             print("\rDetermining energy levels for", file_name, end=" ")
             if sys.stdout is not None:
                 sys.stdout.flush()
             try:
-                energy_levels = load_orca_output(orca_output_dir + file_name)
+                energy_levels = load_orca_output(
+                    os.path.join(orca_output_dir, file_name)
+                )
                 dimer_HOMO_1 = energy_levels[0]
                 dimer_HOMO = energy_levels[1]
                 dimer_LUMO = energy_levels[2]
                 dimer_LUMO_1 = energy_levels[3]
+                if parameter_dict["remove_orca_outputs"] is True:
+                    try:
+                        os.remove(os.path.join(orca_output_dir, file_name))
+                    except FileNotFoundError:
+                        # Already deleted
+                        pass
+                # If this file had originally failed, then we can safely remove it
+                # from the fail list.
+                if file_name in failed_pair_chromos.keys():
+                    failed_pair_chromos.pop(file_name)
             except orcaError:
                 failed_pair_chromos[file_name] = [1, chromo_location, neighbour_ID]
                 continue
@@ -504,7 +561,9 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
             chromo1_ID = chromo_data[1]
             chromo2_ID = chromo_data[2]
             try:
-                energy_levels = load_orca_output(orca_output_dir + file_name)
+                energy_levels = load_orca_output(
+                    os.path.join(orca_output_dir, file_name)
+                )
                 dimer_HOMO_1 = energy_levels[0]
                 dimer_HOMO = energy_levels[1]
                 dimer_LUMO = energy_levels[2]
@@ -583,17 +642,6 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
         for file_name in successful_reruns:
             failed_pair_chromos.pop(file_name)
     print("")
-    # Finally, delete any of the files that need to be deleted.
-    if parameter_dict["remove_orca_inputs"] is True:
-        print("Deleting orca input files...")
-        for file_name in glob.glob(
-            orca_output_dir.replace("output_orca", "input_orca") + "pair/*.*"
-        ):
-            os.remove(file_name)
-    if parameter_dict["remove_orca_outputs"] is True:
-        print("Deleting orca output files...")
-        for file_name in glob.glob(orca_output_dir + "pair/*.*"):
-            os.remove(file_name)
     return chromophore_list
 
 
@@ -631,20 +679,20 @@ def scale_energies(chromophore_list, parameter_dict):
         chromo.LUMO += E_shift
         chromo.LUMO_1 += E_shift
 
-        # if target_DOS_std > std_MO:
-        #     # Determine how many sigmas away from the mean this datapoint is
-        #     sigma = (chromo.get_MO_energy() - av_MO) / std_MO
-        #     # Calculate the new deviation from the mean based on the target
-        #     # STD and sigma
-        #     newDeviation = target_DOS_std * sigma
-        #     # Work out the change in energy to be applied to meet this target
-        #     # energy level
-        #     delta_E = (av_MO + newDeviation) - chromo.get_MO_energy()
-        #     # Apply the energy level displacement
-        #     chromo.HOMO_1 += delta_E
-        #     chromo.HOMO += delta_E
-        #     chromo.LUMO += delta_E
-        #     chromo.LUMO_1 += delta_E
+        if (target_DOS_std is not None) and (target_DOS_std > std_MO):
+            # Determine how many sigmas away from the mean this datapoint is
+            sigma = (chromo.get_MO_energy() - av_MO) / std_MO
+            # Calculate the new deviation from the mean based on the target
+            # STD and sigma
+            newDeviation = target_DOS_std * sigma
+            # Work out the change in energy to be applied to meet this target
+            # energy level
+            delta_E = (av_MO + newDeviation) - chromo.get_MO_energy()
+            # Apply the energy level displacement
+            chromo.HOMO_1 += delta_E
+            chromo.HOMO += delta_E
+            chromo.LUMO += delta_E
+            chromo.LUMO_1 += delta_E
     return chromophore_list
 
 
@@ -656,10 +704,9 @@ def main(
     chromophore_list,
 ):
     pickle_name = os.path.join(
-        parameter_dict["output_morph_dir"],
-        parameter_dict["morphology"][:-4],
+        parameter_dict["output_morphology_directory"],
         "code",
-        "".join([parameter_dict["morphology"][:-4], ".pickle"]),
+        "".join([os.path.splitext(parameter_dict["morphology"])[0], ".pickle"]),
     )
     # First, check that we need to examine the single chromophores
     run_singles = False

@@ -27,16 +27,17 @@ temperature = 290  # K
 
 
 def load_KMC_results_pickle(directory):
+    KMC_pickle = os.path.join(directory, "KMC", "KMC_results.pickle")
     try:
-        with open(directory + "/KMC/KMC_results.pickle", "rb") as pickle_file:
+        with open(KMC_pickle, "rb") as pickle_file:
             carrier_data = pickle.load(pickle_file)
     except FileNotFoundError:
         print("No final KMC_results.pickle found. Creating it from incomplete parts...")
         create_results_pickle(directory)
-        with open(directory + "/KMC/KMC_results.pickle", "rb") as pickle_file:
+        with open(KMC_pickle, "rb") as pickle_file:
             carrier_data = pickle.load(pickle_file)
     except UnicodeDecodeError:
-        with open(directory + "/KMC/KMC_results.pickle", "rb") as pickle_file:
+        with open(KMC_pickle, "rb") as pickle_file:
             carrier_data = pickle.load(pickle_file, encoding="latin1")
     return carrier_data
 
@@ -66,11 +67,11 @@ def split_carriers_by_type(carrier_data):
             carrier_data_holes[list_var] = []
             carrier_data_electrons[list_var] = []
             for carrier_index, charge_type in enumerate(carrier_data["carrier_type"]):
-                if charge_type == "hole":
+                if charge_type.lower() == "hole":
                     carrier_data_holes[list_var].append(
                         carrier_data[list_var][carrier_index]
                     )
-                elif charge_type == "electron":
+                elif charge_type.lower() == "electron":
                     carrier_data_electrons[list_var].append(
                         carrier_data[list_var][carrier_index]
                     )
@@ -163,17 +164,17 @@ def plot_displacement_dist(carrier_data, directory, carrier_type):
     carrier_types = ["hole", "electron"]
     plt.figure()
     plt.hist(np.array(carrier_data["displacement"]) * 0.1, bins=60, color="b")
-    plt.xlabel("Displacement (nm)")
+    plt.xlabel("".join([carrier_type, "Displacement (nm)"]))
     plt.ylabel("Frequency (Arb. U.)")
     # 30 for hole displacement dist, 31 for electron displacement dist
     file_name = "".join(
         [
             "{:02}_".format(30 + carrier_types.index(carrier_type)),
             carrier_type,
-            "_displacement_dist.pdf",
+            "_displacement_dist.png",
         ]
     )
-    plt.savefig(os.path.join(directory, "figures", file_name))
+    plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
     print("Figure saved as", os.path.join(directory, "figures", file_name))
 
 
@@ -183,6 +184,8 @@ def plot_cluster_size_dist(cluster_freqs, directory):
         try:
             sizes = list(cluster_freqs[carrier_type_index].values())
             sizes = [np.log10(size) for size in sizes if size > 5]
+            if len(sizes) == 0:
+                raise IndexError
         except IndexError:
             return
         plt.figure()
@@ -203,10 +206,10 @@ def plot_cluster_size_dist(cluster_freqs, directory):
             [
                 "{:02}_".format(32 + carrier_types.index(carrier_type)),
                 carrier_type,
-                "_cluster_dist.pdf",
+                "_cluster_dist.png",
             ]
         )
-        plt.savefig(os.path.join(directory, "figures", file_name))
+        plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
         print("Figure saved as", os.path.join(directory, "figures", file_name))
 
 
@@ -228,9 +231,7 @@ def create_array_for_plot_connections(chromophore_list, carrier_history, sim_dim
         # Iterate through the neighbors of the chromophore
         for neighbor in zip(chromo.neighbours):
             index = neighbor[0][0]  # index of the neighbor
-            image = neighbor[0][
-                1
-            ]  # check to see if they are in the same relative image
+            image = neighbor[0][1]  # check to see if they are in the same rel image
             # Only consider one direction.
             if i < index:
                 # Get the vector between the two chromophores.
@@ -285,11 +286,11 @@ def plot_connections(
     colour_map = plt.get_cmap("inferno")
     c_norm = matplotlib.colors.Normalize(vmin=np.floor(vmin), vmax=np.ceil(vmax))
     scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=colour_map)
-    hopcolors = scalar_map.to_rgba(connections_array[:, 6])
+    hop_colors = scalar_map.to_rgba(connections_array[:, 6])
 
     # Set up the intensity for the hops so more travelled paths are more intense
     alphas = connections_array[:, 6] / vmax
-    hopcolors[:, 3] = alphas
+    hop_colors[:, 3] = alphas
 
     # Plot the vectors between two chromophores
     ax.quiver(
@@ -299,7 +300,7 @@ def plot_connections(
         connections_array[:, 3],
         connections_array[:, 4],
         connections_array[:, 5],
-        color=hopcolors,
+        color=hop_colors,
         arrow_length_ratio=0,
         linewidth=0.7,
     )
@@ -416,9 +417,12 @@ def plot_connections(
     )
     # plt.title(figure_title, y=1.1)
     # 01 for donor 3d network, 02 for acceptor 3d network
-    file_name = "".join(["{:02}_3d_".format(1 + carrier_index), carrier_type, ".pdf"])
-    plt.savefig(os.path.join(directory, "figures", file_name), bbox_inches="tight")
+    file_name = "".join(["{:02}_3d_".format(1 + carrier_index), carrier_type, ".png"])
+    plt.savefig(
+        os.path.join(directory, "figures", file_name), bbox_inches="tight", dpi=300
+    )
     print("Figure saved as", os.path.join(directory, "figures", file_name))
+
     plt.clf()
 
 
@@ -427,16 +431,18 @@ def calc_mobility(lin_fit_X, lin_fit_Y, av_time_error, av_MSD_error):
     # XVals have a std error avTimeError assosciated with them
     numerator = lin_fit_Y[-1] - lin_fit_Y[0]
     denominator = lin_fit_X[-1] - lin_fit_X[0]
-    diffusion_coeff = numerator / denominator
-    # The error in the mobility is the proportionally the same as the error in the diffusion coefficient as the
+    # Diffusion coeff D = d(MSD)/dt * 1/2n (n = 3 = number of dimensions)
+    # Ref: Carbone2014a (Carbone and Troisi)
+    diffusion_coeff = numerator / (6 * denominator)
+    # The error in the mobility is proportionally the same as the error in the diffusion coefficient as the
     # other variables are constants with zero error
     diff_error = diffusion_coeff * np.sqrt(
         (av_MSD_error / numerator) ** 2 + (av_time_error / denominator) ** 2
     )
-    # Use Einstein relation (include the factor of 1/6!! It is in the Carbone/Troisi 2014 paper)
+    # Use Einstein-Smoluchowski relation
     mobility = (
-        elementary_charge * diffusion_coeff / (6 * kB * temperature)
-    )  # This is in m^{2} / vs
+        elementary_charge * diffusion_coeff / (kB * temperature)
+    )  # This is in m^{2} / Vs
     # Convert to cm^{2}/ Vs
     mobility *= 100 ** 2
     mob_error = (diff_error / diffusion_coeff) * mobility
@@ -459,16 +465,15 @@ def plot_MSD(
     plt.errorbar(times, MSDs, xerr=time_standard_errors, yerr=MSD_standard_errors)
     plt.plot(fit_X, fit_Y, "r")
     plt.xlabel("Time (s)")
-    plt.ylabel("MSD (m" + r"$^{2}$)")
-    mobility_string = "%.3e" % mobility
+    plt.ylabel(r"MSD (m$^{2}$)")
     plt.title(
-        r"$\mu_{0,"
-        + carrier_type[0]
-        + r"}$"
-        + " = "
-        + mobility_string
-        + " cm"
-        + r"$^{2}$/vs" % (mobility),
+        "".join(
+            [
+                r"$\mu_{{{0}, {1}}}$ = {2:.3e} cm$^{{{3}}}$/Vs".format(
+                    0, carrier_type[0], mobility, 2
+                )
+            ]
+        ),
         y=1.1,
     )
     # 18 for hole linear MSD, 19 for electron linear MSD
@@ -476,26 +481,25 @@ def plot_MSD(
         [
             "{:02}_lin_MSD_".format(18 + carrier_types.index(carrier_type)),
             carrier_type,
-            ".pdf",
+            ".png",
         ]
     )
-    plt.savefig(os.path.join(directory, "figures", file_name))
+    plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
     plt.clf()
     print("Figure saved as", os.path.join(directory, "figures", file_name))
     plt.semilogx(times, MSDs)
     plt.errorbar(times, MSDs, xerr=time_standard_errors, yerr=MSD_standard_errors)
     plt.semilogx(fit_X, fit_Y, "r")
     plt.xlabel("Time (s)")
-    plt.ylabel("MSD (m" + r"$^{2}$)")
-    mobility_string = "%.3e" % mobility
+    plt.ylabel(r"MSD (m$^{2}$)")
     plt.title(
-        r"$\mu_{0,"
-        + carrier_type[0]
-        + r"}$"
-        + " = "
-        + mobility_string
-        + " cm"
-        + r"$^{2}$/vs" % (mobility),
+        "".join(
+            [
+                r"$\mu_{{{0}, {1}}}$ = {2:.3e} cm$^{{{3}}}$/Vs".format(
+                    0, carrier_type[0], mobility, 2
+                )
+            ]
+        ),
         y=1.1,
     )
     # 20 for hole semilog MSD, 21 for electron semilog MSD
@@ -503,28 +507,27 @@ def plot_MSD(
         [
             "{:02}_semi_log_MSD_".format(20 + carrier_types.index(carrier_type)),
             carrier_type,
-            ".pdf",
+            ".png",
         ]
     )
-    plt.savefig(os.path.join(directory, "figures", file_name))
+    plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
     plt.clf()
     print("Figure saved as", os.path.join(directory, "figures", file_name))
     plt.plot(times, MSDs)
     plt.errorbar(times, MSDs, xerr=time_standard_errors, yerr=MSD_standard_errors)
     plt.plot(fit_X, fit_Y, "r")
     plt.xlabel("Time (s)")
-    plt.ylabel("MSD (m" + r"$^{2}$)")
+    plt.ylabel(r"MSD (m$^{2}$)")
     plt.xscale("log")
     plt.yscale("log")
-    mobility_string = "%.3e" % mobility
     plt.title(
-        r"$\mu_{0,"
-        + carrier_type[0]
-        + r"}$"
-        + " = "
-        + mobility_string
-        + " cm"
-        + r"$^{2}$/vs" % (mobility),
+        "".join(
+            [
+                r"$\mu_{{{0}, {1}}}$ = {2:.3e} cm$^{{{3}}}$/Vs".format(
+                    0, carrier_type[0], mobility, 2
+                )
+            ]
+        ),
         y=1.1,
     )
     # 22 for hole semilog MSD, 23 for electron semilog MSD
@@ -532,10 +535,10 @@ def plot_MSD(
         [
             "{:02}_log_MSD_".format(22 + carrier_types.index(carrier_type)),
             carrier_type,
-            ".pdf",
+            ".png",
         ]
     )
-    plt.savefig(os.path.join(directory, "figures", file_name))
+    plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
     plt.clf()
     print("Figure saved as", os.path.join(directory, "figures", file_name))
     return mobility, mob_error, r_val ** 2
@@ -575,6 +578,130 @@ def calculate_anisotropy(xvals, yvals, zvals):
     return anisotropy
 
 
+def plot_hop_vectors(
+    carrier_data,
+    AA_morphology_dict,
+    chromophore_list,
+    directory,
+    sim_dims,
+    carrier_type,
+    plot3D_graphs,
+):
+    import matplotlib.colors
+    import matplotlib.cm as cmx
+
+    if not plot3D_graphs:
+        return
+
+    box_lengths = np.array([axis[1] - axis[0] for axis in sim_dims])
+    carrier_history = carrier_data["carrier_history_matrix"]
+    non_zero_coords = list(zip(*carrier_history.nonzero()))
+    hop_vectors = []
+    intensities = []
+    for (chromo1, chromo2) in non_zero_coords:
+        # Find the normal of chromo1 plane (first three atoms)
+        triplet_posn = [
+            np.array(AA_morphology_dict["position"][AAID])
+            for AAID in chromophore_list[chromo1].AAIDs[:3]
+        ]
+        AB = triplet_posn[1] - triplet_posn[0]
+        AC = triplet_posn[2] - triplet_posn[0]
+        normal = np.cross(AB, AC)
+        normal /= np.linalg.norm(normal)
+        # Calculate rotation matrix required to map this onto baseline (0, 0, 1)
+        rotation_matrix = hf.get_rotation_matrix(normal, np.array([0, 0, 1]))
+        # Find the vector from chromo1 to chromo2 (using the correct rleative image)
+        neighbour_IDs = [
+            neighbour[0] for neighbour in chromophore_list[chromo1].neighbours
+        ]
+        nlist_index = neighbour_IDs.index(chromo2)
+        relative_image = np.array(chromophore_list[chromo1].neighbours[nlist_index][1])
+        chromo1_posn = chromophore_list[chromo1].posn
+        chromo2_posn = chromophore_list[chromo2].posn + (relative_image * box_lengths)
+        unrotated_hop_vector = chromo2_posn - chromo1_posn
+        # Apply rotation matrix to chromo1-chromo2 vector
+        hop_vector = np.matmul(rotation_matrix, unrotated_hop_vector)
+        # Store the hop vector and the intensity
+        intensity = np.log10(carrier_history[chromo1, chromo2])
+        hop_vectors.append(hop_vector)
+        intensities.append(intensity)
+
+    # Convert hop_vectors to an np.array
+    hop_vectors = np.array(hop_vectors)
+    # Create a figure class
+    fig = plt.figure(figsize=(7, 6))
+    # Make a 3D subplot
+    ax = fig.add_subplot(111, projection="3d")
+    # Determine the smallest, non-zero number of times two chromophores are connected.
+    I_min = np.min(intensities)
+    # Determine the max number of times two chormophores are connected.
+    I_max = np.max(intensities)
+
+    # Set up the color bar.
+    colour_map = plt.get_cmap("Greys")
+    c_norm = matplotlib.colors.Normalize(vmin=np.floor(I_min), vmax=np.ceil(I_max))
+    scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=colour_map)
+    hop_colors = scalar_map.to_rgba(intensities)
+
+    # # Set up the intensity for the hops so more travelled paths are more intense
+    # alphas = intensities / I_max
+    # hop_colors[:, 3] = alphas
+
+    # Plot the vectors between two chromophores
+    ax.quiver(
+        # X-vals for start of each arrow
+        np.array([0] * len(hop_colors)),
+        # Y-vals for start of each arrow
+        np.array([0] * len(hop_colors)),
+        # Z-vals for start of each arrow
+        np.array([0] * len(hop_colors)),
+        # X-vecs for direction of each arrow
+        hop_vectors[:, 0],
+        # Y-vecs for direction of each arrow
+        hop_vectors[:, 1],
+        # Z-vecs for direction of each arrow
+        hop_vectors[:, 2],
+        color=hop_colors,
+        arrow_length_ratio=0,
+        linewidth=0.7,
+    )
+    ax.set_xlim([-np.max(hop_vectors[:, 0]), np.max(hop_vectors[:, 0])])
+    ax.set_ylim([-np.max(hop_vectors[:, 1]), np.max(hop_vectors[:, 1])])
+    ax.set_zlim([-np.max(hop_vectors[:, 2]), np.max(hop_vectors[:, 2])])
+
+    # Make the colour bar
+    scalar_map.set_array(intensities)
+    # tick_location = np.arange(0, int(np.ceil(vmax)) + 1, 1)
+    tick_location = np.arange(0, I_max, 1)
+    # Plot the colour bar
+    cbar = plt.colorbar(
+        scalar_map, ticks=tick_location, shrink=0.8, aspect=20
+    )  # , fraction=0.046, pad=0.04)
+    cbar.ax.set_yticklabels([r"10$^{{{}}}$".format(int(x)) for x in tick_location])
+
+    # Name and save the figure.
+    carrier_types = ["hole", "electron"]
+    materials_types = ["donor", "acceptor"]
+    carrier_index = carrier_types.index(carrier_type)
+    figure_title = " ".join(
+        [
+            materials_types[carrier_index].capitalize(),
+            "".join(["(", carrier_type.capitalize(), ")"]),
+            "Network",
+        ]
+    )
+    # plt.title(figure_title, y=1.1)
+    # 36 for donor 3d network, 37 for acceptor 3d network
+    file_name = "".join(
+        ["{:02}_hop_vec_".format(36 + carrier_index), carrier_type, ".png"]
+    )
+    plt.savefig(
+        os.path.join(directory, "figures", file_name), bbox_inches="tight", dpi=300
+    )
+    print("Figure saved as", os.path.join(directory, "figures", file_name))
+    plt.clf()
+
+
 def plot_anisotropy(carrier_data, directory, sim_dims, carrier_type, plot3D_graphs):
     sim_extent = [value[1] - value[0] for value in sim_dims]
     xvals = []
@@ -606,8 +733,9 @@ def plot_anisotropy(carrier_data, directory, sim_dims, carrier_type, plot3D_grap
         return anisotropy
     print("----------====================----------")
     print(
-        carrier_type.capitalize() + " charge transport anisotropy calculated as",
-        anisotropy,
+        "{0:s} charge transport anisotropy calculated as {1:f}".format(
+            carrier_type.capitalize(), anisotropy
+        )
     )
     print("----------====================----------")
     # Reduce number of plot markers
@@ -726,53 +854,50 @@ def plot_anisotropy(carrier_data, directory, sim_dims, carrier_type, plot3D_grap
         figure_index = "08"
     elif carrier_type == "electron":
         figure_index = "09"
-    plt.title("Anisotropy (" + carrier_type.capitalize() + ")", y=1.1)
+    plt.title("Anisotropy ({:s})".format(carrier_type.capitalize()), y=1.1)
     file_name = os.path.join(
         directory,
         "figures",
-        "".join([figure_index, "_anisotropy_", carrier_type, ".pdf"]),
+        "".join([figure_index, "_anisotropy_", carrier_type, ".png"]),
     )
-    plt.savefig(file_name, bbox_inches="tight")
+    plt.savefig(file_name, bbox_inches="tight", dpi=300)
     plt.clf()
     print("Figure saved as", file_name)
     return anisotropy
 
 
 def get_temp_val(string):
-    hyphen_list = hf.find_index(string, "-")
-    temp_val = float(string[hyphen_list[-2] + 2 : hyphen_list[-1]])
-    return temp_val
+    return string.split("-")[-2][2:]
 
 
 def get_frame_val(string):
-    hyphen_list = hf.find_index(string, "-")
-    temp_val = int(string[hyphen_list[0] + 1 : hyphen_list[1]])
-    return temp_val
+    return string.split("-")[0][1:]
 
 
 def plot_temperature_progression(
     temp_data, mobility_data, anisotropy_data, carrier_type, x_label
 ):
     plt.gcf()
+    plt.clf()
     xvals = temp_data
     yvals = list(np.array(mobility_data)[:, 0])
     yerrs = list(np.array(mobility_data)[:, 1])
     plt.xlabel(x_label)
-    plt.ylabel("Mobility (cm" + r"$^{2}$ " + "V" + r"$^{-1}$" + r"s$^{-1}$)")
-    plt.semilogy(xvals, yvals, c="k")
+    plt.ylabel(r"Mobility (cm$^{2}$ / Vs)")
     plt.errorbar(xvals, yvals, xerr=0, yerr=yerrs)
-    file_name = "".join(["mobility_", carrier_type, ".pdf"])
-    plt.savefig(file_name)
+    plt.yscale("log")
+    file_name = "".join(["mobility_", carrier_type, ".png"])
+    plt.savefig(file_name, dpi=300)
     plt.clf()
-    print("Figure saved as " + file_name)
+    print("Figure saved as {:s}".format(file_name))
 
     plt.plot(temp_data, anisotropy_data, c="r")
     plt.xlabel(x_label)
-    plt.ylabel(r"$\kappa$" + " (Arb. U)")
-    file_name = "".join(["anisotropy_", carrier_type, ".pdf"])
-    plt.savefig(file_name)
+    plt.ylabel(r"$\kappa$ (Arb. U)")
+    file_name = "".join(["anisotropy_", carrier_type, ".png"])
+    plt.savefig(file_name, dpi=300)
     plt.clf()
-    print("Figure saved as " + file_name)
+    print("Figure saved as {:s}".format(file_name))
 
 
 def calculate_lambda_ij(chromo_length):
@@ -858,7 +983,7 @@ def update_molecule(atom_ID, molecule_list, bonded_atoms):
 
 def plot_neighbour_hist(
     chromophore_list,
-    CG_to_mol_ID,
+    chromo_to_mol_ID,
     morphology_shape,
     output_dir,
     sep_cut_donor,
@@ -874,7 +999,7 @@ def plot_neighbour_hist(
                 continue
             chromo2 = chromophore_list[chromo2_details[0]]
             # Skip any chromophores that are part of the same molecule
-            if CG_to_mol_ID[chromo1.CGIDs[0]] == CG_to_mol_ID[chromo2.CGIDs[0]]:
+            if chromo_to_mol_ID[chromo1.ID] == chromo_to_mol_ID[chromo2.ID]:
                 continue
             separation = np.linalg.norm(
                 (
@@ -919,17 +1044,17 @@ def plot_neighbour_hist(
                 sep_cuts[material_type],
             )
             plt.axvline(float(sep_cuts[material_type]), c="k")
-        plt.xlabel(material[material_type].capitalize() + r" r$_{ij}$" + " (A)")
+        plt.xlabel("".join([material[material_type].capitalize(), r" r$_{i,j}$ (\AA)"]))
         plt.ylabel("Frequency (Arb. U.)")
         # 04 for donor neighbour hist, 05 for acceptor neighbour hist
         file_name = "".join(
             [
                 "{:02}_neighbour_hist_".format(4 + material_type),
                 material[material_type].lower(),
-                ".pdf",
+                ".png",
             ]
         )
-        plt.savefig(os.path.join(output_dir, file_name))
+        plt.savefig(os.path.join(output_dir, file_name), dpi=300)
         plt.close()
         print(
             "Neighbour histogram figure saved as", os.path.join(output_dir, file_name)
@@ -939,7 +1064,7 @@ def plot_neighbour_hist(
 
 def plot_orientation_hist(
     chromophore_list,
-    CG_to_mol_ID,
+    chromo_to_mol_ID,
     orientations_data,
     output_dir,
     o_cut_donor,
@@ -956,7 +1081,7 @@ def plot_orientation_hist(
                 continue
             chromo2 = chromophore_list[chromo2_details[0]]
             # Skip any chromophores that are part of the same molecule
-            if CG_to_mol_ID[chromo1.CGIDs[0]] == CG_to_mol_ID[chromo2.CGIDs[0]]:
+            if chromo_to_mol_ID[chromo1.ID] == chromo_to_mol_ID[chromo2.ID]:
                 continue
             orientation_2 = orientations_data[chromo2_details[0]]
             dot_product = np.dot(orientation_1, orientation_2)
@@ -997,7 +1122,9 @@ def plot_orientation_hist(
                 o_cuts[material_type],
             )
             plt.axvline(float(o_cuts[material_type]), c="k")
-        plt.xlabel(material[material_type].capitalize() + r" orientations" + " (Deg)")
+            plt.xlabel(
+                r"{:s} Orientations (Deg)".format(material[material_type].capitalize())
+            )
         plt.xlim([0, 90])
         plt.xticks(np.arange(0, 91, 15))
         plt.ylabel("Frequency (Arb. U.)")
@@ -1006,10 +1133,10 @@ def plot_orientation_hist(
             [
                 "{:02}_orientation_hist_".format(34 + material_type),
                 material[material_type].lower(),
-                ".pdf",
+                ".png",
             ]
         )
-        plt.savefig(os.path.join(output_dir, file_name))
+        plt.savefig(os.path.join(output_dir, file_name), dpi=300)
         plt.close()
         print(
             "Orientation histogram figure saved as", os.path.join(output_dir, file_name)
@@ -1040,6 +1167,12 @@ def create_cut_off_dict(
                 cut_off_dict[cut_type][material_index] = float(cut)
             except TypeError:
                 pass
+            except ValueError:
+                # Most likely both donor and acceptor cuts have been specified
+                # for this KMCA job, but only one type of carrier is available in
+                # this instance, so we can safely set the opposing carrier type cut
+                # to None.
+                cut_off_dict[cut_type][material_index] = None
     return cut_off_dict
 
 
@@ -1053,11 +1186,12 @@ def get_clusters(
     freud_box = [[AA_morphology_dict[coord] for coord in ["lx", "ly", "lz"]]]
     materials_to_check = ["donor", "acceptor"]
     carriers_to_check = ["hole", "electron"]
-    cluster_freqs = []
-    cluster_dicts = []
+    cluster_freqs = [{}, {}]
+    cluster_dicts = [{}, {}]
     clusters_total = [0, 0]
     clusters_large = [0, 0]
     clusters_biggest = [0, 0]
+    species_psi = [0, 0]
     clusters_cutoffs = [[], []]
     if any(cut is not None for cut in cut_off_dict["separation"]):
         separations = get_separations(chromophore_list, AA_morphology_dict)
@@ -1096,6 +1230,9 @@ def get_clusters(
         cluster_freq = {}
         for cluster_ID in set(clusters_list):
             cluster_freq[cluster_ID] = clusters_list.count(cluster_ID)
+        species_psi[type_index] = sum(
+            [pair for key, pair in cluster_freq.items() if pair > 6]
+        ) / len(clusters_list)
         clusters_total[type_index] = len([key for key, val in cluster_freq.items()])
         clusters_large[type_index] = len(
             [key for key, val in cluster_freq.items() if val > 6]
@@ -1116,9 +1253,14 @@ def get_clusters(
             "clusters with size > 6.",
         )
         print("Largest cluster size =", clusters_biggest[type_index], "chromophores.")
+        print(
+            'Ratio of chromophores in "large" clusters (psi): {:.3f}'.format(
+                species_psi[type_index]
+            )
+        )
         print("----------====================----------")
-        cluster_dicts.append(cluster_dict)
-        cluster_freqs.append(cluster_freq)
+        cluster_dicts[type_index] = cluster_dict
+        cluster_freqs[type_index] = cluster_freq
     return (
         cluster_dicts,
         cluster_freqs,
@@ -1456,12 +1598,111 @@ def update_cluster(atom_ID, cluster_list, neighbour_dict):
     return cluster_list
 
 
-def plot_clusters_3D(output_dir, chromophore_list, cluster_dicts, sim_dims):
+def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
+    """
+    Create a tcl script for each identified cluster.
+    """
+    # Obtain the IDs of the cluster sizes, sorted by largest first
+    cluster_order = list(
+        zip(
+            *sorted(
+                zip(
+                    [len(val) for val in cluster_lookup.values()], cluster_lookup.keys()
+                ),
+                reverse=True,
+            )
+        )
+    )[1]
+    colors = list(range(int(1e6)))
+    count = 0
+
+    tcl_text = ["mol delrep 0 0;"]
+    tcl_text += ["pbc wrap -center origin;"]
+    tcl_text += ["pbc box -color black -center origin -width 4;"]
+    tcl_text += ["display resetview;"]
+    tcl_text += ["color change rgb 9 1.0 0.29 0.5;"]
+    tcl_text += ["color change rgb 16 0.25 0.25 0.25;"]
+
+    for cluster_ID in cluster_order:
+        chromos = cluster_lookup[cluster_ID]
+        chromo_IDs = [chromo.ID for chromo in chromos if chromo.species == "donor"]
+        if len(chromo_IDs) > large_cluster:  # Only make clusters that are ``large''
+            inclust = ""
+            for chromo in chromo_IDs:
+                inclust = "".join([inclust, "{:s} ".format(chromo)])
+            tcl_text += ["mol material AOEdgy;"]  # Use AOEdgy if donor
+            # The +1 makes the largest cluster red rather than blue (looks better
+            # with AO, DoF, shadows)
+            tcl_text += ["mol color ColorID {:s};".format(colors[count + 1 % 32])]
+            # VMD has 32 unique colors
+            tcl_text += ["mol representation VDW 4.0 8.0;"]
+            tcl_text += ["mol selection resid {:s};".format(inclust)]
+            tcl_text += ["mol addrep 0;"]
+            count += 1
+        chromo_IDs = [chromo.ID for chromo in chromos if chromo.species == "acceptor"]
+        if len(chromo_IDs) > large_cluster:
+            inclust = ""
+            for chromo in chromo_IDs:
+                inclust += "".join([inclust, "{:s} ".format(chromo)])
+            tcl_text += ["mol material Glass2;"]  # Use Glass2 if acceptor
+            # The +1 makes the largest cluster red rather than blue (looks better
+            # with AO, DoF, shadows)
+            tcl_text += ["mol color ColorID {:s};".format(colors[count + 1 % 32])]
+            tcl_text += ["mol representation VDW 4.0 8.0;"]
+            tcl_text += ["mol selection resid {:s};".format(inclust)]
+            tcl_text += ["mol addrep 0;"]
+            count += 1
+    tcl_file_path = os.path.join(
+        output_dir.replace("figures", "morphology"), "cluster_colors.tcl"
+    )
+    with open(tcl_file_path, "w+") as tcl_file:
+        tcl_file.writelines("".join(tcl_text))
+    print("Clusters coloring written to {:s}".format(tcl_file_path))
+
+
+def generate_lists_for_3d_clusters(cluster_lookup, colours, large_cluster):
+    data = []
+    for cluster_ID, chromos in cluster_lookup.items():
+        if len(chromos) > large_cluster:
+            for chromo in chromos:
+                if chromo.species == "donor":
+                    data.append(
+                        [
+                            chromo.posn[0],
+                            chromo.posn[1],
+                            chromo.posn[2],
+                            "w",
+                            colours[cluster_ID % 7],
+                        ]
+                    )
+                if chromo.species == "acceptor":
+                    data.append(
+                        [
+                            chromo.posn[0],
+                            chromo.posn[1],
+                            chromo.posn[2],
+                            colours[cluster_ID % 7],
+                            "none",
+                        ]
+                    )
+    # Needs a sort so that final image is layered properly
+    data = list(sorted(data, key=lambda x: x[0]))
+    # Split up list into sublists
+    xs = [row[0] for row in data]
+    ys = [row[1] for row in data]
+    zs = [row[2] for row in data]
+    face_colors = [row[3] for row in data]
+    edge_colors = [row[4] for row in data]
+    return xs, ys, zs, face_colors, edge_colors
+
+
+def plot_clusters_3D(
+    output_dir, chromophore_list, cluster_dicts, sim_dims, generate_tcl
+):
     fig = plt.figure()
     ax = p3.Axes3D(fig)
     colours = ["r", "g", "b", "c", "m", "y", "k"]
     large_cluster = 6
-    alphas = [0, 0.6]
     cluster_dict = {}
     for dictionary in cluster_dicts:
         if dictionary is not None:
@@ -1472,28 +1713,15 @@ def plot_clusters_3D(output_dir, chromophore_list, cluster_dicts, sim_dims):
             cluster_lookup[cluster_ID] = []
         else:
             cluster_lookup[cluster_ID].append(chromophore_list[chromo_ID])
-    for cluster_ID, chromos in cluster_lookup.items():
-        for chromo in chromos:
-            if chromo.species == "donor":
-                ax.scatter(
-                    chromo.posn[0],
-                    chromo.posn[1],
-                    chromo.posn[2],
-                    facecolors="w",
-                    edgecolors=colours[cluster_ID % 7],
-                    alpha=alphas[len(cluster_lookup[cluster_ID]) > large_cluster],
-                    s=40,
-                )
-            elif chromo.species == "acceptor":
-                ax.scatter(
-                    chromo.posn[0],
-                    chromo.posn[1],
-                    chromo.posn[2],
-                    c=colours[cluster_ID % 7],
-                    edgecolors=None,
-                    alpha=alphas[len(cluster_lookup[cluster_ID]) > large_cluster],
-                    s=40,
-                )
+    if generate_tcl:
+        write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster)
+
+    xs, ys, zs, face_colors, edge_colors = generate_lists_for_3d_clusters(
+        cluster_lookup, colours, large_cluster
+    )
+    ax.scatter(
+        xs, ys, zs, facecolors=face_colors, edgecolors=edge_colors, alpha=0.6, s=40
+    )
     # Draw boxlines
     # Varying X
     ax.plot(
@@ -1586,9 +1814,11 @@ def plot_clusters_3D(output_dir, chromophore_list, cluster_dicts, sim_dims):
     ax.set_ylim([sim_dims[1][0], sim_dims[1][1]])
     ax.set_zlim([sim_dims[2][0], sim_dims[2][1]])
     # 03 for clusters (material agnostic)
-    plt.savefig(os.path.join(output_dir, "03_clusters.pdf"), bbox_inches="tight")
-    plt.close()
-    print("3D cluster figure saved as", os.path.join(output_dir, "03_clusters.pdf"))
+    plt.savefig(
+        os.path.join(output_dir, "03_clusters.png"), bbox_inches="tight", dpi=300
+    )
+    print("3D cluster figure saved as", os.path.join(output_dir, "03_clusters.png"))
+    plt.clf()
 
 
 def determine_molecule_IDs(
@@ -1622,7 +1852,12 @@ def determine_molecule_IDs(
         for index, molecule_AAID_list in enumerate(molecule_AAIDs):
             for AAID in molecule_AAID_list:
                 CGID_to_mol_ID[AAID] = index
-    return CGID_to_mol_ID
+    # Convert to chromo_to_mol_ID
+    chromo_to_mol_ID = {}
+    for chromophore in chromophore_list:
+        first_CGID = chromophore.CGIDs[0]
+        chromo_to_mol_ID[chromophore.ID] = CGID_to_mol_ID[first_CGID]
+    return chromo_to_mol_ID
 
 
 def plot_energy_levels(output_dir, chromophore_list, data_dict):
@@ -1630,6 +1865,8 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
     LUMO_levels = []
     donor_delta_E_ij = []
     acceptor_delta_E_ij = []
+    donor_lambda_ij = None
+    acceptor_lambda_ij = None
     for chromo in chromophore_list:
         if chromo.species == "donor":
             HOMO_levels.append(chromo.HOMO)
@@ -1638,6 +1875,8 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
                     chromo.neighbours_TI[neighbour_index] is not None
                 ):
                     donor_delta_E_ij.append(delta_E_ij)
+                if "reorganisation_energy" in chromo.__dict__:
+                    donor_lambda_ij = chromo.reorganisation_energy
         else:
             LUMO_levels.append(chromo.LUMO)
             for neighbour_index, delta_E_ij in enumerate(chromo.neighbours_delta_E):
@@ -1645,6 +1884,8 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
                     chromo.neighbours_TI[neighbour_index] is not None
                 ):
                     acceptor_delta_E_ij.append(delta_E_ij)
+                if "reorganisation_energy" in chromo.__dict__:
+                    acceptor_lambda_ij = chromo.reorganisation_energy
     if len(donor_delta_E_ij) > 0:
         donor_bin_edges, donor_fit_args, donor_mean, donor_std = gauss_fit(
             donor_delta_E_ij
@@ -1671,7 +1912,8 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
             donor_bin_edges,
             donor_fit_args,
             "donor",
-            output_dir + "/06_donor_delta_E_ij.pdf",
+            os.path.join(output_dir, "06_donor_delta_E_ij.png"),
+            donor_lambda_ij,
         )
     if len(acceptor_delta_E_ij) > 0:
         acceptor_bin_edges, acceptor_fit_args, acceptor_mean, acceptor_std = gauss_fit(
@@ -1701,24 +1943,29 @@ def plot_energy_levels(output_dir, chromophore_list, data_dict):
             acceptor_bin_edges,
             acceptor_fit_args,
             "acceptor",
-            output_dir + "/07_acceptor_delta_E_ij.pdf",
+            os.path.join(output_dir, "07_acceptor_delta_E_ij.png"),
+            acceptor_lambda_ij,
         )
     return data_dict
 
 
-def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name):
+def plot_delta_E_ij(delta_E_ij, gauss_bins, fit_args, data_type, file_name, lambda_ij):
     plt.figure()
-    n, bins, patches = plt.hist(delta_E_ij, np.linspace(-0.5, 0.5, 20), color=["b"])
+    n, bins, patches = plt.hist(
+        delta_E_ij, np.arange(np.min(delta_E_ij), np.max(delta_E_ij), 0.05), color=["b"]
+    )
     if fit_args is not None:
         gauss_Y = gaussian(gauss_bins[:-1], *fit_args)
         scale_factor = max(n) / max(gauss_Y)
         plt.plot(gauss_bins[:-1], gauss_Y * scale_factor, "ro:")
     else:
         print("No Gaussian found (probably zero-width delta function)")
+    if lambda_ij is not None:
+        plt.axvline(-float(lambda_ij), c="k")
     plt.ylabel("Frequency (Arb. U.)")
-    plt.xlabel(data_type.capitalize() + r" $\Delta E_{ij}$ (eV)")
-    plt.xlim([-0.5, 0.5])
-    plt.savefig(file_name)
+    plt.xlabel("".join([data_type.capitalize(), r" $\Delta E_{i,j}$ (eV)"]))
+    # plt.xlim([-0.5, 0.5])
+    plt.savefig(file_name, dpi=300)
     plt.close()
     print("Figure saved as", file_name)
 
@@ -1728,7 +1975,7 @@ def plot_mixed_hopping_rates(
     chromophore_list,
     parameter_dict,
     cluster_dicts,
-    CG_to_mol_ID,
+    chromo_to_mol_ID,
     data_dict,
     AA_morphology_dict,
     cut_off_dict,
@@ -1740,7 +1987,7 @@ def plot_mixed_hopping_rates(
     chromo_species = ["donor", "acceptor"]
     property_lists = {}
     for property_name in [
-        hop_type + "_" + hop_target + "_" + hop_property + "_" + species
+        "_".join([hop_type, hop_target, hop_property, species])
         for hop_type in hop_types
         for hop_target in hop_targets
         for hop_property in hop_properties
@@ -1749,12 +1996,12 @@ def plot_mixed_hopping_rates(
         property_lists[property_name] = []
     T = 290
     for chromo in chromophore_list:
-        mol1ID = CG_to_mol_ID[chromo.CGIDs[0]]
+        mol1ID = chromo_to_mol_ID[chromo.ID]
         for index, T_ij in enumerate(chromo.neighbours_TI):
             if (T_ij is None) or (T_ij == 0):
                 continue
             chromo2 = chromophore_list[chromo.neighbours[index][0]]
-            mol2ID = CG_to_mol_ID[chromo2.CGIDs[0]]
+            mol2ID = chromo_to_mol_ID[chromo2.ID]
             delta_E = chromo.neighbours_delta_E[index]
             if chromo.sub_species == chromo2.sub_species:
                 lambda_ij = chromo.reorganisation_energy
@@ -1852,10 +2099,9 @@ def plot_mixed_hopping_rates(
                 else:
                     property_lists["inter_mol_rates_donor"].append(rate)
                     property_lists["inter_mol_TIs_donor"].append(T_ij)
-    # 10 for the donor mol TI, 11 for the acceptor mol TI, 12 for the donor
-    # cluster TI, 13 for the acceptor cluster TI, 14 for the donor mol kij,
-    # 15 for the acceptor mol kij, 16 for the donor cluster kij, 17 for the
-    # acceptor cluster kij
+    # 12 for the donor cluster TI, 13 for the acceptor cluster TI, 14 for
+    # the donor mol kij, 15 for the acceptor mol kij, 16 for the donor
+    # cluster kij, 17 for the acceptor cluster kij
     # Donor cluster Plots:
     if (len(property_lists["intra_cluster_rates_donor"]) > 0) or (
         len(property_lists["inter_cluster_rates_donor"]) > 0
@@ -1879,14 +2125,14 @@ def plot_mixed_hopping_rates(
             property_lists["inter_cluster_rates_donor"],
             ["Intra-cluster", "Inter-cluster"],
             "donor",
-            os.path.join(output_dir, "16_donor_hopping_rate_clusters.pdf"),
+            os.path.join(output_dir, "16_donor_hopping_rate_clusters.png"),
         )
         plot_stacked_hist_TIs(
             property_lists["intra_cluster_TIs_donor"],
             property_lists["inter_cluster_TIs_donor"],
             ["Intra-cluster", "Inter-cluster"],
             "donor",
-            os.path.join(output_dir, "12_donor_transfer_integral_clusters.pdf"),
+            os.path.join(output_dir, "12_donor_transfer_integral_clusters.png"),
             cut_off_dict["TI"][0],
         )
     # Acceptor cluster Plots:
@@ -1912,14 +2158,14 @@ def plot_mixed_hopping_rates(
             property_lists["inter_cluster_rates_acceptor"],
             ["Intra-cluster", "Inter-cluster"],
             "acceptor",
-            os.path.join(output_dir, "17_acceptor_hopping_rate_clusters.pdf"),
+            os.path.join(output_dir, "17_acceptor_hopping_rate_clusters.png"),
         )
         plot_stacked_hist_TIs(
             property_lists["intra_cluster_TIs_acceptor"],
             property_lists["inter_cluster_TIs_acceptor"],
             ["Intra-cluster", "Inter-cluster"],
             "acceptor",
-            os.path.join(output_dir, "13_acceptor_transfer_integral_clusters.pdf"),
+            os.path.join(output_dir, "13_acceptor_transfer_integral_clusters.png"),
             cut_off_dict["TI"][1],
         )
     # Donor Mol Plots:
@@ -1945,15 +2191,7 @@ def plot_mixed_hopping_rates(
             property_lists["inter_mol_rates_donor"],
             ["Intra-mol", "Inter-mol"],
             "donor",
-            os.path.join(output_dir, "14_donor_hopping_rate_mols.pdf"),
-        )
-        plot_stacked_hist_TIs(
-            property_lists["intra_mol_TIs_donor"],
-            property_lists["inter_mol_TIs_donor"],
-            ["Intra-mol", "Inter-mol"],
-            "donor",
-            os.path.join(output_dir, "10_donor_transfer_integral_mols.pdf"),
-            cut_off_dict["TI"][0],
+            os.path.join(output_dir, "14_donor_hopping_rate_mols.png"),
         )
     # Acceptor Mol Plots:
     if (len(property_lists["intra_mol_rates_acceptor"]) > 0) or (
@@ -1978,15 +2216,7 @@ def plot_mixed_hopping_rates(
             property_lists["inter_mol_rates_acceptor"],
             ["Intra-mol", "Inter-mol"],
             "acceptor",
-            os.path.join(output_dir, "15_acceptor_hopping_rate_mols.pdf"),
-        )
-        plot_stacked_hist_TIs(
-            property_lists["intra_mol_TIs_acceptor"],
-            property_lists["inter_mol_TIs_acceptor"],
-            ["Intra-mol", "Inter-mol"],
-            "acceptor",
-            os.path.join(output_dir, "11_acceptor_transfer_integral_mols.pdf"),
-            cut_off_dict["TI"][1],
+            os.path.join(output_dir, "15_acceptor_hopping_rate_mols.png"),
         )
     # Update the dataDict
     for material in chromo_species:
@@ -2081,14 +2311,14 @@ def plot_stacked_hist_rates(data1, data2, labels, data_type, file_name):
         label=labels,
     )
     plt.ylabel("Frequency (Arb. U.)")
-    plt.xlabel(data_type.capitalize() + r" k$_{ij}$ (s" + r"$^{-1}$" + ")")
+    plt.xlabel("".join([data_type.capitalize(), r" k$_{i,j}$ (s$^{-1}$)"]))
     plt.xlim([1, 1E18])
     plt.xticks([1E0, 1E3, 1E6, 1E9, 1E12, 1E15, 1E18])
     # plt.ylim([0, 14000])
     plt.ylim([0, np.max(n) * 1.02])
     plt.legend(loc=2, prop={"size": 18})
     plt.gca().set_xscale("log")
-    plt.savefig(file_name)
+    plt.savefig(file_name, dpi=300)
     plt.close()
     print("Figure saved as", file_name)
 
@@ -2103,29 +2333,29 @@ def plot_stacked_hist_TIs(data1, data2, labels, data_type, file_name, cut_off):
         label=labels,
     )
     plt.ylabel("Frequency (Arb. U.)")
-    plt.xlabel(data_type.capitalize() + r" T$_{ij}$ (eV)")
-    plt.xlim([0, 1.2])
+    plt.xlabel("".join([data_type.capitalize(), r" J$_{i,j}$ (eV)"]))
+    # plt.xlim([0, 1.2])
     plt.ylim([0, np.max(n) * 1.02])
     if cut_off is not None:
         plt.axvline(float(cut_off), c="k")
     plt.legend(loc=0, prop={"size": 18})
-    plt.savefig(file_name)
+    plt.savefig(file_name, dpi=300)
     plt.close()
     print("Figure saved as", file_name)
 
 
 def write_CSV(data_dict, directory):
-    CSV_file_name = directory + "/results.csv"
+    CSV_file_name = os.path.join(directory, "results.csv")
     with open(CSV_file_name, "w+") as CSV_file:
         CSV_writer = csv.writer(CSV_file)
         for key in sorted(data_dict.keys()):
             CSV_writer.writerow([key, data_dict[key]])
-    print("CSV file written to " + CSV_file_name)
+    print("CSV file written to {:s}".format(CSV_file_name))
 
 
 def create_results_pickle(directory):
     cores_list = []
-    for file_name in glob.glob(directory + "/KMC/*"):
+    for file_name in glob.glob(os.path.join(directory, "KMC", "*")):
         if "log" not in file_name:
             continue
         try:
@@ -2137,14 +2367,20 @@ def create_results_pickle(directory):
     keep_list = []
     for core in cores_list:
         # Check if there is already a finished KMC_results pickle
-        main = directory + "/KMC/KMC_results_%02d.pickle" % (int(core))
+        main = os.path.join(
+            directory, "KMC", "KMC_results_{:02d}.pickle".format(int(core))
+        )
         if os.path.exists(main):
             results_pickles_list.append(main)
             keep_list.append(None)
             continue
         # If not, find the slot1 and slot2 pickle that is most recent
-        slot1 = directory + "/KMC/KMC_slot1_results_%02d.pickle" % (int(core))
-        slot2 = directory + "/KMC/KMC_slot2_results_%02d.pickle" % (int(core))
+        slot1 = os.path.join(
+            directory, "KMC", "KMC_slot1_results_{:02d}.pickle".format(int(core))
+        )
+        slot2 = os.path.join(
+            directory, "KMC", "KMC_slot2_results_{:02d}.pickle".format(int(core))
+        )
         if os.path.exists(slot1) and not os.path.exists(slot2):
             keep_list.append(slot1)
         elif os.path.exists(slot2) and not os.path.exists(slot1):
@@ -2153,13 +2389,15 @@ def create_results_pickle(directory):
             keep_list.append(slot1)
         else:
             keep_list.append(slot2)
-    print("%d pickle files found to combine!" % (len(keep_list)))
+    print("{:d} pickle files found to combine!".format(len(keep_list)))
     print("Combining", keep_list)
     for keeper in zip(cores_list, keep_list):
         # Skip this core if we already have a finished KMC_results for it
         if keeper[1] is None:
             continue
-        new_name = directory + "/KMC/KMC_results_" + str(keeper[0]) + ".pickle"
+        new_name = os.path.join(
+            directory, "KMC", "KMC_results_{}.pickle".format(keeper[0])
+        )
         shutil.copyfile(str(keeper[1]), new_name)
         results_pickles_list.append(new_name)
     combine_results_pickles(directory, results_pickles_list)
@@ -2182,9 +2420,10 @@ def combine_results_pickles(directory, pickle_files):
                     combined_data[key] += val
     # Write out the combined data
     print("Writing out the combined pickle file...")
-    with open(directory + "/KMC/KMC_results.pickle", "wb+") as pickle_file:
+    combined_file_loc = os.path.join(directory, "KMC", "KMC_results.pickle")
+    with open(combined_file_loc, "wb+") as pickle_file:
         pickle.dump(combined_data, pickle_file)
-    print("Complete data written to", directory + "/KMC_results.pickle.")
+    print("Complete data written to", combined_file_loc)
 
 
 def calculate_cut_off_from_dist(
@@ -2249,6 +2488,84 @@ def calculate_cut_off_from_dist(
         return None
 
 
+def plot_TI_hist(
+    chromophore_list, chromo_to_mol_ID, output_dir, TI_cut_donor, TI_cut_acceptor
+):
+    # TI_dist [[DONOR], [ACCEPTOR]]
+    TI_dist_intra = [[], []]
+    TI_dist_inter = [[], []]
+    material = ["donor", "acceptor"]
+    labels = ["Intra-mol", "Inter-mol"]
+    TI_cuts = [TI_cut_donor, TI_cut_acceptor]
+    for material_index, material_type in enumerate(material):
+        for chromo1 in chromophore_list:
+            for neighbour_index, chromo2_details in enumerate(chromo1.neighbours):
+                chromo2 = chromophore_list[chromo2_details[0]]
+                if (chromo2_details is None) or (chromo1.ID >= chromo2.ID):
+                    continue
+                if chromo_to_mol_ID[chromo1.ID] == chromo_to_mol_ID[chromo2.ID]:
+                    TI_dist_intra[material_index].append(
+                        chromo1.neighbours_TI[neighbour_index]
+                    )
+                else:
+                    TI_dist_inter[material_index].append(
+                        chromo1.neighbours_TI[neighbour_index]
+                    )
+        if (len(TI_dist_intra[material_index]) == 0) and (
+            len(TI_dist_inter[material_index])
+        ):
+            continue
+        plt.figure()
+        n, bin_edges, _ = plt.hist(
+            [TI_dist_intra[material_index], TI_dist_inter[material_index]],
+            bins=np.linspace(
+                0,
+                np.max(TI_dist_intra[material_index] + TI_dist_inter[material_index]),
+                20,
+            ),
+            color=["r", "b"],
+            stacked=True,
+            label=labels,
+        )
+        bin_centres = (bin_edges[1:] + bin_edges[:-1]) / 2.0
+        smoothed_n = gaussian_filter(n[0] + n[1], 1.0)
+        plt.plot(bin_centres, smoothed_n, color="r")
+        if (TI_cuts[material_index] is not None) and (
+            TI_cuts[material_index].lower() == "auto"
+        ):
+            TI_cuts[material_index] = calculate_cut_off_from_dist(
+                bin_centres, smoothed_n, minimum_index=-1, value_at_least=100
+            )
+        if TI_cuts[material_index] is not None:
+            print(
+                "Cluster cut-off based on",
+                material[material_index],
+                "transfer integrals set to",
+                TI_cuts[material_index],
+            )
+            plt.axvline(float(TI_cuts[material_index]), c="k")
+        plt.xlim(
+            [0, np.max(TI_dist_intra[material_index] + TI_dist_inter[material_index])]
+        )
+        plt.ylim([0, np.max(n) * 1.02])
+        plt.ylabel("Frequency (Arb. U.)")
+        plt.xlabel("".join([material[material_index].capitalize(), r" J$_{i,j}$ (eV)"]))
+        plt.legend(loc=1, prop={"size": 18})
+        # 10 for donor TI mols dist, 11 for acceptor TI mols dist,
+        file_name = "".join(
+            [
+                "{:02}_".format(10 + material_index),
+                material_type,
+                "_transfer_integral_mols",
+                ".png",
+            ]
+        )
+        plt.savefig(os.path.join(output_dir, file_name), dpi=300)
+        plt.clf()
+        print("Figure saved as", os.path.join(output_dir, file_name))
+    return TI_cuts[0], TI_cuts[1]
+
+
 def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
     carrier_types = ["hole", "electron"]
     non_zero_indices = carrier_history.nonzero()
@@ -2266,6 +2583,7 @@ def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
     smoothed_n = gaussian_filter(n, 1.0)
     plt.plot(bin_centres, smoothed_n, color="r")
     if (cut_off is not None) and (cut_off.lower() == "auto"):
+        print("DYNAMIC CUT")
         cut_off = calculate_cut_off_from_dist(
             bin_centres,
             smoothed_n,
@@ -2278,6 +2596,8 @@ def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
         plt.axvline(np.log10(float(cut_off)), c="k")
     plt.xlabel("".join(["Total ", carrier_type, " hops (Arb. U.)"]))
     ax = plt.gca()
+    # tick_labels = np.arange(0, 7, 1)
+    # plt.xlim([0, 6])
     tick_labels = np.arange(0, np.ceil(np.max(frequencies)) + 1, 1)
     plt.xlim([0, np.ceil(np.max(frequencies))])
     plt.xticks(tick_labels, [r"10$^{{{}}}$".format(int(x)) for x in tick_labels])
@@ -2287,10 +2607,10 @@ def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
         [
             "{:02}_total_hop_freq_".format(24 + carrier_types.index(carrier_type)),
             carrier_type,
-            ".pdf",
+            ".png",
         ]
     )
-    plt.savefig(os.path.join(directory, "figures", file_name))
+    plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
     plt.clf()
     print("Figure saved as", os.path.join(directory, "figures", file_name))
     return cut_off
@@ -2322,10 +2642,10 @@ def plot_net_frequency_dist(directory, carrier_type, carrier_history):
         [
             "{:02}_net_hop_freq_".format(26 + carrier_types.index(carrier_type)),
             carrier_type,
-            ".pdf",
+            ".png",
         ]
     )
-    plt.savefig(os.path.join(directory, "figures", file_name))
+    plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
     plt.clf()
     print("Figure saved as", os.path.join(directory, "figures", file_name))
 
@@ -2365,10 +2685,10 @@ def plot_discrepancy_frequency_dist(directory, carrier_type, carrier_history):
         [
             "{:02}_hop_discrepancy_".format(28 + carrier_types.index(carrier_type)),
             carrier_type,
-            ".pdf",
+            ".png",
         ]
     )
-    plt.savefig(os.path.join(directory, "figures", file_name))
+    plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
     plt.clf()
     print(
         "There are",
@@ -2405,7 +2725,8 @@ def calculate_mobility(
         current_carrier_type.capitalize(),
         "mobility for",
         directory,
-        "= %.2E +- %.2E cm^{2} V^{-1} s^{-1}" % (mobility, mob_error),
+        "= {0:.2E} +- {1:.2E}".format(mobility, mob_error),
+        "cm^{2} V^{-1} s^{-1}",
     )
     print("----------====================----------")
     return mobility, mob_error, r_squared
@@ -2425,17 +2746,31 @@ def main():
         ),
     )
     parser.add_argument(
-        "-s",
-        "--sequence",
+        "-sd",
+        "--sequence_donor",
         type=lambda s: [float(item) for item in s.split(",")],
         default=None,
         required=False,
         help=(
             "Create a figure in the current directory that describes the evolution"
-            " of the anisotropy/mobility using the specified comma-delimited string"
-            " as the sequence of x values. For instance -s '1.5,1.75,2.0,2.25,2.5'"
-            " will assign each of the 5 following directories these x-values when"
-            " plotting the mobility evolution."
+            " of the hole anisotropy/mobility using the specified comma-delimited"
+            " string as the sequence of x values. For instance -s"
+            " '1.5,1.75,2.0,2.25,2.5' will assign each of the 5 following directories"
+            " these x-values when plotting the hole mobility evolution."
+        ),
+    )
+    parser.add_argument(
+        "-sa",
+        "--sequence_acceptor",
+        type=lambda s: [float(item) for item in s.split(",")],
+        default=None,
+        required=False,
+        help=(
+            "Create a figure in the current directory that describes the evolution"
+            " of the electron anisotropy/mobility using the specified comma-delimited"
+            " string as the sequence of x values. For instance -s"
+            " '1.5,1.75,2.0,2.25,2.5' will assign each of the 5 following directories"
+            " these x-values when plotting the electron mobility evolution."
         ),
     )
     parser.add_argument(
@@ -2531,7 +2866,7 @@ def main():
         required=False,
         type=str,
         help=(
-            "Specify the separation cut-off (in sigma) for the donor material for determining"
+            "Specify the separation cut-off (in Angstroms) for the donor material for determining"
             " which chromophores belong to the same cluster. Chromophores with separation"
             " r > sep_cut_donor will be considered as different crystals. Default = None (Note: if all"
             " cut-offs are specified as None, then the entire morphology will be considered"
@@ -2545,7 +2880,7 @@ def main():
         required=False,
         type=str,
         help=(
-            "Specify the separation cut-off (in sigma) for the acceptor material for determining"
+            "Specify the separation cut-off (in Angstroms) for the acceptor material for determining"
             " which chromophores belong to the same cluster. Chromophores with separation"
             " r > sep_cut_acceptor will be considered as different crystals. Default = None (Note: if all"
             " cut-offs are specified as None, then the entire morphology will be considered"
@@ -2572,6 +2907,17 @@ def main():
             " .matplotlibrc."
         ),
     )
+    parser.add_argument(
+        "-tcl",
+        "--generate_tcl",
+        action="store_true",
+        required=False,
+        help=(
+            "Specify to create a tcl file to use with VMD in which each resid is colored"
+            'based off of its cluster. Only functions when used in conjunction with the "-t"'
+            "flag. Default = False"
+        ),
+    )
     args, directory_list = parser.parse_known_args()
 
     # Load the matplotlib backend and the plotting subroutines
@@ -2595,10 +2941,13 @@ def main():
     electron_anisotropy_data = []
     for directory in directory_list:
         # Create the figures directory if it doesn't already exist
-        os.makedirs(directory + "/figures", exist_ok=True)
+        os.makedirs(os.path.join(directory, "figures"), exist_ok=True)
         # Load in all the required data
         data_dict = {}
         print("\n")
+        print("-----===== KMC_ANALYSE =====-----")
+        print(directory)
+        print("-----=======================-----")
         print("Getting carrier data...")
         carrier_data = load_KMC_results_pickle(directory)
         print("Carrier Data obtained")
@@ -2641,7 +2990,7 @@ def main():
         carrier_history_dict = {}
         for carrier_type_index, carrier_data in enumerate(complete_carrier_data):
             current_carrier_type = complete_carrier_types[carrier_type_index]
-            print("Considering the transport of", current_carrier_type + "...")
+            print("Considering the transport of {:s}...".format(current_carrier_type))
             print("Obtaining mean squared displacements...")
             carrier_history, times, MSDs, time_standard_errors, MSD_standard_errors = get_carrier_data(
                 carrier_data
@@ -2649,7 +2998,6 @@ def main():
             carrier_history_dict[current_carrier_type] = carrier_history
             print("Plotting distribution of carrier displacements")
             plot_displacement_dist(carrier_data, directory, current_carrier_type)
-
             print("Calculating mobility...")
             mobility, mob_error, r_squared = calculate_mobility(
                 directory,
@@ -2658,6 +3006,16 @@ def main():
                 MSDs,
                 time_standard_errors,
                 MSD_standard_errors,
+            )
+            print("Plotting hop vector distribution")
+            plot_hop_vectors(
+                carrier_data,
+                AA_morphology_dict,
+                chromophore_list,
+                directory,
+                sim_dims,
+                current_carrier_type,
+                args.three_D,
             )
             print("Calculating carrier trajectory anisotropy...")
             anisotropy = plot_anisotropy(
@@ -2699,13 +3057,14 @@ def main():
             elif current_carrier_type == "electron":
                 electron_anisotropy_data.append(anisotropy)
                 electron_mobility_data.append([mobility, mob_error])
+            lower_carrier_type = current_carrier_type.lower()
             data_dict["name"] = os.path.split(directory)[1]
-            data_dict[current_carrier_type.lower() + "_anisotropy"] = anisotropy
-            data_dict[current_carrier_type.lower() + "_mobility"] = mobility
-            data_dict[current_carrier_type.lower() + "_mobility_r_squared"] = r_squared
+            data_dict["{:s}_anisotropy".format(lower_carrier_type)] = anisotropy
+            data_dict["{:s}_mobility".format(lower_carrier_type)] = mobility
+            data_dict["{:s}_mobility_r_squared".format(lower_carrier_type)] = r_squared
         # Now plot the distributions!
-        temp_dir = directory + "/figures"
-        CG_to_mol_ID = determine_molecule_IDs(
+        temp_dir = os.path.join(directory, "figures")
+        chromo_to_mol_ID = determine_molecule_IDs(
             CG_to_AAID_master, AA_morphology_dict, parameter_dict, chromophore_list
         )
         data_dict = plot_energy_levels(temp_dir, chromophore_list, data_dict)
@@ -2718,7 +3077,7 @@ def main():
         )
         args.sep_cut_donor, args.sep_cut_acceptor = plot_neighbour_hist(
             chromophore_list,
-            CG_to_mol_ID,
+            chromo_to_mol_ID,
             morphology_shape,
             temp_dir,
             args.sep_cut_donor,
@@ -2726,11 +3085,18 @@ def main():
         )
         args.o_cut_donor, args.o_cut_acceptor = plot_orientation_hist(
             chromophore_list,
-            CG_to_mol_ID,
+            chromo_to_mol_ID,
             orientations,
             temp_dir,
             args.o_cut_donor,
             args.o_cut_acceptor,
+        )
+        args.ti_cut_donor, args.ti_cut_acceptor = plot_TI_hist(
+            chromophore_list,
+            chromo_to_mol_ID,
+            temp_dir,
+            args.ti_cut_donor,
+            args.ti_cut_acceptor,
         )
         cut_off_dict = create_cut_off_dict(
             args.sep_cut_donor,
@@ -2774,13 +3140,15 @@ def main():
             data_dict["acceptor_clusters_hop_freq_cut"] = repr(clusters_cutoffs[1][3])
         if args.three_D:
             print("Plotting 3D cluster location plot...")
-            plot_clusters_3D(temp_dir, chromophore_list, cluster_dicts, sim_dims)
+            plot_clusters_3D(
+                temp_dir, chromophore_list, cluster_dicts, sim_dims, args.generate_tcl
+            )
         data_dict = plot_mixed_hopping_rates(
             temp_dir,
             chromophore_list,
             parameter_dict,
             cluster_dicts,
-            CG_to_mol_ID,
+            chromo_to_mol_ID,
             data_dict,
             AA_morphology_dict,
             cut_off_dict,
@@ -2790,18 +3158,19 @@ def main():
         print("Writing CSV Output File...")
         write_CSV(data_dict, directory)
     print("Plotting Mobility and Anisotropy progressions...")
-    if args.sequence is not None:
+    if args.sequence_donor is not None:
         if len(hole_anisotropy_data) > 0:
             plot_temperature_progression(
-                args.sequence,
+                args.sequence_donor,
                 hole_mobility_data,
                 hole_anisotropy_data,
                 "hole",
                 args.xlabel,
             )
+    if args.sequence_acceptor is not None:
         if len(electron_anisotropy_data) > 0:
             plot_temperature_progression(
-                args.sequence,
+                args.sequence_acceptor,
                 electron_mobility_data,
                 electron_anisotropy_data,
                 "electron",
