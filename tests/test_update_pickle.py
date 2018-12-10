@@ -12,12 +12,16 @@ from morphct.code import helper_functions as hf
 @pytest.fixture(
     scope="module",
     params=[
-        os.path.join(TEST_ROOT, "output_UP/MCT1.0_pickle"),
-        " ".join([
-            "-p",
-            os.path.join(TEST_ROOT, "output_UP/MCT2.0_pickle/MCT2.0_pickle.pickle")
-        ]),
-        os.path.join(TEST_ROOT, "output_UP/MCT3.0_pickle"),
+        os.path.join(TEST_ROOT, "output_UP", "MCT1.0_pickle"),
+        " ".join(
+            [
+                "-p",
+                os.path.join(
+                    TEST_ROOT, "output_UP", "MCT2.0_pickle", "MCT2.0_pickle.pickle"
+                ),
+            ]
+        ),
+        os.path.join(TEST_ROOT, "output_UP", "MCT3.0_pickle"),
     ],
 )
 def run_simulation(request):
@@ -59,8 +63,11 @@ class TestCompareOutputs(TestCommand):
             # Check for the updated parameter file
             self.confirm_file_exists(
                 os.path.join(
-                    TEST_ROOT, directory, "MCT3.0_pickle", "code",
-                    "MCT3.0_pickle_par.bak_par"
+                    TEST_ROOT,
+                    directory,
+                    "MCT3.0_pickle",
+                    "code",
+                    "MCT3.0_pickle_par.bak_par",
                 )
             )
 
@@ -80,4 +87,5 @@ if __name__ == "__main__":
     class parameters:
         def __init__(self, param):
             self.param = param
-    run_simulation(parameters(os.path.join(TEST_ROOT, "output_UP/MCT1.0_pickle")))
+
+    run_simulation(parameters(os.path.join(TEST_ROOT, "output_UP", "MCT1.0_pickle")))

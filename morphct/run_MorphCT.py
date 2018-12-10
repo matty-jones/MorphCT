@@ -223,7 +223,7 @@ class simulation:
         else:
             # NEED TO PUT A CHECK IN HERE TO ENSURE THAT WE LOAD THE CORRECT MOLECULAR
             # DATA IN
-            if self.main_device_simulation is True:
+            if self.execute_device_simulation is True:
                 print(
                     "---=== EXECUTING KINETIC MONTE CARLO DEVICE SIMULATIONS... ===---"
                 )
@@ -259,7 +259,9 @@ class simulation:
         print("Sorting out directory structure...")
         # Delete the ORCA information if the user has asked to (as long as it's not in
         # the same place as the morphology data!!)
-        if (self.overwrite_current_data is True) and (
+        if (self.morphology is not None) and (
+            self.overwrite_current_data is True
+        ) and (
             self.output_orca_directory != self.output_morphology_directory
         ):
             print("OVERWRITE CURRENT DATA IS TRUE...EMPTYING ORCA DIR")
@@ -305,7 +307,7 @@ class simulation:
 
         elif self.device_morphology is not None:
             if self.overwrite_current_data is True:
-                print("rm -r " + self.outputDeviceDirectory)
+                print("rm -r " + self.output_device_directory)
                 shutil.rmtree(self.output_device_directory, ignore_errors=True)
             for device_directory_to_make in ["code", "KMC", "figures"]:
                 if device_directory_to_make == "figures":

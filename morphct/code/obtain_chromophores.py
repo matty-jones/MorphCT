@@ -814,16 +814,19 @@ def determine_neighbours_cut_off(chromophore_list, parameter_dict, sim_dims):
                         chromophore2.neighbours_delta_E.append(None)
                         chromophore2.neighbours_TI.append(None)
                 else:
-                    if chromophore2.ID not in chromo2dissociation_neighbour_IDs:
+                    # NOTE: Modifying this so that only dissociation neigbours in the
+                    # same periodic image are considered.
+                    if (chromophore2.ID not in chromo2dissociation_neighbour_IDs) and (
+                        np.all(np.isclose(relative_image_of_chromo2, [0, 0, 0]))
+                    ):
                         chromophore1.dissociation_neighbours.append(
-                            [chromophore2.ID, relative_image_of_chromo2]
+                            [chromophore2.ID, [0, 0, 0]]
                         )
-                    if chromophore1.ID not in chromo1dissociation_neighbour_IDs:
+                    if (chromophore1.ID not in chromo1dissociation_neighbour_IDs) and (
+                        np.all(np.isclose(relative_image_of_chromo2, [0, 0, 0]))
+                    ):
                         chromophore2.dissociation_neighbours.append(
-                            [
-                                chromophore1.ID,
-                                list(-np.array(relative_image_of_chromo2)),
-                            ]
+                            [chromophore1.ID, [0, 0, 0]]
                         )
     print("")
     return chromophore_list

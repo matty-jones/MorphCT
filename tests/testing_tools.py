@@ -133,11 +133,9 @@ class TestCommand(object):
             if dict_key is None:
                 check_dict_key = repr(expected_key)
             else:
-                check_dict_key=" | ".join([repr(dict_key), repr(expected_key)])
+                check_dict_key = " | ".join([repr(dict_key), repr(expected_key)])
             self.compare_equal(
-                response[expected_key],
-                expected_val,
-                dict_key=check_dict_key,
+                response[expected_key], expected_val, dict_key=check_dict_key
             )
 
     def confirm_file_exists(
@@ -156,14 +154,20 @@ class TestCommand(object):
         if negate is False:
             assert file_name in files, "".join(
                 [
-                    "Expected the file ", str(file_name), " to exist in ",
-                    str(directory), ", but it doesn't."
+                    "Expected the file ",
+                    str(file_name),
+                    " to exist in ",
+                    str(directory),
+                    ", but it doesn't.",
                 ]
             )
         else:
             assert file_name not in files, "".join(
                 [
-                    "Expected the file ", str(file_name), " to not exist in ",
-                    str(directory), ", but it does."
+                    "Expected the file ",
+                    str(file_name),
+                    " to not exist in ",
+                    str(directory),
+                    ", but it does.",
                 ]
             )

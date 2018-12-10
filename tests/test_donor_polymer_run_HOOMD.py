@@ -15,11 +15,11 @@ def run_simulation():
     # ---======== Directory and File Structure ========---
     # ---==============================================---
 
-    input_morph_dir = TEST_ROOT + "/assets/donor_polymer"
-    output_morph_dir = TEST_ROOT + "/output_RH"
+    input_morph_dir = os.path.join(TEST_ROOT, "assets", "donor_polymer")
+    output_morph_dir = os.path.join(TEST_ROOT, "output_RH")
     output_orca_dir = None
-    input_device_dir = TEST_ROOT + "/assets/donor_polymer"
-    output_device_dir = TEST_ROOT + "/output_RH"
+    input_device_dir = os.path.join(TEST_ROOT, "assets", "donor_polymer")
+    output_device_dir = os.path.join(TEST_ROOT, "output_RH")
 
     # ---==============================================---
     # ---========== Input Morphology Details ==========---
@@ -53,9 +53,9 @@ def run_simulation():
     # ---==============================================---
 
     CG_to_template_dirs = {
-        "A": TEST_ROOT + "/assets/donor_polymer",
-        "B": TEST_ROOT + "/assets/donor_polymer",
-        "C": TEST_ROOT + "/assets/donor_polymer",
+        "A": os.path.join(TEST_ROOT, "assets", "donor_polymer"),
+        "B": os.path.join(TEST_ROOT, "assets", "donor_polymer"),
+        "C": os.path.join(TEST_ROOT, "assets", "donor_polymer"),
     }
     CG_to_template_force_fields = {
         "A": "test_FF.xml",
@@ -185,14 +185,14 @@ def run_simulation():
 def system_has_no_hoomd():
     try:
         import hoomd_script
+
         return False
     except ImportError:
         return True
 
 
 @pytest.mark.skipif(
-    system_has_no_hoomd(),
-    reason="HOOMD 1.3 is not installed on this system."
+    system_has_no_hoomd(), reason="HOOMD 1.3 is not installed on this system."
 )
 class TestCompareOutputs(TestCommand):
     def test_check_AA_morphology_dict_len(self, run_simulation):
@@ -237,20 +237,20 @@ class TestCompareOutputs(TestCommand):
         expected_pars = copy.deepcopy(run_simulation["expected_parameter_dict"])
         output_pars = copy.deepcopy(run_simulation["output_parameter_dict"])
         for key in [
-                "parameter_file",
-                "output_morph_dir",
-                "CG_to_template_dirs",
-                "output_morphology_directory",
-                "input_device_dir",
-                "input_morphology_file",
-                "output_device_dir",
-                "input_morph_dir",
-                "input_orca_dir",
-                "output_orca_dir",
-                "input_device_file",
-                "output_device_directory",
-                "output_orca_directory",
-            ]:
+            "parameter_file",
+            "output_morph_dir",
+            "CG_to_template_dirs",
+            "output_morphology_directory",
+            "input_device_dir",
+            "input_morphology_file",
+            "output_device_dir",
+            "input_morph_dir",
+            "input_orca_dir",
+            "output_orca_dir",
+            "input_device_file",
+            "output_device_directory",
+            "output_orca_directory",
+        ]:
             try:
                 expected_pars.pop(key)
             except KeyError:

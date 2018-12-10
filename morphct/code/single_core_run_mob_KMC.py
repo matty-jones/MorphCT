@@ -336,7 +336,9 @@ def update_molecule(atom_ID, molecule_list, bonded_atoms):
     return molecule_list
 
 
-if __name__ == "__main__":
+def main():
+    global log_file
+
     KMC_directory = sys.argv[1]
     CPU_rank = int(sys.argv[2])
     np.random.seed(int(sys.argv[3]))
@@ -571,3 +573,7 @@ if __name__ == "__main__":
     hf.write_to_file(log_file, ["Saving the pickle file cleanly before termination..."])
     save_pickle(save_data, pickle_file_name.replace("data", "results"))
     hf.write_to_file(log_file, ["Exiting normally..."])
+
+
+if __name__ == "__main__":
+    main()

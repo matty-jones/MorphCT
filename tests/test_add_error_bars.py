@@ -27,14 +27,31 @@ def run_simulation(request):
     )
 
     command = [
-        "addErrorBars", "-c",
-        " ".join([
-            "{'morph_1': ['", output_dir, "/morph_1*'],",
-            "'morph_2': ['", output_dir, "/morph_2*'],",
-            "'morph_3': ['", output_dir, "/morph_3*']}"
-        ]), "-x", "$\\psi^{\\prime}$ (Arb. U.)", "-s", "0.33,0.25,0.17",
-        "-b", "AGG", "-p", "hole_mobility", "-o",
-        os.path.join(output_dir, "hole_mobility.pdf")
+        "addErrorBars",
+        "-c",
+        " ".join(
+            [
+                "{'morph_1': ['",
+                output_dir,
+                "/morph_1*'],",
+                "'morph_2': ['",
+                output_dir,
+                "/morph_2*'],",
+                "'morph_3': ['",
+                output_dir,
+                "/morph_3*']}",
+            ]
+        ),
+        "-x",
+        "$\\psi^{\\prime}$ (Arb. U.)",
+        "-s",
+        "0.33,0.25,0.17",
+        "-b",
+        "AGG",
+        "-p",
+        "hole_mobility",
+        "-o",
+        os.path.join(output_dir, "hole_mobility.pdf"),
     ]
     print(command)
     print(os.listdir(output_dir))
@@ -62,4 +79,5 @@ if __name__ == "__main__":
     class parameters:
         def __init__(self, param):
             self.param = param
+
     run_simulation(parameters(""))
