@@ -13,7 +13,7 @@ from morphct.code import helper_functions as hf
     scope="module",
     params=[
         "",
-        "-t",
+        "-t -tcl",
         '-x "TEST_OUTPUT"',
         "-sd 0.0,1.0",
         "COMBINE_KMC",
@@ -35,6 +35,7 @@ def run_simulation(request):
     except OSError:
         pass
     os.makedirs(os.path.join(output_dir, "code"))
+    os.makedirs(os.path.join(output_dir, "morphology"))
     os.makedirs(os.path.join(output_dir, "figures"))
     shutil.copy(
         os.path.join(
@@ -296,4 +297,4 @@ if __name__ == "__main__":
         def __init__(self, param):
             self.param = param
 
-    run_simulation(parameters("-t"))
+    run_simulation(parameters("-t -tcl"))

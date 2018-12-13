@@ -1629,11 +1629,11 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
         if len(chromo_IDs) > large_cluster:  # Only make clusters that are ``large''
             inclust = ""
             for chromo in chromo_IDs:
-                inclust = "".join([inclust, "{:s} ".format(chromo)])
+                inclust = "".join([inclust, "{:d} ".format(chromo)])
             tcl_text += ["mol material AOEdgy;"]  # Use AOEdgy if donor
             # The +1 makes the largest cluster red rather than blue (looks better
             # with AO, DoF, shadows)
-            tcl_text += ["mol color ColorID {:s};".format(colors[count + 1 % 32])]
+            tcl_text += ["mol color ColorID {:d};".format(colors[count + 1 % 32])]
             # VMD has 32 unique colors
             tcl_text += ["mol representation VDW 4.0 8.0;"]
             tcl_text += ["mol selection resid {:s};".format(inclust)]
@@ -1643,11 +1643,11 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
         if len(chromo_IDs) > large_cluster:
             inclust = ""
             for chromo in chromo_IDs:
-                inclust += "".join([inclust, "{:s} ".format(chromo)])
+                inclust += "".join([inclust, "{:d} ".format(chromo)])
             tcl_text += ["mol material Glass2;"]  # Use Glass2 if acceptor
             # The +1 makes the largest cluster red rather than blue (looks better
             # with AO, DoF, shadows)
-            tcl_text += ["mol color ColorID {:s};".format(colors[count + 1 % 32])]
+            tcl_text += ["mol color ColorID {:d};".format(colors[count + 1 % 32])]
             tcl_text += ["mol representation VDW 4.0 8.0;"]
             tcl_text += ["mol selection resid {:s};".format(inclust)]
             tcl_text += ["mol addrep 0;"]
