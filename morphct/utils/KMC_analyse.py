@@ -33,12 +33,17 @@ def load_KMC_results_pickle(directory):
             carrier_data = pickle.load(pickle_file)
     except FileNotFoundError:
         print("No final KMC_results.pickle found. Creating it from incomplete parts...")
-        create_results_pickle(directory)
+        failed = create_results_pickle(directory)
+        if failed:
+            return None
         with open(KMC_pickle, "rb") as pickle_file:
             carrier_data = pickle.load(pickle_file)
     except UnicodeDecodeError:
         with open(KMC_pickle, "rb") as pickle_file:
             carrier_data = pickle.load(pickle_file, encoding="latin1")
+    if len(carrier_data) == 0:
+        print("Carrier Data dictionary empty. Skipping this morphology...")
+        return None
     return carrier_data
 
 
@@ -884,14 +889,21 @@ def plot_temperature_progression(
     yerrs = list(np.array(mobility_data)[:, 1])
     plt.xlabel(x_label)
     plt.ylabel(r"Mobility (cm$^{2}$ / Vs)")
-    plt.errorbar(xvals, yvals, xerr=0, yerr=yerrs)
+    if len(xvals) != len(yvals):
+        print(
+            "Xvals length for temperature progression,", len(xvals),
+            " != YVals length,", len(yvals)
+        )
+        print("Only using the first", len(yvals), "values of the specified -x arg.")
+        print("Please examine output above to see which morphologies failed.")
+    plt.errorbar(xvals[:len(yvals)], yvals, xerr=0, yerr=yerrs)
     plt.yscale("log")
     file_name = "".join(["mobility_", carrier_type, ".png"])
     plt.savefig(file_name, dpi=300)
     plt.clf()
     print("Figure saved as {:s}".format(file_name))
 
-    plt.plot(temp_data, anisotropy_data, c="r")
+    plt.plot(temp_data[:len(anisotropy_data)], anisotropy_data, c="r")
     plt.xlabel(x_label)
     plt.ylabel(r"$\kappa$ (Arb. U)")
     file_name = "".join(["anisotropy_", carrier_type, ".png"])
@@ -1714,6 +1726,7 @@ def plot_clusters_3D(
         else:
             cluster_lookup[cluster_ID].append(chromophore_list[chromo_ID])
     if generate_tcl:
+        print("Generating tcl script for cluster visualisation...")
         write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster)
 
     xs, ys, zs, face_colors, edge_colors = generate_lists_for_3d_clusters(
@@ -2389,6 +2402,9 @@ def create_results_pickle(directory):
             keep_list.append(slot1)
         else:
             keep_list.append(slot2)
+    if len(keep_list) == 0:
+        print("No results pickles found. Skipping this morphology...")
+        return True
     print("{:d} pickle files found to combine!".format(len(keep_list)))
     print("Combining", keep_list)
     for keeper in zip(cores_list, keep_list):
@@ -2401,6 +2417,7 @@ def create_results_pickle(directory):
         shutil.copyfile(str(keeper[1]), new_name)
         results_pickles_list.append(new_name)
     combine_results_pickles(directory, results_pickles_list)
+    return False
 
 
 def combine_results_pickles(directory, pickle_files):
@@ -2950,6 +2967,8 @@ def main():
         print("-----=======================-----")
         print("Getting carrier data...")
         carrier_data = load_KMC_results_pickle(directory)
+        if carrier_data is None:
+            continue
         print("Carrier Data obtained")
         # Now need to split up the carrierData into both electrons and holes
         carrier_data_holes, carrier_data_electrons = split_carriers_by_type(
@@ -3159,6 +3178,9 @@ def main():
         write_CSV(data_dict, directory)
     print("Plotting Mobility and Anisotropy progressions...")
     if args.sequence_donor is not None:
+        print("Progression xvals =", args.sequence_donor)
+        print("Mobility yvals =", hole_mobility_data)
+        print("Anisotropy yvals =", hole_anisotropy_data)
         if len(hole_anisotropy_data) > 0:
             plot_temperature_progression(
                 args.sequence_donor,
@@ -3168,6 +3190,9 @@ def main():
                 args.xlabel,
             )
     if args.sequence_acceptor is not None:
+        print("Progression xvals =", args.sequence_acceptor)
+        print("Mobility yvals =", electron_mobility_data)
+        print("Anisotropy yvals =", electron_anisotropy_data)
         if len(electron_anisotropy_data) > 0:
             plot_temperature_progression(
                 args.sequence_acceptor,
