@@ -60,7 +60,7 @@ class morphology:
             AA_file_name = os.path.join(
                 self.output_morph_dir,
                 self.morphology_name,
-                morphology,
+                "morphology",
                 "".join([self.morphology_name, ".xml"]),
             )
             atomistic_morphology = hf.add_unwrapped_positions(self.CG_dictionary)
@@ -72,7 +72,7 @@ class morphology:
             pickle_location = os.path.join(
                 self.output_morph_dir,
                 self.morphology_name,
-                code,
+                "code",
                 "".join([self.morphology_name, ".pickle"]),
             )
             hf.write_pickle(
