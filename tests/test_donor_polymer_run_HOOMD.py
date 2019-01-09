@@ -208,17 +208,6 @@ class TestCompareOutputs(TestCommand):
                     response=run_simulation["output_AA_morphology_dict"][key],
                 )
 
-    @pytest.mark.skipif(
-        sys.platform != "darwin",
-        reason="Expected output will change on non-OSX platforms.",
-    )
-    def test_check_AA_morphology_dict_direct(self, run_simulation):
-        for key in run_simulation["expected_AA_morphology_dict"]:
-            self.compare_equal(
-                run_simulation["expected_AA_morphology_dict"][key],
-                response=run_simulation["output_AA_morphology_dict"][key],
-            )
-
     def test_check_CG_morphology_dict(self, run_simulation):
         self.compare_equal(
             run_simulation["expected_CG_morphology_dict"],
