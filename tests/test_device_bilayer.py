@@ -35,7 +35,7 @@ def run_simulation(request):
 
     input_morph_dir = os.path.join(TEST_ROOT, "output_DBL", "morph_inputs")
     output_morph_dir = os.path.join(TEST_ROOT, "output_DBL", "morph_outputs")
-    output_orca_dir = None
+    output_QCC_dir = None
     input_device_dir = os.path.join(TEST_ROOT, "output_DBL", "device_inputs")
     output_device_dir = os.path.join(TEST_ROOT, "output_DBL", "device_outputs")
 
@@ -63,8 +63,8 @@ def run_simulation(request):
     execute_obtain_chromophores = (
         False
     )  # Requires: Atomistic morphology, or molecular_dynamics
-    execute_ZINDO = False  # Requires: obtain_chromophores
-    execute_calculate_transfer_integrals = False  # Requires: execute_ZINDO
+    execute_QCC = False  # Requires: obtain_chromophores
+    execute_calculate_transfer_integrals = False  # Requires: execute_QCC
     execute_calculate_mobility = False  # Requires: calculate_transfer_integrals
     execute_device_simulation = (
         True

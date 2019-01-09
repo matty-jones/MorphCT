@@ -38,7 +38,7 @@ def run_simulation(request):
 
     input_morph_dir = os.path.join(TEST_ROOT, "assets", "donor_polymer")
     output_morph_dir = os.path.join(TEST_ROOT, "output_OC")
-    output_orca_dir = None
+    output_QCC_dir = None
     input_device_dir = os.path.join(TEST_ROOT, "assets", "donor_polymer")
     output_device_dir = os.path.join(TEST_ROOT, "output_OC")
 
@@ -62,8 +62,8 @@ def run_simulation(request):
     execute_obtain_chromophores = (
         True
     )  # Requires: Atomistic morphology, or molecular_dynamics
-    execute_ZINDO = False  # Requires: obtain_chromophores
-    execute_calculate_transfer_integrals = False  # Requires: execute_ZINDO
+    execute_QCC = False  # Requires: obtain_chromophores
+    execute_calculate_transfer_integrals = False  # Requires: execute_QCC
     execute_calculate_mobility = False  # Requires: calculate_transfer_integrals
     execute_device_simulation = (
         False
@@ -80,8 +80,8 @@ def run_simulation(request):
     maximum_hole_hop_distance = _hop_range
     maximum_electron_hop_distance = _hop_range
     permit_hops_through_opposing_chromophores = _transiting
-    remove_orca_inputs = False
-    remove_orca_outputs = True
+    remove_QCC_inputs = False
+    remove_QCC_outputs = True
     chromophore_length = 3
 
     # ---==============================================---
@@ -233,11 +233,11 @@ class TestCompareOutputs(TestCommand):
             "input_morphology_file",
             "output_device_dir",
             "input_morph_dir",
-            "input_orca_dir",
-            "output_orca_dir",
+            "input_QCC_dir",
+            "output_QCC_dir",
             "input_device_file",
             "output_device_directory",
-            "output_orca_directory",
+            "output_QCC_directory",
         ]:
             try:
                 expected_pars.pop(key)

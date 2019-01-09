@@ -16,7 +16,7 @@ def run_simulation():
 
     input_morph_dir = os.path.join(TEST_ROOT, "assets", "donor_polymer")
     output_morph_dir = os.path.join(TEST_ROOT, "output_TI")
-    output_orca_dir = None
+    output_QCC_dir = None
     input_device_dir = os.path.join(TEST_ROOT, "assets", "donor_polymer")
     output_device_dir = os.path.join(TEST_ROOT, "output_TI")
 
@@ -40,15 +40,15 @@ def run_simulation():
     execute_obtain_chromophores = (
         False
     )  # Requires: Atomistic morphology, or molecular_dynamics
-    execute_ZINDO = False  # Requires: obtain_chromophores
-    execute_calculate_transfer_integrals = True  # Requires: execute_ZINDO
+    execute_QCC = False  # Requires: obtain_chromophores
+    execute_calculate_transfer_integrals = True  # Requires: execute_QCC
     execute_calculate_mobility = False  # Requires: calculate_transfer_integrals
     execute_device_simulation = (
         False
     )  # Requires: calculate_transfer_integrals for all device_components
 
-    remove_orca_inputs = False
-    remove_orca_outputs = False
+    remove_QCC_inputs = False
+    remove_QCC_outputs = False
 
     # ---==============================================---
     # ---================= Begin run ==================---
@@ -100,7 +100,7 @@ def run_simulation():
             "assets",
             os.path.splitext(morphology)[0],
             "TI",
-            morphology.replace(".xml", "_post_execute_ZINDO.pickle"),
+            morphology.replace(".xml", "_post_execute_QCC.pickle"),
         ),
         os.path.join(
             output_morph_dir,
@@ -111,24 +111,24 @@ def run_simulation():
     )
     shutil.copytree(
         os.path.join(
-            TEST_ROOT, "assets", os.path.splitext(morphology)[0], "TI", "input_orca"
+            TEST_ROOT, "assets", os.path.splitext(morphology)[0], "TI", "input_QCC"
         ),
         os.path.join(
             output_morph_dir,
             os.path.splitext(morphology)[0],
             "chromophores",
-            "input_orca",
+            "input_QCC",
         ),
     )
     shutil.copytree(
         os.path.join(
-            TEST_ROOT, "assets", os.path.splitext(morphology)[0], "TI", "output_orca"
+            TEST_ROOT, "assets", os.path.splitext(morphology)[0], "TI", "output_QCC"
         ),
         os.path.join(
             output_morph_dir,
             os.path.splitext(morphology)[0],
             "chromophores",
-            "output_orca",
+            "output_QCC",
         ),
     )
 
@@ -207,11 +207,11 @@ class TestCompareOutputs(TestCommand):
             "input_morphology_file",
             "output_device_dir",
             "input_morph_dir",
-            "input_orca_dir",
-            "output_orca_dir",
+            "input_QCC_dir",
+            "output_QCC_dir",
             "input_device_file",
             "output_device_directory",
-            "output_orca_directory",
+            "output_QCC_directory",
         ]:
             try:
                 expected_pars.pop(key)

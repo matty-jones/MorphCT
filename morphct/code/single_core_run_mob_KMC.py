@@ -125,7 +125,7 @@ class carrier:
                 self.current_chromophore.neighbours_TI
             ):
                 # Ignore any hops with a NoneType transfer integral (usually
-                # due to an orca error)
+                # due to an QCC error)
                 if transfer_integral is None:
                     continue
                 delta_E_ij = self.current_chromophore.neighbours_delta_E[

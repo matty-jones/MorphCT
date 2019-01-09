@@ -224,7 +224,7 @@ class exciton:
             self.current_chromophore.neighbours_TI
         ):
             # Ignore any hops with a NoneType transfer integral (usually due to
-            # an orca error)
+            # an QCC error)
             if transfer_integral is None:
                 continue
             # For the hop, we need to know the change in E_ij for the Boltzmann
@@ -472,7 +472,7 @@ class carrier:
             self.current_chromophore.neighbours_TI
         ):
             # Ignore any hops with a NoneType transfer integral (usually due to
-            # an orca error), or zero
+            # an QCC error), or zero
             if (transfer_integral is None) or (transfer_integral < 1E-10):
                 continue
             neighbour_chromophore = global_chromophore_data.return_specific_chromophore(

@@ -16,10 +16,10 @@ def run_simulation():
     # ---==============================================---
 
     input_morph_dir = os.path.join(TEST_ROOT, "assets", "donor_polymer")
-    output_morph_dir = os.path.join(TEST_ROOT, "output_EZ")
-    output_orca_dir = None
+    output_morph_dir = os.path.join(TEST_ROOT, "output_EQ")
+    output_QCC_dir = None
     input_device_dir = os.path.join(TEST_ROOT, "assets", "donor_polymer")
-    output_device_dir = os.path.join(TEST_ROOT, "output_EZ")
+    output_device_dir = os.path.join(TEST_ROOT, "output_EQ")
 
     # ---==============================================---
     # ---========== Input Morphology Details ==========---
@@ -41,8 +41,8 @@ def run_simulation():
     execute_obtain_chromophores = (
         False
     )  # Requires: Atomistic morphology, or molecular_dynamics
-    execute_ZINDO = True  # Requires: obtain_chromophores
-    execute_calculate_transfer_integrals = False  # Requires: execute_ZINDO
+    execute_QCC = True  # Requires: obtain_chromophores
+    execute_calculate_transfer_integrals = False  # Requires: execute_QCC
     execute_calculate_mobility = False  # Requires: calculate_transfer_integrals
     execute_device_simulation = (
         False
@@ -52,8 +52,8 @@ def run_simulation():
     # ---============ Chromophore Parameters ==========---
     # ---==============================================---
     molecule_terminating_connections = {"C1": [[2, 1]], "C10": [[2, 1]]}
-    remove_orca_inputs = True
-    remove_orca_outputs = True
+    remove_QCC_inputs = True
+    remove_QCC_outputs = True
 
     # ---==============================================---
     # ---================= Begin run ==================---
@@ -102,7 +102,7 @@ def run_simulation():
             TEST_ROOT,
             "assets",
             os.path.splitext(morphology)[0],
-            "EZ",
+            "EQ",
             morphology.replace(".xml", "_post_obtain_chromophores_voronoi.pickle"),
         ),
         os.path.join(
@@ -135,8 +135,8 @@ def run_simulation():
     expected_pickle_data = hf.load_pickle(
         os.path.join(
             input_morph_dir,
-            "EZ",
-            morphology.replace(".xml", "_post_execute_ZINDO.pickle"),
+            "EQ",
+            morphology.replace(".xml", "_post_execute_QCC.pickle"),
         )
     )
     fix_dict["expected_AA_morphology_dict"] = expected_pickle_data[0]
@@ -192,11 +192,11 @@ class TestCompareOutputs(TestCommand):
             "input_morphology_file",
             "output_device_dir",
             "input_morph_dir",
-            "input_orca_dir",
-            "output_orca_dir",
+            "input_QCC_dir",
+            "output_QCC_dir",
             "input_device_file",
             "output_device_directory",
-            "output_orca_directory",
+            "output_QCC_directory",
         ]:
             try:
                 expected_pars.pop(key)
@@ -220,7 +220,7 @@ class TestCompareOutputs(TestCommand):
                     ],
                 )
 
-    def test_check_output_single_orca_files_created(self, run_simulation):
+    def test_check_output_single_QCC_files_created(self, run_simulation):
         input_morph_dir = run_simulation["output_parameter_dict"]["input_morph_dir"]
         output_morph_dir = run_simulation["output_parameter_dict"]["output_morph_dir"]
         morphology = run_simulation["output_parameter_dict"]["morphology"]
@@ -228,14 +228,14 @@ class TestCompareOutputs(TestCommand):
             output_morph_dir,
             os.path.splitext(morphology)[0],
             "chromophores",
-            "output_orca",
+            "output_QCC",
             "single",
         )
-        asset_dir = os.path.join(input_morph_dir, "EZ", "output_orca", "single")
+        asset_dir = os.path.join(input_morph_dir, "EQ", "output_QCC", "single")
         for file_name in os.listdir(asset_dir):
             self.confirm_file_exists(os.path.join(chromo_dir, file_name))
 
-    def test_check_output_pair_orca_files_created(self, run_simulation):
+    def test_check_output_pair_QCC_files_created(self, run_simulation):
         input_morph_dir = run_simulation["output_parameter_dict"]["input_morph_dir"]
         output_morph_dir = run_simulation["output_parameter_dict"]["output_morph_dir"]
         morphology = run_simulation["output_parameter_dict"]["morphology"]
@@ -243,10 +243,10 @@ class TestCompareOutputs(TestCommand):
             output_morph_dir,
             os.path.splitext(morphology)[0],
             "chromophores",
-            "output_orca",
+            "output_QCC",
             "pair",
         )
-        asset_dir = os.path.join(input_morph_dir, "EZ", "output_orca", "pair")
+        asset_dir = os.path.join(input_morph_dir, "EQ", "output_QCC", "pair")
         for file_name in os.listdir(asset_dir):
             self.confirm_file_exists(os.path.join(chromo_dir, file_name))
 
@@ -255,7 +255,7 @@ class TestCompareOutputs(TestCommand):
 
 
 def teardown_module():
-    shutil.rmtree(os.path.join(TEST_ROOT, "output_EZ"))
+    shutil.rmtree(os.path.join(TEST_ROOT, "output_EQ"))
 
 
 if __name__ == "__main__":

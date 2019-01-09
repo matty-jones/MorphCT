@@ -20,8 +20,8 @@ class chromophore:
         sim_dims,
     ):
         self.ID = chromo_ID
-        self.orca_input = "/chromophores/input_orca/single/{:05d}.inp".format(self.ID)
-        self.orca_output = "/chromophores/output_orca/single/{:05d}.out".format(self.ID)
+        self.QCC_input = "/chromophores/input_QCC/single/{:05d}.inp".format(self.ID)
+        self.QCC_output = "/chromophores/output_QCC/single/{:05d}.out".format(self.ID)
         self.CGIDs = chromophore_CG_sites
         # Determine whether this chromophore is a donor or an acceptor, as well
         # as the site types that have been defined as the electronically active
@@ -155,7 +155,7 @@ class chromophore:
         self.bonds = self.get_important_bonds(AA_morphology_dict["bond"])
         if CG_morphology_dict is not None:
             # Determine if this chromophore is a repeat unit and therefore will
-            # need terminating before orca
+            # need terminating before QCC
             CG_types = set(
                 [CG_morphology_dict["type"][CGID] for CGID in chromophore_CG_sites]
             )
@@ -310,7 +310,7 @@ def calculate_chromophores(
         else:
             chromophore_data[chromo_ID].append(atom_ID)
     # Now rename the chromophore IDs so that they increment sensibly (they will
-    # be used later for the orca files)
+    # be used later for the QCC files)
     old_keys = sorted(chromophore_data.keys())
     for new_key, old_key in enumerate(old_keys):
         chromophore_data[new_key] = chromophore_data.pop(old_key)
@@ -391,7 +391,7 @@ def calculate_chromophores_AA(
         else:
             chromophore_data[chromo_ID].append(atom_ID)
     # Now rename the chromophore IDs so that they increment sensibly (they will
-    # be used later for the orca files)
+    # be used later for the QCC files)
     old_keys = sorted(chromophore_data.keys())
     for new_key, old_key in enumerate(old_keys):
         chromophore_data[new_key] = chromophore_data.pop(old_key)

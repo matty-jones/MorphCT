@@ -7,7 +7,7 @@ from morphct.code import helper_functions as hf
 from morphct.code import fine_grainer
 from morphct.code import run_HOOMD
 from morphct.code import obtain_chromophores
-from morphct.code import execute_ZINDO
+from morphct.code import execute_QCC
 from morphct.code import transfer_integrals
 from morphct.code import mobility_KMC
 from morphct.code import device_KMC
@@ -30,12 +30,12 @@ class simulation:
             self.output_morphology_directory = os.path.join(
                 self.output_morph_dir, os.path.splitext(self.morphology)[0]
             )
-            if (self.output_orca_dir is not None) and len(self.output_orca_dir) > 0:
-                self.output_orca_directory = os.path.join(
-                    self.output_orca_dir, os.path.splitext(self.morphology)[0]
+            if (self.output_QCC_dir is not None) and len(self.output_QCC_dir) > 0:
+                self.output_QCC_directory = os.path.join(
+                    self.output_QCC_dir, os.path.splitext(self.morphology)[0]
                 )
             else:
-                self.output_orca_directory = self.output_morphology_directory
+                self.output_QCC_directory = self.output_morphology_directory
         if self.device_morphology is not None:
             self.input_device_file = os.path.join(
                 self.input_device_dir, self.device_morphology
@@ -154,9 +154,9 @@ class simulation:
                 parameter_dict = returned_data[3]
                 chromophore_list = returned_data[4]
                 print("---=== IDENTIFICATION COMPLETED ===---")
-            if self.execute_ZINDO is True:
+            if self.execute_QCC is True:
                 print("---=== PERFORMING SEMI-EMPIRICAL ZINDO/S CALCULATIONS... ===---")
-                returned_data = execute_ZINDO.main(
+                returned_data = execute_QCC.main(
                     AA_morphology_dict,
                     CG_morphology_dict,
                     CG_to_AAID_master,
@@ -184,22 +184,22 @@ class simulation:
                 parameter_dict = returned_data[3]
                 chromophore_list = returned_data[4]
                 print("---=== DETERMINATION COMPLETED ===---")
-                if self.remove_orca_inputs is True:
-                    print("remove_orca_inputs is True. Cleaning up orca input dir...")
-                    orca_input_dir = os.path.join(
-                        self.output_orca_directory, "chromophores", "input_orca"
+                if self.remove_QCC_inputs is True:
+                    print("remove_QCC_inputs is True. Cleaning up QCC input dir...")
+                    QCC_input_dir = os.path.join(
+                        self.output_QCC_directory, "chromophores", "input_QCC"
                     )
                     try:
-                        shutil.rmtree(orca_input_dir)
+                        shutil.rmtree(QCC_input_dir)
                     except FileNotFoundError:
                         print("Directory already empty. Continuing...")
-                if self.remove_orca_outputs is True:
-                    print("remove_orca_outputs is True. Cleaning up orca output dir...")
-                    orca_output_dir = os.path.join(
-                        self.output_orca_directory, "chromophores", "output_orca"
+                if self.remove_QCC_outputs is True:
+                    print("remove_QCC_outputs is True. Cleaning up QCC output dir...")
+                    QCC_output_dir = os.path.join(
+                        self.output_QCC_directory, "chromophores", "output_QCC"
                     )
                     try:
-                        shutil.rmtree(orca_output_dir)
+                        shutil.rmtree(QCC_output_dir)
                     except FileNotFoundError:
                         print("Directory already empty. Continuing...")
             if self.execute_calculate_mobility is True:
@@ -257,16 +257,16 @@ class simulation:
 
     def make_dir_tree(self):
         print("Sorting out directory structure...")
-        # Delete the ORCA information if the user has asked to (as long as it's not in
+        # Delete the QCC information if the user has asked to (as long as it's not in
         # the same place as the morphology data!!)
         if (
             (self.morphology is not None)
             and (self.overwrite_current_data is True)
-            and (self.output_orca_directory != self.output_morphology_directory)
+            and (self.output_QCC_directory != self.output_morphology_directory)
         ):
-            print("OVERWRITE CURRENT DATA IS TRUE...EMPTYING ORCA DIR")
+            print("OVERWRITE CURRENT DATA IS TRUE...EMPTYING QCC DIR")
             try:
-                shutil.rmtree(self.output_orca_directory)
+                shutil.rmtree(self.output_QCC_directory)
             except FileNotFoundError:
                 print("Directory already empty. Continuing...")
         # NOTE: Don't delete the morphology directory - sometimes we just want to
@@ -290,18 +290,18 @@ class simulation:
                     exist_ok=True,
                 )
             for temp_directory_to_make in [
-                "chromophores/input_orca/single",
-                "chromophores/input_orca/pair",
-                "chromophores/output_orca/single",
-                "chromophores/output_orca/pair",
+                "chromophores/input_QCC/single",
+                "chromophores/input_QCC/pair",
+                "chromophores/output_QCC/single",
+                "chromophores/output_QCC/pair",
             ]:
                 print(
                     "mkdir -p",
-                    os.path.join(self.output_orca_directory, temp_directory_to_make),
+                    os.path.join(self.output_QCC_directory, temp_directory_to_make),
                 )
                 # Make sure that the mkdir command has finished before moving on
                 os.makedirs(
-                    os.path.join(self.output_orca_directory, temp_directory_to_make),
+                    os.path.join(self.output_QCC_directory, temp_directory_to_make),
                     exist_ok=True,
                 )
 

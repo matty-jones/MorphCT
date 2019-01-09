@@ -73,12 +73,12 @@ def main():
         orca_path = os.environ["ORCA_BIN"]
     except KeyError:
         orca_path = distutils.spawn.find_executable("orca")
-    input_dir = os.path.join(morph_orca_dir, "chromophores", "input_orca")
+    input_dir = os.path.join(morph_orca_dir, "chromophores", "input_QCC")
     log_file = os.path.join(
-        morph_output_dir, "chromophores", "orca_log_{:02d}.log".format(CPU_rank)
+        morph_output_dir, "chromophores", "QCC_log_{:02d}.log".format(CPU_rank)
     )
-    output_dir = os.path.join(morph_orca_dir, "chromophores", "output_orca")
-    pickle_file_name = input_dir.replace("input_orca", "orca_jobs.pickle")
+    output_dir = os.path.join(morph_orca_dir, "chromophores", "output_QCC")
+    pickle_file_name = input_dir.replace("input_QCC", "QCC_jobs.pickle")
     with open(pickle_file_name, "rb") as pickle_file:
         jobs_list = pickle.load(pickle_file)
     jobs_to_run = jobs_list[CPU_rank]
@@ -88,7 +88,7 @@ def main():
         t1 = T.time()
         hf.write_to_file(log_file, ["Running job {:s}...".format(job)])
         output_file_name = job.replace(".inp", ".out").replace(
-            "input_orca", "output_orca"
+            "input_QCC", "output_QCC"
         )
         # Check if file exists already
         if overwrite is False:
@@ -136,7 +136,7 @@ def main():
                 hf.write_to_file(
                     log_file,
                     [
-                        "Output OK and remove_orca_inputs set.",
+                        "Output OK and remove_QCC_inputs set.",
                         "".join(["Deleting ", os.path.splitext(job)[0], " inputs..."]),
                     ],
                 )
