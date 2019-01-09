@@ -88,4 +88,16 @@ if __name__ == "__main__":
         def __init__(self, param):
             self.param = param
 
-    run_simulation(parameters(os.path.join(TEST_ROOT, "output_UP", "MCT1.0_pickle")))
+    run_simulation(parameters(
+        # os.path.join(TEST_ROOT, "output_UP", "MCT1.0_pickle"),
+        # " ".join(
+        #     [
+        #         "-p",
+        #         os.path.join(
+        #             TEST_ROOT, "output_UP", "MCT2.0_pickle", "MCT2.0_pickle.pickle"
+        #         ),
+        #     ]
+        # ),
+        os.path.join(TEST_ROOT, "output_UP", "MCT3.0_pickle"),
+    )
+    )

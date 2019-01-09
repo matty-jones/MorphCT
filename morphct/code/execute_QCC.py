@@ -234,7 +234,8 @@ def write_QCC_inp(
     # Write the QCC input file
     with open(input_name, "w+") as QCC_file:
         QCC_file.writelines(inp_file_lines)
-    print("\rQCC Input File written as", os.path.split(input_name[1]), end=" ")
+    print("\rQCC Input File written as", input_name, end=" ")
+    # print("\rQCC Input File written as", os.path.split(input_name[1]), end=" ")
 
 
 def terminate_monomers(chromophore, parameter_dict, AA_morphology_dict):

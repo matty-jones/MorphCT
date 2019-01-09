@@ -274,6 +274,10 @@ if __name__ == "__main__":
 
     run_simulation(
         parameters(
+            # {"voronoi": False, "hop_range": 10.0, "transiting": False, "koopmans": False}
+            # {"voronoi": True, "hop_range": 10.0, "transiting": False, "koopmans": False}
+            # {"voronoi": False, "hop_range": 5.0, "transiting": False, "koopmans": False}
+            # {"voronoi": False, "hop_range": 10.0, "transiting": True, "koopmans": False}
             {"voronoi": False, "hop_range": 10.0, "transiting": False, "koopmans": True}
         )
     )

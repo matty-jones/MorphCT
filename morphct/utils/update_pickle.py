@@ -98,6 +98,13 @@ def rename_old(old_parameter_dict):
     except KeyError:
         pass
     try:
+        old_parameter_dict["output_QCC_dir"] = None
+        old_parameter_dict["output_QCC_dir"] = old_parameter_dict.pop(
+            "output_orca_dir"
+        )
+    except KeyError:
+        pass
+    try:
         old_parameter_dict["execute_fine_graining"] = old_parameter_dict.pop(
             "execute_finegraining"
         )
@@ -105,6 +112,10 @@ def rename_old(old_parameter_dict):
         pass
     try:
         old_parameter_dict["execute_ZINDO"] = old_parameter_dict.pop("execute_zindo")
+    except KeyError:
+        pass
+    try:
+        old_parameter_dict["execute_QCC"] = old_parameter_dict.pop("execute_ZINDO")
     except KeyError:
         pass
     try:
@@ -166,6 +177,9 @@ def rename_old(old_parameter_dict):
         [parameter for parameter in dir(par_template) if parameter[0] != "_"]
     )
     response = set(old_parameter_dict.keys())
+    # for key, val in sorted(old_parameter_dict.items()):
+    #     print(key, val)
+    # exit()
     return old_parameter_dict
 
 
@@ -266,6 +280,10 @@ def update_new_chromo(old_chromo, new_chromo, sim_dims):
         "dissociationNeighbours": "dissociation_neighbours",
         "neighboursTI": "neighbours_TI",
         "neighboursDeltaE": "neighbours_delta_E",
+        "orcaInput": "QCC_input",
+        "orcaOutput": "QCC_output",
+        "orca_input": "QCC_input",
+        "orca_output": "QCC_output",
     }
     if ("superCellPosns" not in old_chromo.__dict__) or (
         "superCellImages" not in old_chromo.__dict__
@@ -274,7 +292,10 @@ def update_new_chromo(old_chromo, new_chromo, sim_dims):
     if "dissociationNeighbours" not in old_chromo.__dict__:
         old_chromo.__dict__["dissociationNeighbours"] = []
     for old_prop, new_prop in properties.items():
-        new_chromo.__dict__[new_prop] = old_chromo.__dict__[old_prop]
+        try:
+            new_chromo.__dict__[new_prop] = old_chromo.__dict__[old_prop]
+        except KeyError:
+            continue
     return new_chromo
 
 

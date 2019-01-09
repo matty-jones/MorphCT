@@ -24,8 +24,8 @@ def run_simulation(request):
     # ---==============================================---
 
     output_dir = os.path.join(TEST_ROOT, "output_OR")
-    orca_inp_dir = os.path.join(output_dir, "chromophores", "input_orca", "single")
-    orca_out_dir = os.path.join(output_dir, "chromophores", "output_orca", "single")
+    orca_inp_dir = os.path.join(output_dir, "chromophores", "input_QCC", "single")
+    orca_out_dir = os.path.join(output_dir, "chromophores", "output_QCC", "single")
     try:
         shutil.rmtree(output_dir)
     except OSError:
@@ -44,7 +44,7 @@ def run_simulation(request):
     # proc_IDs
     parameter_dict = {
         "proc_IDs": [0],
-        "output_orca_directory": output_dir,
+        "output_QCC_directory": output_dir,
         "output_morphology_directory": output_dir,
     }
     # Finally a blank chromophore class (used only to output AAIDs after 18 fails)
@@ -70,7 +70,7 @@ class TestCompareOutputs(TestCommand):
                 TEST_ROOT,
                 "output_OR",
                 "chromophores",
-                "output_orca",
+                "output_QCC",
                 "single",
                 "00000.out",
             )
@@ -81,7 +81,7 @@ class TestCompareOutputs(TestCommand):
         if run_simulation[0] == 18:
             return True
         output_file = os.path.join(
-            TEST_ROOT, "output_OR", "chromophores", "output_orca", "single", "00000.out"
+            TEST_ROOT, "output_OR", "chromophores", "output_QCC", "single", "00000.out"
         )
         with open(output_file, "r") as output_fh:
             output_lines = output_fh.readlines()
