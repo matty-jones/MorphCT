@@ -176,6 +176,7 @@ def plot_displacement_dist(carrier_data, directory, carrier_type):
     )
     plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
     print("Figure saved as", os.path.join(directory, "figures", file_name))
+    plt.close()
 
 
 def plot_cluster_size_dist(cluster_freqs, directory):
@@ -211,6 +212,7 @@ def plot_cluster_size_dist(cluster_freqs, directory):
         )
         plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
         print("Figure saved as", os.path.join(directory, "figures", file_name))
+        plt.close()
 
 
 def create_array_for_plot_connections(chromophore_list, carrier_history, sim_dims):
@@ -1059,6 +1061,7 @@ def plot_neighbour_hist(
         print(
             "Neighbour histogram figure saved as", os.path.join(output_dir, file_name)
         )
+        plt.close()
     return sep_cuts[0], sep_cuts[1]
 
 
@@ -1440,6 +1443,7 @@ def get_orientations(
         # ax.set_ylim(lim[1])
         # ax.set_zlim(lim[2])
         # plt.show()
+        # plt.close()
     return orientations
 
 
@@ -1603,11 +1607,13 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
     Create a tcl script for each identified cluster.
     """
     # Obtain the IDs of the cluster sizes, sorted by largest first
+    print("Sorting the clusters by size...")
     cluster_order = list(
         zip(
             *sorted(
                 zip(
-                    [len(val) for val in cluster_lookup.values()], cluster_lookup.keys()
+                    [len(val) for val in cluster_lookup.values()],
+                    cluster_lookup.keys()
                 ),
                 reverse=True,
             )
@@ -1616,6 +1622,7 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
     colors = list(range(int(1e6)))
     count = 0
 
+    print("Creating tcl header...")
     tcl_text = ["mol delrep 0 0;"]
     tcl_text += ["pbc wrap -center origin;"]
     tcl_text += ["pbc box -color black -center origin -width 4;"]
@@ -1623,7 +1630,13 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
     tcl_text += ["color change rgb 9 1.0 0.29 0.5;"]
     tcl_text += ["color change rgb 16 0.25 0.25 0.25;"]
 
-    for cluster_ID in cluster_order:
+    for index, cluster_ID in enumerate(cluster_order):
+        print(
+            "\rCreating tcl commands for cluster {0:d} of {1:d}".format(
+                index + 1, len(cluster_order)
+            ),
+            end=" "
+        )
         chromos = cluster_lookup[cluster_ID]
         chromo_IDs = [chromo.ID for chromo in chromos if chromo.species == "donor"]
         if len(chromo_IDs) > large_cluster:  # Only make clusters that are ``large''
@@ -1643,7 +1656,7 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
         if len(chromo_IDs) > large_cluster:
             inclust = ""
             for chromo in chromo_IDs:
-                inclust += "".join([inclust, "{:d} ".format(chromo)])
+                inclust = "".join([inclust, "{:d} ".format(chromo)])
             tcl_text += ["mol material Glass2;"]  # Use Glass2 if acceptor
             # The +1 makes the largest cluster red rather than blue (looks better
             # with AO, DoF, shadows)
@@ -1657,7 +1670,7 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
     )
     with open(tcl_file_path, "w+") as tcl_file:
         tcl_file.writelines("".join(tcl_text))
-    print("Clusters coloring written to {:s}".format(tcl_file_path))
+    print("\nClusters coloring written to {:s}".format(tcl_file_path))
 
 
 def generate_lists_for_3d_clusters(cluster_lookup, colours, large_cluster):
@@ -1818,7 +1831,7 @@ def plot_clusters_3D(
         os.path.join(output_dir, "03_clusters.png"), bbox_inches="tight", dpi=300
     )
     print("3D cluster figure saved as", os.path.join(output_dir, "03_clusters.png"))
-    plt.clf()
+    plt.close()
 
 
 def determine_molecule_IDs(
@@ -2561,7 +2574,7 @@ def plot_TI_hist(
             ]
         )
         plt.savefig(os.path.join(output_dir, file_name), dpi=300)
-        plt.clf()
+        plt.close()
         print("Figure saved as", os.path.join(output_dir, file_name))
     return TI_cuts[0], TI_cuts[1]
 
@@ -2611,7 +2624,7 @@ def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
         ]
     )
     plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
-    plt.clf()
+    plt.close()
     print("Figure saved as", os.path.join(directory, "figures", file_name))
     return cut_off
 
@@ -2646,7 +2659,7 @@ def plot_net_frequency_dist(directory, carrier_type, carrier_history):
         ]
     )
     plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
-    plt.clf()
+    plt.close()
     print("Figure saved as", os.path.join(directory, "figures", file_name))
 
 
@@ -2689,7 +2702,7 @@ def plot_discrepancy_frequency_dist(directory, carrier_type, carrier_history):
         ]
     )
     plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
-    plt.clf()
+    plt.close()
     print(
         "There are",
         net_equals_total,
@@ -2729,6 +2742,7 @@ def calculate_mobility(
         "cm^{2} V^{-1} s^{-1}",
     )
     print("----------====================----------")
+    plt.close()
     return mobility, mob_error, r_squared
 
 
