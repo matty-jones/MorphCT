@@ -176,6 +176,7 @@ def plot_displacement_dist(carrier_data, directory, carrier_type):
     )
     plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
     print("Figure saved as", os.path.join(directory, "figures", file_name))
+    plt.close()
 
 
 def plot_cluster_size_dist(cluster_freqs, directory):
@@ -211,6 +212,7 @@ def plot_cluster_size_dist(cluster_freqs, directory):
         )
         plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
         print("Figure saved as", os.path.join(directory, "figures", file_name))
+        plt.close()
 
 
 def create_array_for_plot_connections(chromophore_list, carrier_history, sim_dims):
@@ -937,6 +939,7 @@ def plot_neighbour_hist(
         print(
             "Neighbour histogram figure saved as", os.path.join(output_dir, file_name)
         )
+        plt.close()
     return sep_cuts[0], sep_cuts[1]
 
 
@@ -1318,6 +1321,7 @@ def get_orientations(
         # ax.set_ylim(lim[1])
         # ax.set_zlim(lim[2])
         # plt.show()
+        # plt.close()
     return orientations
 
 
@@ -1696,7 +1700,7 @@ def plot_clusters_3D(
         os.path.join(output_dir, "03_clusters.png"), bbox_inches="tight", dpi=300
     )
     print("3D cluster figure saved as", os.path.join(output_dir, "03_clusters.png"))
-    plt.clf()
+    plt.close()
 
 
 def determine_molecule_IDs(
@@ -2439,7 +2443,7 @@ def plot_TI_hist(
             ]
         )
         plt.savefig(os.path.join(output_dir, file_name), dpi=300)
-        plt.clf()
+        plt.close()
         print("Figure saved as", os.path.join(output_dir, file_name))
     return TI_cuts[0], TI_cuts[1]
 
@@ -2489,7 +2493,7 @@ def plot_frequency_dist(directory, carrier_type, carrier_history, cut_off):
         ]
     )
     plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
-    plt.clf()
+    plt.close()
     print("Figure saved as", os.path.join(directory, "figures", file_name))
     return cut_off
 
@@ -2524,7 +2528,7 @@ def plot_net_frequency_dist(directory, carrier_type, carrier_history):
         ]
     )
     plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
-    plt.clf()
+    plt.close()
     print("Figure saved as", os.path.join(directory, "figures", file_name))
 
 
@@ -2567,7 +2571,7 @@ def plot_discrepancy_frequency_dist(directory, carrier_type, carrier_history):
         ]
     )
     plt.savefig(os.path.join(directory, "figures", file_name), dpi=300)
-    plt.clf()
+    plt.close()
     print(
         "There are",
         net_equals_total,
@@ -2607,6 +2611,7 @@ def calculate_mobility(
         "cm^{2} V^{-1} s^{-1}",
     )
     print("----------====================----------")
+    plt.close()
     return mobility, mob_error, r_squared
 
 
