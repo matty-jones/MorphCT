@@ -1632,10 +1632,10 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
 
     for index, cluster_ID in enumerate(cluster_order):
         print(
-            "\rCreating tcl commands for cluster #{:d} of {:d}".format(
-                index, len(cluster_order)
+            "\rCreating tcl commands for cluster {0:d} of {1:d}".format(
+                index + 1, len(cluster_order)
             ),
-            end=" "
+            end="\n"
         )
         chromos = cluster_lookup[cluster_ID]
         chromo_IDs = [chromo.ID for chromo in chromos if chromo.species == "donor"]
@@ -1656,7 +1656,7 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
         if len(chromo_IDs) > large_cluster:
             inclust = ""
             for chromo in chromo_IDs:
-                inclust += "".join([inclust, "{:d} ".format(chromo)])
+                inclust = "".join([inclust, "{:d} ".format(chromo)])
             tcl_text += ["mol material Glass2;"]  # Use Glass2 if acceptor
             # The +1 makes the largest cluster red rather than blue (looks better
             # with AO, DoF, shadows)
