@@ -1607,11 +1607,13 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
     Create a tcl script for each identified cluster.
     """
     # Obtain the IDs of the cluster sizes, sorted by largest first
+    print("Sorting the clusters by size...")
     cluster_order = list(
         zip(
             *sorted(
                 zip(
-                    [len(val) for val in cluster_lookup.values()], cluster_lookup.keys()
+                    [len(val) for val in cluster_lookup.values()],
+                    cluster_lookup.keys()
                 ),
                 reverse=True,
             )
@@ -1620,6 +1622,7 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
     colors = list(range(int(1e6)))
     count = 0
 
+    print("Creating tcl header...")
     tcl_text = ["mol delrep 0 0;"]
     tcl_text += ["pbc wrap -center origin;"]
     tcl_text += ["pbc box -color black -center origin -width 4;"]
@@ -1627,7 +1630,13 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
     tcl_text += ["color change rgb 9 1.0 0.29 0.5;"]
     tcl_text += ["color change rgb 16 0.25 0.25 0.25;"]
 
-    for cluster_ID in cluster_order:
+    for index, cluster_ID in enumerate(cluster_order):
+        print(
+            "\rCreating tcl commands for cluster #{:d} of {:d}".format(
+                index, len(cluster_order)
+            ),
+            end=" "
+        )
         chromos = cluster_lookup[cluster_ID]
         chromo_IDs = [chromo.ID for chromo in chromos if chromo.species == "donor"]
         if len(chromo_IDs) > large_cluster:  # Only make clusters that are ``large''
