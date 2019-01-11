@@ -1635,7 +1635,7 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
             "\rCreating tcl commands for cluster {0:d} of {1:d}".format(
                 index + 1, len(cluster_order)
             ),
-            end="\n"
+            end=" "
         )
         chromos = cluster_lookup[cluster_ID]
         chromo_IDs = [chromo.ID for chromo in chromos if chromo.species == "donor"]
@@ -1670,7 +1670,7 @@ def write_cluster_tcl_script(output_dir, cluster_lookup, large_cluster):
     )
     with open(tcl_file_path, "w+") as tcl_file:
         tcl_file.writelines("".join(tcl_text))
-    print("Clusters coloring written to {:s}".format(tcl_file_path))
+    print("\nClusters coloring written to {:s}".format(tcl_file_path))
 
 
 def generate_lists_for_3d_clusters(cluster_lookup, colours, large_cluster):
