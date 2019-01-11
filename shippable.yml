@@ -7,10 +7,10 @@ python:
 
 integrations:
   notifications:
-    - integrationName: hipchat-integration-morphct
-      type: hipchat
+    - integrationName: slack
+      type: slack
       recipients:
-        - "#3712501"
+        - "#morphct"
 
 branches:
   only:

@@ -13,7 +13,7 @@ from morphct.code import helper_functions as hf
     scope="module",
     params=[
         "",
-        "-t",
+        "-t -tcl",
         '-x "TEST_OUTPUT"',
         "-sd 0.0,1.0",
         "COMBINE_KMC",
@@ -35,6 +35,7 @@ def run_simulation(request):
     except OSError:
         pass
     os.makedirs(os.path.join(output_dir, "code"))
+    os.makedirs(os.path.join(output_dir, "morphology"))
     os.makedirs(os.path.join(output_dir, "figures"))
     shutil.copy(
         os.path.join(
@@ -262,6 +263,19 @@ class TestCompareOutputs(TestCommand):
             )
         )
 
+    def test_check_hop_vec_figure(self, run_simulation):
+        if "-t" in run_simulation:
+            self.confirm_file_exists(
+                os.path.join(TEST_ROOT, "output_KMCA", "figures", "36_hop_vec_hole.png")
+            )
+        else:
+            self.confirm_file_exists(
+                os.path.join(
+                    TEST_ROOT, "output_KMCA", "figures", "36_hop_vec_hole.png"
+                ),
+                negate=True,
+            )
+
     def test_check_anisotropy_sequence_figure(self, run_simulation):
         if "-s" in run_simulation:
             self.confirm_file_exists(os.path.join(os.getcwd(), "anisotropy_hole.png"))
@@ -283,4 +297,4 @@ if __name__ == "__main__":
         def __init__(self, param):
             self.param = param
 
-    run_simulation(parameters("-sd 0.0,1.0"))
+    run_simulation(parameters("-t -tcl"))

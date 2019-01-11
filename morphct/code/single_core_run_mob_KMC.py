@@ -336,7 +336,9 @@ def update_molecule(atom_ID, molecule_list, bonded_atoms):
     return molecule_list
 
 
-if __name__ == "__main__":
+def main():
+    global log_file
+
     KMC_directory = sys.argv[1]
     CPU_rank = int(sys.argv[2])
     np.random.seed(int(sys.argv[3]))
@@ -516,19 +518,19 @@ if __name__ == "__main__":
             # Save the pickle file every hour
             if (t2 - save_time) > 3600:
                 print(
-                    "Completed {0:d} of {1:d} jobs. Making checkpoint at {2:3d}%%".format(
+                    "Completed {0:d} of {1:d} jobs. Making checkpoint at {2:3d}%".format(
                         job_number,
                         len(jobs_to_run),
-                        np.round((job_number + 1) / float(len(jobs_to_run)) * 100),
+                        int(np.round((job_number + 1) / float(len(jobs_to_run)) * 100)),
                     )
                 )
                 hf.write_to_file(
                     log_file,
                     [
-                        "Completed {0:d} of {1:d} jobs. Making checkpoint at {2:3d}%%".format(
+                        "Completed {0:d} of {1:d} jobs. Making checkpoint at {2:3d}%".format(
                             job_number,
                             len(jobs_to_run),
-                            np.round((job_number + 1) / float(len(jobs_to_run)) * 100),
+                            int(np.round((job_number + 1) / float(len(jobs_to_run)) * 100)),
                         )
                     ],
                 )
@@ -571,3 +573,7 @@ if __name__ == "__main__":
     hf.write_to_file(log_file, ["Saving the pickle file cleanly before termination..."])
     save_pickle(save_data, pickle_file_name.replace("data", "results"))
     hf.write_to_file(log_file, ["Exiting normally..."])
+
+
+if __name__ == "__main__":
+    main()

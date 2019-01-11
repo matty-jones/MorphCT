@@ -9,7 +9,7 @@ import numpy as np
 from morphct.code import helper_functions as hf
 from morphct.code import obtain_chromophores as oc
 from morphct.definitions import PROJECT_ROOT
-from morphct.templates import par_template
+from morphct.templates import par as par_template
 
 
 def convert_params(old_parameter_dict, file_name):
@@ -353,6 +353,8 @@ def load_pickle_data(old_pickle_file, directory):
 
 def convert_KMC(morphology_directory):
     KMC_data = load_KMC_results_pickle(morphology_directory)
+    if not KMC_data:
+        return False
     print("Updating KMC result keys to PEP8 format...")
     KMC_data = add_underscores(KMC_data)
     print("Rewriting KMC results file...")
@@ -369,7 +371,9 @@ def load_KMC_results_pickle(directory):
             carrier_data = pickle.load(pickle_file)
     except FileNotFoundError:
         print("No final KMC_results.pickle found. Creating it from incomplete parts...")
-        create_results_pickle(directory)
+        success = create_results_pickle(directory)
+        if not success:
+            return False
         with open(KMC_pickle, "rb") as pickle_file:
             carrier_data = pickle.load(pickle_file)
     except UnicodeDecodeError:
@@ -413,6 +417,9 @@ def create_results_pickle(directory):
         else:
             keep_list.append(slot2)
     print("{:d} pickle files found to combine!".format(len(keep_list)))
+    if len(keep_list) == 0:
+        print("No KMC data found. Skipping...")
+        return False
     print("Combining", keep_list)
     for keeper in zip(cores_list, keep_list):
         # Skip this core if we already have a finished KMC_results for it

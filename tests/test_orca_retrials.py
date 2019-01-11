@@ -15,7 +15,7 @@ class dummy_chromophore:
         self.AAIDs = [0, 1]
 
 
-@pytest.fixture(scope="module", params = [1, 3, 6, 9, 12, 15, 18])
+@pytest.fixture(scope="module", params=[1, 3, 6, 9, 12, 15, 18])
 def run_simulation(request):
     fail_count = request.param
 
@@ -35,7 +35,6 @@ def run_simulation(request):
     asset_name = os.path.join(TEST_ROOT, "assets", "orca_retrials", "00000.inp")
     shutil.copy(asset_name, orca_inp_dir)
     file_name = os.path.join("single", os.path.split(asset_name)[1])
-
 
     # Create dummy inputs for rerun_fails
     # First the failed_chromo_files dictionary that keeps track of the fail count and
@@ -67,14 +66,23 @@ class TestCompareOutputs(TestCommand):
         if run_simulation[0] == 18:
             return True
         self.confirm_file_exists(
-            os.path.join(TEST_ROOT, "output_OR", "chromophores", "output_orca", "single", "00000.out")
+            os.path.join(
+                TEST_ROOT,
+                "output_OR",
+                "chromophores",
+                "output_orca",
+                "single",
+                "00000.out",
+            )
         )
 
     def test_check_orca_ran_correctly(self, run_simulation):
         # No output is made for 18, so just return True
         if run_simulation[0] == 18:
             return True
-        output_file = os.path.join(TEST_ROOT, "output_OR", "chromophores", "output_orca", "single", "00000.out")
+        output_file = os.path.join(
+            TEST_ROOT, "output_OR", "chromophores", "output_orca", "single", "00000.out"
+        )
         with open(output_file, "r") as output_fh:
             output_lines = output_fh.readlines()
         SCF_success = False
@@ -91,7 +99,9 @@ class TestCompareOutputs(TestCommand):
     def test_check_input_was_modified(self, run_simulation):
         fail_count = run_simulation[0]
         modified_inp_name = run_simulation[1]
-        check_inp_name = os.path.join(TEST_ROOT, "assets", "orca_retrials", "00000_{:02d}.inp".format(fail_count))
+        check_inp_name = os.path.join(
+            TEST_ROOT, "assets", "orca_retrials", "00000_{:02d}.inp".format(fail_count)
+        )
         with open(check_inp_name, "r") as expected_file:
             expected_lines = expected_file.readlines()
         with open(modified_inp_name, "r") as results_file:

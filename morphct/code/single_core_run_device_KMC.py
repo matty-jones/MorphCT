@@ -3,6 +3,9 @@ import heapq
 import os
 import pickle
 import sys
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import time as T
@@ -46,6 +49,7 @@ KMC_iterations = 0
 # DEBUG Nothing is forbidden. Everything is permitted.
 fastest_event_allowed = 1E-99  # 1E-15
 slowest_event_allowed = 1E99  # 1E-9
+log_file = None
 
 
 class exciton:
@@ -73,6 +77,7 @@ class exciton:
             self.history = [[self.initial_device_posn, self.initial_chromophore.posn]]
         else:
             self.history = None
+        self.cell_size = parameter_dict["morphology_cell_size"]
 
     def calculate_behaviour(self):
         # Set a flag to indicate whether exciton can dissociate or not
@@ -89,9 +94,12 @@ class exciton:
                 )
                 # The electron chromophore is a randomly selected chromophore of
                 # the opposing type that is in range of the current one
-                e_chromo_ID = np.random.choice(
-                    self.current_chromophore.dissociation_neighbours
-                )[0]
+                random_index = np.random.randint(
+                    len(self.current_chromophore.dissociation_neighbours)
+                )
+                e_chromo_ID = self.current_chromophore.dissociation_neighbours[
+                    random_index
+                ][0]
                 e_chromo = global_chromophore_data.return_specific_chromophore(
                     self.current_device_posn, e_chromo_ID
                 )
@@ -115,9 +123,12 @@ class exciton:
                 )
                 # The hole chromophore is a randomly selected chromophore of the
                 # opposing type that is in range of the current one
-                h_chromo_ID = np.random.choice(
-                    self.current_chromophore.dissociation_neighbours
-                )[0]
+                random_index = np.random.randint(
+                    len(self.current_chromophore.dissociation_neighbours)
+                )
+                h_chromo_ID = self.current_chromophore.dissociation_neighbours[
+                    random_index
+                ][0]
                 h_chromo = global_chromophore_data.return_specific_chromophore(
                     self.current_device_posn, h_chromo_ID
                 )
@@ -179,6 +190,18 @@ class exciton:
     def check_dissociation(self):
         # Return True if there are neighbours of the opposing electronic species
         # present, otherwise return False
+        # Firstly, ensure that only dissociation neighbours in the same relative image
+        # are considered (this is done automatically in the latest version of MorphCT
+        # in the obtain_chromophores phase)
+        pop_list = []
+        for neighbour_index, dissociation_neighbour in enumerate(
+            self.current_chromophore.dissociation_neighbours
+        ):
+            if not np.all(np.isclose(dissociation_neighbour[1], [0, 0, 0])):
+                pop_list.append(neighbour_index)
+        pop_list = sorted(pop_list, reverse=True)
+        for pop_index in pop_list:
+            self.current_chromophore.dissociation_neighbours.pop(pop_index)
         if len(self.current_chromophore.dissociation_neighbours) > 0:
             return True
         return False
@@ -253,7 +276,7 @@ class exciton:
             hop_time = hf.determine_event_tau(
                 hop_rate,
                 event_type="exciton-hop",
-                slowest_event_allowed=slowest_event_allowed,
+                slowest_event=slowest_event_allowed,
                 fastest_event=fastest_event_allowed,
                 maximum_attempts=100,
                 log_file=log_file,
@@ -316,7 +339,9 @@ class exciton:
             new_chromo = global_chromophore_data.return_closest_chromophore_to_position(
                 target_device_posn, destination_position
             )
-            if (new_chromo.lower() == "top") or (new_chromo.lower() == "bottom"):
+            if isinstance(new_chromo, str) and (
+                (new_chromo.lower() == "top") or (new_chromo.lower() == "bottom")
+            ):
                 # This exciton is hopping out of the active layer and into the
                 # contacts.
                 # Ensure it doesn't get queued up again
@@ -329,7 +354,9 @@ class exciton:
                 # TODO This carrier has left the simulation volume so we now
                 # need to ensure we remove it from the carrier dictionary so
                 # it's not included in any of the Coulombic calculations
-            elif new_chromo.lower() == "out of bounds":
+            elif isinstance(new_chromo, str) and (
+                new_chromo.lower() == "out of bounds"
+            ):
                 # Ignore this hop, do a different one instead
                 pass
             else:
@@ -414,6 +441,9 @@ class carrier:
             self.use_VRH = False
         if self.use_VRH is True:
             self.VRH_scaling = 1.0 / self.current_chromophore.VRH_delocalisation
+        self.cell_size = parameter_dict["morphology_cell_size"]
+        self.capture_radius = parameter_dict["coulomb_capture_radius"]
+        self.permittivity = parameter_dict["relative_permittivity"]
 
     def calculate_behaviour(self):
         try:
@@ -467,7 +497,7 @@ class carrier:
             # Skip this neighbour if the destination is already occupied
             if destination_image in destination_chromophore.occupied:
                 continue
-            elif self.wrapxy is False:
+            if self.wrapxy is False:
                 # Skip this neighbour if we're going to hop out of the device
                 # along the non-electrode axes
                 if neighbour_relative_image != [0, 0, 0]:
@@ -483,7 +513,9 @@ class carrier:
                         destination_chromophore = global_chromophore_data.return_closest_chromophore_to_position(
                             destination_image, neighbour_chromophore.posn
                         )
-                        if destination_chromophore.lower() == "out of bounds":
+                        if isinstance(destination_chromophore, str) and (
+                            destination_chromophore.lower() == "out of bounds"
+                        ):
                             continue
                     else:
                         continue
@@ -501,17 +533,40 @@ class carrier:
                 neighbour_chromophore,
                 neighbour_relative_image,
                 self.current_chromophore.neighbours_delta_E[neighbour_index],
+                self.cell_size,
+                self.capture_radius,
+                self.permittivity,
             )
             # All of the energies (EXCEPT EIJ WHICH IS ALREADY IN J) are in eV
             # currently, so convert them to J
             if self.use_VRH is True:
-                relative_image = np.array(destination_image) - np.array(
-                    self.current_device_posn
-                )
-                destination_chromo_posn = destination_chromo.posn + (
-                    np.array(relative_image)
-                    * np.array([axis[1] - axis[0] for axis in self.sim_dims])
-                )
+                # Cannot calculate the separation if the destination is "top" or
+                # "bottom"
+                if not isinstance(destination_chromophore, str):
+                    relative_image = np.array(destination_image) - np.array(
+                        self.current_device_posn
+                    )
+                    destination_chromo_posn = destination_chromophore.posn + (
+                        np.array(relative_image)
+                        * np.array([self.cell_size for _ in range(3)])
+                    )
+                else:
+                    # Get the morphology_shape
+                    morphology_shape = [
+                        global_morphology_data.return_AA_morphology(
+                            self.current_device_posn
+                        )[key]
+                        for key in ["lx", "ly", "lz"]
+                    ]
+                    destination_chromo_posn = copy.deepcopy(
+                        self.current_chromophore.posn
+                    )
+                    if destination_chromophore.lower() == "top":
+                        # Top electrode is current chromo posn but with z = z_max
+                        destination_chromo_posn[2] = morphology_shape[2] / 2.0
+                    elif destination_chromophore.lower() == "bottom":
+                        # Bottom electrode is current chromo posn but with z = z_min
+                        destination_chromo_posn[2] = -morphology_shape[2] / 2.0
                 # Convert from ang to m
                 chromophore_separation = (
                     hf.calculate_separation(
@@ -527,7 +582,7 @@ class carrier:
                     self.T,
                     use_VRH=True,
                     rij=chromophore_separation,
-                    VRH_prefactor=self.VRH_scaling,
+                    VRH_delocalisation=self.VRH_scaling,
                     boltz_pen=self.use_simple_energetic_penalty,
                 )
             else:
@@ -542,7 +597,7 @@ class carrier:
             hop_time = hf.determine_event_tau(
                 hop_rate,
                 event_type="carrier-hop",
-                slowest_event_allowed=slowest_event_allowed,
+                slowest_event=slowest_event_allowed,
                 fastest_event=fastest_event_allowed,
                 maximum_attempts=100,
                 log_file=log_file,
@@ -609,8 +664,9 @@ class carrier:
         global_chromophore_data.return_specific_chromophore(
             self.current_device_posn, self.current_chromophore.ID
         ).occupied.remove(self.current_device_posn)
-        if (self.destination_chromophore.lower() == "top") or (
-            self.destination_chromophore.lower() == "bottom"
+        if isinstance(self.destination_chromophore, str) and (
+            (self.destination_chromophore.lower() == "top")
+            or (self.destination_chromophore.lower() == "bottom")
         ):
             # This carrier is hopping out of the active layer and into the
             # contacts. Firstly, work out whether this is a `correct' hop
@@ -618,29 +674,55 @@ class carrier:
             # that causes photovoltaic current.
             if self.destination_chromophore.lower() == "top":
                 # Leaving through top (anode)
-                if self.injected_from.lower() != "anode":
-                    if self.carrier_type == HOLE:
+                if self.carrier_type == HOLE:
+                    # If hole injected via exciton or cathode, then increment
+                    # extractions
+                    if (
+                        not isinstance(self.injected_from, str)
+                        or self.injected_from.lower() != "anode"
+                    ):
                         number_of_extractions += 1
-                    else:
+                    # Else: If hole injected from anode AND leaving via anode, then
+                    # skip
+                else:
+                    # If electron injected via exciton or cathode, then decrement
+                    # extractions
+                    if (
+                        not isinstance(self.injected_from, str)
+                        or self.injected_from.lower() != "anode"
+                    ):
                         number_of_extractions -= 1
-                # Else (injected from anode), number of extractions doesn't
-                # change.
+                    # Else: If electron injected from anode AND leaving via anode, then
+                    # skip
             else:
                 # Leaving through bottom (cathode)
-                if self.injected_from.lower() != "cathode":
-                    if self.carrier_type == ELECTRON:
+                if self.carrier_type == ELECTRON:
+                    # If electron injected via exciton or anode, then increment
+                    # extractions
+                    if (
+                        not isinstance(self.injected_from, str)
+                        or self.injected_from.lower() != "cathode"
+                    ):
                         number_of_extractions += 1
-                    else:
+                    # Else: If electron injected from cathode AND leaving via cathode,
+                    # then skip
+                else:
+                    # If hole injected via exciton or anode, then decrement extractions
+                    if (
+                        not isinstance(self.injected_from, str)
+                        or self.injected_from.lower() != "cathode"
+                    ):
                         number_of_extractions -= 1
-                # Else (injected from cathode), number of extractions
-                # doesn't change.
+                    # Else: If hole injected from cathode AND leaving via cathode, then
+                    # skip
             if self.carrier_type == ELECTRON:
                 hf.write_to_file(
                     log_file,
                     [
                         "".join(
                             [
-                                "EVENT: Electron left out of {0:s} of device! New number of extractions: {0:d} after {1:d} iterations (global_time = {2:.2e})".format(
+                                "EVENT: Electron #{0:d} left out of {1:s} of device! New number of extractions: {2:d} after {3:d} iterations (global_time = {4:.2e})".format(
+                                    self.ID,
                                     self.destination_chromophore,
                                     number_of_extractions,
                                     KMC_iterations,
@@ -656,7 +738,8 @@ class carrier:
                     [
                         "".join(
                             [
-                                "EVENT: Hole left out of {0:s} of device! New number of extractions: {0:d} after {1:d} iterations (global_time = {2:.2e})".format(
+                                "EVENT: Hole #{0:d} left out of {1:s} of device! New number of extractions: {2:d} after {3:d} iterations (global_time = {4:.2e})".format(
+                                    self.ID,
                                     self.destination_chromophore,
                                     number_of_extractions,
                                     KMC_iterations,
@@ -681,7 +764,13 @@ class carrier:
             )
 
     def calculate_delta_E(
-        self, destination_chromophore, neighbour_relative_image, chromo_E_ij
+        self,
+        destination_chromophore,
+        neighbour_relative_image,
+        chromo_E_ij,
+        cell_size,
+        capture_radius,
+        permittivity,
     ):
         # Delta_E_ij has 3 main components: 1) the energetic disorder (difference
         # in HOMO/LUMO levels), 2) the field within the device, and 3) the
@@ -690,14 +779,12 @@ class carrier:
         # 1) Energetic Disorder
         delta_E_ij += chromo_E_ij * elementary_charge
         # 2) Field within the device
-        current_absolute_position = np.array(self.current_device_posn) * parameter_dict[
-            "morphology_cell_size"
-        ] + (np.array(self.current_chromophore.posn) * 1E-10)
+        current_absolute_position = np.array(self.current_device_posn) * cell_size + (
+            np.array(self.current_chromophore.posn) * 1E-10
+        )
         destination_absolute_position = (
             np.array(self.current_device_posn) + np.array(neighbour_relative_image)
-        ) * parameter_dict["morphology_cell_size"] + (
-            np.array(destination_chromophore.posn) * 1E-10
-        )
+        ) * cell_size + (np.array(destination_chromophore.posn) * 1E-10)
         # Field has negative sign because device is flipped with anode at +Z and
         # Cathode at 0
         z_sep = -(destination_absolute_position[2] - current_absolute_position[2])
@@ -709,10 +796,18 @@ class carrier:
                 current_absolute_position,
                 self.ID,
                 self.carrier_type,
+                cell_size,
+                capture_radius,
+                permittivity,
                 carrier_is_recombining=self.recombining,
             )
             destination_coulomb, dummy1, dummy2 = calculate_coulomb(
-                destination_absolute_position, self.ID, self.carrier_type
+                destination_absolute_position,
+                self.ID,
+                self.carrier_type,
+                cell_size,
+                capture_radius,
+                permittivity,
             )
             delta_E_ij += destination_coulomb - origin_coulomb
             if (recombine_flag is True) and (self.recombining is False):
@@ -734,7 +829,7 @@ class inject_site:
         self.inject_time = hf.determine_event_tau(
             self.inject_rate,
             event_type="".join([self.electrode, "-injection"]),
-            slowest_event_allowed=slowest_event_allowed,
+            slowest_event=slowest_event_allowed,
             fastest_event=fastest_event_allowed,
             maximum_attempts=100,
             log_file=log_file,
@@ -810,14 +905,12 @@ def plot_carrier_Z_profiles(all_carriers, parameter_dict, device_array, output_d
     )
     # Now make the plots
     for carrier in carriers_to_plot:
-        if (carrier.injected_from.lower() == "anode") or (
-            carrier.injected_from.lower() == "cathode"
-        ):
+        if isinstance(carrier.injected_from, str):
             continue
-        plot_Z_profile(carrier, z_len, output_dir)
+        plot_Z_profile(carrier, z_len, parameter_dict, output_dir)
 
 
-def plot_Z_profile(carrier, z_dim_size, output_dir):
+def plot_Z_profile(carrier, z_dim_size, parameter_dict, output_dir):
     x_vals = []
     y_vals = []
     for hop_index, hop in enumerate(carrier.history):
@@ -832,27 +925,31 @@ def plot_Z_profile(carrier, z_dim_size, output_dir):
             colour = "b"
         else:
             colour = "r"
-            file_name = "{0:s}carrier_{1:05d}_Z_profile.pdf".format(
-                output_dir, carrier.ID
-            )
+    file_name = os.path.join(
+        output_dir, "carrier_{:05d}_Z_profile.pdf".format(carrier.ID)
+    )
     plt.figure()
     plt.plot(x_vals, y_vals, color=colour)
     plt.ylim([0, z_dim_size])
     plt.xlabel("Hop Number (Arb. U.)")
     plt.ylabel("Z-position (Ang)")
     plt.savefig(file_name)
-    print("".join(["Carrier Z-Profile saved as ", fileName]))
+    print("".join(["Carrier Z-Profile saved as ", file_name]))
     plt.close()
 
 
 def calculate_coulomb(
-    absolute_position, self_ID, self_carrier_type, carrier_is_recombining=None
+    absolute_position,
+    self_ID,
+    self_carrier_type,
+    cell_size,
+    capture_radius,
+    permittivity,
+    carrier_is_recombining=None,
 ):
     global global_carrier_dict
     coulombic_potential = 0.0
-    coulomb_constant = 1.0 / (
-        4 * np.pi * epsilon_nought * parameter_dict["relative_permittivity"]
-    )
+    coulomb_constant = 1.0 / (4 * np.pi * epsilon_nought * permittivity)
     can_recombine_here = False
     recombining_with = None
     for carrier_ID, carrier in global_carrier_dict.items():
@@ -864,18 +961,19 @@ def calculate_coulomb(
         # conditions. Check papers from Chris Groves (Marsh, Groves and
         # Greenham2007 and beyond), Ben Lyons (2011/2012), and van der Holst
         # (2011) for more details.
-        carrier_posn = np.array(carrier.current_device_posn) * parameter_dict[
-            "morphology_cell_size"
-        ] + (np.array(carrier.current_chromophore.posn) * 1E-10)
+        carrier_posn = np.array(carrier.current_device_posn) * cell_size + (
+            np.array(carrier.current_chromophore.posn) * 1E-10
+        )
         if carrier_ID != self_ID:
             # Only consider the current carrier if it is not us!
             separation = hf.calculate_separation(absolute_position, carrier_posn)
             if separation == 0.0:
-                print("ZERO SEPARATION BETWEEN CARRIERS, EXITING")
-                if self_carrier_type == carrier.carrier_type:
-                    print("ZERO SEPARATION BETWEEN LIKE CARRIERS, EXITING")
-                    exit()
-                exit()
+                # Destination trial is to site occupied by another carrier.
+                # The occupation matrix should have caught this already in
+                # calculate_hop, therefore the morphology has multiple
+                # chromophores defined at the same point in space (as in the tests).
+                # We can just set the coulombic potential to zero and move on.
+                coulombic_potential = 0.0
             else:
                 coulombic_potential += coulomb_constant * (
                     (elementary_charge * ((2 * self_carrier_type) - 1))
@@ -887,7 +985,7 @@ def calculate_coulomb(
             # recombine.
             if carrier_is_recombining is False:
                 # Only do this if we're not currently recombining with something
-                if (separation <= parameter_dict["coulomb_capture_radius"]) and (
+                if (separation <= capture_radius) and (
                     self_carrier_type != carrier.carrier_type
                 ):
                     # If carriers are within 1nm of each other, then assume that
@@ -1255,7 +1353,7 @@ def plot_event_time_distribution(event_log, output_dir, fastest, slowest):
     plt.gca().set_yscale("log")
     plt.xlabel(r"$\mathrm{\tau}$ (s)")
     plt.ylabel("Freq (Arb. U.)")
-    file_name = "".join([output_dir, "event_time_dist.pdf"])
+    file_name = os.path.join(output_dir, "event_time_dist.pdf")
     plt.savefig(file_name)
     print("Event time distribution saved as", file_name)
 
@@ -1364,9 +1462,9 @@ def plot3D_trajectory(
                 ],
             )
             continue
-    file_name = "".join([output_dir, carrier_string, "_traj.pdf"])
+    file_name = os.path.join(output_dir, "{:s}_traj.pdf".format(carrier_string))
     plt.savefig(file_name)
-    hf.write_to_file(log_file, ["Figure saved as", file_name])
+    hf.write_to_file(log_file, [" ".join(["Figure saved as", file_name])])
     plt.close()
 
 
@@ -1425,7 +1523,8 @@ def execute(
         (device_array.shape[2] * parameter_dict["morphology_cell_size"])
     )
     hf.write_to_file(
-        log_file, ["Current E-field value = {:s} Vm^{-1}".format(current_field_value)]
+        log_file,
+        ["".join(["Current E-field value = {:.2E} V/m".format(current_field_value)])],
     )
     output_figures_dir = os.path.join(
         parameter_dict["output_device_dir"],
@@ -1542,7 +1641,7 @@ def execute(
                 photoinjection_time = hf.determine_event_tau(
                     photoinjection_rate,
                     event_type="photoinjection",
-                    slowest_event_allowed=slowest_event_allowed,
+                    slowest_event=slowest_event_allowed,
                     fastest_event=fastest_event_allowed,
                     maximum_attempts=100,
                     log_file=log_file,
@@ -1572,7 +1671,7 @@ def execute(
                     cathode_injection_time = hf.determine_event_tau(
                         cathode_inject_rate,
                         event_type="cathode-injection",
-                        slowest_event_allowed=slowest_event_allowed,
+                        slowest_event=slowest_event_allowed,
                         fastest_event=fastest_event_allowed,
                         maximum_attempts=100,
                         log_file=log_file,
@@ -1597,7 +1696,7 @@ def execute(
                     anode_injection_time = hf.determine_event_tau(
                         anode_inject_rate,
                         event_type="anode-injection",
-                        slowest_event_allowed=slowest_event_allowed,
+                        slowest_event=slowest_event_allowed,
                         fastest_event=fastest_event_allowed,
                         maximum_attempts=100,
                         log_file=log_file,
@@ -1624,7 +1723,7 @@ def execute(
                     log_file,
                     [
                         "Current runtime = {0:d} s, with {1:d} events currently in the queue and {2:d} carriers currently in the system. Currently completed {3:d} iterations and simulated {4:.2e} s.".format(
-                            t1 - t0,
+                            int(t1 - t0),
                             len(event_queue),
                             len(global_carrier_dict.keys()),
                             KMC_iterations,
@@ -1685,8 +1784,16 @@ def execute(
                 ):
                     # Injected onto either a dissociation site or a trap site
                     if injected_exciton.can_dissociate is True:
+                        # Exciton is finished, add it to the global carrier list
+                        if parameter_dict["record_carrier_history"]:
+                            all_carriers.append(injected_exciton)
                         hf.write_to_file(
-                            log_file, ["event: exciton dissociating immediately"]
+                            log_file,
+                            [
+                                "EVENT: Exciton {:d} dissociating immediately".format(
+                                    injected_exciton.ID
+                                )
+                            ],
                         )
                         number_of_dissociations += 1
                         number_of_hops.append(injected_exciton.number_of_hops)
@@ -1730,7 +1837,9 @@ def execute(
                             [
                                 " ".join(
                                     [
-                                        "Exciton depositing electron at",
+                                        "\tExciton #{0:d} depositing electron #{1:d} at".format(
+                                            injected_exciton.ID, injected_electron.ID
+                                        ),
                                         repr(injected_exciton.current_device_posn),
                                         repr(
                                             injected_exciton.electron_chromophore.posn
@@ -1739,7 +1848,9 @@ def execute(
                                 ),
                                 " ".join(
                                     [
-                                        "Exciton depositing hole at",
+                                        "\tExciton #{0:d} depositing hole at #{1:d} at".format(
+                                            injected_exciton.ID, injected_hole.ID
+                                        ),
                                         repr(injected_exciton.current_device_posn),
                                         repr(injected_exciton.hole_chromophore.posn),
                                     ]
@@ -1772,7 +1883,12 @@ def execute(
                         # Injected onto a site with no connections, so this
                         # exciton will eventually die
                         hf.write_to_file(
-                            log_file, ["EVENT: Exciton recombining immediately"]
+                            log_file,
+                            [
+                                "EVENT: Exciton {:d} recombining immediately".format(
+                                    injected_exciton.ID
+                                )
+                            ],
                         )
                         number_of_recombinations += 1
                         number_of_hops.append(injected_exciton.number_of_hops)
@@ -1787,7 +1903,7 @@ def execute(
                 photoinjection_time = hf.determine_event_tau(
                     photoinjection_rate,
                     event_type="photoinjection",
-                    slowest_event_allowed=slowest_event_allowed,
+                    slowest_event=slowest_event_allowed,
                     fastest_event=fastest_event_allowed,
                     maximum_attempts=100,
                     log_file=log_file,
@@ -1822,8 +1938,7 @@ def execute(
                                     repr(inject_site.device_posn),
                                     " (which has type ",
                                     repr(device_array[tuple(inject_site.device_posn)]),
-                                    ") chromophore number {0:d} after {1:d} iterations (global_time = {2:.2e})",
-                                    format(
+                                    ") chromophore number {0:d} after {1:d} iterations (global_time = {2:.2e})".format(
                                         inject_site.chromophore.ID,
                                         KMC_iterations,
                                         global_time,
@@ -1941,13 +2056,13 @@ def execute(
                         hf.write_to_file(
                             log_file,
                             [
-                                "EVENT: Exciton dissociating after {0:d} iterations (global_time = {1:.2e})".format(
-                                    KMC_iterations, global_time
+                                "EVENT: Exciton #{0:d} dissociating after {1:d} iterations (global_time = {2:.2e})".format(
+                                    hopping_exciton.ID, KMC_iterations, global_time
                                 )
                             ],
                         )
                         number_of_dissociations += 1
-                        number_of_hops.append(injected_exciton.number_of_hops)
+                        number_of_hops.append(hopping_exciton.number_of_hops)
                         # Create the carrier instances, but don't yet calculate
                         # their behaviour (need to add them to the carrier list
                         # before we can calculate the energetics)
@@ -1986,6 +2101,29 @@ def execute(
                             hopping_exciton.current_device_posn,
                             hopping_exciton.hole_chromophore.ID,
                         ).occupied.append(hopping_exciton.current_device_posn)
+                        hf.write_to_file(
+                            log_file,
+                            [
+                                " ".join(
+                                    [
+                                        "\tExciton #{0:d} depositing electron #{1:d} at".format(
+                                            hopping_exciton.ID, injected_electron.ID
+                                        ),
+                                        repr(hopping_exciton.current_device_posn),
+                                        repr(hopping_exciton.electron_chromophore.posn),
+                                    ]
+                                ),
+                                " ".join(
+                                    [
+                                        "\tExciton #{0:d} depositing hole at #{1:d} at".format(
+                                            hopping_exciton.ID, injected_hole.ID
+                                        ),
+                                        repr(hopping_exciton.current_device_posn),
+                                        repr(hopping_exciton.hole_chromophore.posn),
+                                    ]
+                                ),
+                            ],
+                        )
                         # Add to the allCarriers list for plotting
                         if parameter_dict["record_carrier_history"] is True:
                             all_carriers += [injected_electron, injected_hole]
@@ -2021,7 +2159,7 @@ def execute(
                             ],
                         )
                         number_of_recombinations += 1
-                        number_of_hops.append(injected_exciton.number_of_hops)
+                        number_of_hops.append(hopping_exciton.number_of_hops)
                     # DEBUG
                     # Calculate the initial position and final positions and
                     # append the excitonDisp with the separation
@@ -2049,7 +2187,7 @@ def execute(
                 else:
                     event_queue = push_to_queue(
                         event_queue,
-                        (hopping_exciton.hop_time, "exciton_hop", injected_exciton),
+                        (hopping_exciton.hop_time, "exciton_hop", hopping_exciton),
                     )
 
             elif next_event[1].lower() == "carrier_hop":
@@ -2059,6 +2197,13 @@ def execute(
                 # we can safely ignore it
                 if hopping_carrier.ID not in global_carrier_dict.keys():
                     continue
+                # print(
+                #     "CARRIER #", hopping_carrier.ID, " hopping from ",
+                #     hopping_carrier.current_device_posn, " ",
+                #     hopping_carrier.current_chromophore.posn, " to ",
+                #     hopping_carrier.destination_image, " ",
+                #     hopping_carrier.destination_chromophore.posn
+                # )
                 hopping_carrier.perform_hop()
                 if hopping_carrier.removed_time is None:
                     # As long as this carrier hasn't just been removed,
@@ -2096,7 +2241,7 @@ def execute(
                     recombination_time = hf.determine_event_tau(
                         parameter_dict["recombination_rate"],
                         event_type="carrier-recombination",
-                        slowest_event_allowed=slowest_event_allowed,
+                        slowest_event=slowest_event_allowed,
                         fastest_event=fastest_event_allowed,
                         maximum_attempts=100,
                         log_file=log_file,
@@ -2154,88 +2299,106 @@ def execute(
                     for recombining_carrier in [carrier1, carrier2]:
                         if (
                             (recombining_carrier.carrier_type == HOLE)
+                            and isinstance(recombining_carrier.injected_from, str)
                             and (recombining_carrier.injected_from.lower() == "anode")
                         ) or (
                             (recombining_carrier.carrier_type == ELECTRON)
+                            and isinstance(recombining_carrier.injected_from, str)
                             and (recombining_carrier.injected_from.lower() == "cathode")
                         ):
                             delta_electrical_recombinations += 1
                         elif (
                             (recombining_carrier.carrier_type == ELECTRON)
+                            and isinstance(recombining_carrier.injected_from, str)
                             and (recombining_carrier.injected_from.lower() == "anode")
                         ) or (
                             (recombining_carrier.carrier_type == HOLE)
+                            and isinstance(recombining_carrier.injected_from, str)
                             and (recombining_carrier.injected_from.lower() == "cathode")
                         ):
                             delta_electrical_recombinations -= 1
+                    recombining_carrier_IDs.remove(carrier1.ID)
+                    if separation <= parameter_dict["coulomb_capture_radius"]:
+                        hf.write_to_file(
+                            log_file,
+                            [
+                                "{0:f} <= {1:f}".format(
+                                    separation, parameter_dict["coulomb_capture_radius"]
+                                )
+                            ],
+                        )
+                        hf.write_to_file(
+                            log_file,
+                            [
+                                "EVENT: Carrier recombination (#{0:d} with #{1:d}) succeeded after {2:d} iterations (global_time = {3:.2e})".format(
+                                    carrier1.ID,
+                                    carrier2.ID,
+                                    KMC_iterations,
+                                    global_time,
+                                )
+                            ],
+                        )
+                        # Carriers are in range, so recombine them
+                        carrier1.removed_time = global_time
+                        carrier2.removed_time = global_time
+                        number_of_recombinations += 1
+                        number_of_electrical_recombinations += (
+                            delta_electrical_recombinations
+                        )
+                        try:
+                            global_carrier_dict.pop(carrier1.ID)
+                        except KeyError:
+                            # Carrier has already been removed (extracted at contacts while
+                            # waiting for recombination)
+                            pass
+                        try:
+                            global_carrier_dict.pop(carrier2.ID)
+                        except KeyError:
+                            # Carrier has already been removed (extracted at contacts while
+                            # waiting for recombination)
+                            pass
+                        if parameter_dict["record_carrier_history"] is True:
+                            all_carriers += [carrier1, carrier2]
+                    else:
+                        hf.write_to_file(
+                            log_file,
+                            [
+                                "{0:f} > {1:f}".format(
+                                    separation, parameter_dict["coulomb_capture_radius"]
+                                )
+                            ],
+                        )
+                        hf.write_to_file(
+                            log_file,
+                            [
+                                "EVENT: Carrier recombination (#{0:d} with #{1:d}) failed after {2:d} iterations (global_time = {3:.2e})".format(
+                                    carrier1.ID,
+                                    carrier2.ID,
+                                    KMC_iterations,
+                                    global_time,
+                                )
+                            ],
+                        )
+                        # Carriers are no longer in range, so the recombination fails.
+                        # Update their recombination flags
+                        carrier1.recombining = False
+                        carrier1.recombining_with = None
+                        if separation != 1E99:
+                            # If recombining carrier was already extracted, then skip this
+                            carrier2.recombining = False
+                            carrier2.recombining_with = None
                 except (ValueError, KeyError):
                     # The second carrier is missing from the simulation (already
-                    # extracted), so set the separation to be large
-                    separation = 1E99
-                recombining_carrier_IDs.remove(carrier1.ID)
-                if separation <= parameter_dict["coulomb_capture_radius"]:
+                    # extracted), so the carriers cannot recombine. Move on.
                     hf.write_to_file(
                         log_file,
                         [
-                            "{0:f} <= {1:f}".format(
-                                separation, parameter_dict["coulomb_capture_radius"]
+                            "EVENT: Carrier recombination of #{0:d} failed (second carrier no longer present) after {1:d} iterations (global_time = {2:.2e})".format(
+                                carrier1.ID, KMC_iterations, global_time
                             )
                         ],
                     )
-                    hf.write_to_file(
-                        log_file,
-                        [
-                            "EVENT: Carrier recombination succeeded after {0:d} iterations (global_time = {1:.2e})".format(
-                                KMC_iterations, global_time
-                            )
-                        ],
-                    )
-                    # Carriers are in range, so recombine them
-                    carrier1.removed_time = global_time
-                    carrier2.removed_time = global_time
-                    number_of_recombinations += 1
-                    number_of_electrical_recombinations += (
-                        delta_electrical_recombinations
-                    )
-                    try:
-                        global_carrier_dict.pop(carrier1.ID)
-                    except KeyError:
-                        # Carrier has already been removed (extracted at contacts while
-                        # waiting for recombination)
-                        pass
-                    try:
-                        global_carrier_dict.pop(carrier2.ID)
-                    except KeyError:
-                        # Carrier has already been removed (extracted at contacts while
-                        # waiting for recombination)
-                        pass
-                    if parameter_dict["record_carrier_history"] is True:
-                        all_carriers += [carrier1, carrier2]
-                else:
-                    hf.write_to_file(
-                        log_file,
-                        [
-                            "{0:f} > {1:f}".format(
-                                separation, parameter_dict["coulomb_capture_radius"]
-                            )
-                        ],
-                    )
-                    hf.write_to_file(
-                        log_file,
-                        [
-                            "EVENT: Carrier recombination failed after {0:d} iterations (global_time = {1:.2e})".format(
-                                KMC_iterations, global_time
-                            )
-                        ],
-                    )
-                    # Carriers are no longer in range, so the recombination fails.
-                    # Update their recombination flags
-                    carrier1.recombining = False
-                    carrier1.recombining_with = None
-                    if separation != 1E99:
-                        # If recombining carrier was already extracted, then skip this
-                        carrier2.recombining = False
-                        carrier2.recombining_with = None
+
             else:
                 print(event_queue)
                 raise SystemError("Next event in queue is unknown")
@@ -2383,7 +2546,7 @@ def slurm_time_in_S(slurm_time):
     return time_in_S
 
 
-if __name__ == "__main__":
+def main():
     global log_file
 
     KMC_directory = sys.argv[1]
@@ -2459,3 +2622,7 @@ if __name__ == "__main__":
             voltage_val,
             time_limit,
         )
+
+
+if __name__ == "__main__":
+    main()
