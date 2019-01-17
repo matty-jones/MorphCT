@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [ -d /opt/conda/envs/morphct ]; then
+if [ -d /opt/conda/envs/morphct ] && [ $BRANCH != 'master' ]; then
 	echo "Using Cache";
 	source activate morphct
 else
