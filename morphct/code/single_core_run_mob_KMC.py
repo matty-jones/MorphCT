@@ -291,7 +291,7 @@ def initialise_save_data(n_chromos, seed):
     }
 
 
-def split_molecules(input_dictionary):
+def split_molecules(input_dictionary, chromophore_list):
     # Split the full morphology into individual molecules
     # Create a lookup table `neighbour list' for all connected atoms called
     # {bondedAtoms}
@@ -401,7 +401,7 @@ def main():
         if parameter_dict["use_average_hop_rates"] is True:
             # Chosen to split hopping by inter-intra molecular hops, so get
             # molecule data
-            mol_ID_dict = split_molecules(AA_morphology_dict)
+            mol_ID_dict = split_molecules(AA_morphology_dict, chromophore_list)
             # molIDDict is a dictionary where the keys are the chromoIDs, and
             # the vals are the molIDs
         else:
