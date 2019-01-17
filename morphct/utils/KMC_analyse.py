@@ -143,7 +143,7 @@ def get_carrier_data(carrier_data):
         print(
             "Notice: The data from",
             total_data_points - total_data_points_averaged_over,
-            "carriers was discarded"
+            "carriers were discarded",
             "due to the carrier lifetime being more than double (or less than half of) the specified carrier lifetime.",
         )
     times = []

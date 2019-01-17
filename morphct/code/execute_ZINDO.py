@@ -234,7 +234,7 @@ def write_orca_inp(
     # Write the orca input file
     with open(input_name, "w+") as orca_file:
         orca_file.writelines(inp_file_lines)
-    print("\rOrca Input File written as", os.path.split(input_name[1]), end=" ")
+    print("\rOrca Input File written as", os.path.split(input_name)[1], end=" ")
 
 
 def terminate_monomers(chromophore, parameter_dict, AA_morphology_dict):
