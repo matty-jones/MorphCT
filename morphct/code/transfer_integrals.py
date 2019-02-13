@@ -679,7 +679,7 @@ def scale_energies(chromophore_list, parameter_dict):
         chromo.LUMO += E_shift
         chromo.LUMO_1 += E_shift
 
-        if (target_DOS_std is not None) and (target_DOS_std > std_MO):
+        if (target_DOS_std is not None) and (target_DOS_std < std_MO):
             # Determine how many sigmas away from the mean this datapoint is
             sigma = (chromo.get_MO_energy() - av_MO) / std_MO
             # Calculate the new deviation from the mean based on the target
