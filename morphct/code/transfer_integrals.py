@@ -684,10 +684,10 @@ def scale_energies(chromophore_list, parameter_dict):
             sigma = (chromo.get_MO_energy() - av_MO) / std_MO
             # Calculate the new deviation from the mean based on the target
             # STD and sigma
-            newDeviation = target_DOS_std * sigma
+            new_deviation = target_DOS_std * sigma
             # Work out the change in energy to be applied to meet this target
             # energy level
-            delta_E = (av_MO + newDeviation) - chromo.get_MO_energy()
+            delta_E = (av_MO + new_deviation) - chromo.get_MO_energy()
             # Apply the energy level displacement
             chromo.HOMO_1 += delta_E
             chromo.HOMO += delta_E
