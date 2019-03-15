@@ -1,6 +1,7 @@
+import argparse
 import numpy as np
 from morphct.code import helper_functions as hf
-import argparse
+from morphct.utils import fix_images as fi
 
 
 def calculate_hydrogen_positions(morphology_dict, hydrogens_to_add):
@@ -278,6 +279,21 @@ def find_information(args):
             },
             3.905,
         ],
+        "ITIC": [
+            {
+                "c": [[2, 1]],
+                "c3": [[2, 2], [1, 3]],
+                "ca": [[2, 1]],
+                "cb": [[2, 1]],
+                "cc": [[2, 1]],
+                "cd": [[2, 1]],
+                "ce": [[2, 1]],
+                "cf": [[2, 1]],
+                "cg": [[1, 1]],
+                "cp": [[1, 1]],
+            },
+            3.5635948725613575,
+        ],
     }
 
     if args.molecule_source is None:
@@ -328,6 +344,12 @@ def main():
         )
         print("Additionally, we're using a sigma value of", sigma_val)
         morphology_dict = hf.load_morphology_xml(input_file, sigma=sigma_val)
+        # We MUST fix the images first, otherwise the hydrogens will be put in
+        # incorrectly.
+        morphology_dict = fi.zero_out_images(morphology_dict)
+        bond_dict = fi.get_bond_dict(morphology_dict)
+        morphology_dict = fi.check_bonds(morphology_dict, bond_dict)
+        # Now we can safely obtain the unwrapped positions
         morphology_dict = hf.add_unwrapped_positions(morphology_dict)
         hydrogen_positions = calculate_hydrogen_positions(
             morphology_dict, hydrogens_to_add

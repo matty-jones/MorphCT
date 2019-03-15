@@ -551,7 +551,7 @@ def main():
             log_file, ["Saving the pickle file cleanly before termination..."]
         )
         save_pickle(save_data, pickle_file_name.replace("data", "terminated_results"))
-        print("Pickle saved! Exitting Python...")
+        print("Pickle saved! Exiting Python...")
         exit()
     t3 = T.time()
     elapsed_time = float(t3) - float(t0)
