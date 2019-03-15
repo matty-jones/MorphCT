@@ -323,6 +323,9 @@ def calculate_TI(orbital_splitting, delta_E):
 
 
 def update_single_chromophore_list(chromophore_list, parameter_dict):
+    orca_input_dir = os.path.join(
+        parameter_dict["output_orca_directory"], "chromophores", "input_orca"
+    )
     orca_output_dir = os.path.join(
         parameter_dict["output_orca_directory"], "chromophores", "output_orca"
     )
@@ -369,6 +372,12 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
                 " FIXING/REMOVING FROM THE SYSTEM BEFORE ANY FURTHER DATA CAN BE"
                 " OBTAINED."
             )
+            if parameter_dict["remove_orca_inputs"]:
+                print("Deleting the remaining orca inputs...")
+                shutil.rmtree(orca_input_dir)
+            if parameter_dict["remove_orca_outputs"]:
+                print("Deleting the remaining orca inputs...")
+                shutil.rmtree(orca_output_dir)
             exit()
         successful_reruns = []
         # Now check all of the files to see if we can update the
@@ -403,6 +412,9 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
     # through again and check the neighbours, rerunning the pair file if it
     # failed (which it won't have done because all my chromophores are
     # delicious now).
+    orca_input_dir = os.path.join(
+        parameter_dict["output_orca_directory"], "chromophores", "input_orca"
+    )
     orca_output_dir = os.path.join(
         parameter_dict["output_orca_directory"], "chromophores", "output_orca"
     )
