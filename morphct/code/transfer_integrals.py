@@ -348,12 +348,6 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
             chromophore.HOMO = energy_levels[1]
             chromophore.LUMO = energy_levels[2]
             chromophore.LUMO_1 = energy_levels[3]
-            if parameter_dict["remove_orca_outputs"] is True:
-                try:
-                    os.remove(os.path.join(orca_output_dir, file_name))
-                except FileNotFoundError:
-                    # Already deleted
-                    pass
             # If this file had originally failed, then we can safely remove it
             # from the fail list.
             if file_name in failed_single_chromos.keys():
@@ -385,7 +379,7 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
             try:
                 # Update the chromophore data in the chromophore_list
                 energy_levels = load_orca_output(
-                    os.path.join(orca_output_dir + chromo_name)
+                    os.path.join(orca_output_dir, chromo_name)
                 )
                 chromophore_list[chromo_ID].HOMO_1 = energy_levels[0]
                 chromophore_list[chromo_ID].HOMO = energy_levels[1]
@@ -394,12 +388,6 @@ def update_single_chromophore_list(chromophore_list, parameter_dict):
                 # This chromophore didn't fail, so remove it from the failed
                 # list
                 successful_reruns.append(chromo_name)
-                if parameter_dict["remove_orca_outputs"] is True:
-                    try:
-                        os.remove(os.path.join(orca_output_dir, file_name))
-                    except FileNotFoundError:
-                        # Already deleted
-                        pass
             except orcaError:
                 # This chromophore failed so increment its fail counter
                 failed_single_chromos[chromo_name][0] += 1
@@ -436,12 +424,6 @@ def update_pair_chromophore_list(chromophore_list, parameter_dict):
                 dimer_HOMO = energy_levels[1]
                 dimer_LUMO = energy_levels[2]
                 dimer_LUMO_1 = energy_levels[3]
-                if parameter_dict["remove_orca_outputs"] is True:
-                    try:
-                        os.remove(os.path.join(orca_output_dir, file_name))
-                    except FileNotFoundError:
-                        # Already deleted
-                        pass
                 # If this file had originally failed, then we can safely remove it
                 # from the fail list.
                 if file_name in failed_pair_chromos.keys():
@@ -741,6 +723,14 @@ def main(
             ),
             pickle_name,
         )
+        print("Deleting outputs...")
+        if parameter_dict["remove_orca_outputs"] is True:
+            for chromophore in chromophore_list:
+                try:
+                    os.remove(os.path.join(orca_output_dir, chromophore.orca_output))
+                except FileNotFoundError:
+                    # Already deleted
+                    pass
     else:
         print("All single chromophore calculations already performed. Skipping...")
     # Then, check the pairs
@@ -777,6 +767,20 @@ def main(
             ),
             pickle_name,
         )
+        if parameter_dict["remove_orca_outputs"] is True:
+            for chromophore in chromophore_list:
+                neighbour_IDs = [
+                    neighbour_data[0] for neighbour_data in chromophore.neighbours
+                ]
+                for neighbour_loc, neighbour_ID in enumerate(neighbour_IDs):
+                    file_name = "pair/{0:05d}-{1:05d}.out".format(
+                        chromophore.ID, neighbour_ID
+                    )
+                try:
+                    os.remove(os.path.join(orca_output_dir, file_name))
+                except FileNotFoundError:
+                    # Already deleted
+                    pass
     else:
         print("All pair chromophore calculations already performed. Skipping...")
     return (
