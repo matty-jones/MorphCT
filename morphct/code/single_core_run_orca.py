@@ -129,7 +129,32 @@ def main():
         orca_stdout = orca_shell_output[0].decode().split("\n")
         orca_stderr = orca_shell_output[1].decode().split("\n")
         # Write the outputFile:
-        hf.write_to_file(output_file_name, orca_stdout, mode="output_file")
+        try:
+            hf.write_to_file(output_file_name, orca_stdout, mode="output_file")
+        except OSError as e1:
+            file_written = False
+            print(e1)
+            for attempt in range(5):
+                print("Waiting for 10 minutes to try and write again...")
+                T.sleep(600)
+                try:
+                    hf.write_to_file(output_file_name, orca_stdout, mode="output_file")
+                    file_written = True
+                except OSError as e2:
+                    print(e2)
+                    continue
+            if not file_written:
+                print("--== CRITICAL ERROR ==--")
+                print("Unable to write file due to above errors. Please ammend"
+                      " appropriately and resubmit your job")
+                if parameter_dict["remove_orca_inputs"]:
+                    print("Deleting the remaining orca inputs...")
+                    shutil.rmtree(orca_input_dir)
+                if parameter_dict["remove_orca_outputs"]:
+                    print("Deleting the remaining orca inputs...")
+                    shutil.rmtree(orca_output_dir)
+                print("Exiting...")
+                exit()
         if delete_inputs:
             output_ok = check_job_output(orca_stdout, job)
             if output_ok:
