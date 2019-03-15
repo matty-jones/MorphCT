@@ -31,9 +31,7 @@ def check_bonds(morphology, bond_dict):
 
 
 def zero_out_images(morphology):
-    for atom_id, image in enumerate(morphology["image"]):
-        if image != [0, 0, 0]:
-            morphology["image"][atom_id] = [0, 0, 0]
+    morphology["image"] = [[0, 0, 0]] * len(morphology["position"])
     return morphology
 
 
