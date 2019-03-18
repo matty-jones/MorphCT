@@ -703,6 +703,9 @@ def main(
         "code",
         "".join([os.path.splitext(parameter_dict["morphology"])[0], ".pickle"]),
     )
+    orca_output_dir = os.path.join(
+        parameter_dict["output_orca_directory"], "chromophores", "output_orca"
+    )
     # First, check that we need to examine the single chromophores
     run_singles = False
     if parameter_dict["overwrite_current_data"] is False:
