@@ -7,7 +7,10 @@ from morphct import run_MorphCT
 from morphct.definitions import TEST_ROOT
 from testing_tools import TestCommand
 from morphct.code import helper_functions as hf
+from morphct.code.helper_functions import has_hoomd
 
+
+@pytest.mark.skipif(not has_hoomd, reason="hoomd package not installed")
 
 @pytest.fixture(scope="module")
 def run_simulation():
