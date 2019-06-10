@@ -121,7 +121,7 @@ def plot_data(data, title, output_file, xlabel="Order-Semi-Disorder"):
 
     x_data, y_data, y_error = zip(*sorted(zip(data[:, 0], data[:, 1], data[:, 2])))
     # Plot the errors
-    plt.errorbar(x_data, y_data, yerr=y_error, c="r")#, fmt='o')
+    plt.errorbar(x_data, y_data, yerr=y_error, c="r")
     plt.yscale("log")
     # plt.yticks([2E-2, 3E-2, 4E-2, 5E-2, 6E-2, 7E-2, 8E-2, 9E-2, 1E-1], [r'$2\times10^{-2}$','',r'$4\times10^{-2}$','','','','',
     #    '',r'$1\times10^{-1}$'])
