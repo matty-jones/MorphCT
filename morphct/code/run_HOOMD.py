@@ -4,7 +4,7 @@ import numpy as np
 from morphct.code import helper_functions as hf
 
 
-if hf.has_hoomd == False:
+if not hf.has_hoomd:
     print("HOOMD 1.3 NOT FOUND. FINE_GRAINING AND RUN_HOOMD WILL NOT WORK.")
 
 
