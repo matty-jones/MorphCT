@@ -11,6 +11,7 @@ from morphct.definitions import PROJECT_ROOT
 try:
     from hoomd_script import init
     has_hoomd = True
+    del init
 except ImportError:
     has_hoomd = False
 
