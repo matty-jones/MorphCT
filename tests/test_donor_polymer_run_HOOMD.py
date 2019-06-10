@@ -10,6 +10,10 @@ from morphct.code import helper_functions as hf
 from morphct.code.helper_functions import has_hoomd
 
 
+@pytest.mark.skipif(
+    not has_hoomd, reason="HOOMD 1.3 is not installed on this system."
+)
+
 @pytest.fixture(scope="module")
 def run_simulation():
     # ---==============================================---
