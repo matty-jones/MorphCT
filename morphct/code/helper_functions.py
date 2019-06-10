@@ -8,6 +8,14 @@ import numpy as np
 from morphct.definitions import PROJECT_ROOT
 
 
+try:
+    from hoomd_script import init
+    has_hoomd = True
+    del init
+except ImportError:
+    has_hoomd = False
+
+
 # UNIVERSAL CONSTANTS, DO NOT CHANGE!
 elementary_charge = 1.60217657E-19  # C
 k_B = 1.3806488E-23  # m^{2} kg s^{-2} K^{-1}

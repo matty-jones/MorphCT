@@ -1,0 +1,16 @@
+name: morphct
+channels:
+- defaults
+- cmelab
+- conda-forge
+dependencies:
+- python=3.5
+- scipy=0.19.1
+- matplotlib=2.0.2
+- cython
+# Tests
+- pytest
+- pytest-cov
+- PyYAML
+- codecov
+- imagemagick

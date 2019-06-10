@@ -164,7 +164,8 @@ def save_mean_data_to_csv(data, prop):
 
 
 def calc_mean_and_dev(
-    combine_list, sequence, x_label, output_file, prop="hole_mobility"
+    combine_list, sequence, x_label, output_file, prop="hole_mobility",
+    cutoff_prop=None, cutoff_val=0
 ):
     """
     Iterate through the dictionary of lists to get the
@@ -190,7 +191,6 @@ def calc_mean_and_dev(
     # Iterate through each of run set to combine
     for key, pair in combine_list.items():
         total_data[key] = iterate_through_runs_to_combine(pair)
-
     # Turn data into lists and arrays for writing and plotting
     # the desired properties.
     data_list = []
@@ -198,7 +198,19 @@ def calc_mean_and_dev(
     # Get the average and deviation from each run for the desired property.
     for key, pair in total_data.items():
         name = "{}_{}".format(key, prop)
-        p_data = total_data[key][prop]
+        # Check the cutoff in each case
+        if cutoff_prop is not None:
+            p_data = []
+            for val_index, cutoff_check in enumerate(total_data[key][cutoff_prop]):
+                if float(cutoff_check) >= float(cutoff_val):
+                    p_data.append(total_data[key][prop][val_index])
+                else:
+                    print(
+                        "Skipping", prop, "result from", key, val_index, "as",
+                        cutoff_prop, "value =", cutoff_check, "which is <", cutoff_val
+                    )
+        else:
+            p_data = total_data[key][prop]
         p_mean = np.mean(p_data)
         p_error = np.std(p_data) / np.sqrt(len(p_data))
         data_list.append([name, p_mean, p_error])
@@ -261,6 +273,27 @@ def main():
         ),
     )
     parser.add_argument(
+        "-cp",
+        "--cutoff_prop",
+        required=False,
+        default=None,
+        help=(
+            """The cutoff property to check. If a system's cutoff_prop is not >=
+            the cutoff_val, then it is skipped from the mean and std calculation."""
+        ),
+    )
+    parser.add_argument(
+        "-cv",
+        "--cutoff_val",
+        required=False,
+        default=0,
+        help=(
+            """The value to check against for the cutoff property. If a system's
+            cutoff_prop is not >= the cutoff_val, then it is skipped from the mean and
+            std calculation."""
+        ),
+    )
+    parser.add_argument(
         "-b",
         "--backend",
         default=None,
@@ -284,8 +317,13 @@ def main():
         matplotlib.use(args.backend.strip())
     import matplotlib.pyplot as plt
 
+    print("Input list to combine:")
+    for key, val in args.combine.items():
+        print(key, val)
+
     calc_mean_and_dev(
-        args.combine, args.sequence, args.x_label, args.output_file, prop=args.prop
+        args.combine, args.sequence, args.x_label, args.output_file, prop=args.prop,
+        cutoff_prop=args.cutoff_prop, cutoff_val=args.cutoff_val,
     )
 
 

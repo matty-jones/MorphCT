@@ -7,7 +7,12 @@ from morphct import run_MorphCT
 from morphct.definitions import TEST_ROOT
 from testing_tools import TestCommand
 from morphct.code import helper_functions as hf
+from morphct.code.helper_functions import has_hoomd
 
+
+@pytest.mark.skipif(
+    not has_hoomd, reason="HOOMD 1.3 is not installed on this system."
+)
 
 @pytest.fixture(scope="module")
 def run_simulation():
@@ -182,17 +187,8 @@ def run_simulation():
 # ---==============================================---
 
 
-def system_has_no_hoomd():
-    try:
-        import hoomd_script
-
-        return False
-    except ImportError:
-        return True
-
-
 @pytest.mark.skipif(
-    system_has_no_hoomd(), reason="HOOMD 1.3 is not installed on this system."
+    not has_hoomd, reason="HOOMD 1.3 is not installed on this system."
 )
 class TestCompareOutputs(TestCommand):
     def test_check_AA_morphology_dict_len(self, run_simulation):

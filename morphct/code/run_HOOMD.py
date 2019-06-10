@@ -1,11 +1,13 @@
+import os
 import sys
 import numpy as np
-
-try:
-    from hoomd_script import *
-except ImportError:
-    print("HOOMD 1.3 NOT FOUND. FINE_GRAINING AND RUN_HOOMD WILL NOT WORK.")
 from morphct.code import helper_functions as hf
+from morphct.code.helper_functions import has_hoomd
+
+if not has_hoomd:
+    print("HOOMD 1.3 NOT FOUND. FINE_GRAINING AND RUN_HOOMD WILL NOT WORK.")
+else:
+    from hoomd_script import *
 
 
 class ExitHOOMD(Exception):
